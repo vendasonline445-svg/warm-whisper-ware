@@ -17,32 +17,32 @@ function usePixCountdown(expiresAt?: string) {
   }, []);
 
   const diff = Math.max(0, Math.floor((target - now) / 1000));
-  const m = Math.floor(diff / 60);
+  const h = Math.floor(diff / 3600);
+  const m = Math.floor((diff % 3600) / 60);
   const s = diff % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}:00`;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 const PixPayment = () => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
-  // Get data from sessionStorage
   const pixData = JSON.parse(sessionStorage.getItem("pixData") || "{}");
   const orderData = JSON.parse(sessionStorage.getItem("orderData") || "{}");
 
-  // Extract PIX info from SkalePay response
   const pixInfo = pixData?.pix || pixData?.pixQrCode || {};
   const qrCode = pixInfo?.qrcode || pixInfo?.qr_code || pixData?.pix_qr_code || "";
   const pixCode = pixInfo?.qrcode || pixInfo?.qr_code || pixData?.pix_qr_code || "";
 
   const total = orderData?.product?.total || pixData?.amount / 100 || 87.60;
-  const expiresAt = pixInfo?.expiresAt || pixInfo?.expires_at || pixData?.date_expiration;
+  const expiresAt = pixInfo?.expirationDate || pixInfo?.expiresAt || pixInfo?.expires_at || pixData?.date_expiration;
 
   const timer = usePixCountdown(expiresAt);
 
   const now = new Date();
   const deadline = expiresAt ? new Date(expiresAt) : new Date(now.getTime() + 10 * 60 * 1000);
-  const deadlineStr = `${String(deadline.getHours()).padStart(2, "0")}:${String(deadline.getMinutes()).padStart(2, "0")}, ${deadline.getDate()} de ${["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][deadline.getMonth()]} ${deadline.getFullYear()}`;
+  const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const deadlineStr = `${String(deadline.getHours()).padStart(2, "0")}:${String(deadline.getMinutes()).padStart(2, "0")}, ${deadline.getDate()} de ${meses[deadline.getMonth()]} ${deadline.getFullYear()}`;
 
   const handleCopy = () => {
     if (pixCode) {
@@ -52,93 +52,106 @@ const PixPayment = () => {
     }
   };
 
-  // QR code image URL
   const qrImageUrl = qrCode
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrCode)}`
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`
     : "";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #f0f2f8 0%, #fdf0f2 50%, #f8f8fa 100%)" }}>
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-card px-4 py-3">
-        <div className="mx-auto max-w-[720px] flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="text-foreground">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-border/40 px-4 py-3.5">
+        <div className="mx-auto max-w-[480px] flex items-center gap-3">
+          <button onClick={() => navigate("/")} className="text-foreground hover:opacity-70 transition-opacity">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1 text-center">
-            <p className="font-bold text-sm">Código do pagamento</p>
+            <p className="font-bold text-[15px] tracking-tight">Código do pagamento</p>
           </div>
           <div className="w-5" />
         </div>
       </header>
 
-      <div className="mx-auto max-w-[720px] px-4">
-        {/* Payment Status */}
-        <div className="mt-6 rounded-2xl bg-gradient-to-b from-[hsl(220,30%,92%)] to-card p-6">
-          <h1 className="text-xl font-bold leading-tight">Aguardando o pagamento</h1>
-          <p className="text-2xl font-black mt-1">R$ {total.toFixed(2).replace(".", ",")}</p>
-          <div className="mt-3 flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Vence em</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-success px-2.5 py-0.5 text-xs font-bold text-success-foreground">
-              🟢 {timer}
+      <div className="mx-auto max-w-[480px] px-4">
+        {/* Payment Status Card */}
+        <div
+          className="mt-5 rounded-2xl p-6"
+          style={{
+            background: "linear-gradient(180deg, #dfe3f0 0%, #f0e8f0 60%, #fce8ec 100%)",
+          }}
+        >
+          <h1 className="text-[22px] font-extrabold leading-tight text-foreground tracking-tight">
+            Aguardando o pagamento
+          </h1>
+          <p className="text-[28px] font-black mt-1 text-foreground tracking-tight">
+            R$ {total.toFixed(2).replace(".", ",")}
+          </p>
+          <div className="mt-4 flex items-center gap-2.5">
+            <span className="text-sm text-muted-foreground">Vence em</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#22c55e] px-3 py-1 text-xs font-bold text-white shadow-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+              {timer}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Prazo <strong>{deadlineStr}</strong>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            Prazo <strong className="text-foreground">{deadlineStr}</strong>
           </p>
         </div>
 
         {/* QR Code Card */}
-        <div className="mt-6 rounded-2xl border bg-card p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="mt-5 rounded-2xl bg-white border border-border/30 p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
+          <div className="flex items-center gap-2 mb-5">
             <span className="text-lg">💠</span>
-            <span className="font-bold text-sm">PIX</span>
+            <span className="font-bold text-sm tracking-tight">PIX</span>
           </div>
 
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-5">
             {qrImageUrl ? (
-              <img src={qrImageUrl} alt="QR Code PIX" className="w-56 h-56" />
+              <img src={qrImageUrl} alt="QR Code PIX" className="w-60 h-60 rounded-lg" />
             ) : (
-              <div className="w-56 h-56 flex items-center justify-center bg-muted rounded-lg">
+              <div className="w-60 h-60 flex items-center justify-center bg-muted/30 rounded-lg animate-pulse">
                 <p className="text-sm text-muted-foreground">Gerando QR Code...</p>
               </div>
             )}
           </div>
 
           {pixCode && (
-            <p className="text-xs font-mono text-foreground leading-relaxed break-all mb-4">
-              {pixCode.length > 60 ? pixCode.slice(0, 60) + "..." : pixCode}
+            <p className="text-[13px] font-mono text-foreground/80 leading-relaxed break-all mb-5 px-1">
+              {pixCode.length > 50 ? pixCode.slice(0, 50) + "..." : pixCode}
             </p>
           )}
 
           <Button
             onClick={handleCopy}
             disabled={!pixCode}
-            className="w-full bg-[hsl(350,55%,65%)] hover:bg-[hsl(350,55%,58%)] text-card font-bold text-base py-3.5 h-auto rounded-2xl"
+            className="w-full font-bold text-[15px] py-4 h-auto rounded-2xl shadow-md transition-all active:scale-[0.98]"
+            style={{
+              background: "linear-gradient(135deg, #e8687a 0%, #d4556a 100%)",
+              color: "white",
+            }}
           >
             <Copy className="mr-2 h-4 w-4" />
-            {copied ? "Copiado!" : "Copiar"}
+            {copied ? "Copiado! ✓" : "Copiar"}
           </Button>
         </div>
 
         {/* Instructions */}
-        <p className="mt-4 text-xs text-muted-foreground text-center">
-          Para acessar esta página no app, abra <strong>Loja</strong> &gt; <strong>Pedidos</strong> &gt; <strong>Sem pagamento</strong> &gt;
-          <span className="text-cta font-semibold"> Visualizar o código</span>
+        <p className="mt-5 text-xs text-muted-foreground text-center leading-relaxed px-2">
+          Para acessar esta página no app, abra <strong className="text-foreground">Loja</strong> &gt; <strong className="text-foreground">Pedidos</strong> &gt; <strong className="text-foreground">Sem pagamento</strong> &gt;
+          <span className="text-[#e8687a] font-semibold"> Visualizar o código</span>
         </p>
 
         {/* How to pay */}
-        <div className="mt-6 rounded-2xl border bg-card p-5">
-          <h3 className="font-bold text-sm mb-2">Como fazer pagamentos com PIX?</h3>
+        <div className="mt-6 rounded-2xl bg-white border border-border/30 p-5 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+          <h3 className="font-bold text-sm mb-2 tracking-tight">Como fazer pagamentos com PIX?</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Copie o código de pagamento acima, selecione Pix no seu app de internet ou de banco e cole o código.
           </p>
         </div>
 
         {/* Warning */}
-        <div className="mt-4 mb-8 rounded-2xl border border-[hsl(45,80%,70%)] bg-[hsl(45,80%,95%)] p-5">
+        <div className="mt-4 mb-10 rounded-2xl bg-[#fef9ee] border border-[#f5dea0] p-5 shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
           <h3 className="font-bold text-sm flex items-center gap-1.5 mb-2">
-            <AlertTriangle className="h-4 w-4 text-[hsl(45,80%,40%)]" /> Atenção:
+            <AlertTriangle className="h-4 w-4 text-[#c9952a]" /> Atenção:
           </h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Os bancos reforçaram a segurança do Pix e podem exibir avisos preventivos. Não se preocupe, sua transação está protegida.
