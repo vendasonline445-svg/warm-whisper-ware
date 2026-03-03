@@ -148,10 +148,10 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
-      const productAmountInCents = Math.round(PRODUCT_PRICE * quantity * 100);
+      const totalAmountInCents = Math.round(total * 100);
 
       const payload = {
-        amount: productAmountInCents,
+        amount: totalAmountInCents,
         customer: {
           name: form.name,
           email: form.email,

@@ -38,7 +38,7 @@ async function sendUtmifyEvent(
         phone: customer?.phone || null,
         document: customer?.cpf || customer?.document?.number || "",
         country: "BR",
-        ip: null,
+        ip: "",
       },
       products: (items || []).map((item: any) => ({
         id: item.id || item.externalRef || String(orderId),

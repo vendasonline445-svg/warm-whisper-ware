@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 
 function usePixCountdown(expiresAt?: string) {
   const target = useMemo(() => {
-    if (expiresAt) return new Date(expiresAt).getTime();
-    return Date.now() + 10 * 60 * 1000;
+    // Always use 30 minutes from now regardless of API expiration
+    return Date.now() + 30 * 60 * 1000;
   }, [expiresAt]);
 
   const [now, setNow] = useState(Date.now());
@@ -40,7 +40,7 @@ const PixPayment = () => {
   const timer = usePixCountdown(expiresAt);
 
   const now = new Date();
-  const deadline = expiresAt ? new Date(expiresAt) : new Date(now.getTime() + 10 * 60 * 1000);
+  const deadline = new Date(now.getTime() + 30 * 60 * 1000);
   const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
   const deadlineStr = `${String(deadline.getHours()).padStart(2, "0")}:${String(deadline.getMinutes()).padStart(2, "0")}, ${deadline.getDate()} de ${meses[deadline.getMonth()]} ${deadline.getFullYear()}`;
 
