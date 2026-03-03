@@ -24,7 +24,7 @@ async function sendUtmifyEvent(
 
     const utmifyData: any = {
       orderId: String(orderId),
-      platform: "SkalePay",
+      platform: "Hygros",
       paymentMethod: "pix",
       status: status,
       createdAt: now,
@@ -36,7 +36,7 @@ async function sendUtmifyEvent(
         name: customer?.name || "",
         email: customer?.email || "",
         phone: customer?.phone || null,
-        document: customer?.cpf || customer?.document?.number || "",
+        document: customer?.cpf || customer?.document || "",
         country: "BR",
         ip: "",
       },
@@ -102,93 +102,83 @@ Deno.serve(async (req) => {
       );
     }
 
-    const secretKey = Deno.env.get("SKALEPAY_SECRET_KEY");
+    const secretKey = Deno.env.get("HYGROS_SECRET_KEY");
     if (!secretKey) {
       return new Response(
-        JSON.stringify({ error: "SkalePay secret key not configured" }),
+        JSON.stringify({ error: "Hygros secret key not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const authToken = btoa(`${secretKey}:x`);
-
     // Parse tracking params from metadata for UTMify
     let trackingParams: Record<string, string | null> = {};
+    let parsedMeta: any = {};
     try {
-      const meta = typeof metadata === "string" ? JSON.parse(metadata) : metadata;
-      trackingParams = meta?.tracking || {};
+      parsedMeta = typeof metadata === "string" ? JSON.parse(metadata) : metadata;
+      trackingParams = parsedMeta?.tracking || {};
     } catch (_) {}
 
-    const body: Record<string, unknown> = {
+    // Build webhook URL
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const postbackUrl = `${supabaseUrl}/functions/v1/hygros-webhook`;
+
+    // Hygros API payload
+    const body = {
       amount,
-      paymentMethod: "pix",
+      paymentMethod: "PIX",
       customer: {
         name: customer.name,
         email: customer.email,
-        phone: customer.phone,
-        document: {
-          type: "cpf",
-          number: customer.cpf,
-        },
-        address: {
-          street: shipping?.address?.street || "",
-          streetNumber: shipping?.address?.streetNumber || "",
-          neighborhood: shipping?.address?.neighborhood || "",
-          city: shipping?.address?.city || "",
-          state: shipping?.address?.state || "",
-          zipCode: shipping?.address?.zipcode || shipping?.address?.zipCode || "",
-          country: "br",
-        },
+        phone: (customer.phone || "").replace(/\D/g, ""),
+        document: (customer.cpf || "").replace(/\D/g, ""),
       },
-      items,
+      shipping: {
+        street: shipping?.address?.street || "",
+        streetNumber: shipping?.address?.streetNumber || "",
+        neighborhood: shipping?.address?.neighborhood || "",
+        city: shipping?.address?.city || "",
+        state: shipping?.address?.state || "",
+        zipCode: shipping?.address?.zipcode || shipping?.address?.zipCode || "",
+      },
+      items: (items || []).map((item: any) => ({
+        title: item.title || "",
+        unitPrice: item.unitPrice || 0,
+        quantity: item.quantity || 1,
+        externalRef: item.id || item.externalRef || "",
+      })),
       pix: {
-        expiresInDays: 1,
+        expiresInMinutes: 30,
       },
-      metadata: metadata || "",
+      postbackUrl,
+      metadata: parsedMeta || {},
     };
 
-    if (shipping) {
-      body.shipping = {
-        name: shipping.name,
-        fee: shipping.fee,
-        address: {
-          street: shipping.address?.street || "",
-          streetNumber: shipping.address?.streetNumber || "",
-          neighborhood: shipping.address?.neighborhood || "",
-          city: shipping.address?.city || "",
-          state: shipping.address?.state || "",
-          zipCode: shipping.address?.zipcode || shipping.address?.zipCode || "",
-          country: "br",
-        },
-      };
-    }
+    console.log("Creating Hygros PIX transaction:", JSON.stringify(body));
 
-    console.log("Creating SkalePay PIX transaction:", JSON.stringify(body));
-
-    const response = await fetch("https://api.conta.skalepay.com.br/v1/transactions", {
+    const response = await fetch("https://api.gw.hygrospay.com.br/functions/v1/transactions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Basic ${authToken}`,
+        "Accept": "application/json",
+        "Authorization": secretKey,
       },
       body: JSON.stringify(body),
     });
 
     const data = await response.json();
 
-    console.log("SkalePay response status:", response.status);
-    console.log("SkalePay response:", JSON.stringify(data));
+    console.log("Hygros response status:", response.status);
+    console.log("Hygros response:", JSON.stringify(data));
 
     if (!response.ok) {
       return new Response(
-        JSON.stringify({ error: "SkalePay API error", details: data }),
+        JSON.stringify({ error: "Hygros API error", details: data }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Fire UTMify waiting_payment event using the SkalePay order ID + original checkout data
-    const orderId = data.id || data.tid || Date.now();
+    // Fire UTMify waiting_payment event
+    const orderId = data.id || Date.now();
     sendUtmifyEvent(orderId, customer, items, amount, trackingParams, "waiting_payment");
 
     return new Response(JSON.stringify(data), {

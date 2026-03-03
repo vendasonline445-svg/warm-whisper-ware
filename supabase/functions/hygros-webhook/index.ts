@@ -10,13 +10,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const data = await req.json();
-    console.log("SkalePay webhook received:", JSON.stringify(data));
+    const payload = await req.json();
+    console.log("Hygros webhook received:", JSON.stringify(payload));
 
-    const status = data.status || data.current_status;
+    // Hygros webhook structure: { id, type, objectId, data: { ... } }
+    const data = payload.data || payload;
+    const status = data.status;
 
     // Only process paid events
-    if (status !== "paid" && status !== "PAID" && status !== "approved" && status !== "APPROVED") {
+    if (status !== "paid") {
       console.log(`Status "${status}" ignored, not a paid event`);
       return new Response(JSON.stringify({ message: "Status ignored" }), {
         status: 200,
@@ -27,8 +29,8 @@ Deno.serve(async (req) => {
     const utmifyToken = Deno.env.get("UTMIFY_API_TOKEN");
     if (!utmifyToken) {
       console.log("UTMIFY_API_TOKEN not configured");
-      return new Response(JSON.stringify({ error: "UTMify token not configured" }), {
-        status: 500,
+      return new Response(JSON.stringify({ message: "No UTMify token" }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -44,8 +46,8 @@ Deno.serve(async (req) => {
 
     const utmifyData = {
       orderId: String(data.id),
-      platform: "SkalePay",
-      paymentMethod: "pix",
+      platform: "Hygros",
+      paymentMethod: data.paymentMethod?.toLowerCase() || "pix",
       status: "paid",
       createdAt: data.createdAt
         ? new Date(data.createdAt).toISOString().replace("T", " ").slice(0, 19)
@@ -58,12 +60,12 @@ Deno.serve(async (req) => {
         name: data.customer?.name || "",
         email: data.customer?.email || "",
         phone: data.customer?.phone || null,
-        document: data.customer?.document?.number || "",
+        document: data.customer?.document || "",
         country: "BR",
-        ip: null,
+        ip: "",
       },
       products: (data.items || []).map((item: any) => ({
-        id: item.externalRef || item.id || String(data.id),
+        id: item.externalRef || String(data.id),
         name: item.title || "",
         planId: null,
         planName: null,
@@ -85,7 +87,7 @@ Deno.serve(async (req) => {
       },
       commission: {
         totalPriceInCents: data.amount || 0,
-        gatewayFeeInCents: data.fee?.fixedAmount || 0,
+        gatewayFeeInCents: data.fee?.estimatedFee || 0,
         userCommissionInCents: data.fee?.netAmount || data.amount || 0,
       },
       isTest: false,
