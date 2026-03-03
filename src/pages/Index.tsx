@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { 
-  ShieldCheck, Briefcase, Layers, Footprints, Star, 
-  ChevronLeft, ChevronRight, ShoppingCart, Check, Truck, 
-  Award, Users, Timer
+import { useState, useEffect, useCallback } from "react";
+import {
+  Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
+  Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
+  ChevronDown, Store, Heart, Share2, MoreHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,33 +13,83 @@ import {
 } from "@/components/ui/accordion";
 
 const PRODUCT_ID = "mesa-dobravel-180x60";
-const PRODUCT_PRICE = 289.90;
+const PRICE = 87.60;
+const OLD_PRICE = 199.90;
+const DISCOUNT = 56;
 
-const heroImages = [
-  "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&h=600&fit=crop",
-  "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=800&h=600&fit=crop",
-  "https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=800&h=600&fit=crop",
+const productImages = [
+  "https://mesa-dobravel-oferta.lovable.app/assets/produto-2-DPO39cuV.webp",
+  "https://mesa-dobravel-oferta.lovable.app/assets/mesa-preta-detalhes-DZr1TaUa.png",
+  "https://mesa-dobravel-oferta.lovable.app/assets/produto-5-CRqamHyQ.webp",
+  "https://mesa-dobravel-oferta.lovable.app/assets/produto-1-CodPfocH.webp",
+  "https://mesa-dobravel-oferta.lovable.app/assets/produto-3-CLF4fNEr.webp",
+  "https://mesa-dobravel-oferta.lovable.app/assets/mesa-instalacao-DqBY8UsG.webp",
 ];
 
-const features = [
-  { icon: ShieldCheck, title: "Resistência", desc: "Suporta até 150kg com total segurança e estabilidade." },
-  { icon: Briefcase, title: "Portabilidade", desc: "Dobra e vira maleta com alça. Leve para qualquer lugar." },
-  { icon: Layers, title: "Material Premium", desc: "PEAD de alta densidade: resistente a impactos e intempéries." },
-  { icon: Footprints, title: "Antiderrapante", desc: "Pés emborrachados que não riscam e não escorregam." },
-];
+const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
 
-const testimonials = [
-  { name: "Carlos M.", text: "Perfeita para churrasco! Resiste a tudo e é fácil de guardar.", rating: 5, avatar: "CM" },
-  { name: "Ana Paula S.", text: "Uso em feiras e eventos. A melhor mesa dobrável que já tive.", rating: 5, avatar: "AP" },
-  { name: "Roberto L.", text: "Comprei 3 para o restaurante. Qualidade excelente pelo preço.", rating: 4, avatar: "RL" },
+const reviews = [
+  {
+    name: "Carla S.",
+    avatar: "https://mesa-dobravel-oferta.lovable.app/assets/avatar-carla-aeMpPbWr.png",
+    text: "A mesa é bem grande, boa demais! Espaçosa e super prática — montei em segundos e usei para o churrasco com a família toda. Muito resistente, suporta bastante peso sem tremer!",
+    rating: 5,
+    photos: [
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-carla-1-CU1UsLFJ.png",
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-carla-2-BrVkzVRE.png",
+    ],
+  },
+  {
+    name: "Patrícia F.",
+    avatar: "https://mesa-dobravel-oferta.lovable.app/assets/avatar-patricia-new-COpXt4yW.png",
+    text: "Ela é muito prática. Material bom, custo muito bom. Amei, pretendo comprar outra!",
+    rating: 5,
+    photos: [
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-patricia-1-BxwuYR10.png",
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-patricia-2-D97d3Dqg.png",
+    ],
+  },
+  {
+    name: "Raquel M.",
+    avatar: "https://mesa-dobravel-oferta.lovable.app/assets/avatar-raquel-BFyrtPYy.png",
+    text: "Ela é linda, bem resistente. Me surpreendi com a qualidade, vou usar muito! Chegou no dia certinho.",
+    rating: 5,
+    photos: [
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-raquel-1-BWV94PY6.png",
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-raquel-2-6JJykarJ.png",
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-raquel-3-BxbMK-1E.png",
+    ],
+  },
+  {
+    name: "Karine Porto",
+    avatar: "https://mesa-dobravel-oferta.lovable.app/assets/avatar-karine-BJKkhTJJ.png",
+    text: "Muito boa, bem reforçada. Veio bem embalada na caixa, sem avarias. Gostei muito da mesa!",
+    rating: 5,
+    photos: [
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-karine-1-DyFAGtlb.png",
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-karine-2-DGpHgBcM.png",
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-karine-3-V4KjEUPz.png",
+    ],
+  },
+  {
+    name: "Juliana P.",
+    avatar: "https://mesa-dobravel-oferta.lovable.app/assets/avatar-juliana-CgdpHBym.png",
+    text: "Adorei a minha compra! Chegou no prazo, veio bem embalada. A mesa é linda e muito resistente. Ideal para quem tem pouco espaço, ela é bem fácil para montar. Gosteiii muitoooooo! 😍",
+    rating: 5,
+    photos: [
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-juliana-1-5GEzRZ41.png",
+      "https://mesa-dobravel-oferta.lovable.app/assets/review-juliana-2-9iUjyThJ.png",
+    ],
+  },
 ];
 
 const faqs = [
-  { q: "Qual o prazo de entrega?", a: "Enviamos em até 2 dias úteis. O prazo varia de 3 a 10 dias úteis dependendo da região." },
-  { q: "Tem garantia?", a: "Sim! 12 meses de garantia contra defeitos de fabricação." },
-  { q: "O frete é grátis?", a: "Frete grátis para todo o Brasil em compras acima de R$ 199,90." },
-  { q: "Qual o peso da mesa?", a: "Apenas 12kg quando dobrada, fácil de transportar por uma pessoa." },
-  { q: "Posso usar ao ar livre?", a: "Sim! O material PEAD é resistente a sol, chuva e umidade." },
+  { q: "Qual o peso que a mesa suporta?", a: "A mesa suporta até 100kg de peso distribuído sobre o tampo, com total segurança e estabilidade." },
+  { q: "De que material é feita?", a: "Tampo em HDPE (plástico de alta densidade) e estrutura em aço tubular com pintura epóxi anticorrosiva." },
+  { q: "Como funciona o sistema de maleta?", a: "A mesa dobra ao meio e possui uma alça ergonômica, transformando-se em uma maleta compacta fácil de transportar." },
+  { q: "Posso usar ao ar livre na chuva?", a: "Sim! O material HDPE é resistente a sol, chuva e umidade. A estrutura possui pintura anticorrosiva." },
+  { q: "Qual o prazo de entrega?", a: "Receba em 5 a 8 dias úteis após confirmação do pagamento. Pedidos até 14h são despachados no mesmo dia." },
+  { q: "Tem garantia?", a: "Sim! 1 ano de garantia contra defeitos de fabricação." },
 ];
 
 const colorOptions = [
@@ -47,10 +97,32 @@ const colorOptions = [
   { id: "preto", name: "Preto Premium", hex: "#1A1A1A" },
 ];
 
+function useCountdown() {
+  const [time, setTime] = useState({ h: 2, m: 42, s: 52 });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime((prev) => {
+        let { h, m, s } = prev;
+        s--;
+        if (s < 0) { s = 59; m--; }
+        if (m < 0) { m = 59; h--; }
+        if (h < 0) return { h: 2, m: 59, s: 59 };
+        return { h, m, s };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return time;
+}
+
+const fmt = (n: number) => String(n).padStart(2, "0");
+
 const Index = () => {
   const [currentImage, setCurrentImage] = useState(0);
+  const [selectedSize, setSelectedSize] = useState("180x60cm");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const countdown = useCountdown();
 
   const openModal = () => {
     setSelectedColor(null);
@@ -62,7 +134,7 @@ const Index = () => {
     const form = document.createElement("form");
     form.method = "POST";
     form.action = "checkout.php";
-    const fields = { product_id: PRODUCT_ID, color: selectedColor, price: String(PRODUCT_PRICE) };
+    const fields = { product_id: PRODUCT_ID, color: selectedColor, price: String(PRICE), size: selectedSize };
     Object.entries(fields).forEach(([k, v]) => {
       const input = document.createElement("input");
       input.type = "hidden";
@@ -74,165 +146,319 @@ const Index = () => {
     form.submit();
   };
 
-  const nextImage = () => setCurrentImage((p) => (p + 1) % heroImages.length);
-  const prevImage = () => setCurrentImage((p) => (p - 1 + heroImages.length) % heroImages.length);
+  const nextImage = () => setCurrentImage((p) => (p + 1) % productImages.length);
+  const prevImage = () => setCurrentImage((p) => (p - 1 + productImages.length) % productImages.length);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-7 w-7 text-accent" />
-            <span className="text-xl font-extrabold tracking-tight text-foreground">MesaPro</span>
-          </div>
-          <Button onClick={openModal} className="bg-cta text-cta-foreground hover:bg-cta-hover font-semibold">
-            <ShoppingCart className="mr-2 h-4 w-4" /> Comprar Agora
-          </Button>
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      {/* Top bar */}
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-card px-4 py-3">
+        <X className="h-5 w-5 text-muted-foreground" />
+        <div className="flex items-center gap-4">
+          <Share2 className="h-5 w-5 text-muted-foreground" />
+          <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+          <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-primary py-16 md:py-24">
-        <div className="container grid gap-10 md:grid-cols-2 md:items-center">
-          <div className="space-y-6 text-primary-foreground">
-            <div className="inline-flex items-center gap-2 rounded-full bg-cta/20 px-4 py-1.5 text-sm font-medium text-cta-foreground">
-              <Timer className="h-4 w-4" /> Oferta por tempo limitado
-            </div>
-            <h1 className="text-4xl font-black leading-tight tracking-tight md:text-5xl lg:text-6xl">
-              Mesa Dobrável<br />Tipo Maleta
-            </h1>
-            <p className="text-lg text-primary-foreground/80 md:text-xl">
-              180×60cm · Suporta 150kg · Dobra em segundos e vira uma maleta portátil. A solução definitiva para eventos, feiras e churrascos.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Button onClick={openModal} size="lg" className="bg-cta text-cta-foreground hover:bg-cta-hover animate-pulse-glow text-lg font-bold px-8">
-                Garantir Oferta — R$ {PRODUCT_PRICE.toFixed(2).replace(".", ",")}
-              </Button>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-primary-foreground/70">
-              <span className="flex items-center gap-1"><Truck className="h-4 w-4" /> Frete Grátis</span>
-              <span className="flex items-center gap-1"><Award className="h-4 w-4" /> Garantia 12 meses</span>
-              <span className="flex items-center gap-1"><Users className="h-4 w-4" /> +2.000 vendidos</span>
-            </div>
-          </div>
-
-          {/* Carousel */}
-          <div className="relative mx-auto w-full max-w-lg">
-            <div className="overflow-hidden rounded-2xl shadow-2xl aspect-[4/3] bg-muted">
-              <img
-                src={heroImages[currentImage]}
-                alt={`Mesa dobrável imagem ${currentImage + 1}`}
-                className="h-full w-full object-cover transition-all duration-500"
-              />
-            </div>
-            <button onClick={prevImage} className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-card/80 p-2 shadow-lg hover:bg-card" aria-label="Imagem anterior">
+      <div className="container max-w-2xl">
+        {/* Product Gallery */}
+        <section className="relative bg-card">
+          <div className="relative aspect-square overflow-hidden">
+            <img
+              src={productImages[currentImage]}
+              alt="Mesa dobrável"
+              className="h-full w-full object-contain transition-all duration-300"
+            />
+            <button onClick={prevImage} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-card/70 p-1.5 shadow" aria-label="Anterior">
               <ChevronLeft className="h-5 w-5 text-foreground" />
             </button>
-            <button onClick={nextImage} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-card/80 p-2 shadow-lg hover:bg-card" aria-label="Próxima imagem">
+            <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-card/70 p-1.5 shadow" aria-label="Próxima">
               <ChevronRight className="h-5 w-5 text-foreground" />
             </button>
-            <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-              {heroImages.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentImage(i)}
-                  className={`h-2.5 w-2.5 rounded-full transition-all ${i === currentImage ? "bg-cta w-6" : "bg-card/60"}`}
-                  aria-label={`Ir para imagem ${i + 1}`}
-                />
-              ))}
+            <span className="absolute bottom-3 right-3 rounded-full bg-foreground/60 px-2.5 py-0.5 text-xs font-medium text-card">
+              {currentImage + 1}/{productImages.length}
+            </span>
+          </div>
+          {/* Thumbnails */}
+          <div className="flex gap-2 overflow-x-auto p-3">
+            {productImages.map((img, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentImage(i)}
+                className={`h-14 w-14 flex-shrink-0 overflow-hidden rounded-md border-2 transition-all ${
+                  i === currentImage ? "border-primary" : "border-transparent"
+                }`}
+              >
+                <img src={img} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Price Section */}
+        <section className="mt-2 rounded-lg bg-gradient-to-r from-primary to-cta-hover p-4 text-primary-foreground">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="h-4 w-4" />
+            <span className="text-sm font-bold uppercase tracking-wide">Oferta Relâmpago</span>
+            <div className="ml-auto flex items-center gap-1 rounded bg-foreground/20 px-2 py-0.5 text-sm font-mono font-bold">
+              <span>{fmt(countdown.h)}</span>:<span>{fmt(countdown.m)}</span>:<span>{fmt(countdown.s)}</span>
+            </div>
+          </div>
+          <div className="flex items-baseline gap-3">
+            <span className="text-4xl font-black">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
+            <span className="text-lg line-through opacity-70">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
+            <span className="rounded bg-foreground/20 px-2 py-0.5 text-sm font-bold">-{DISCOUNT}%</span>
+          </div>
+        </section>
+
+        {/* Installments */}
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-card p-3 text-sm">
+          <Package className="h-4 w-4 text-muted-foreground" />
+          <span>6x de <strong className="text-foreground">R$ 18,57</strong> sem juros no cartão</span>
+        </div>
+
+        {/* Coupon badge */}
+        <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-badge-green px-3 py-1 text-xs font-semibold text-badge-green-foreground">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Cupom Aplicado
+        </div>
+
+        {/* Title */}
+        <h1 className="mt-4 text-lg font-bold leading-tight text-foreground">
+          Mesa Dobrável Tipo Maleta Prática e Durável 180x60cm — Portátil, Resistente, Fácil de Montar e Guardar
+        </h1>
+
+        {/* Rating */}
+        <div className="mt-2 flex items-center gap-2 text-sm">
+          <Star className="h-4 w-4 fill-primary text-primary" />
+          <span className="font-bold">4.8</span>
+          <span className="text-muted-foreground">(207)</span>
+          <span className="text-muted-foreground">•</span>
+          <span className="text-muted-foreground">4.473 vendidos</span>
+        </div>
+        <p className="mt-1 text-xs font-medium text-primary">1.2K+ pessoas compraram nos últimos 3 dias</p>
+
+        {/* Shipping */}
+        <div className="mt-4 flex items-center gap-3 rounded-lg bg-card p-3">
+          <span className="rounded bg-badge-green px-2 py-0.5 text-xs font-bold text-badge-green-foreground">Frete grátis</span>
+          <div className="text-sm">
+            <span>Receba em <strong>5 - 8 dias úteis</strong></span>
+            <div className="text-xs text-muted-foreground">
+              Taxa de envio: <span className="line-through">R$ 29,90</span> <span className="font-semibold text-success">Grátis</span>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Features */}
-      <section className="py-16 md:py-24">
-        <div className="container">
-          <h2 className="mb-12 text-center text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
-            Por que escolher a <span className="text-accent">MesaPro</span>?
-          </h2>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((f) => (
-              <div key={f.title} className="group rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
-                  <f.icon className="h-6 w-6 text-accent" />
-                </div>
-                <h3 className="mb-2 text-lg font-bold text-card-foreground">{f.title}</h3>
-                <p className="text-sm text-muted-foreground">{f.desc}</p>
-              </div>
+        {/* Customer Protection */}
+        <div className="mt-3 rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-muted-foreground" />
+              <span className="font-semibold text-sm">Proteção do cliente</span>
+            </div>
+            <span className="text-xs font-bold text-success">100% Protegido</span>
+          </div>
+          <div className="space-y-2.5 text-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+              <span>Devolução gratuita em até 7 dias</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+              <span>Reembolso automático por danos</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+              <span>Pagamento seguro e criptografado</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+              <span>Cupom por atraso na entrega</span>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Sua compra é <strong>100% protegida</strong>. Garantimos devolução do valor integral caso o produto não corresponda à descrição.
+          </p>
+        </div>
+
+        {/* Size Selection */}
+        <div className="mt-4">
+          <p className="text-sm font-semibold mb-2">Tamanho<span className="text-muted-foreground font-normal ml-1">23 disponíveis</span></p>
+          <div className="flex flex-wrap gap-2">
+            {sizes.map((s) => (
+              <button
+                key={s}
+                onClick={() => setSelectedSize(s)}
+                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+                  selectedSize === s
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground hover:border-primary/50"
+                }`}
+              >
+                {s}
+              </button>
             ))}
           </div>
         </div>
-      </section>
 
-      {/* Social Proof */}
-      <section className="bg-secondary py-16 md:py-24">
-        <div className="container">
-          <h2 className="mb-12 text-center text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
-            O que nossos clientes dizem
-          </h2>
-          <div className="grid gap-6 md:grid-cols-3">
-            {testimonials.map((t) => (
-              <div key={t.name} className="rounded-xl border bg-card p-6 shadow-sm">
-                <div className="mb-4 flex gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className={`h-5 w-5 ${i < t.rating ? "fill-cta text-cta" : "text-muted"}`} />
-                  ))}
-                </div>
-                <p className="mb-4 text-sm italic text-muted-foreground">"{t.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                    {t.avatar}
+        {/* Reviews Section */}
+        <section className="mt-8">
+          <h2 className="text-lg font-bold mb-1">Avaliações dos clientes (207)</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-2xl font-black">4.8</span>
+            <span className="text-muted-foreground text-sm">/5</span>
+            <div className="flex gap-0.5 ml-1">
+              {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-primary text-primary" />)}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {reviews.map((r, idx) => (
+              <div key={idx} className="rounded-lg border bg-card p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <img src={r.avatar} alt={r.name} className="h-9 w-9 rounded-full object-cover" />
+                  <span className="font-semibold text-sm">{r.name}</span>
+                  <div className="ml-auto flex gap-0.5">
+                    {Array.from({ length: r.rating }).map((_, i) => (
+                      <Star key={i} className="h-3.5 w-3.5 fill-primary text-primary" />
+                    ))}
                   </div>
-                  <span className="font-semibold text-card-foreground">{t.name}</span>
                 </div>
+                <p className="text-sm text-foreground/90 leading-relaxed">{r.text}</p>
+                {r.photos.length > 0 && (
+                  <div className="mt-3 flex gap-2 overflow-x-auto">
+                    {r.photos.map((p, i) => (
+                      <img key={i} src={p} alt={`Foto ${i + 1}`} className="h-20 w-20 rounded-md object-cover flex-shrink-0" />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Banner */}
-      <section className="bg-primary py-12">
-        <div className="container text-center text-primary-foreground">
-          <h2 className="mb-4 text-3xl font-extrabold md:text-4xl">Pronto para transformar seus eventos?</h2>
-          <p className="mb-6 text-lg text-primary-foreground/80">Últimas unidades com frete grátis. Não perca!</p>
-          <Button onClick={openModal} size="lg" className="bg-cta text-cta-foreground hover:bg-cta-hover text-lg font-bold px-10 animate-pulse-glow">
-            Garantir Minha Mesa — R$ {PRODUCT_PRICE.toFixed(2).replace(".", ",")}
-          </Button>
-        </div>
-      </section>
+        {/* Store Info */}
+        <section className="mt-6 rounded-lg border bg-card p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm">ML</div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-sm">MesaLar</span>
+                <span className="rounded bg-badge-green px-1.5 py-0.5 text-[10px] font-semibold text-badge-green-foreground">Loja Verificada</span>
+              </div>
+              <p className="text-xs text-muted-foreground">• 706 produtos • 100% recomenda</p>
+            </div>
+            <button className="ml-auto rounded-full border px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/5">+ Seguir</button>
+          </div>
+          <div className="mt-3 flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Confiança:</span>
+            <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
+              <div className="h-full w-full rounded-full bg-success" />
+            </div>
+            <span className="font-bold text-success">100%</span>
+          </div>
+        </section>
 
-      {/* FAQ */}
-      <section className="py-16 md:py-24">
-        <div className="container max-w-2xl">
-          <h2 className="mb-10 text-center text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
-            Perguntas Frequentes
-          </h2>
+        {/* Product Description */}
+        <section className="mt-6">
+          <h2 className="text-lg font-bold mb-3">Descrição do produto</h2>
+          <div className="space-y-4 text-sm leading-relaxed text-foreground/90">
+            <p>
+              A <strong>Mesa Dobrável Tipo Maleta 180x60cm da MesaLar</strong> é 2 em 1: Mesa de apoio com a portabilidade de uma maleta. Você pode montar, usar e guardar em segundos, sem nenhuma ferramenta! A capacidade total de 180cm permite acomodar até 8 pessoas confortavelmente.
+            </p>
+            <p className="font-bold uppercase text-foreground">SAIBA MAIS SOBRE A MESA DOBRÁVEL TIPO MALETA:</p>
+            <p><strong>2 EM 1: MESA + MALETA:</strong> A família de Mesas Dobráveis MesaLar continua crescendo! O modelo Maleta alia a tecnologia de dobra ao espaço e versatilidade de uma mesa tradicional.</p>
+            <img src={productImages[0]} alt="Mesa dobrável" className="w-full rounded-lg" />
+            <p><strong>RESISTÊNCIA PROFISSIONAL:</strong> Com tampo em HDPE (plástico de alta densidade) e estrutura em aço tubular com pintura epóxi anticorrosiva, a mesa suporta até <strong>100kg de peso distribuído.</strong></p>
+            <p><strong>DESIGN INTELIGENTE:</strong> Cantos arredondados para maior segurança, pés antiderrapantes para estabilidade em qualquer superfície e alça ergonômica para transporte confortável.</p>
+            <img src={productImages[4]} alt="Detalhes técnicos" className="w-full rounded-lg" />
+            <p><strong>VERSÁTIL PARA TUDO:</strong> Camping, churrascos, feiras, eventos, festas, escritório temporário, área de trabalho, bazares, confraternizações — essa mesa se adapta a qualquer situação.</p>
+          </div>
+        </section>
+
+        {/* Specs */}
+        <section className="mt-6">
+          <h2 className="text-lg font-bold mb-3">Especificações Técnicas</h2>
+          <div className="rounded-lg border bg-card overflow-hidden">
+            {[
+              ["Dimensões aberta", "180 x 60 x 74 cm"],
+              ["Dimensões fechada", "90 x 60 x 9 cm"],
+              ["Peso", "≈ 8 kg"],
+              ["Material do tampo", "HDPE (plástico de alta densidade)"],
+              ["Estrutura", "Aço tubular c/ pintura epóxi"],
+              ["Capacidade", "Até 100 kg"],
+              ["Cor", "Branco / Cinza Escuro"],
+              ["Pés", "Antiderrapantes em borracha"],
+            ].map(([label, value], i) => (
+              <div key={i} className={`flex justify-between px-4 py-2.5 text-sm ${i % 2 === 0 ? "bg-muted/50" : ""}`}>
+                <span className="text-muted-foreground font-medium">{label}</span>
+                <span className="font-semibold text-right">{value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Shipping Details */}
+        <section className="mt-6">
+          <h2 className="text-lg font-bold mb-3">Envio e Entrega</h2>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3 rounded-lg border bg-card p-4">
+              <Truck className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">Frete Grátis para todo o Brasil!</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Economize R$ 29,90 no frete — promoção por tempo limitado.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 rounded-lg border bg-card p-4">
+              <Clock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">Prazo de entrega</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Receba em <strong>5 a 8 dias úteis</strong> após confirmação. Pedidos até 14h são despachados no mesmo dia.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 rounded-lg border bg-card p-4">
+              <Shield className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">Entrega garantida</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Entrega garantida e segurada pelos Correios®. Em caso de extravio ou dano, reenviamos ou devolvemos o valor integral.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className="mt-6 mb-8">
+          <h2 className="text-lg font-bold mb-3">Perguntas Frequentes</h2>
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, i) => (
               <AccordionItem key={i} value={`faq-${i}`}>
-                <AccordionTrigger className="text-left font-semibold">{faq.q}</AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">{faq.a}</AccordionContent>
+                <AccordionTrigger className="text-left text-sm font-semibold">{faq.q}</AccordionTrigger>
+                <AccordionContent className="text-sm text-muted-foreground">{faq.a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      {/* Footer */}
-      <footer className="border-t bg-card py-8">
-        <div className="container text-center text-sm text-muted-foreground">
-          <p>© 2026 MesaPro. Todos os direitos reservados.</p>
-          <p className="mt-1">Mesa Dobrável Tipo Maleta 180×60cm</p>
+      {/* Sticky Bottom Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card px-4 py-3 flex items-center gap-3 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
+        <div className="flex items-center gap-4">
+          <button className="flex flex-col items-center text-[10px] text-muted-foreground">
+            <Store className="h-5 w-5" />
+            Loja
+          </button>
+          <button className="flex flex-col items-center text-[10px] text-muted-foreground">
+            <Heart className="h-5 w-5" />
+            Chat
+          </button>
         </div>
-      </footer>
-
-      {/* Sticky Mobile CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 p-3 backdrop-blur md:hidden">
-        <Button onClick={openModal} className="w-full bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-base py-3 h-auto">
-          <ShoppingCart className="mr-2 h-5 w-5" /> Comprar Agora — R$ {PRODUCT_PRICE.toFixed(2).replace(".", ",")}
+        <button onClick={openModal} className="flex items-center gap-1.5 rounded-lg border border-primary px-4 py-2.5 text-sm font-semibold text-primary">
+          <ShoppingCart className="h-4 w-4" />
+          Adicionar ao carrinho
+        </button>
+        <Button onClick={openModal} className="flex-1 bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-sm py-2.5 h-auto rounded-lg">
+          COMPRAR AGORA
         </Button>
       </div>
 
@@ -240,44 +466,45 @@ const Index = () => {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Escolha a cor da sua mesa</DialogTitle>
-            <DialogDescription>Selecione a cor desejada para finalizar a compra.</DialogDescription>
+            <DialogTitle className="text-lg font-bold">Escolha a cor</DialogTitle>
+            <DialogDescription>Selecione a cor desejada para finalizar.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 py-4">
+          <div className="grid gap-3 py-3">
             {colorOptions.map((color) => (
               <button
                 key={color.id}
                 onClick={() => setSelectedColor(color.id)}
                 className={`flex items-center gap-4 rounded-lg border-2 p-4 transition-all ${
                   selectedColor === color.id
-                    ? "border-accent bg-accent/5 shadow-md"
-                    : "border-border hover:border-accent/50"
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border hover:border-primary/40"
                 }`}
               >
-                <div
-                  className="h-12 w-12 rounded-lg border shadow-inner"
-                  style={{ backgroundColor: color.hex }}
-                />
+                <div className="h-12 w-12 rounded-lg border shadow-inner" style={{ backgroundColor: color.hex }} />
                 <div className="flex-1 text-left">
                   <p className="font-semibold text-card-foreground">{color.name}</p>
-                  <p className="flex items-center gap-1 text-sm text-success">
+                  <p className="flex items-center gap-1 text-xs text-success">
                     <Check className="h-3.5 w-3.5" /> Em Estoque
                   </p>
                 </div>
                 {selectedColor === color.id && (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-accent">
-                    <Check className="h-4 w-4 text-accent-foreground" />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
+                    <Check className="h-4 w-4 text-primary-foreground" />
                   </div>
                 )}
               </button>
             ))}
           </div>
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="text-2xl font-black text-price">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
+            <span className="text-sm line-through text-price-old">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
+          </div>
           <Button
             onClick={handleCheckout}
             disabled={!selectedColor}
-            className="w-full bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-base py-3 h-auto disabled:opacity-40"
+            className="w-full bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-base py-3 h-auto disabled:opacity-40 rounded-lg"
           >
-            Finalizar Compra — R$ {PRODUCT_PRICE.toFixed(2).replace(".", ",")}
+            Finalizar Compra
           </Button>
         </DialogContent>
       </Dialog>
