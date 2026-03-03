@@ -19,17 +19,16 @@ const OLD_PRICE = 199.90;
 const DISCOUNT = 56;
 
 const productImages = [
-  "https://mesa-dobravel-oferta.lovable.app/assets/produto-2-DPO39cuV.webp",
-  "https://mesa-dobravel-oferta.lovable.app/assets/mesa-preta-detalhes-DZr1TaUa.png",
-  "https://mesa-dobravel-oferta.lovable.app/assets/produto-5-CRqamHyQ.webp",
-  "https://mesa-dobravel-oferta.lovable.app/assets/produto-1-CodPfocH.webp",
-  "https://mesa-dobravel-oferta.lovable.app/assets/produto-3-CLF4fNEr.webp",
-  "https://mesa-dobravel-oferta.lovable.app/assets/mesa-instalacao-DqBY8UsG.webp",
+  "/images/produto-2.webp",
+  "/images/mesa-preta-detalhes.png",
+  "/images/produto-5.webp",
+  "/images/produto-1.webp",
+  "/images/produto-3.webp",
 ];
 
 const colorImages = {
-  branca: "https://mesa-dobravel-oferta.lovable.app/assets/produto-1-CodPfocH.webp",
-  preta: "https://mesa-dobravel-oferta.lovable.app/assets/mesa-preta-detalhes-DZr1TaUa.png",
+  branca: "/images/produto-1.webp",
+  preta: "/images/mesa-preta-detalhes.png",
 };
 
 const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
