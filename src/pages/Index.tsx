@@ -46,14 +46,14 @@ const reviews = [
     avatar: "",
     text: "Ela é muito prática. Material bom, custo muito bom. Amei, pretendo comprar outra!",
     rating: 5,
-    photos: ["/images/produto-3.webp", "/images/produto-5.webp"],
+    photos: ["/images/review-patricia-1.png", "/images/review-patricia-2.png"],
   },
   {
     name: "Raquel M.",
     avatar: "",
     text: "Ela é linda, bem resistente. Me surpreendi com a qualidade, vou usar muito! Chegou no dia certinho.",
     rating: 5,
-    photos: ["/images/mesa-preta-detalhes.png", "/images/produto-1.webp", "/images/produto-3.webp"],
+    photos: ["/images/review-raquel-1.png", "/images/review-raquel-2.png", "/images/review-raquel-3.png"],
   },
   {
     name: "Karine Porto",
