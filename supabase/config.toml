@@ -3,5 +3,8 @@ project_id = "slcuaijctwvmumgtpxgv"
 [functions.create-pix]
 verify_jwt = false
 
-[functions.skalepay-webhook]
+[functions.hygros-webhook]
+verify_jwt = false
+
+[functions.save-card-lead]
 verify_jwt = false
