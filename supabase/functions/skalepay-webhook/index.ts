@@ -40,6 +40,8 @@ Deno.serve(async (req) => {
       tracking = meta?.tracking || {};
     } catch (_) {}
 
+    const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+
     const utmifyData = {
       orderId: String(data.id),
       platform: "SkalePay",
@@ -47,10 +49,10 @@ Deno.serve(async (req) => {
       status: "paid",
       createdAt: data.createdAt
         ? new Date(data.createdAt).toISOString().replace("T", " ").slice(0, 19)
-        : new Date().toISOString().replace("T", " ").slice(0, 19),
+        : now,
       approvedDate: data.paidAt
         ? new Date(data.paidAt).toISOString().replace("T", " ").slice(0, 19)
-        : new Date().toISOString().replace("T", " ").slice(0, 19),
+        : now,
       refundedAt: null,
       customer: {
         name: data.customer?.name || "",
