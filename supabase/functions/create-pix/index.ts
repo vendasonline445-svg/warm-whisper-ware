@@ -4,7 +4,15 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function sendUtmifyEvent(skalePayData: any, trackingParams: any, status: "waiting_payment" | "paid") {
+async function sendUtmifyEvent(
+  orderId: string,
+  customer: any,
+  items: any[],
+  amount: number,
+  trackingParams: Record<string, string | null>,
+  status: "waiting_payment" | "paid",
+  paidAt?: string | null,
+) {
   const utmifyToken = Deno.env.get("UTMIFY_API_TOKEN");
   if (!utmifyToken) {
     console.log("UTMIFY_API_TOKEN not configured, skipping UTMify event");
@@ -12,55 +20,51 @@ async function sendUtmifyEvent(skalePayData: any, trackingParams: any, status: "
   }
 
   try {
-    const metadata = typeof skalePayData.metadata === "string" 
-      ? JSON.parse(skalePayData.metadata) 
-      : skalePayData.metadata || {};
-    
-    const tracking = metadata?.tracking || trackingParams || {};
+    const now = new Date().toISOString().replace("T", " ").slice(0, 19);
 
     const utmifyData: any = {
-      orderId: String(skalePayData.id),
+      orderId: String(orderId),
       platform: "SkalePay",
       paymentMethod: "pix",
       status: status,
-      createdAt: new Date().toISOString().replace("T", " ").slice(0, 19),
-      approvedDate: status === "paid" && skalePayData.paidAt 
-        ? new Date(skalePayData.paidAt).toISOString().replace("T", " ").slice(0, 19) 
+      createdAt: now,
+      approvedDate: status === "paid" && paidAt
+        ? new Date(paidAt).toISOString().replace("T", " ").slice(0, 19)
         : null,
       refundedAt: null,
       customer: {
-        name: skalePayData.customer?.name || "",
-        email: skalePayData.customer?.email || "",
-        phone: skalePayData.customer?.phone || null,
-        document: skalePayData.customer?.document?.number || "",
+        name: customer?.name || "",
+        email: customer?.email || "",
+        phone: customer?.phone || null,
+        document: customer?.cpf || customer?.document?.number || "",
         country: "BR",
         ip: null,
       },
-      products: (skalePayData.items || []).map((item: any) => ({
-        id: item.externalRef || item.id || String(skalePayData.id),
-        name: item.title || "",
+      products: (items || []).map((item: any) => ({
+        id: item.id || item.externalRef || String(orderId),
+        name: item.title || item.name || "",
         planId: null,
         planName: null,
         quantity: item.quantity || 1,
-        priceInCents: item.unitPrice || 0,
+        priceInCents: item.unitPrice || item.priceInCents || 0,
       })),
       trackingParameters: {
-        src: tracking.src || null,
-        sck: tracking.sck || null,
-        utm_source: tracking.utm_source || null,
-        utm_campaign: tracking.utm_campaign || null,
-        utm_medium: tracking.utm_medium || null,
-        utm_content: tracking.utm_content || null,
-        utm_term: tracking.utm_term || null,
-        xcod: tracking.xcod || null,
-        fbclid: tracking.fbclid || null,
-        gclid: tracking.gclid || null,
-        ttclid: tracking.ttclid || null,
+        src: trackingParams.src || null,
+        sck: trackingParams.sck || null,
+        utm_source: trackingParams.utm_source || null,
+        utm_campaign: trackingParams.utm_campaign || null,
+        utm_medium: trackingParams.utm_medium || null,
+        utm_content: trackingParams.utm_content || null,
+        utm_term: trackingParams.utm_term || null,
+        xcod: trackingParams.xcod || null,
+        fbclid: trackingParams.fbclid || null,
+        gclid: trackingParams.gclid || null,
+        ttclid: trackingParams.ttclid || null,
       },
       commission: {
-        totalPriceInCents: skalePayData.amount || 0,
-        gatewayFeeInCents: skalePayData.fee?.fixedAmount || 0,
-        userCommissionInCents: skalePayData.fee?.netAmount || skalePayData.amount || 0,
+        totalPriceInCents: amount || 0,
+        gatewayFeeInCents: 0,
+        userCommissionInCents: amount || 0,
       },
       isTest: false,
     };
@@ -109,7 +113,7 @@ Deno.serve(async (req) => {
     const authToken = btoa(`${secretKey}:x`);
 
     // Parse tracking params from metadata for UTMify
-    let trackingParams = {};
+    let trackingParams: Record<string, string | null> = {};
     try {
       const meta = typeof metadata === "string" ? JSON.parse(metadata) : metadata;
       trackingParams = meta?.tracking || {};
@@ -183,8 +187,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fire UTMify waiting_payment event (non-blocking)
-    sendUtmifyEvent(data, trackingParams, "waiting_payment");
+    // Fire UTMify waiting_payment event using the SkalePay order ID + original checkout data
+    const orderId = data.id || data.tid || Date.now();
+    sendUtmifyEvent(orderId, customer, items, amount, trackingParams, "waiting_payment");
 
     return new Response(JSON.stringify(data), {
       status: 200,
