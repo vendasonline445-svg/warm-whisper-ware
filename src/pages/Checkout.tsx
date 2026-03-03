@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, MapPin, Star, Truck, Shield, Minus, Plus, ChevronRight, Copy
+  ArrowLeft, MapPin, Star, Truck, Shield, Minus, Plus, ChevronRight, Copy, Check, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ const Checkout = () => {
   const [quantity, setQuantity] = useState(1);
   const [shipping, setShipping] = useState("padrao");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [addressOpen, setAddressOpen] = useState(true);
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", cep: "",
@@ -100,6 +101,15 @@ const Checkout = () => {
       setCepLoading(false);
     }
   };
+
+  const isAddressComplete = form.cep && form.uf && form.cidade && form.bairro && form.endereco && form.numero;
+
+  // Auto-collapse address when all address fields are filled
+  useEffect(() => {
+    if (isAddressComplete && form.name && form.phone && form.email && form.cpf.replace(/\D/g, "").length === 11) {
+      setAddressOpen(false);
+    }
+  }, [form.numero, form.cpf]);
 
   const isFormValid = form.name && form.phone && form.email && form.cep &&
     form.uf && form.cidade && form.bairro && form.endereco &&
@@ -195,16 +205,26 @@ const Checkout = () => {
       </header>
 
       <div className="mx-auto max-w-[720px] px-4">
-        {/* Address Section */}
-        <div className="mt-4 flex items-center justify-between">
+        {/* Address Section - Collapsible */}
+        <button
+          onClick={() => setAddressOpen((v) => !v)}
+          className="mt-4 w-full flex items-center justify-between"
+        >
           <div className="flex items-center gap-2 text-sm font-semibold">
             <MapPin className="h-4 w-4 text-muted-foreground" />
             Endereço de envio
           </div>
-          <span className="text-xs font-semibold text-cta cursor-pointer">+ Adicionar endereço</span>
-        </div>
+          {isAddressComplete ? (
+            <span className="flex items-center gap-1 text-xs text-success font-semibold">
+              <Check className="h-3.5 w-3.5" /> {form.endereco.length > 20 ? form.endereco.slice(0, 20) + "..." : form.endereco}
+            </span>
+          ) : (
+            <span className="text-xs font-semibold text-cta">+ Adicionar endereço</span>
+          )}
+        </button>
 
         {/* Form */}
+        {addressOpen && (
         <div className="mt-4 space-y-3">
           <Input
             placeholder="Nome completo"
@@ -295,6 +315,7 @@ const Checkout = () => {
             className="rounded-lg border-border h-12 text-sm"
           />
         </div>
+        )}
 
         {/* Divider dashed */}
         <div className="mt-6 border-t-2 border-dashed border-success" />
