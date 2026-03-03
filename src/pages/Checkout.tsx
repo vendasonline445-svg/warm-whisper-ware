@@ -104,12 +104,12 @@ const Checkout = () => {
 
   const isAddressComplete = form.cep && form.uf && form.cidade && form.bairro && form.endereco && form.numero;
 
-  // Auto-collapse address when all address fields are filled
+  // Auto-collapse address when number is filled (address is complete)
   useEffect(() => {
-    if (isAddressComplete && form.name && form.phone && form.email && form.cpf.replace(/\D/g, "").length === 11) {
+    if (isAddressComplete) {
       setAddressOpen(false);
     }
-  }, [form.numero, form.cpf]);
+  }, [form.numero, isAddressComplete]);
 
   const isFormValid = form.name && form.phone && form.email && form.cep &&
     form.uf && form.cidade && form.bairro && form.endereco &&
@@ -163,9 +163,10 @@ const Checkout = () => {
         body: payload,
       });
 
-      if (error || !data) {
+      if (error || !data || data?.error) {
+        const errMsg = data?.details?.message || data?.error || "Tente novamente.";
         console.error("Edge function error:", error, data);
-        toast({ title: "Erro ao gerar PIX", description: "Tente novamente.", variant: "destructive" });
+        toast({ title: "Erro ao gerar PIX", description: typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg), variant: "destructive" });
         setIsSubmitting(false);
         return;
       }
