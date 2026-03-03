@@ -155,20 +155,32 @@ Deno.serve(async (req) => {
 
     console.log("Creating Hygros PIX transaction:", JSON.stringify(body));
 
+    const companyId = Deno.env.get("HYGROS_COMPANY_ID") || "";
+    
     const response = await fetch("https://api.gw.hygrospay.com.br/functions/v1/transactions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
         "Authorization": secretKey,
+        "apikey": secretKey,
       },
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
-
+    const resText = await response.text();
     console.log("Hygros response status:", response.status);
-    console.log("Hygros response:", JSON.stringify(data));
+    console.log("Hygros response body:", resText);
+
+    let data;
+    try {
+      data = JSON.parse(resText);
+    } catch (_) {
+      return new Response(
+        JSON.stringify({ error: "Invalid response from payment gateway", details: resText }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!response.ok) {
       return new Response(
