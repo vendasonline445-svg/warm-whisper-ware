@@ -304,22 +304,28 @@ const Index = () => {
           {/* Size Selection */}
           <div className="mt-5">
             <p className="text-sm font-semibold mb-2">
-              Tamanho<span className="text-muted-foreground font-normal ml-1">23 disponíveis</span>
+              Tamanho<span className="text-muted-foreground font-normal ml-1">1 disponível</span>
             </p>
             <div className="flex flex-wrap gap-2">
-              {sizes.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSelectedSize(s)}
-                  className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
-                    selectedSize === s
-                      ? "border-foreground bg-foreground text-card"
-                      : "border-border text-foreground hover:border-foreground/40"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+              {sizes.map((s) => {
+                const available = s === "180x60cm";
+                return (
+                  <button
+                    key={s}
+                    onClick={() => available && setSelectedSize(s)}
+                    disabled={!available}
+                    className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+                      selectedSize === s
+                        ? "border-primary bg-primary/10 text-primary"
+                        : available
+                          ? "border-border text-foreground hover:border-foreground/40"
+                          : "border-border/50 text-muted-foreground/50 cursor-not-allowed"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
