@@ -7,7 +7,7 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "1rem",
+      padding: "0px",
       screens: {
         "2xl": "720px",
       },
@@ -66,6 +66,11 @@ export default {
         "badge-green": {
           DEFAULT: "hsl(var(--badge-green))",
           foreground: "hsl(var(--badge-green-foreground))",
+        },
+        coupon: {
+          bg: "hsl(var(--coupon-bg))",
+          border: "hsl(var(--coupon-border))",
+          text: "hsl(var(--coupon-text))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
