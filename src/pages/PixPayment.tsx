@@ -1,53 +1,61 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const PIX_CODE = "00020101021226940014br.gov.bcb.pix2572qrs.payhubr.com.br/v2/cobf85d3a1b-4e5c-4d32-bf2d-c83f7a4e8d9252040000530398654058760.005802BR5925MESALAR COMERCIO LTDA6008SAO PAULO62070503***63041B2F";
+function usePixCountdown(expiresAt?: string) {
+  const target = useMemo(() => {
+    if (expiresAt) return new Date(expiresAt).getTime();
+    return Date.now() + 10 * 60 * 1000;
+  }, [expiresAt]);
 
-function usePixCountdown() {
-  const [seconds, setSeconds] = useState(600); // 10 min
+  const [now, setNow] = useState(Date.now());
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSeconds((s) => (s <= 0 ? 0 : s - 1));
-    }, 1000);
+    const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
+
+  const diff = Math.max(0, Math.floor((target - now) / 1000));
+  const m = Math.floor(diff / 60);
+  const s = diff % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}:00`;
 }
 
-// Simple QR Code generator using canvas
-const QRCodeDisplay = ({ value }: { value: string }) => {
-  return (
-    <div className="flex flex-col items-center">
-      <img
-        src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(value)}`}
-        alt="QR Code PIX"
-        className="w-56 h-56"
-      />
-    </div>
-  );
-};
-
 const PixPayment = () => {
   const navigate = useNavigate();
-  const timer = usePixCountdown();
   const [copied, setCopied] = useState(false);
 
+  // Get data from sessionStorage
+  const pixData = JSON.parse(sessionStorage.getItem("pixData") || "{}");
   const orderData = JSON.parse(sessionStorage.getItem("orderData") || "{}");
-  const total = orderData?.product?.total || 87.60;
+
+  // Extract PIX info from SkalePay response
+  const pixInfo = pixData?.pix || pixData?.pixQrCode || {};
+  const qrCode = pixInfo?.qrcode || pixInfo?.qr_code || pixData?.pix_qr_code || "";
+  const pixCode = pixInfo?.qrcode || pixInfo?.qr_code || pixData?.pix_qr_code || "";
+
+  const total = orderData?.product?.total || pixData?.amount / 100 || 87.60;
+  const expiresAt = pixInfo?.expiresAt || pixInfo?.expires_at || pixData?.date_expiration;
+
+  const timer = usePixCountdown(expiresAt);
 
   const now = new Date();
-  const deadline = new Date(now.getTime() + 10 * 60 * 1000);
+  const deadline = expiresAt ? new Date(expiresAt) : new Date(now.getTime() + 10 * 60 * 1000);
   const deadlineStr = `${String(deadline.getHours()).padStart(2, "0")}:${String(deadline.getMinutes()).padStart(2, "0")}, ${deadline.getDate()} de ${["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][deadline.getMonth()]} ${deadline.getFullYear()}`;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(PIX_CODE);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (pixCode) {
+      navigator.clipboard.writeText(pixCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
+
+  // QR code image URL
+  const qrImageUrl = qrCode
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrCode)}`
+    : "";
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,15 +96,24 @@ const PixPayment = () => {
           </div>
 
           <div className="flex justify-center mb-4">
-            <QRCodeDisplay value={PIX_CODE} />
+            {qrImageUrl ? (
+              <img src={qrImageUrl} alt="QR Code PIX" className="w-56 h-56" />
+            ) : (
+              <div className="w-56 h-56 flex items-center justify-center bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Gerando QR Code...</p>
+              </div>
+            )}
           </div>
 
-          <p className="text-xs font-mono text-foreground leading-relaxed break-all mb-4">
-            {PIX_CODE.slice(0, 50)}...
-          </p>
+          {pixCode && (
+            <p className="text-xs font-mono text-foreground leading-relaxed break-all mb-4">
+              {pixCode.length > 60 ? pixCode.slice(0, 60) + "..." : pixCode}
+            </p>
+          )}
 
           <Button
             onClick={handleCopy}
+            disabled={!pixCode}
             className="w-full bg-[hsl(350,55%,65%)] hover:bg-[hsl(350,55%,58%)] text-card font-bold text-base py-3.5 h-auto rounded-2xl"
           >
             <Copy className="mr-2 h-4 w-4" />
