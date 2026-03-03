@@ -157,13 +157,15 @@ Deno.serve(async (req) => {
 
     const companyId = Deno.env.get("HYGROS_COMPANY_ID") || "";
     
+    // Hygros uses Basic Auth: base64(secretKey:companyId)
+    const credentials = btoa(`${secretKey}:${companyId}`);
+    
     const response = await fetch("https://api.gw.hygrospay.com.br/functions/v1/transactions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "Authorization": secretKey,
-        "apikey": secretKey,
+        "Authorization": `Basic ${credentials}`,
       },
       body: JSON.stringify(body),
     });
