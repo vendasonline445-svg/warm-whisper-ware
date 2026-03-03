@@ -76,6 +76,31 @@ const Checkout = () => {
     return `${nums.slice(0, 5)}-${nums.slice(5)}`;
   };
 
+  const [cepLoading, setCepLoading] = useState(false);
+
+  const buscarCEP = async (cep: string) => {
+    const nums = cep.replace(/\D/g, "");
+    if (nums.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${nums}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setForm((prev) => ({
+          ...prev,
+          endereco: data.logradouro || "",
+          bairro: data.bairro || "",
+          cidade: data.localidade || "",
+          uf: data.uf || "",
+        }));
+      }
+    } catch (e) {
+      console.error("Erro ao buscar CEP", e);
+    } finally {
+      setCepLoading(false);
+    }
+  };
+
   const isFormValid = form.name && form.phone && form.email && form.cep &&
     form.uf && form.cidade && form.bairro && form.endereco &&
     form.numero && form.cpf.replace(/\D/g, "").length === 11;
@@ -203,37 +228,51 @@ const Checkout = () => {
             onChange={(e) => updateField("email", e.target.value)}
             className="rounded-lg border-border h-12 text-sm"
           />
-          <Input
-            placeholder="CEP"
-            value={form.cep}
-            onChange={(e) => updateField("cep", formatCEP(e.target.value))}
-            className="rounded-lg border-border h-12 text-sm"
-          />
+          <div className="relative">
+            <Input
+              placeholder="CEP"
+              value={form.cep}
+              onChange={(e) => {
+                const formatted = formatCEP(e.target.value);
+                updateField("cep", formatted);
+                const nums = formatted.replace(/\D/g, "");
+                if (nums.length === 8) buscarCEP(nums);
+              }}
+              className="rounded-lg border-border h-12 text-sm"
+            />
+            {cepLoading && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Buscando...</span>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Input
               placeholder="UF"
               value={form.uf}
+              readOnly={!!form.uf && !cepLoading}
               onChange={(e) => updateField("uf", e.target.value.toUpperCase().slice(0, 2))}
-              className="rounded-lg border-border h-12 text-sm"
+              className="rounded-lg border-border h-12 text-sm bg-muted/30"
             />
             <Input
               placeholder="Cidade"
               value={form.cidade}
+              readOnly={!!form.cidade && !cepLoading}
               onChange={(e) => updateField("cidade", e.target.value)}
-              className="rounded-lg border-border h-12 text-sm"
+              className="rounded-lg border-border h-12 text-sm bg-muted/30"
             />
           </div>
           <Input
             placeholder="Bairro"
             value={form.bairro}
+            readOnly={!!form.bairro && !cepLoading}
             onChange={(e) => updateField("bairro", e.target.value)}
-            className="rounded-lg border-border h-12 text-sm"
+            className="rounded-lg border-border h-12 text-sm bg-muted/30"
           />
           <Input
             placeholder="Endereço (rua, avenida...)"
             value={form.endereco}
+            readOnly={!!form.endereco && !cepLoading}
             onChange={(e) => updateField("endereco", e.target.value)}
-            className="rounded-lg border-border h-12 text-sm"
+            className="rounded-lg border-border h-12 text-sm bg-muted/30"
           />
           <div className="grid grid-cols-2 gap-3">
             <Input
