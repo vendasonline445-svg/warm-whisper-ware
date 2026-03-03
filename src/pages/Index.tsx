@@ -39,7 +39,7 @@ const reviews = [
     avatar: "",
     text: "A mesa é bem grande, boa demais! Espaçosa e super prática — montei em segundos e usei para o churrasco com a família toda. Muito resistente, suporta bastante peso sem tremer!",
     rating: 5,
-    photos: ["/images/produto-1.webp", "/images/produto-2.webp"],
+    photos: ["/images/review-carla-1.png", "/images/review-carla-2.png"],
   },
   {
     name: "Patrícia F.",
@@ -60,14 +60,14 @@ const reviews = [
     avatar: "",
     text: "Muito boa, bem reforçada. Veio bem embalada na caixa, sem avarias. Gostei muito da mesa!",
     rating: 5,
-    photos: ["/images/produto-2.webp", "/images/produto-5.webp", "/images/mesa-preta-detalhes.png"],
+    photos: ["/images/review-karine-1.png"],
   },
   {
     name: "Juliana P.",
     avatar: "",
     text: "Adorei a minha compra! Chegou no prazo, veio bem embalada. A mesa é linda e muito resistente. Ideal para quem tem pouco espaço, ela é bem fácil para montar. Gosteiii muitoooooo! 😍",
     rating: 5,
-    photos: ["/images/produto-1.webp", "/images/produto-5.webp"],
+    photos: ["/images/review-juliana-1.png", "/images/review-juliana-2.png"],
   },
 ];
 
