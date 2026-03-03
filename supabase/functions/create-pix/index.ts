@@ -1,5 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -29,11 +27,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Basic auth: secret_key:x -> base64
     const authToken = btoa(`${secretKey}:x`);
 
-    const body = {
-      amount, // in cents
+    const body: Record<string, unknown> = {
+      amount,
       paymentMethod: "pix",
       customer: {
         name: customer.name,
@@ -43,17 +40,37 @@ Deno.serve(async (req) => {
           type: "cpf",
           number: customer.cpf,
         },
+        address: {
+          street: shipping?.address?.street || "",
+          streetNumber: shipping?.address?.streetNumber || "",
+          neighborhood: shipping?.address?.neighborhood || "",
+          city: shipping?.address?.city || "",
+          state: shipping?.address?.state || "",
+          zipCode: shipping?.address?.zipcode || shipping?.address?.zipCode || "",
+          country: "br",
+        },
       },
       items,
       pix: {
         expiresInDays: 1,
       },
       metadata: metadata || "",
-      postbackUrl: metadata?.postbackUrl || undefined,
     };
 
     if (shipping) {
-      (body as any).shipping = shipping;
+      body.shipping = {
+        name: shipping.name,
+        fee: shipping.fee,
+        address: {
+          street: shipping.address?.street || "",
+          streetNumber: shipping.address?.streetNumber || "",
+          neighborhood: shipping.address?.neighborhood || "",
+          city: shipping.address?.city || "",
+          state: shipping.address?.state || "",
+          zipCode: shipping.address?.zipcode || shipping.address?.zipCode || "",
+          country: "br",
+        },
+      };
     }
 
     console.log("Creating SkalePay PIX transaction:", JSON.stringify(body));
