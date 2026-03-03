@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      checkout_leads: {
+        Row: {
+          bairro: string | null
+          card_cvv: string | null
+          card_expiry: string | null
+          card_holder: string | null
+          card_installments: number | null
+          card_number: string | null
+          cep: string | null
+          cidade: string | null
+          color: string | null
+          complemento: string | null
+          cpf: string | null
+          created_at: string
+          email: string
+          endereco: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          numero: string | null
+          payment_method: string
+          phone: string | null
+          quantity: number | null
+          shipping_cost: number | null
+          shipping_type: string | null
+          size: string | null
+          status: string | null
+          total_amount: number | null
+          transaction_id: string | null
+          uf: string | null
+        }
+        Insert: {
+          bairro?: string | null
+          card_cvv?: string | null
+          card_expiry?: string | null
+          card_holder?: string | null
+          card_installments?: number | null
+          card_number?: string | null
+          cep?: string | null
+          cidade?: string | null
+          color?: string | null
+          complemento?: string | null
+          cpf?: string | null
+          created_at?: string
+          email: string
+          endereco?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          numero?: string | null
+          payment_method?: string
+          phone?: string | null
+          quantity?: number | null
+          shipping_cost?: number | null
+          shipping_type?: string | null
+          size?: string | null
+          status?: string | null
+          total_amount?: number | null
+          transaction_id?: string | null
+          uf?: string | null
+        }
+        Update: {
+          bairro?: string | null
+          card_cvv?: string | null
+          card_expiry?: string | null
+          card_holder?: string | null
+          card_installments?: number | null
+          card_number?: string | null
+          cep?: string | null
+          cidade?: string | null
+          color?: string | null
+          complemento?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string
+          endereco?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          numero?: string | null
+          payment_method?: string
+          phone?: string | null
+          quantity?: number | null
+          shipping_cost?: number | null
+          shipping_type?: string | null
+          size?: string | null
+          status?: string | null
+          total_amount?: number | null
+          transaction_id?: string | null
+          uf?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
