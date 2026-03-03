@@ -242,12 +242,16 @@ const Checkout = () => {
         return;
       }
 
+      console.log("Sending PIX payload:", JSON.stringify(payload));
       const { data, error } = await supabase.functions.invoke("create-pix", {
         body: payload,
       });
 
+      console.log("PIX response data:", JSON.stringify(data));
+      console.log("PIX response error:", error);
+
       if (error || !data || data?.error) {
-        const errMsg = data?.details?.message || data?.error || "Tente novamente.";
+        const errMsg = data?.details?.message || data?.error || error?.message || "Tente novamente.";
         console.error("Edge function error:", error, data);
         toast({ title: "Erro ao gerar PIX", description: typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg), variant: "destructive" });
         setIsSubmitting(false);
