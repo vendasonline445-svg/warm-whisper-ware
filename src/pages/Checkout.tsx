@@ -37,6 +37,7 @@ const Checkout = () => {
   const [shipping, setShipping] = useState("padrao");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressOpen, setAddressOpen] = useState(true);
+  const [cpfError, setCpfError] = useState("");
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", cep: "",
@@ -62,6 +63,22 @@ const Checkout = () => {
     if (nums.length <= 6) return `${nums.slice(0, 3)}.${nums.slice(3)}`;
     if (nums.length <= 9) return `${nums.slice(0, 3)}.${nums.slice(3, 6)}.${nums.slice(6)}`;
     return `${nums.slice(0, 3)}.${nums.slice(3, 6)}.${nums.slice(6, 9)}-${nums.slice(9)}`;
+  };
+
+  const validateCPF = (cpf: string): boolean => {
+    const nums = cpf.replace(/\D/g, "");
+    if (nums.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(nums)) return false; // all same digits
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(nums[i]) * (10 - i);
+    let rest = (sum * 10) % 11;
+    if (rest === 10) rest = 0;
+    if (rest !== parseInt(nums[9])) return false;
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(nums[i]) * (11 - i);
+    rest = (sum * 10) % 11;
+    if (rest === 10) rest = 0;
+    return rest === parseInt(nums[10]);
   };
 
   const formatPhone = (val: string) => {
@@ -103,17 +120,28 @@ const Checkout = () => {
   };
 
   const isAddressComplete = form.cep && form.uf && form.cidade && form.bairro && form.endereco && form.numero;
+  const isCpfValid = validateCPF(form.cpf);
 
-  // Auto-collapse address when number is filled (address is complete)
+  // Auto-collapse address when all fields + valid CPF are filled
   useEffect(() => {
-    if (isAddressComplete) {
+    if (isAddressComplete && form.name && form.phone && form.email && isCpfValid) {
       setAddressOpen(false);
     }
-  }, [form.numero, isAddressComplete]);
+  }, [form.cpf, isAddressComplete, isCpfValid]);
+
+  // Show CPF error when 11 digits typed but invalid
+  useEffect(() => {
+    const nums = form.cpf.replace(/\D/g, "");
+    if (nums.length === 11 && !validateCPF(form.cpf)) {
+      setCpfError("CPF inválido. Verifique os dígitos.");
+    } else {
+      setCpfError("");
+    }
+  }, [form.cpf]);
 
   const isFormValid = form.name && form.phone && form.email && form.cep &&
     form.uf && form.cidade && form.bairro && form.endereco &&
-    form.numero && form.cpf.replace(/\D/g, "").length === 11;
+    form.numero && isCpfValid;
 
   const handleSubmit = async () => {
     if (!isFormValid || isSubmitting) return;
@@ -309,12 +337,17 @@ const Checkout = () => {
               className="rounded-lg border-border h-12 text-sm"
             />
           </div>
-          <Input
-            placeholder="CPF (000.000.000-00)"
-            value={form.cpf}
-            onChange={(e) => updateField("cpf", formatCPF(e.target.value))}
-            className="rounded-lg border-border h-12 text-sm"
-          />
+          <div>
+            <Input
+              placeholder="CPF (000.000.000-00)"
+              value={form.cpf}
+              onChange={(e) => updateField("cpf", formatCPF(e.target.value))}
+              className={`rounded-lg border-border h-12 text-sm ${cpfError ? "border-destructive" : ""}`}
+            />
+            {cpfError && (
+              <p className="text-xs text-destructive mt-1 font-medium">{cpfError}</p>
+            )}
+          </div>
         </div>
         )}
 
