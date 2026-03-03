@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
@@ -162,21 +163,14 @@ const Index = () => {
     setColorModalOpen(true);
   };
 
+  const nav = useNavigate();
+
   const handleCheckout = () => {
     if (!selectedColor) return;
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = "checkout.php";
-    const fields = { product_id: PRODUCT_ID, color: selectedColor, price: String(PRICE), size: selectedSize };
-    Object.entries(fields).forEach(([k, v]) => {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = k;
-      input.value = v;
-      form.appendChild(input);
-    });
-    document.body.appendChild(form);
-    form.submit();
+    const params = new URLSearchParams(window.location.search);
+    params.set("color", selectedColor);
+    params.set("size", selectedSize);
+    nav(`/checkout?${params.toString()}`);
   };
 
   const copyCoupon = () => {
