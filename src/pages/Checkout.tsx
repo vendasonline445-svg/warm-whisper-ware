@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import {
   ArrowLeft, MapPin, Star, Truck, Shield, Minus, Plus, ChevronRight, Copy
 } from "lucide-react";
@@ -82,45 +84,71 @@ const Checkout = () => {
     if (!isFormValid || isSubmitting) return;
     setIsSubmitting(true);
 
-    // Store order data for PIX page
-    const orderData = {
-      customer: {
-        name: form.name,
-        email: form.email,
-        phone: form.phone.replace(/\D/g, ""),
-        cpf: form.cpf.replace(/\D/g, ""),
-      },
-      address: {
-        cep: form.cep.replace(/\D/g, ""),
-        uf: form.uf,
-        cidade: form.cidade,
-        bairro: form.bairro,
-        endereco: form.endereco,
-        numero: form.numero,
-        complemento: form.complemento,
-      },
-      product: {
-        color: selectedColor,
-        size: selectedSize,
-        quantity,
-        price: PRODUCT_PRICE,
-        total,
-      },
-      shipping: {
-        type: shipping,
-        cost: shippingCost,
-      },
-      trackingParameters: Object.fromEntries(
-        new URLSearchParams(window.location.search).entries()
-      ),
-    };
+    try {
+      const amountInCents = Math.round(total * 100);
 
-    sessionStorage.setItem("orderData", JSON.stringify(orderData));
+      const payload = {
+        amount: amountInCents,
+        customer: {
+          name: form.name,
+          email: form.email,
+          phone: form.phone.replace(/\D/g, ""),
+          cpf: form.cpf.replace(/\D/g, ""),
+        },
+        items: [
+          {
+            id: "mesa-dobravel",
+            title: `Mesa Dobrável ${colorLabel} ${selectedSize}`,
+            unitPrice: Math.round(PRODUCT_PRICE * 100),
+            quantity,
+            tangible: true,
+          },
+        ],
+        shipping: {
+          name: form.name,
+          address: {
+            street: form.endereco,
+            streetNumber: form.numero,
+            neighborhood: form.bairro,
+            city: form.cidade,
+            state: form.uf,
+            zipcode: form.cep.replace(/\D/g, ""),
+            country: "br",
+          },
+          fee: Math.round(shippingCost * 100),
+        },
+        metadata: JSON.stringify({
+          color: selectedColor,
+          size: selectedSize,
+          tracking: Object.fromEntries(new URLSearchParams(window.location.search).entries()),
+        }),
+      };
 
-    // Simulate API call delay then navigate to PIX page
-    setTimeout(() => {
+      const { data, error } = await supabase.functions.invoke("create-pix", {
+        body: payload,
+      });
+
+      if (error || !data) {
+        console.error("Edge function error:", error, data);
+        toast({ title: "Erro ao gerar PIX", description: "Tente novamente.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Store transaction data for PIX page
+      sessionStorage.setItem("pixData", JSON.stringify(data));
+      sessionStorage.setItem("orderData", JSON.stringify({
+        customer: payload.customer,
+        product: { color: selectedColor, size: selectedSize, quantity, price: PRODUCT_PRICE, total },
+        shipping: { type: shipping, cost: shippingCost },
+      }));
+
       navigate("/pix");
-    }, 1500);
+    } catch (err) {
+      console.error("Submit error:", err);
+      toast({ title: "Erro inesperado", description: "Tente novamente.", variant: "destructive" });
+      setIsSubmitting(false);
+    }
   };
 
   return (
