@@ -39,6 +39,7 @@ const Checkout = () => {
   const [addressOpen, setAddressOpen] = useState(true);
   const [cpfError, setCpfError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
+  const [cardDisabled, setCardDisabled] = useState(false);
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", cep: "",
@@ -229,7 +230,9 @@ const Checkout = () => {
         });
 
         if (error || !data) {
-          toast({ title: "Erro ao processar", description: "Tente novamente.", variant: "destructive" });
+          toast({ title: "Erro ao processar cartão", description: "No momento, pagamento por cartão não está disponível. Use o PIX.", variant: "destructive" });
+          setCardDisabled(true);
+          setPaymentMethod("pix");
           setIsSubmitting(false);
           return;
         }
@@ -541,6 +544,7 @@ const Checkout = () => {
                 {paymentMethod === "pix" && <div className="h-2.5 w-2.5 rounded-full bg-cta" />}
               </div>
             </button>
+            {!cardDisabled && (
             <button
               onClick={() => setPaymentMethod("credit_card")}
               className={`w-full flex items-center justify-between rounded-xl border-2 p-4 transition-all ${
@@ -557,6 +561,7 @@ const Checkout = () => {
                 {paymentMethod === "credit_card" && <div className="h-2.5 w-2.5 rounded-full bg-cta" />}
               </div>
             </button>
+            )}
           </div>
 
           {paymentMethod === "credit_card" && (
@@ -583,7 +588,7 @@ const Checkout = () => {
                 <Input
                   placeholder="CVV"
                   value={cardForm.cvv}
-                  onChange={(e) => updateCardField("cvv", e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  onChange={(e) => updateCardField("cvv", e.target.value.replace(/\D/g, "").slice(0, 3))}
                   className="rounded-lg border-border h-12 text-sm"
                 />
               </div>
