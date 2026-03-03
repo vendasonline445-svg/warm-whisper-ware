@@ -505,7 +505,11 @@ const Checkout = () => {
           <Button
             onClick={handleSubmit}
             disabled={!isFormValid || isSubmitting}
-            className="w-full bg-[hsl(350,55%,65%)] hover:bg-[hsl(350,55%,58%)] text-card font-bold text-base py-4 h-auto rounded-2xl mb-3 disabled:opacity-50"
+            className={`w-full font-bold text-base py-4 h-auto rounded-2xl mb-3 text-card transition-all duration-300 ${
+              isFormValid && !isSubmitting
+                ? "bg-[hsl(350,60%,55%)] hover:bg-[hsl(350,60%,48%)] shadow-lg shadow-[hsl(350,60%,55%)]/30 scale-[1.01]"
+                : "bg-[hsl(350,30%,75%)] opacity-60 cursor-not-allowed"
+            }`}
           >
             <div className="text-center">
               <span>{isSubmitting ? "Processando..." : "Fazer pedido"}</span>
