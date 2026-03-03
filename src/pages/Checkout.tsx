@@ -47,8 +47,8 @@ const Checkout = () => {
 
   const colorLabel = selectedColor === "preta" ? "Preta" : "Branca";
   const colorImage = selectedColor === "preta"
-    ? "https://mesa-dobravel-oferta.lovable.app/assets/mesa-preta-detalhes-DZr1TaUa.png"
-    : "https://mesa-dobravel-oferta.lovable.app/assets/produto-1-CodPfocH.webp";
+    ? "/images/mesa-preta-detalhes.png"
+    : "/images/produto-1.webp";
 
   const shippingCost = shipping === "express" ? 14.50 : 0;
   const total = PRODUCT_PRICE * quantity + shippingCost;

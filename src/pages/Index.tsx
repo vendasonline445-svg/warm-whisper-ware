@@ -36,55 +36,38 @@ const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
 const reviews = [
   {
     name: "Carla S.",
-    avatar: "https://mesa-dobravel-oferta.lovable.app/assets/avatar-carla-aeMpPbWr.png",
+    avatar: "",
     text: "A mesa é bem grande, boa demais! Espaçosa e super prática — montei em segundos e usei para o churrasco com a família toda. Muito resistente, suporta bastante peso sem tremer!",
     rating: 5,
-    photos: [
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-carla-1-CU1UsLFJ.png",
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-carla-2-BrVkzVRE.png",
-    ],
+    photos: [] as string[],
   },
   {
     name: "Patrícia F.",
-    avatar: "https://mesa-dobravel-oferta.lovable.app/assets/avatar-patricia-new-COpXt4yW.png",
+    avatar: "",
     text: "Ela é muito prática. Material bom, custo muito bom. Amei, pretendo comprar outra!",
     rating: 5,
-    photos: [
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-patricia-1-BxwuYR10.png",
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-patricia-2-D97d3Dqg.png",
-    ],
+    photos: [] as string[],
   },
   {
     name: "Raquel M.",
-    avatar: "https://mesa-dobravel-oferta.lovable.app/assets/avatar-raquel-BFyrtPYy.png",
+    avatar: "",
     text: "Ela é linda, bem resistente. Me surpreendi com a qualidade, vou usar muito! Chegou no dia certinho.",
     rating: 5,
-    photos: [
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-raquel-1-BWV94PY6.png",
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-raquel-2-6JJykarJ.png",
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-raquel-3-BxbMK-1E.png",
-    ],
+    photos: [] as string[],
   },
   {
     name: "Karine Porto",
-    avatar: "https://mesa-dobravel-oferta.lovable.app/assets/avatar-karine-BJKkhTJJ.png",
+    avatar: "",
     text: "Muito boa, bem reforçada. Veio bem embalada na caixa, sem avarias. Gostei muito da mesa!",
     rating: 5,
-    photos: [
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-karine-1-DyFAGtlb.png",
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-karine-2-DGpHgBcM.png",
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-karine-3-V4KjEUPz.png",
-    ],
+    photos: [] as string[],
   },
   {
     name: "Juliana P.",
-    avatar: "https://mesa-dobravel-oferta.lovable.app/assets/avatar-juliana-CgdpHBym.png",
+    avatar: "",
     text: "Adorei a minha compra! Chegou no prazo, veio bem embalada. A mesa é linda e muito resistente. Ideal para quem tem pouco espaço, ela é bem fácil para montar. Gosteiii muitoooooo! 😍",
     rating: 5,
-    photos: [
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-juliana-1-5GEzRZ41.png",
-      "https://mesa-dobravel-oferta.lovable.app/assets/review-juliana-2-9iUjyThJ.png",
-    ],
+    photos: [] as string[],
   },
 ];
 
@@ -357,7 +340,13 @@ const Index = () => {
               {reviews.map((r, idx) => (
                 <div key={idx} className="rounded-xl border p-4">
                   <div className="flex items-center gap-3 mb-2">
-                    <img src={r.avatar} alt={r.name} className="h-9 w-9 rounded-full object-cover" />
+                    {r.avatar ? (
+                      <img src={r.avatar} alt={r.name} className="h-9 w-9 rounded-full object-cover" />
+                    ) : (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                        {r.name.split(" ").map(w => w[0]).join("")}
+                      </div>
+                    )}
                     <span className="font-semibold text-sm">{r.name}</span>
                     <div className="ml-auto flex gap-0.5">
                       {Array.from({ length: r.rating }).map((_, i) => (
