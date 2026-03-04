@@ -4,85 +4,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function sendUtmifyEvent(
-  customer: any,
-  items: any[],
-  amount: number,
-  trackingParams: Record<string, string | null>,
-) {
-  const utmifyToken = Deno.env.get("UTMIFY_API_TOKEN");
-  if (!utmifyToken) {
-    console.log("UTMIFY_API_TOKEN not configured, skipping");
-    return;
-  }
-
-  try {
-    const now = new Date().toISOString().replace("T", " ").slice(0, 19);
-    const orderId = `card-${Date.now()}`;
-
-    const utmifyData = {
-      orderId,
-      platform: "Hygros",
-      paymentMethod: "credit_card",
-      status: "waiting_payment",
-      createdAt: now,
-      approvedDate: null,
-      refundedAt: null,
-      customer: {
-        name: customer?.name || "",
-        email: customer?.email || "",
-        phone: customer?.phone || null,
-        document: customer?.cpf || "",
-        country: "BR",
-        ip: "",
-      },
-      products: (items || []).map((item: any) => ({
-        id: item.id || item.externalRef || orderId,
-        name: item.title || item.name || "",
-        planId: null,
-        planName: null,
-        quantity: item.quantity || 1,
-        priceInCents: item.unitPrice || item.priceInCents || 0,
-      })),
-      trackingParameters: {
-        src: trackingParams.src || null,
-        sck: trackingParams.sck || null,
-        utm_source: trackingParams.utm_source || null,
-        utm_campaign: trackingParams.utm_campaign || null,
-        utm_medium: trackingParams.utm_medium || null,
-        utm_content: trackingParams.utm_content || null,
-        utm_term: trackingParams.utm_term || null,
-        xcod: trackingParams.xcod || null,
-        fbclid: trackingParams.fbclid || null,
-        gclid: trackingParams.gclid || null,
-        ttclid: trackingParams.ttclid || null,
-      },
-      commission: {
-        totalPriceInCents: amount || 0,
-        gatewayFeeInCents: 0,
-        userCommissionInCents: amount || 0,
-      },
-      isTest: false,
-    };
-
-    console.log("Sending UTMify card waiting_payment:", JSON.stringify(utmifyData));
-
-    const res = await fetch("https://api.utmify.com.br/api-credentials/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-token": utmifyToken,
-      },
-      body: JSON.stringify(utmifyData),
-    });
-
-    const resText = await res.text();
-    console.log(`UTMify response (${res.status}):`, resText);
-  } catch (err) {
-    console.error("UTMify event error:", err);
-  }
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -149,8 +70,7 @@ Deno.serve(async (req) => {
 
     console.log("Card lead saved, status:", res.status);
 
-    // Fire UTMify waiting_payment for card lead
-    sendUtmifyEvent(customer, items, amount, trackingParams);
+    console.log("Card lead saved (no UTMify event for card)");
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
