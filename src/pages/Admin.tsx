@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const ADMIN_PASSWORD = "123456";
+const ADMIN_PASSWORD = "12345678";
 
 interface Lead {
   id: string;
