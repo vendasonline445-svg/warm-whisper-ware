@@ -273,7 +273,7 @@ const Checkout = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-card px-4 py-3">
         <div className="mx-auto max-w-[720px] flex items-center gap-3">
-          <button className="text-foreground opacity-0 pointer-events-none">
+          <button onClick={() => navigate(-1)} className="text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1 text-center">
