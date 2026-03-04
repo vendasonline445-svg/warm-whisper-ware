@@ -172,6 +172,7 @@ const Checkout = () => {
   const canSubmit = isFormValid && (paymentMethod === "pix" || isCardFormValid);
 
   const handleSubmit = async () => {
+    console.log("handleSubmit called", { canSubmit, isSubmitting, isFormValid, isCardFormValid, paymentMethod, form, cardForm });
     if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
 
