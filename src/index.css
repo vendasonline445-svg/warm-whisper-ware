@@ -36,22 +36,22 @@
 
     --radius: 0.5rem;
 
-    --cta: 0 72% 51%;
+    --cta: 352 72% 60%;
     --cta-foreground: 0 0% 100%;
-    --cta-hover: 0 72% 44%;
+    --cta-hover: 352 72% 53%;
 
-    --success: 152 60% 40%;
+    --success: 160 82% 34%;
     --success-foreground: 0 0% 100%;
 
-    --price: 0 72% 51%;
+    --price: 352 72% 60%;
     --price-old: 0 0% 55%;
 
-    --badge-green: 152 60% 40%;
+    --badge-green: 160 82% 34%;
     --badge-green-foreground: 0 0% 100%;
 
-    --coupon-bg: 0 60% 95%;
-    --coupon-border: 0 72% 65%;
-    --coupon-text: 0 72% 51%;
+    --coupon-bg: 160 40% 95%;
+    --coupon-border: 160 82% 34%;
+    --coupon-text: 160 82% 34%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
