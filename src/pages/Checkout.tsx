@@ -294,6 +294,144 @@ const Checkout = () => {
 
         {/* Divider */}
         <div className="mt-6 border-t-2 border-dashed border-success" />
+
+        {/* Product Info */}
+        <div className="mt-4">
+          <p className="text-sm font-semibold flex items-center gap-1">⚠️ Poucas unidades disponíveis</p>
+          <p className="text-xs text-amber-500 flex items-center gap-1 mt-0.5">
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> Muito bem avaliado! 4.8/5,0
+          </p>
+
+          <div className="flex items-start gap-3 mt-3">
+            <img src={colorImage} alt="Mesa" className="w-20 h-20 object-contain rounded-md border" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta 180x60cm...</p>
+              <p className="text-xs text-muted-foreground">{colorLabel}, {selectedSize}</p>
+              <p className="text-xs text-emerald-600 flex items-center gap-1 mt-0.5">
+                <Shield className="h-3 w-3" /> Devolução gratuita
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm font-bold text-cta">R$ {PRODUCT_PRICE.toFixed(2).replace(".", ",")}</span>
+                <span className="text-[10px]">📦</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground line-through">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
+                <span className="text-xs text-cta font-semibold">-58%</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-0 border rounded-lg h-9">
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Minus className="h-3.5 w-3.5" /></button>
+              <span className="text-sm font-medium w-6 text-center">{quantity}</span>
+              <button onClick={() => setQuantity(quantity + 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
+            </div>
+          </div>
+        </div>
+
+        {/* Shipping Options */}
+        <div className="mt-6">
+          <p className="font-semibold text-sm mb-2">Opções de envio</p>
+          <button
+            onClick={() => setShipping("padrao")}
+            className={`w-full flex items-center justify-between p-3 rounded-lg border-2 mb-2 transition-colors ${
+              shipping === "padrao" ? "border-cta bg-cta/5" : "border-border"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${shipping === "padrao" ? "border-cta" : "border-muted-foreground/40"}`}>
+                {shipping === "padrao" && <div className="w-2.5 h-2.5 rounded-full bg-cta" />}
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-semibold">Envio Padrão</p>
+                <p className="text-xs text-muted-foreground">3 a 7 dias úteis</p>
+              </div>
+            </div>
+            <span className="text-sm font-bold text-success">Grátis</span>
+          </button>
+          <button
+            onClick={() => setShipping("express")}
+            className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-colors ${
+              shipping === "express" ? "border-cta bg-cta/5" : "border-border"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${shipping === "express" ? "border-cta" : "border-muted-foreground/40"}`}>
+                {shipping === "express" && <div className="w-2.5 h-2.5 rounded-full bg-cta" />}
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-semibold">TikTok Express</p>
+                <p className="text-xs text-muted-foreground">1 a 3 dias úteis</p>
+              </div>
+            </div>
+            <span className="text-sm font-bold">R$ 14,50</span>
+          </button>
+        </div>
+
+        {/* Discount */}
+        <div className="mt-4 flex items-center justify-between py-3 border-t">
+          <span className="text-sm flex items-center gap-1.5">📦 Desconto especial</span>
+          <span className="text-sm font-semibold text-cta flex items-center gap-1">
+            - R$ {BASE_DISCOUNT_VALUE.toFixed(2).replace(".", ",")} <ChevronRight className="h-4 w-4" />
+          </span>
+        </div>
+
+        {/* Order Summary */}
+        <div className="mt-2 border-t pt-4">
+          <p className="font-semibold text-sm mb-3">Resumo do pedido</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground flex items-center gap-1">Subtotal do produto ({quantity}x) <ChevronDown className="h-3 w-3" /></span>
+              <span>R$ {subtotal.toFixed(2).replace(".", ",")}</span>
+            </div>
+            {hasCoupon && (
+              <div className="flex justify-between">
+                <span className="text-coupon font-medium">Cupom VOLTA25 (-25%)</span>
+                <span className="text-coupon font-medium">- R$ {couponAmount.toFixed(2).replace(".", ",")}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Taxa de envio</span>
+              <span className={shipping === "padrao" ? "text-success font-medium" : ""}>
+                {shipping === "padrao" ? "Grátis" : `R$ ${shippingCost.toFixed(2).replace(".", ",")}`}
+              </span>
+            </div>
+          </div>
+          <div className="flex justify-between items-end mt-3 pt-3 border-t">
+            <span className="font-bold text-sm">Total</span>
+            <div className="text-right">
+              <span className="font-bold text-base">R$ {total.toFixed(2).replace(".", ",")}</span>
+              <p className="text-[10px] text-muted-foreground">Impostos inclusos</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Method */}
+        <div className="mt-4 border-t pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-semibold text-sm">Forma de pagamento</p>
+            {hasCoupon && <span className="text-xs text-coupon font-medium">Cupom VOLTA25 (-25%) ativo ✓</span>}
+          </div>
+          <div className="flex items-center justify-between p-3 rounded-lg border-2 border-cta bg-cta/5">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">💠</span>
+              <span className="text-sm font-medium">Pix</span>
+            </div>
+            <div className="w-5 h-5 rounded-full border-2 border-cta flex items-center justify-center">
+              <div className="w-2.5 h-2.5 rounded-full bg-cta" />
+            </div>
+          </div>
+        </div>
+
+        {/* Terms */}
+        <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
+          Ao fazer um pedido, você concorda com os{" "}
+          <a href="/termos-de-uso" className="font-bold text-foreground underline">Termos de uso e venda</a>{" "}
+          e reconhece que leu e concorda com a{" "}
+          <a href="/politica-de-privacidade" className="font-bold text-foreground underline">Política de privacidade</a>.
+        </p>
+
+        <p className="mt-3 text-xs text-success flex items-center gap-1">
+          😊 Você está economizando R$ {totalSavings.toFixed(2).replace(".", ",")} nesse pedido.
+        </p>
       </div>
 
       {/* Sticky Bottom */}
