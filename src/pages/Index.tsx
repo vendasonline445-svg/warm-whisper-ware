@@ -580,7 +580,7 @@ const Index = () => {
 
       {/* Color Selection Modal - Slide from bottom like reference */}
       <Dialog open={colorModalOpen} onOpenChange={setColorModalOpen}>
-        <DialogContent className="sm:max-w-lg p-0 gap-0 rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-auto">
+        <DialogContent className="sm:max-w-3xl lg:max-w-4xl p-0 gap-0 rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-auto">
           <div className="flex items-center justify-between p-4 border-b">
             <DialogTitle className="text-base font-bold">Escolha a cor</DialogTitle>
             <DialogDescription className="sr-only">Selecione a cor da mesa</DialogDescription>
