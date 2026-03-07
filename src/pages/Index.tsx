@@ -485,11 +485,11 @@ const Index = () => {
             <span>Chat</span>
           </button>
         </div>
-        <button onClick={openColorModal} className="flex items-center gap-1 rounded-lg border border-cta px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-cta whitespace-nowrap flex-shrink-0">
+        <button onClick={openColorModal} className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-cta px-2 sm:px-3 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-cta whitespace-nowrap">
           <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
           Adicionar ao carrinho
         </button>
-        <Button onClick={openColorModal} className="flex-1 bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-xs sm:text-sm py-2 sm:py-2.5 h-auto rounded-lg uppercase tracking-wide min-w-0">
+        <Button onClick={openColorModal} className="flex-1 bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-xs sm:text-sm py-2.5 sm:py-3 h-auto rounded-lg uppercase tracking-wide">
           Comprar Agora
         </Button>
       </div>
