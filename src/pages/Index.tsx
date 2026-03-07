@@ -376,6 +376,7 @@ const Index = () => {
                   )}
                 </div>
               ))}
+            </div>
             {/* Review Filters */}
             <div className="flex items-center gap-4 pt-4 border-t text-sm text-muted-foreground">
               <span className="flex items-center gap-1">📸 Inclui imagens (52)</span>
