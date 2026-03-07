@@ -24,8 +24,8 @@ function useCountdown(initial: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-const Icon = ({ name, className = "" }: { name: string; className?: string }) => (
-  <span className={`material-symbols-outlined ${className}`}>{name}</span>
+const Icon = ({ name, className = "", style }: { name: string; className?: string; style?: React.CSSProperties }) => (
+  <span className={`material-symbols-outlined ${className}`} style={style}>{name}</span>
 );
 
 const Upsell1 = () => {
