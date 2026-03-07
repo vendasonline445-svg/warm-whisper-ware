@@ -216,23 +216,23 @@ const Index = () => {
         </section>
 
         {/* Price Banner */}
-        <section className="mx-4 mt-2 rounded-xl bg-gradient-to-r from-primary to-[hsl(15,90%,48%)] p-4 text-primary-foreground">
+        <section className="bg-gradient-to-r from-primary to-[hsl(25,80%,55%)] px-4 py-4 text-primary-foreground">
           <div className="flex items-center gap-2 mb-2">
-            <Zap className="h-4 w-4" />
-            <span className="text-sm font-bold uppercase tracking-wider">Oferta Relâmpago</span>
+            <Zap className="h-5 w-5 fill-primary-foreground" />
+            <span className="text-sm font-extrabold uppercase tracking-wider">Oferta Relâmpago</span>
             <div className="ml-auto flex items-center gap-1">
               {[countdown.h, countdown.m, countdown.s].map((v, i) => (
                 <span key={i} className="flex items-center">
                   {i > 0 && <span className="mx-0.5 font-bold">:</span>}
-                  <span className="rounded bg-primary-foreground/20 px-1.5 py-0.5 text-sm font-mono font-bold">{fmt(v)}</span>
+                  <span className="rounded-md bg-primary-foreground/20 px-2 py-1 text-sm font-mono font-bold">{fmt(v)}</span>
                 </span>
               ))}
             </div>
           </div>
           <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="text-[2rem] font-black leading-none">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
+            <span className="text-[2.2rem] font-black leading-none">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
             <span className="text-base line-through opacity-60">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
-            <span className="rounded bg-primary-foreground/20 px-2 py-0.5 text-xs font-bold">-{DISCOUNT}%</span>
+            <span className="rounded-md bg-primary-foreground/25 px-2.5 py-1 text-sm font-bold">-{DISCOUNT}%</span>
           </div>
         </section>
 
