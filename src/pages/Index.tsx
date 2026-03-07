@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
-  Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy,
+  Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
