@@ -167,14 +167,16 @@ const Index = () => {
   const prevImage = () => setCurrentImage((p) => (p - 1 + productImages.length) % productImages.length);
 
   return (
-    <div className="min-h-screen bg-background pb-[72px]">
+    <div className="min-h-screen bg-white pb-[72px]">
       {/* Top bar */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-card px-4 py-3">
-        <X className="h-5 w-5 text-muted-foreground cursor-pointer" />
-        <div className="flex items-center gap-5">
-          <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" />
-          <ShoppingCart className="h-5 w-5 text-muted-foreground cursor-pointer" />
-          <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer" />
+      <header className="sticky top-0 z-40 border-b bg-card">
+        <div className="mx-auto max-w-[720px] flex items-center justify-between px-4 py-3">
+          <X className="h-5 w-5 text-muted-foreground cursor-pointer" />
+          <div className="flex items-center gap-5">
+            <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" />
+            <ShoppingCart className="h-5 w-5 text-muted-foreground cursor-pointer" />
+            <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer" />
+          </div>
         </div>
       </header>
 
