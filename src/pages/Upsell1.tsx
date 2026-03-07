@@ -338,7 +338,7 @@ const Upsell1 = () => {
                 handleGeneratePix();
               }}
               className="w-full rounded-xl py-3 text-sm font-bold transition-all"
-              style={{ background: "linear-gradient(135deg, #1a73e8 0%, #1565c0 100%)", color: "#ffffff", border: "none" }}
+              style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)", color: "#ffffff", border: "none" }}
             >
               Efetuar pagamento da TCAD
             </button>
