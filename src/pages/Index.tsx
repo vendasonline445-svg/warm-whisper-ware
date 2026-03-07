@@ -167,14 +167,16 @@ const Index = () => {
   const prevImage = () => setCurrentImage((p) => (p - 1 + productImages.length) % productImages.length);
 
   return (
-    <div className="min-h-screen bg-background pb-[72px]">
+    <div className="min-h-screen bg-white pb-[72px]">
       {/* Top bar */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-card px-4 py-3">
-        <X className="h-5 w-5 text-muted-foreground cursor-pointer" />
-        <div className="flex items-center gap-5">
-          <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" />
-          <ShoppingCart className="h-5 w-5 text-muted-foreground cursor-pointer" />
-          <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer" />
+      <header className="sticky top-0 z-40 border-b bg-card">
+        <div className="mx-auto max-w-[720px] flex items-center justify-between px-4 py-3">
+          <X className="h-5 w-5 text-muted-foreground cursor-pointer" />
+          <div className="flex items-center gap-5">
+            <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" />
+            <ShoppingCart className="h-5 w-5 text-muted-foreground cursor-pointer" />
+            <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer" />
+          </div>
         </div>
       </header>
 
@@ -472,24 +474,26 @@ const Index = () => {
       </div>
 
       {/* Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card px-2 py-2 sm:px-3 sm:py-2.5 flex items-center gap-1.5 sm:gap-2 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <button className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[28px]">
-            <Store className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>Loja</span>
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
+        <div className="mx-auto max-w-[720px] px-2 py-2 sm:px-3 sm:py-2.5 flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <button className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[28px]">
+              <Store className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span>Loja</span>
+            </button>
+            <button className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[28px]">
+              <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span>Chat</span>
+            </button>
+          </div>
+          <button onClick={openColorModal} className="flex items-center gap-1 rounded-lg border border-cta px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-cta whitespace-nowrap flex-shrink-0">
+            <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+            Adicionar ao carrinho
           </button>
-          <button className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[28px]">
-            <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>Chat</span>
-          </button>
+          <Button onClick={openColorModal} className="flex-1 bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-xs sm:text-sm py-2 sm:py-2.5 h-auto rounded-lg uppercase tracking-wide min-w-0">
+            Comprar Agora
+          </Button>
         </div>
-        <button onClick={openColorModal} className="flex items-center gap-1 rounded-lg border border-cta px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-cta whitespace-nowrap flex-shrink-0">
-          <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-          Adicionar ao carrinho
-        </button>
-        <Button onClick={openColorModal} className="flex-1 bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-xs sm:text-sm py-2 sm:py-2.5 h-auto rounded-lg uppercase tracking-wide min-w-0">
-          Comprar Agora
-        </Button>
       </div>
 
       {/* Color Selection Modal - Slide from bottom like reference */}
