@@ -540,17 +540,17 @@ const Index = () => {
                   <CheckCircle2 className="h-4 w-4 text-destructive" /> Política & Legal
                 </h3>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>Política de privacidade</li>
-                  <li>Termos de uso</li>
+                  <li><a href="/politica-de-privacidade" className="hover:underline">Política de privacidade</a></li>
+                  <li><a href="/termos-de-uso" className="hover:underline">Termos de uso</a></li>
                 </ul>
               </div>
             </div>
             <div className="text-center text-xs text-muted-foreground border-t pt-4">
               <p>© 2025 MesaLar.</p>
               <p className="mt-1">
-                <a href="#" className="text-destructive hover:underline">Política de privacidade</a>
+                <a href="/politica-de-privacidade" className="text-destructive hover:underline">Política de privacidade</a>
                 <span className="mx-1">·</span>
-                <a href="#" className="text-destructive hover:underline">Termos de uso</a>
+                <a href="/termos-de-uso" className="text-destructive hover:underline">Termos de uso</a>
               </p>
             </div>
           </footer>
