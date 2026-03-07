@@ -341,34 +341,28 @@ const Index = () => {
               <span className="text-muted-foreground text-sm">/5</span>
               <div className="flex gap-0.5 ml-1">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                  <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="divide-y">
               {reviews.map((r, idx) => (
-                <div key={idx} className="rounded-xl border p-4">
+                <div key={idx} className="py-5 first:pt-0">
                   <div className="flex items-center gap-3 mb-2">
-                    {r.avatar ? (
-                      <img src={r.avatar} alt={r.name} className="h-9 w-9 rounded-full object-cover" />
-                    ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                        {r.name.split(" ").map(w => w[0]).join("")}
-                      </div>
-                    )}
+                    <img src={r.avatar} alt={r.name} className="h-10 w-10 rounded-full object-cover" />
                     <span className="font-semibold text-sm">{r.name}</span>
-                    <div className="ml-auto flex gap-0.5">
-                      {Array.from({ length: r.rating }).map((_, i) => (
-                        <Star key={i} className="h-3.5 w-3.5 fill-primary text-primary" />
-                      ))}
-                    </div>
+                  </div>
+                  <div className="flex gap-0.5 mb-2">
+                    {Array.from({ length: r.rating }).map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    ))}
                   </div>
                   <p className="text-sm leading-relaxed text-foreground/90">{r.text}</p>
                   {r.photos.length > 0 && (
                     <div className="mt-3 flex gap-2 overflow-x-auto">
                       {r.photos.map((p, i) => (
-                        <img key={i} src={p} alt={`Foto ${i + 1}`} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" />
+                        <img key={i} src={p} alt={`Foto ${i + 1}`} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />
                       ))}
                     </div>
                   )}
