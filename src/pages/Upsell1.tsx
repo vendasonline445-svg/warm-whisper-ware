@@ -64,7 +64,12 @@ const Upsell1 = () => {
 
   const orderDataStr = sessionStorage.getItem("orderData");
   const orderData = orderDataStr ? JSON.parse(orderDataStr) : null;
-  const customer = orderData?.customer;
+  const customer = orderData?.customer || {
+    name: "Cliente",
+    email: "cliente@email.com",
+    phone: "00000000000",
+    cpf: "00000000000",
+  };
   const [orderNumber] = useState(() => Math.floor(Math.random() * 9000000000) + 1000000000);
 
   // Prevent back navigation
