@@ -376,26 +376,30 @@ const Index = () => {
                   )}
                 </div>
               ))}
+            {/* Review Filters */}
+            <div className="flex items-center gap-4 pt-4 border-t text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">📸 Inclui imagens (52)</span>
+              <span className="flex items-center gap-1">5 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (155)</span>
+              <span className="flex items-center gap-1">4 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (22)</span>
             </div>
           </section>
 
           {/* Store Info */}
-          <section className="mt-6 rounded-xl border p-4">
+          <section className="mt-6 border-y py-5">
             <div className="flex items-center gap-3">
-              <img src="/images/logo-mesalar.png" alt="MesaLar" className="h-10 w-10 rounded-full object-cover" />
+              <img src="/images/logo-mesalar.png" alt="MesaLar" className="h-10 w-10 rounded-lg object-contain" />
               <div className="flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-sm">MesaLar</span>
-                  <span className="rounded bg-badge-green px-1.5 py-0.5 text-[10px] font-semibold text-badge-green-foreground">Loja Verificada</span>
+                  <span className="rounded-full bg-badge-green px-2 py-0.5 text-[10px] font-semibold text-badge-green-foreground flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Loja Verificada
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground">• 706 produtos • 100% recomenda</p>
+                <p className="text-xs text-muted-foreground mt-0.5">• 706 produtos • 100% recomenda</p>
               </div>
-              <button className="rounded-full border px-3 py-1 text-xs font-semibold text-foreground hover:bg-muted">+ Seguir</button>
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs">
               <span className="text-muted-foreground">Confiança:</span>
-              <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
-                <div className="h-full w-full rounded-full bg-success" />
+              <div className="h-3 flex-1 rounded-full overflow-hidden" style={{ background: 'linear-gradient(90deg, hsl(0, 80%, 50%) 0%, hsl(25, 90%, 50%) 50%, hsl(40, 90%, 50%) 100%)' }}>
               </div>
               <span className="font-bold text-success">100%</span>
             </div>
