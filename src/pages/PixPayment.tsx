@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Copy, AlertTriangle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function usePixCountdown(expiresAt?: string) {
@@ -123,14 +123,18 @@ const PixPayment = () => {
           <Button
             onClick={handleCopy}
             disabled={!pixCode}
-            className="w-full font-bold text-[15px] py-4 h-auto rounded-2xl shadow-md transition-all active:scale-[0.98]"
+            className="w-full font-bold text-[15px] py-4 h-auto rounded-2xl shadow-md transition-all active:scale-[0.98] text-white"
             style={{
-              background: "linear-gradient(135deg, #e8687a 0%, #d4556a 100%)",
-              color: "white",
+              background: copied
+                ? "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
+                : "linear-gradient(135deg, #e8687a 0%, #d4556a 100%)",
             }}
           >
-            <Copy className="mr-2 h-4 w-4" />
-            {copied ? "Copiado! ✓" : "Copiar"}
+            {copied ? (
+              <><Check className="mr-2 h-4 w-4" /> Copiado!</>
+            ) : (
+              <><Copy className="mr-2 h-4 w-4" /> Copiar</>
+            )}
           </Button>
         </div>
 
