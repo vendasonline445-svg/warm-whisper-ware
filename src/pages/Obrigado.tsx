@@ -4,7 +4,8 @@ import { CheckCircle, Package, Truck, Mail } from "lucide-react";
 const Obrigado = () => {
   const orderDataStr = sessionStorage.getItem("orderData");
   const orderData = orderDataStr ? JSON.parse(orderDataStr) : null;
-  const customerName = orderData?.customer?.name?.split(" ")[0] || "Cliente";
+  const customerName = orderData?.customer?.name || "Cliente";
+  const customerEmail = orderData?.customer?.email || "";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -78,7 +79,7 @@ const Obrigado = () => {
             <div>
               <h3 className="font-bold text-sm text-foreground mb-1">Código de rastreio</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                O código de rastreio será enviado para o seu <strong className="text-foreground">e-mail</strong> assim que o produto for despachado pela transportadora. Fique de olho na sua caixa de entrada!
+                O código de rastreio será enviado para o seu e-mail {customerEmail && <strong className="text-foreground">{customerEmail}</strong>} assim que o produto for despachado pela transportadora. Fique de olho na sua caixa de entrada!
               </p>
             </div>
           </div>
