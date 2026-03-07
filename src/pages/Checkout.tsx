@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const PRODUCT_PRICE = 87.60;
+const PRODUCT_PRICE = 3.00;
 const OLD_PRICE = 210.00;
 const BASE_DISCOUNT_VALUE = 122.40;
 
