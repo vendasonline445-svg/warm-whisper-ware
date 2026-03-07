@@ -132,13 +132,13 @@ const Upsell1 = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "#0e1117", color: "#c9cdd4", fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+    <div className="min-h-screen" style={{ background: "#f0f2f5", color: "#1a1a2e", fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
       <div className="mx-auto max-w-[640px] px-4 py-0">
 
         {/* Header */}
-        <header className="flex items-center justify-between py-4 px-4 rounded-xl mt-4" style={{ background: "#161b22", border: "1px solid #21262d" }}>
+        <header className="flex items-center justify-between py-4 px-4 rounded-xl mt-4" style={{ background: "#ffffff", border: "1px solid #e0e0e0", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <div className="flex items-center gap-3">
-            <img src="/images/logo-tcad.png" alt="Logotipo institucional" className="h-10 w-10 rounded-lg object-contain" />
+            <img src="/images/logo-tcad.png" alt="Logotipo institucional" className="h-10 w-auto object-contain" />
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8b949e" }}>Setor de Consolidação e Auditoria de Dados</p>
               <p className="text-[10px]" style={{ color: "#484f58" }}>Pedido #{orderNumber} • Uso Interno</p>
