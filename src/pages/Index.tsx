@@ -38,35 +38,35 @@ const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
 const reviews = [
   {
     name: "Carla S.",
-    avatar: "",
+    avatar: "/images/avatar-carla.png",
     text: "A mesa é bem grande, boa demais! Espaçosa e super prática — montei em segundos e usei para o churrasco com a família toda. Muito resistente, suporta bastante peso sem tremer!",
     rating: 5,
     photos: ["/images/review-carla-1.png", "/images/review-carla-2.png"],
   },
   {
     name: "Patrícia F.",
-    avatar: "",
+    avatar: "/images/avatar-patricia.png",
     text: "Ela é muito prática. Material bom, custo muito bom. Amei, pretendo comprar outra!",
     rating: 5,
     photos: ["/images/review-patricia-1.png", "/images/review-patricia-2.png"],
   },
   {
     name: "Raquel M.",
-    avatar: "",
+    avatar: "/images/avatar-raquel.png",
     text: "Ela é linda, bem resistente. Me surpreendi com a qualidade, vou usar muito! Chegou no dia certinho.",
     rating: 5,
     photos: ["/images/review-raquel-1.png", "/images/review-raquel-2.png", "/images/review-raquel-3.png"],
   },
   {
     name: "Karine Porto",
-    avatar: "",
+    avatar: "/images/avatar-karine.png",
     text: "Muito boa, bem reforçada. Veio bem embalada na caixa, sem avarias. Gostei muito da mesa!",
     rating: 5,
-    photos: ["/images/review-karine-1.png"],
+    photos: ["/images/review-karine-1.png", "/images/review-karine-2.png", "/images/review-karine-3.png"],
   },
   {
     name: "Juliana P.",
-    avatar: "",
+    avatar: "/images/avatar-juliana.png",
     text: "Adorei a minha compra! Chegou no prazo, veio bem embalada. A mesa é linda e muito resistente. Ideal para quem tem pouco espaço, ela é bem fácil para montar. Gosteiii muitoooooo! 😍",
     rating: 5,
     photos: ["/images/review-juliana-1.png", "/images/review-juliana-2.png"],
@@ -308,7 +308,7 @@ const Index = () => {
           {/* Size Selection */}
           <div className="mt-5">
             <p className="text-sm font-semibold mb-2">
-              Tamanho<span className="text-muted-foreground font-normal ml-1">1 disponível</span>
+              Tamanho<span className="text-muted-foreground font-normal ml-1">2/3 disponíveis</span>
             </p>
             <div className="flex flex-wrap gap-2">
               {sizes.map((s) => {
@@ -341,34 +341,28 @@ const Index = () => {
               <span className="text-muted-foreground text-sm">/5</span>
               <div className="flex gap-0.5 ml-1">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                  <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="divide-y">
               {reviews.map((r, idx) => (
-                <div key={idx} className="rounded-xl border p-4">
+                <div key={idx} className="py-5 first:pt-0">
                   <div className="flex items-center gap-3 mb-2">
-                    {r.avatar ? (
-                      <img src={r.avatar} alt={r.name} className="h-9 w-9 rounded-full object-cover" />
-                    ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                        {r.name.split(" ").map(w => w[0]).join("")}
-                      </div>
-                    )}
+                    <img src={r.avatar} alt={r.name} className="h-10 w-10 rounded-full object-cover" />
                     <span className="font-semibold text-sm">{r.name}</span>
-                    <div className="ml-auto flex gap-0.5">
-                      {Array.from({ length: r.rating }).map((_, i) => (
-                        <Star key={i} className="h-3.5 w-3.5 fill-primary text-primary" />
-                      ))}
-                    </div>
+                  </div>
+                  <div className="flex gap-0.5 mb-2">
+                    {Array.from({ length: r.rating }).map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    ))}
                   </div>
                   <p className="text-sm leading-relaxed text-foreground/90">{r.text}</p>
                   {r.photos.length > 0 && (
                     <div className="mt-3 flex gap-2 overflow-x-auto">
                       {r.photos.map((p, i) => (
-                        <img key={i} src={p} alt={`Foto ${i + 1}`} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" />
+                        <img key={i} src={p} alt={`Foto ${i + 1}`} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />
                       ))}
                     </div>
                   )}
@@ -380,7 +374,7 @@ const Index = () => {
           {/* Store Info */}
           <section className="mt-6 rounded-xl border p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-sm font-bold text-card">ML</div>
+              <img src="/images/logo-mesalar.png" alt="MesaLar" className="h-10 w-10 rounded-full object-cover" />
               <div className="flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="font-bold text-sm">MesaLar</span>
@@ -404,38 +398,39 @@ const Index = () => {
             <h2 className="text-base font-bold mb-3">Descrição do produto</h2>
             <div className="space-y-4 text-sm leading-relaxed text-foreground/90">
               <p>
-                A <strong>Mesa Dobrável Tipo Maleta 180x60cm da MesaLar</strong> é 2 em 1: Mesa de apoio com a portabilidade de uma maleta. Você pode montar, usar e guardar em segundos, sem nenhuma ferramenta!
+                A <strong>Mesa Dobrável Tipo Maleta 180x60cm da MesaLar</strong> é 2 em 1: Mesa de apoio com a portabilidade de uma maleta. Você pode montar, usar e guardar em segundos, sem nenhuma ferramenta! A capacidade total de 180cm permite acomodar até 8 pessoas confortavelmente.
               </p>
-              <p className="font-bold uppercase text-foreground text-xs tracking-wide">SAIBA MAIS SOBRE A MESA DOBRÁVEL TIPO MALETA:</p>
-              <p><strong>2 EM 1: MESA + MALETA:</strong> O modelo Maleta alia a tecnologia de dobra ao espaço e versatilidade de uma mesa tradicional.</p>
-              <img src={productImages[0]} alt="Mesa dobrável" className="w-full rounded-xl" loading="lazy" />
-              <p><strong>RESISTÊNCIA PROFISSIONAL:</strong> Tampo em HDPE e estrutura em aço tubular com pintura epóxi anticorrosiva, suportando até <strong>100kg de peso distribuído.</strong></p>
-              <p><strong>DESIGN INTELIGENTE:</strong> Cantos arredondados, pés antiderrapantes e alça ergonômica para transporte confortável.</p>
-              <img src={productImages[4]} alt="Detalhes técnicos" className="w-full rounded-xl" loading="lazy" />
-              <p><strong>VERSÁTIL PARA TUDO:</strong> Camping, churrascos, feiras, eventos, festas, escritório temporário, bazares — essa mesa se adapta a qualquer situação.</p>
+              <img src="/images/desc-maleta.png" alt="Mesa dobrável tipo maleta" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ LEVE E PORTÁTIL:</strong> Design compacto tipo maleta com alça embutida. Fecha como uma mala e cabe em qualquer canto. Leve para camping, festas, feiras ou simplesmente guarde em casa sem ocupar espaço.</p>
+              <img src="/images/desc-montagem.png" alt="Monte em apenas 6 passos" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ MONTAGEM INSTANTÂNEA:</strong> Monte e desmonte em menos de 30 segundos, sem ferramentas! São apenas 6 passos simples — qualquer pessoa consegue montar sozinha, sem esforço.</p>
+              <img src="/images/desc-qualidade.png" alt="Detalhes de qualidade" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ CONSTRUÇÃO REFORÇADA:</strong> Alça de transporte ergonômica, trava de segurança que impede dobramentos acidentais e tampo em HDPE com espessura larga. Material profissional que dura anos.</p>
+              <img src="/images/desc-pes.png" alt="Pés antiderrapantes" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ PÉS ANTIDERRAPANTES:</strong> Borrachas nos pés que protegem seu piso contra riscos e garantem estabilidade total. A mesa não escorrega nem se move durante o uso, mesmo em superfícies lisas.</p>
+              <img src="/images/desc-dimensoes.png" alt="Dimensões e capacidade" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ LEVE E RESISTENTE:</strong> Pesa apenas 11kg mas suporta até 150kg de peso distribuído! Estrutura em aço tubular com pintura anticorrosiva. Acomoda até 8 pessoas com conforto.</p>
+              <img src="/images/desc-versatilidade.png" alt="Versatilidade de ocasiões" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ PARA TODAS AS OCASIÕES:</strong> Acampamentos, piqueniques, garagem, festas, cozinha, escritório, bazares, churrascos — essa mesa se adapta a qualquer situação. Use dentro ou fora de casa com a mesma praticidade e resistência.</p>
             </div>
           </section>
 
           {/* Specs */}
           <section className="mt-6">
-            <h2 className="text-base font-bold mb-3">Especificações Técnicas</h2>
-            <div className="rounded-xl border overflow-hidden">
-              {[
-                ["Dimensões aberta", "180 x 60 x 74 cm"],
-                ["Dimensões fechada", "90 x 60 x 9 cm"],
-                ["Peso", "≈ 8 kg"],
-                ["Material do tampo", "HDPE (alta densidade)"],
-                ["Estrutura", "Aço tubular c/ epóxi"],
-                ["Capacidade", "Até 100 kg"],
-                ["Cor", "Branco / Cinza Escuro"],
-                ["Pés", "Antiderrapantes"],
-              ].map(([label, value], i) => (
-                <div key={i} className={`flex justify-between px-4 py-2.5 text-sm ${i % 2 === 0 ? "bg-muted/50" : ""}`}>
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="font-medium text-right">{value}</span>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-base font-bold mb-3">Especificações Técnicas:</h2>
+            <ul className="space-y-1.5 text-sm text-foreground/90 list-disc pl-5">
+              <li><strong>Dimensões aberta:</strong> 180 x 60 x 74 cm</li>
+              <li><strong>Dimensões fechada:</strong> 90 x 60 x 9 cm</li>
+              <li><strong>Peso:</strong> aproximadamente 8 kg</li>
+              <li><strong>Material do tampo:</strong> HDPE (plástico de alta densidade)</li>
+              <li><strong>Estrutura:</strong> Aço tubular com pintura epóxi anticorrosiva</li>
+              <li><strong>Capacidade:</strong> suporta até 100 kg</li>
+              <li><strong>Cor:</strong> Branco / Cinza Escuro</li>
+              <li><strong>Pés:</strong> Antiderrapantes em borracha</li>
+            </ul>
+            <p className="mt-4 text-sm leading-relaxed text-foreground/90">
+              <strong>GARANTIA DE 1 ANO:</strong> A MesaLar é a escolha de milhares de consumidores. Com mais de 4.000 unidades vendidas e nota 4.8 de satisfação, a MesaLar é sinônimo de qualidade e confiança. MesaLar, a escolha inteligente!
+            </p>
           </section>
 
           {/* Shipping Details */}
@@ -444,8 +439,9 @@ const Index = () => {
             <div className="space-y-3">
               {[
                 { icon: Truck, color: "text-success", title: "Frete Grátis para todo o Brasil!", desc: "Economize R$ 29,90 no frete — promoção por tempo limitado." },
-                { icon: Clock, color: "text-primary", title: "Prazo de entrega", desc: "Receba em 5 a 8 dias úteis. Pedidos até 14h são despachados no mesmo dia." },
-                { icon: Shield, color: "text-success", title: "Entrega garantida", desc: "Segurada pelos Correios®. Extravio ou dano = reenvio ou reembolso." },
+                { icon: Clock, color: "text-primary", title: "Prazo de entrega", desc: "Receba em 5 a 8 dias úteis após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia." },
+                { icon: Package, color: "text-primary", title: "Rastreamento completo", desc: "Acompanhe seu pedido em tempo real pelo código de rastreio enviado por e-mail e WhatsApp logo após o despacho." },
+                { icon: Shield, color: "text-success", title: "Entrega garantida", desc: "Entrega garantida e segurada pelos Correios®. Em caso de extravio ou dano no transporte, reenviamos o produto ou devolvemos o valor integral sem custo." },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3 rounded-xl border p-4">
                   <item.icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${item.color}`} />
@@ -456,6 +452,9 @@ const Index = () => {
                 </div>
               ))}
             </div>
+            <p className="mt-4 text-sm leading-relaxed text-foreground/90">
+              Envio rápido, seguro e com rastreamento para <strong>todos os estados do Brasil</strong>. Aproveite essa oferta e leve a praticidade da Mesa Dobrável para o seu dia a dia!
+            </p>
           </section>
 
           {/* FAQ */}
