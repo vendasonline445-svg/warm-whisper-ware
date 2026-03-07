@@ -374,7 +374,7 @@ const Index = () => {
           {/* Store Info */}
           <section className="mt-6 rounded-xl border p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-sm font-bold text-card">ML</div>
+              <img src="/images/logo-mesalar.png" alt="MesaLar" className="h-10 w-10 rounded-full object-cover" />
               <div className="flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="font-bold text-sm">MesaLar</span>
@@ -398,15 +398,20 @@ const Index = () => {
             <h2 className="text-base font-bold mb-3">Descrição do produto</h2>
             <div className="space-y-4 text-sm leading-relaxed text-foreground/90">
               <p>
-                A <strong>Mesa Dobrável Tipo Maleta 180x60cm da MesaLar</strong> é 2 em 1: Mesa de apoio com a portabilidade de uma maleta. Você pode montar, usar e guardar em segundos, sem nenhuma ferramenta!
+                A <strong>Mesa Dobrável Tipo Maleta 180x60cm da MesaLar</strong> é 2 em 1: Mesa de apoio com a portabilidade de uma maleta. Você pode montar, usar e guardar em segundos, sem nenhuma ferramenta! A capacidade total de 180cm permite acomodar até 8 pessoas confortavelmente.
               </p>
-              <p className="font-bold uppercase text-foreground text-xs tracking-wide">SAIBA MAIS SOBRE A MESA DOBRÁVEL TIPO MALETA:</p>
-              <p><strong>2 EM 1: MESA + MALETA:</strong> O modelo Maleta alia a tecnologia de dobra ao espaço e versatilidade de uma mesa tradicional.</p>
-              <img src={productImages[0]} alt="Mesa dobrável" className="w-full rounded-xl" loading="lazy" />
-              <p><strong>RESISTÊNCIA PROFISSIONAL:</strong> Tampo em HDPE e estrutura em aço tubular com pintura epóxi anticorrosiva, suportando até <strong>100kg de peso distribuído.</strong></p>
-              <p><strong>DESIGN INTELIGENTE:</strong> Cantos arredondados, pés antiderrapantes e alça ergonômica para transporte confortável.</p>
-              <img src={productImages[4]} alt="Detalhes técnicos" className="w-full rounded-xl" loading="lazy" />
-              <p><strong>VERSÁTIL PARA TUDO:</strong> Camping, churrascos, feiras, eventos, festas, escritório temporário, bazares — essa mesa se adapta a qualquer situação.</p>
+              <img src="/images/desc-maleta.png" alt="Mesa dobrável tipo maleta" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ LEVE E PORTÁTIL:</strong> Design compacto tipo maleta com alça embutida. Fecha como uma mala e cabe em qualquer canto. Leve para camping, festas, feiras ou simplesmente guarde em casa sem ocupar espaço.</p>
+              <img src="/images/desc-montagem.png" alt="Monte em apenas 6 passos" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ MONTAGEM INSTANTÂNEA:</strong> Monte e desmonte em menos de 30 segundos, sem ferramentas! São apenas 6 passos simples — qualquer pessoa consegue montar sozinha, sem esforço.</p>
+              <img src="/images/desc-qualidade.png" alt="Detalhes de qualidade" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ CONSTRUÇÃO REFORÇADA:</strong> Alça de transporte ergonômica, trava de segurança que impede dobramentos acidentais e tampo em HDPE com espessura larga. Material profissional que dura anos.</p>
+              <img src="/images/desc-pes.png" alt="Pés antiderrapantes" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ PÉS ANTIDERRAPANTES:</strong> Borrachas nos pés que protegem seu piso contra riscos e garantem estabilidade total. A mesa não escorrega nem se move durante o uso, mesmo em superfícies lisas.</p>
+              <img src="/images/desc-dimensoes.png" alt="Dimensões e capacidade" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ LEVE E RESISTENTE:</strong> Pesa apenas 11kg mas suporta até 150kg de peso distribuído! Estrutura em aço tubular com pintura anticorrosiva. Acomoda até 8 pessoas com conforto.</p>
+              <img src="/images/desc-versatilidade.png" alt="Versatilidade de ocasiões" className="w-full rounded-xl" loading="lazy" />
+              <p><strong>✅ PARA TODAS AS OCASIÕES:</strong> Acampamentos, piqueniques, garagem, festas, cozinha, escritório, bazares, churrascos — essa mesa se adapta a qualquer situação. Use dentro ou fora de casa com a mesma praticidade e resistência.</p>
             </div>
           </section>
 
