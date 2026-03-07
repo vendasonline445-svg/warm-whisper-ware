@@ -671,7 +671,7 @@ const Index = () => {
               onClick={() => {
                 if (selectedColor) {
                   setExitModalOpen(false);
-                  navigate(`/checkout?cor=${selectedColor}&tamanho=180x60cm&cupom=VOLTA25`);
+                  nav(`/checkout?cor=${selectedColor}&tamanho=180x60cm&cupom=VOLTA25`);
                 }
               }}
               disabled={!selectedColor}
