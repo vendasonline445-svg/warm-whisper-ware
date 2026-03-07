@@ -296,7 +296,7 @@ const Upsell1 = () => {
 
           <button
             onClick={handleGeneratePix}
-            disabled={isLoading || !customer}
+            disabled={isLoading}
             className="w-full font-bold text-base py-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-70"
             style={{
               background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
