@@ -597,14 +597,14 @@ const Index = () => {
         </Button>
       </div>
 
-      {/* Color Selection Modal - Slide from bottom like reference */}
+      {/* Color Selection Modal */}
       <Dialog open={colorModalOpen} onOpenChange={setColorModalOpen}>
-        <DialogContent className="sm:max-w-3xl lg:max-w-4xl p-0 gap-0 rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-auto">
-          <div className="flex items-center justify-between p-4 border-b">
+        <DialogContent className="sm:max-w-4xl lg:max-w-5xl p-0 gap-0 rounded-t-2xl sm:rounded-2xl max-h-[95vh] overflow-auto">
+          <div className="flex items-center justify-between p-4 pb-2">
             <DialogTitle className="text-base font-bold">Escolha a cor</DialogTitle>
             <DialogDescription className="sr-only">Selecione a cor da mesa</DialogDescription>
           </div>
-          <div className="grid grid-cols-2 gap-3 p-4">
+          <div className="grid grid-cols-2 gap-4 px-4">
             {[
               { id: "branca", name: "Branca", img: colorImages.branca },
               { id: "preta", name: "Preta", img: colorImages.preta },
@@ -614,23 +614,22 @@ const Index = () => {
                 onClick={() => setSelectedColor(color.id)}
                 className={`rounded-xl border-2 overflow-hidden transition-all ${
                   selectedColor === color.id
-                    ? "border-foreground shadow-lg"
-                    : "border-border hover:border-foreground/30"
+                    ? "border-destructive bg-destructive/5 shadow-lg"
+                    : "border-border hover:border-muted-foreground"
                 }`}
               >
-                <div className="aspect-[4/3] bg-muted/30 p-2">
+                <div className="aspect-[4/3] sm:aspect-[3/2] bg-background p-4">
                   <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
                 </div>
-                <p className="py-2.5 text-center text-sm font-medium">{color.name}</p>
+                <p className="py-3 text-center text-sm font-medium border-t">{color.name}</p>
               </button>
             ))}
           </div>
-          <div className="px-4 pb-4">
+          <div className="px-4 py-4">
             <Button
               onClick={handleCheckout}
               disabled={!selectedColor}
-              className="w-full bg-muted text-muted-foreground hover:bg-cta hover:text-cta-foreground font-bold text-base py-3.5 h-auto rounded-xl disabled:opacity-50 transition-colors data-[active=true]:bg-cta data-[active=true]:text-cta-foreground"
-              data-active={!!selectedColor}
+              className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold text-base py-4 h-auto rounded-xl disabled:opacity-40 transition-colors"
             >
               Comprar agora
             </Button>
