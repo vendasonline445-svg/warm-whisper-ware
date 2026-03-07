@@ -298,8 +298,8 @@ const Checkout = () => {
         {/* Product Info */}
         <div className="mt-4">
           <p className="text-sm font-semibold flex items-center gap-1">⚠️ Poucas unidades disponíveis</p>
-          <p className="text-xs text-amber-500 flex items-center gap-1 mt-0.5">
-            <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> Muito bem avaliado! 4.8/5,0
+          <p className="text-xs text-success flex items-center gap-1 mt-0.5">
+            <Star className="h-3 w-3 fill-current" /> Muito bem avaliado! 4.8/5,0
           </p>
 
           <div className="flex items-start gap-3 mt-3">
@@ -307,9 +307,9 @@ const Checkout = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta 180x60cm...</p>
               <p className="text-xs text-muted-foreground">{colorLabel}, {selectedSize}</p>
-              <p className="text-xs text-emerald-600 flex items-center gap-1 mt-0.5">
-                <Shield className="h-3 w-3" /> Devolução gratuita
-              </p>
+              <span className="text-xs flex items-center gap-1 mt-0.5 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
+                🔄 Devolução gratuita
+              </span>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-sm font-bold text-cta">R$ {PRODUCT_PRICE.toFixed(2).replace(".", ",")}</span>
                 <span className="text-[10px]">📦</span>
@@ -368,7 +368,7 @@ const Checkout = () => {
 
         {/* Discount */}
         <div className="mt-4 flex items-center justify-between py-3 border-t">
-          <span className="text-sm flex items-center gap-1.5">📦 Desconto especial</span>
+          <span className="text-sm flex items-center gap-1.5">🏷 Desconto especial</span>
           <span className="text-sm font-semibold text-cta flex items-center gap-1">
             - R$ {BASE_DISCOUNT_VALUE.toFixed(2).replace(".", ",")} <ChevronRight className="h-4 w-4" />
           </span>
@@ -412,7 +412,7 @@ const Checkout = () => {
           </div>
           <div className="flex items-center justify-between p-3 rounded-lg border-2 border-cta bg-cta/5">
             <div className="flex items-center gap-2">
-              <span className="text-lg">💠</span>
+              <img src="/images/pix-icon.png" alt="Pix" className="w-5 h-5" />
               <span className="text-sm font-medium">Pix</span>
             </div>
             <div className="w-5 h-5 rounded-full border-2 border-cta flex items-center justify-center">
