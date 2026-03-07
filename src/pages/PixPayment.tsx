@@ -48,7 +48,6 @@ const PixPayment = () => {
     if (pixCode) {
       navigator.clipboard.writeText(pixCode);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
