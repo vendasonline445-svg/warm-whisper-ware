@@ -34,6 +34,24 @@ const Upsell1 = () => {
   const [popupOpen, setPopupOpen] = useState(false);
   const [exitBlocked, setExitBlocked] = useState(false);
 
+  // Fire TikTok CompletePayment event on upsell load (payment was confirmed)
+  useEffect(() => {
+    try {
+      const ttq = (window as any).ttq;
+      if (ttq) {
+        ttq.track("CompletePayment", {
+          content_type: "product",
+          content_id: "mesa-dobravel",
+          value: 87.60,
+          currency: "BRL",
+        });
+        console.log("TikTok CompletePayment event fired");
+      }
+    } catch (e) {
+      console.error("TikTok pixel error:", e);
+    }
+  }, []);
+
   // Get customer data from previous order
   const orderDataStr = sessionStorage.getItem("orderData");
   const orderData = orderDataStr ? JSON.parse(orderDataStr) : null;
