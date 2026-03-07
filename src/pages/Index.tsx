@@ -504,6 +504,56 @@ const Index = () => {
               ))}
             </Accordion>
           </section>
+
+          {/* Footer */}
+          <footer className="mt-8 border-t pt-8 pb-24">
+            <div className="grid grid-cols-2 gap-6 mb-8">
+              <div>
+                <h3 className="font-bold text-sm flex items-center gap-1.5 mb-2">
+                  <CheckCircle2 className="h-4 w-4 text-destructive" /> Compre
+                </h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>Mais vendidos</li>
+                  <li>Novidades</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-bold text-sm flex items-center gap-1.5 mb-2">
+                  <CheckCircle2 className="h-4 w-4 text-destructive" /> Sobre
+                </h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>Sobre nós</li>
+                  <li>Carreiras</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-bold text-sm flex items-center gap-1.5 mb-2">
+                  <CheckCircle2 className="h-4 w-4 text-destructive" /> Suporte
+                </h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>Central de Ajuda</li>
+                  <li>Contato</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-bold text-sm flex items-center gap-1.5 mb-2">
+                  <CheckCircle2 className="h-4 w-4 text-destructive" /> Política & Legal
+                </h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>Política de privacidade</li>
+                  <li>Termos de uso</li>
+                </ul>
+              </div>
+            </div>
+            <div className="text-center text-xs text-muted-foreground border-t pt-4">
+              <p>© 2025 MesaLar.</p>
+              <p className="mt-1">
+                <a href="#" className="text-destructive hover:underline">Política de privacidade</a>
+                <span className="mx-1">·</span>
+                <a href="#" className="text-destructive hover:underline">Termos de uso</a>
+              </p>
+            </div>
+          </footer>
         </div>
       </div>
 
