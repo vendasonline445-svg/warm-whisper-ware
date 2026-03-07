@@ -444,16 +444,13 @@ const Checkout = () => {
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit || isSubmitting}
-            className={`w-full font-bold text-base py-4 h-auto rounded-2xl mb-3 transition-all duration-300 ${
+            className={`w-full font-bold text-base py-4 h-auto rounded-xl mb-3 transition-all duration-300 ${
               canSubmit && !isSubmitting
-                ? "bg-[#F85C70] hover:bg-[#e94d62] text-white shadow-lg shadow-[#F85C70]/30 scale-[1.01]"
+                ? "bg-[#F85C70] hover:bg-[#e94d62] text-white shadow-lg shadow-[#F85C70]/30"
                 : "bg-[#F85C70]/50 text-white/80 opacity-60 cursor-not-allowed"
             }`}
           >
-            <div className="text-center">
-              <span>{isSubmitting ? "Processando..." : "Fazer pedido"}</span>
-              <p className="text-xs font-normal opacity-80 mt-0.5">O cupom expira em {timer}</p>
-            </div>
+            {isSubmitting ? "Processando..." : "Fazer pedido"}
           </Button>
         </div>
       </div>
