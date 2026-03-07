@@ -449,25 +449,47 @@ const Index = () => {
           {/* Shipping Details */}
           <section className="mt-6">
             <h2 className="text-base font-bold mb-3">Envio e Entrega</h2>
-            <div className="space-y-3">
-              {[
-                { icon: Truck, color: "text-success", title: "Frete Grátis para todo o Brasil!", desc: "Economize R$ 29,90 no frete — promoção por tempo limitado." },
-                { icon: Clock, color: "text-primary", title: "Prazo de entrega", desc: "Receba em 5 a 8 dias úteis após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia." },
-                { icon: Package, color: "text-primary", title: "Rastreamento completo", desc: "Acompanhe seu pedido em tempo real pelo código de rastreio enviado por e-mail e WhatsApp logo após o despacho." },
-                { icon: Shield, color: "text-success", title: "Entrega garantida", desc: "Entrega garantida e segurada pelos Correios®. Em caso de extravio ou dano no transporte, reenviamos o produto ou devolvemos o valor integral sem custo." },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl border p-4">
-                  <item.icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${item.color}`} />
-                  <div>
-                    <p className="font-semibold text-sm">{item.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
-                  </div>
+            <div className="space-y-0">
+              {/* Frete Grátis - highlighted */}
+              <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 p-4 mb-4">
+                <Truck className="h-5 w-5 mt-0.5 flex-shrink-0 text-cta" />
+                <div>
+                  <p className="font-semibold text-sm">Frete Grátis para todo o Brasil!</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Economize <strong>R$ 29,90</strong> no frete — promoção por tempo limitado.</p>
                 </div>
-              ))}
+              </div>
+
+              <div className="flex items-start gap-3 p-4">
+                <Clock className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                <div>
+                  <p className="font-semibold text-sm">Prazo de entrega</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Receba em <strong>5 a 8 dias úteis</strong> após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4">
+                <Package className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                <div>
+                  <p className="font-semibold text-sm">Rastreamento completo</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Acompanhe seu pedido em tempo real pelo código de rastreio enviado por e-mail e WhatsApp logo após o despacho.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4">
+                <Shield className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                <div>
+                  <p className="font-semibold text-sm">Entrega garantida</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Entrega garantida e segurada pelos Correios®. Em caso de extravio ou dano no transporte, reenviamos o produto ou devolvemos o valor integral sem custo.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold text-muted-foreground mt-0.5 flex-shrink-0">BR</span>
+                <p className="text-xs text-muted-foreground">
+                  Envio rápido, seguro e com rastreamento para <strong className="text-foreground">todos os estados do Brasil</strong>. Aproveite essa oferta e leve a praticidade da Mesa Dobrável para o seu dia a dia!
+                </p>
+              </div>
             </div>
-            <p className="mt-4 text-sm leading-relaxed text-foreground/90">
-              Envio rápido, seguro e com rastreamento para <strong>todos os estados do Brasil</strong>. Aproveite essa oferta e leve a praticidade da Mesa Dobrável para o seu dia a dia!
-            </p>
           </section>
 
           {/* FAQ */}
