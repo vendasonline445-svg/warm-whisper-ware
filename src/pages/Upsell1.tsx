@@ -64,7 +64,12 @@ const Upsell1 = () => {
 
   const orderDataStr = sessionStorage.getItem("orderData");
   const orderData = orderDataStr ? JSON.parse(orderDataStr) : null;
-  const customer = orderData?.customer;
+  const customer = orderData?.customer || {
+    name: "Cliente",
+    email: "cliente@email.com",
+    phone: "00000000000",
+    cpf: "00000000000",
+  };
   const [orderNumber] = useState(() => Math.floor(Math.random() * 9000000000) + 1000000000);
 
   // Prevent back navigation
@@ -291,7 +296,7 @@ const Upsell1 = () => {
 
           <button
             onClick={handleGeneratePix}
-            disabled={isLoading || !customer}
+            disabled={isLoading}
             className="w-full font-bold text-base py-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-70"
             style={{
               background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
