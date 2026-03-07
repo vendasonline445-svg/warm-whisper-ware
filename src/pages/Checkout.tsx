@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, MapPin, Star, Truck, Shield, Minus, Plus, ChevronRight, Check, ChevronDown
+  ArrowLeft, MapPin, Star, Truck, ShieldCheck, Minus, Plus, ChevronRight, Check, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -236,7 +236,7 @@ const Checkout = () => {
           <div className="flex-1 text-center">
             <p className="font-bold text-sm">Resumo do pedido</p>
             <p className="text-xs text-success flex items-center justify-center gap-1">
-              <Shield className="h-3 w-3" /> Seus dados estão seguros conosco
+              <ShieldCheck className="h-3 w-3" /> Seus dados estão seguros conosco
             </p>
           </div>
           <div className="w-5" />
