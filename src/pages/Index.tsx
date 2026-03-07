@@ -540,8 +540,8 @@ const Index = () => {
                   <CheckCircle2 className="h-4 w-4 text-destructive" /> Política & Legal
                 </h3>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>Política de privacidade</li>
-                  <li>Termos de uso</li>
+                  <li><a href="/politica-de-privacidade" className="hover:underline">Política de privacidade</a></li>
+                  <li><a href="/termos-de-uso" className="hover:underline">Termos de uso</a></li>
                 </ul>
               </div>
             </div>
