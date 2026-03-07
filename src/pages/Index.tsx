@@ -417,24 +417,20 @@ const Index = () => {
 
           {/* Specs */}
           <section className="mt-6">
-            <h2 className="text-base font-bold mb-3">Especificações Técnicas</h2>
-            <div className="rounded-xl border overflow-hidden">
-              {[
-                ["Dimensões aberta", "180 x 60 x 74 cm"],
-                ["Dimensões fechada", "90 x 60 x 9 cm"],
-                ["Peso", "≈ 8 kg"],
-                ["Material do tampo", "HDPE (alta densidade)"],
-                ["Estrutura", "Aço tubular c/ epóxi"],
-                ["Capacidade", "Até 100 kg"],
-                ["Cor", "Branco / Cinza Escuro"],
-                ["Pés", "Antiderrapantes"],
-              ].map(([label, value], i) => (
-                <div key={i} className={`flex justify-between px-4 py-2.5 text-sm ${i % 2 === 0 ? "bg-muted/50" : ""}`}>
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="font-medium text-right">{value}</span>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-base font-bold mb-3">Especificações Técnicas:</h2>
+            <ul className="space-y-1.5 text-sm text-foreground/90 list-disc pl-5">
+              <li><strong>Dimensões aberta:</strong> 180 x 60 x 74 cm</li>
+              <li><strong>Dimensões fechada:</strong> 90 x 60 x 9 cm</li>
+              <li><strong>Peso:</strong> aproximadamente 8 kg</li>
+              <li><strong>Material do tampo:</strong> HDPE (plástico de alta densidade)</li>
+              <li><strong>Estrutura:</strong> Aço tubular com pintura epóxi anticorrosiva</li>
+              <li><strong>Capacidade:</strong> suporta até 100 kg</li>
+              <li><strong>Cor:</strong> Branco / Cinza Escuro</li>
+              <li><strong>Pés:</strong> Antiderrapantes em borracha</li>
+            </ul>
+            <p className="mt-4 text-sm leading-relaxed text-foreground/90">
+              <strong>GARANTIA DE 1 ANO:</strong> A MesaLar é a escolha de milhares de consumidores. Com mais de 4.000 unidades vendidas e nota 4.8 de satisfação, a MesaLar é sinônimo de qualidade e confiança. MesaLar, a escolha inteligente!
+            </p>
           </section>
 
           {/* Shipping Details */}
@@ -443,8 +439,9 @@ const Index = () => {
             <div className="space-y-3">
               {[
                 { icon: Truck, color: "text-success", title: "Frete Grátis para todo o Brasil!", desc: "Economize R$ 29,90 no frete — promoção por tempo limitado." },
-                { icon: Clock, color: "text-primary", title: "Prazo de entrega", desc: "Receba em 5 a 8 dias úteis. Pedidos até 14h são despachados no mesmo dia." },
-                { icon: Shield, color: "text-success", title: "Entrega garantida", desc: "Segurada pelos Correios®. Extravio ou dano = reenvio ou reembolso." },
+                { icon: Clock, color: "text-primary", title: "Prazo de entrega", desc: "Receba em 5 a 8 dias úteis após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia." },
+                { icon: Package, color: "text-primary", title: "Rastreamento completo", desc: "Acompanhe seu pedido em tempo real pelo código de rastreio enviado por e-mail e WhatsApp logo após o despacho." },
+                { icon: Shield, color: "text-success", title: "Entrega garantida", desc: "Entrega garantida e segurada pelos Correios®. Em caso de extravio ou dano no transporte, reenviamos o produto ou devolvemos o valor integral sem custo." },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3 rounded-xl border p-4">
                   <item.icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${item.color}`} />
@@ -455,6 +452,9 @@ const Index = () => {
                 </div>
               ))}
             </div>
+            <p className="mt-4 text-sm leading-relaxed text-foreground/90">
+              Envio rápido, seguro e com rastreamento para <strong>todos os estados do Brasil</strong>. Aproveite essa oferta e leve a praticidade da Mesa Dobrável para o seu dia a dia!
+            </p>
           </section>
 
           {/* FAQ */}
