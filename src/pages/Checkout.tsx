@@ -444,10 +444,10 @@ const Checkout = () => {
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit || isSubmitting}
-            className={`w-full font-bold text-base py-4 h-auto rounded-2xl mb-3 text-card transition-all duration-300 ${
+            className={`w-full font-bold text-base py-4 h-auto rounded-2xl mb-3 transition-all duration-300 ${
               canSubmit && !isSubmitting
-                ? "bg-[hsl(350,60%,55%)] hover:bg-[hsl(350,60%,48%)] shadow-lg shadow-[hsl(350,60%,55%)]/30 scale-[1.01]"
-                : "bg-[hsl(350,30%,75%)] opacity-60 cursor-not-allowed"
+                ? "bg-[#F85C70] hover:bg-[#e94d62] text-white shadow-lg shadow-[#F85C70]/30 scale-[1.01]"
+                : "bg-[#F85C70]/50 text-white/80 opacity-60 cursor-not-allowed"
             }`}
           >
             <div className="text-center">
