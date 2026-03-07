@@ -19,11 +19,13 @@ const OLD_PRICE = 199.90;
 const DISCOUNT = 56;
 
 const productImages = [
-  "/images/produto-2.webp",
-  "/images/mesa-preta-detalhes.png",
-  "/images/produto-5.webp",
-  "/images/produto-1.webp",
-  "/images/produto-3.webp",
+  "/images/mesa-branca-principal.png",
+  "/images/mesa-preta-principal.png",
+  "/images/desc-tamanho.png",
+  "/images/desc-superficie3d.png",
+  "/images/desc-portatil.png",
+  "/images/desc-espaco.png",
+  "/images/desc-transporte.png",
 ];
 
 const colorImages = {
