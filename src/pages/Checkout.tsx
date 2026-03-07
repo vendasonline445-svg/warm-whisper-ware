@@ -287,7 +287,7 @@ const Checkout = () => {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[720px] px-4">
+      <div className="mx-auto max-w-[480px] px-4">
         {/* Address Section - Collapsible */}
         <button
           onClick={() => setAddressOpen((v) => !v)}
