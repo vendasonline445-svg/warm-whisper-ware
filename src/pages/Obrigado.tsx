@@ -4,7 +4,8 @@ import { CheckCircle, Package, Truck, Mail } from "lucide-react";
 const Obrigado = () => {
   const orderDataStr = sessionStorage.getItem("orderData");
   const orderData = orderDataStr ? JSON.parse(orderDataStr) : null;
-  const customerName = orderData?.customer?.name?.split(" ")[0] || "Cliente";
+  const customerName = orderData?.customer?.name || "Cliente";
+  const customerEmail = orderData?.customer?.email || "";
 
   useEffect(() => {
     window.scrollTo(0, 0);
