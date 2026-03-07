@@ -112,16 +112,15 @@ const Index = () => {
   const [couponCopied, setCouponCopied] = useState(false);
   const countdown = useCountdown();
 
-  // Exit intent detection
+  // Exit intent detection - mouse leave (desktop X button), back button, tab close
   useEffect(() => {
     const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 0 && !exitShown) {
+      if (e.clientY <= 5 && !exitShown) {
         setExitModalOpen(true);
         setExitShown(true);
       }
     };
 
-    // Back button / popstate detection
     const handlePopState = () => {
       if (!exitShown) {
         window.history.pushState(null, "", window.location.href);
@@ -130,15 +129,35 @@ const Index = () => {
       }
     };
 
-    // Push initial state
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!exitShown) {
+        e.preventDefault();
+        e.returnValue = "";
+        setExitModalOpen(true);
+        setExitShown(true);
+      }
+    };
+
+    // Mobile: detect visibility change (switching tabs / closing)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && !exitShown) {
+        setExitModalOpen(true);
+        setExitShown(true);
+      }
+    };
+
     window.history.pushState(null, "", window.location.href);
 
     document.addEventListener("mouseleave", handleMouseLeave);
     window.addEventListener("popstate", handlePopState);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       document.removeEventListener("mouseleave", handleMouseLeave);
       window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [exitShown]);
 
