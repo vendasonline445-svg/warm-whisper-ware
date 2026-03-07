@@ -143,7 +143,6 @@ const Index = () => {
       if (!exitShown) {
         e.preventDefault();
         e.returnValue = "";
-        // Schedule modal open for if they cancel the native dialog
         setTimeout(() => {
           setExitModalOpen(true);
           setExitShown(true);
@@ -153,10 +152,41 @@ const Index = () => {
 
     // Mobile: visibility change (switching tabs / closing)
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden" && !exitShown) {
+      if (document.visibilityState === "visible" && !exitShown) {
+        // Show modal when user returns to the tab (they tried to leave)
         setExitModalOpen(true);
         setExitShown(true);
       }
+    };
+
+    // Mobile: detect rapid scroll to top (exit intent signal)
+    let lastScrollY = window.scrollY;
+    let scrollUpDistance = 0;
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY < lastScrollY) {
+        scrollUpDistance += (lastScrollY - currentY);
+        // If user scrolled up more than 400px rapidly and was past the fold
+        if (scrollUpDistance > 400 && lastScrollY > 600 && !exitShown) {
+          setExitModalOpen(true);
+          setExitShown(true);
+        }
+      } else {
+        scrollUpDistance = 0;
+      }
+      lastScrollY = currentY;
+    };
+
+    // Mobile: inactivity timer — show after 45s of no interaction
+    let inactivityTimer: ReturnType<typeof setTimeout>;
+    const resetInactivity = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        if (!exitShown) {
+          setExitModalOpen(true);
+          setExitShown(true);
+        }
+      }, 45000);
     };
 
     window.history.pushState(null, "", window.location.href);
@@ -166,6 +196,10 @@ const Index = () => {
     window.addEventListener("popstate", handlePopState);
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    document.addEventListener("touchstart", resetInactivity, { passive: true });
+    document.addEventListener("touchmove", resetInactivity, { passive: true });
+    resetInactivity();
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
@@ -173,6 +207,10 @@ const Index = () => {
       window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("scroll", handleScroll);
+      document.removeEventListener("touchstart", resetInactivity);
+      document.removeEventListener("touchmove", resetInactivity);
+      clearTimeout(inactivityTimer);
     };
   }, [exitShown]);
 
