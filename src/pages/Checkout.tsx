@@ -293,7 +293,7 @@ const Checkout = () => {
         )}
 
         {/* Divider */}
-        <div className="mt-6 border-t-2 border-dashed border-success" />
+        <div className="mt-6 border-t-2 border-dashed border-[#5BC4D6]" />
 
         {/* Product Info */}
         <div className="mt-4">
