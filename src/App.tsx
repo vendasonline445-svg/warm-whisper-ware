@@ -28,6 +28,8 @@ const App = () => (
           <Route path="/pix" element={<PixPayment />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/adm" element={<TemplateAdmin />} />
+          <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
+          <Route path="/termos-de-uso" element={<TermosDeUso />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
