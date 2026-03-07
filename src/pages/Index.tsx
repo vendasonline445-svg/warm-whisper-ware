@@ -265,9 +265,9 @@ const Index = () => {
           <p className="mt-1 text-xs font-medium text-cta">1.2K+ pessoas compraram nos últimos 3 dias</p>
 
           {/* Shipping */}
-          <div className="mt-4 flex items-center gap-3">
-            <span className="rounded bg-badge-green px-2 py-0.5 text-xs font-bold text-badge-green-foreground flex items-center gap-1">
-              <Truck className="h-3 w-3" /> Frete grátis
+          <div className="mt-4 flex items-center gap-3 rounded-xl border p-3">
+            <span className="rounded bg-badge-green px-2.5 py-1 text-xs font-bold text-badge-green-foreground flex items-center gap-1">
+              <Truck className="h-3.5 w-3.5" /> Frete grátis
             </span>
             <div className="text-sm">
               <span>Receba em <strong>5 - 8 dias úteis</strong></span>
@@ -287,29 +287,37 @@ const Index = () => {
               </div>
               <span className="text-xs font-bold text-success">100% Protegido</span>
             </div>
-            <div className="space-y-2 text-sm">
-              {[
-                "Devolução gratuita em até 7 dias",
-                "Reembolso automático por danos",
-                "Pagamento seguro e criptografado",
-                "Cupom por atraso na entrega",
-              ].map((item) => (
-                <div key={item} className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
-                  <span>{item}</span>
-                </div>
-              ))}
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
+                <span>Devolução gratuita em até 7 dias</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Package className="h-5 w-5 text-primary flex-shrink-0" />
+                <span>Reembolso automático por danos</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-success flex-shrink-0" />
+                <span>Pagamento seguro e criptografado</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Gift className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <span>Cupom por atraso na entrega</span>
+              </div>
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Sua compra é <strong>100% protegida</strong>. Garantimos devolução do valor integral caso o produto não corresponda à descrição.
-            </p>
+            <div className="mt-4 rounded-lg bg-success/10 p-3 text-center">
+              <p className="text-xs text-foreground/80">
+                Sua compra é <strong className="text-success">100% protegida</strong>. Garantimos devolução do valor integral caso o produto não corresponda à descrição.
+              </p>
+            </div>
           </div>
 
           {/* Size Selection */}
           <div className="mt-5">
-            <p className="text-sm font-semibold mb-2">
-              Tamanho<span className="text-muted-foreground font-normal ml-1">2/3 disponíveis</span>
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-semibold">Tamanho</p>
+              <span className="text-muted-foreground text-sm">23 disponíveis</span>
+            </div>
             <div className="flex flex-wrap gap-2">
               {sizes.map((s) => {
                 const available = s === "180x60cm";
@@ -320,7 +328,7 @@ const Index = () => {
                     disabled={!available}
                     className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                       selectedSize === s
-                        ? "border-primary bg-primary/10 text-primary"
+                        ? "border-cta bg-cta/5 text-cta"
                         : available
                           ? "border-border text-foreground hover:border-foreground/40"
                           : "border-border/50 text-muted-foreground/50 cursor-not-allowed"
