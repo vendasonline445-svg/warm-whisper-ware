@@ -548,9 +548,9 @@ const Index = () => {
             <div className="text-center text-xs text-muted-foreground border-t pt-4">
               <p>© 2025 MesaLar.</p>
               <p className="mt-1">
-                <a href="#" className="text-destructive hover:underline">Política de privacidade</a>
+                <a href="/politica-de-privacidade" className="text-destructive hover:underline">Política de privacidade</a>
                 <span className="mx-1">·</span>
-                <a href="#" className="text-destructive hover:underline">Termos de uso</a>
+                <a href="/termos-de-uso" className="text-destructive hover:underline">Termos de uso</a>
               </p>
             </div>
           </footer>
