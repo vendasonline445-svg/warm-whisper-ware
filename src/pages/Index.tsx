@@ -183,7 +183,7 @@ const Index = () => {
       <div className="mx-auto max-w-[480px]">
         {/* Product Gallery */}
         <section className="bg-card">
-          <div className="relative aspect-square overflow-hidden bg-card">
+          <div className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card">
             <img
               src={productImages[currentImage]}
               alt="Mesa dobrável"
