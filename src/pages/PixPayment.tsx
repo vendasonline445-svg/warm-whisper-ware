@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, AlertTriangle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 function usePixCountdown(expiresAt?: string) {
   const target = useMemo(() => {
@@ -26,9 +27,44 @@ function usePixCountdown(expiresAt?: string) {
 const PixPayment = () => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const pixData = JSON.parse(sessionStorage.getItem("pixData") || "{}");
   const orderData = JSON.parse(sessionStorage.getItem("orderData") || "{}");
+  const transactionId = pixData?.id || pixData?.transactionId || "";
+
+  // Poll payment status every 5s and redirect to upsell when paid
+  const checkPaymentStatus = useCallback(async () => {
+    if (!transactionId) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("check-pix-status", {
+        body: { transactionId },
+      });
+      if (!error && data?.paid) {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        const ttq = (window as any).ttq;
+        if (ttq) {
+          ttq.track("CompletePayment", {
+            content_id: "mesa-dobravel",
+            value: orderData?.product?.total || pixData?.amount / 100 || 87.60,
+            currency: "BRL",
+          });
+        }
+        navigate("/upsell1");
+      }
+    } catch (err) {
+      console.error("Polling error:", err);
+    }
+  }, [transactionId, navigate]);
+
+  useEffect(() => {
+    if (!transactionId) return;
+    pollingRef.current = setInterval(checkPaymentStatus, 5000);
+    checkPaymentStatus();
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [transactionId, checkPaymentStatus]);
 
   const pixInfo = pixData?.pix || pixData?.pixQrCode || {};
   const qrCode = pixInfo?.qrcode || pixInfo?.qr_code || pixData?.pix_qr_code || "";
