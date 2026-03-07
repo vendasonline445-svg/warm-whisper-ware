@@ -112,15 +112,24 @@ const Index = () => {
   const [couponCopied, setCouponCopied] = useState(false);
   const countdown = useCountdown();
 
-  // Exit intent detection - mouse leave (desktop X button), back button, tab close
+  // Exit intent detection
   useEffect(() => {
-    const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 5 && !exitShown) {
+    // Desktop: detect mouse moving to top of viewport (toward browser X/close)
+    const handleMouseMove = (e: MouseEvent) => {
+      if (e.clientY <= 3 && !exitShown) {
         setExitModalOpen(true);
         setExitShown(true);
       }
     };
 
+    const handleMouseLeave = (e: MouseEvent) => {
+      if (e.clientY <= 10 && !exitShown) {
+        setExitModalOpen(true);
+        setExitShown(true);
+      }
+    };
+
+    // Back button detection
     const handlePopState = () => {
       if (!exitShown) {
         window.history.pushState(null, "", window.location.href);
@@ -129,16 +138,20 @@ const Index = () => {
       }
     };
 
+    // Tab close - show native dialog + set modal for when they stay
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!exitShown) {
         e.preventDefault();
         e.returnValue = "";
-        setExitModalOpen(true);
-        setExitShown(true);
+        // Schedule modal open for if they cancel the native dialog
+        setTimeout(() => {
+          setExitModalOpen(true);
+          setExitShown(true);
+        }, 100);
       }
     };
 
-    // Mobile: detect visibility change (switching tabs / closing)
+    // Mobile: visibility change (switching tabs / closing)
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden" && !exitShown) {
         setExitModalOpen(true);
@@ -148,12 +161,14 @@ const Index = () => {
 
     window.history.pushState(null, "", window.location.href);
 
+    document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseleave", handleMouseLeave);
     window.addEventListener("popstate", handlePopState);
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseleave", handleMouseLeave);
       window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("beforeunload", handleBeforeUnload);
