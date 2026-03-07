@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
       shipping: {
         street: shipping?.address?.street || "",
         streetNumber: shipping?.address?.streetNumber || "",
+        complement: shipping?.address?.complement || "",
         neighborhood: shipping?.address?.neighborhood || "",
         city: shipping?.address?.city || "",
         state: shipping?.address?.state || "",

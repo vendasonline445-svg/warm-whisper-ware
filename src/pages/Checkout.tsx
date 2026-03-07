@@ -177,6 +177,7 @@ const Checkout = () => {
           address: {
             street: form.endereco,
             streetNumber: form.numero,
+            complement: form.complemento,
             neighborhood: form.bairro,
             city: form.cidade,
             state: form.uf,
