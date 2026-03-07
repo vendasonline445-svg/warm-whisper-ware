@@ -299,7 +299,7 @@ const Checkout = () => {
         <div className="mt-4">
           <p className="text-sm font-semibold flex items-center gap-1">⚠️ Poucas unidades disponíveis</p>
           <p className="text-xs text-success flex items-center gap-1 mt-0.5">
-            <Star className="h-3 w-3 fill-current" /> Muito bem avaliado! 4.8/5,0
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> Muito bem avaliado! 4.8/5,0
           </p>
 
           <div className="flex items-start gap-3 mt-3">
