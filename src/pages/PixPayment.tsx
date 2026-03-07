@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Copy, AlertTriangle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function usePixCountdown(expiresAt?: string) {
