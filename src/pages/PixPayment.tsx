@@ -50,7 +50,7 @@ const PixPayment = () => {
             currency: "BRL",
           });
         }
-        navigate("/upsell1");
+        navigate("/obrigado");
       }
     } catch (err) {
       console.error("Polling error:", err);
