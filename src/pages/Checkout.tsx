@@ -412,7 +412,7 @@ const Checkout = () => {
           </div>
           <div className="flex items-center justify-between p-3 rounded-lg border-2 border-cta bg-cta/5">
             <div className="flex items-center gap-2">
-              <span className="text-lg">💠</span>
+              <img src="/images/pix-icon.png" alt="Pix" className="w-5 h-5" />
               <span className="text-sm font-medium">Pix</span>
             </div>
             <div className="w-5 h-5 rounded-full border-2 border-cta flex items-center justify-center">
