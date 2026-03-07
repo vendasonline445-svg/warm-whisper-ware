@@ -308,7 +308,7 @@ const Index = () => {
           {/* Size Selection */}
           <div className="mt-5">
             <p className="text-sm font-semibold mb-2">
-              Tamanho<span className="text-muted-foreground font-normal ml-1">1 disponível</span>
+              Tamanho<span className="text-muted-foreground font-normal ml-1">2/3 disponíveis</span>
             </p>
             <div className="flex flex-wrap gap-2">
               {sizes.map((s) => {
