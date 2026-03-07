@@ -273,7 +273,7 @@ const Checkout = () => {
     <div className="min-h-screen bg-background pb-[140px]">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-card px-4 py-3">
-        <div className="mx-auto max-w-[720px] flex items-center gap-3">
+        <div className="mx-auto max-w-[480px] flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </button>
@@ -287,7 +287,7 @@ const Checkout = () => {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[720px] px-4">
+      <div className="mx-auto max-w-[480px] px-4">
         {/* Address Section - Collapsible */}
         <button
           onClick={() => setAddressOpen((v) => !v)}
@@ -620,7 +620,7 @@ const Checkout = () => {
 
       {/* Sticky Bottom */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
-        <div className="mx-auto max-w-[720px] px-4">
+        <div className="mx-auto max-w-[480px] px-4">
           <div className="flex items-center justify-between py-2">
             <span className="font-bold text-sm">Total (1 item)</span>
             <span className="font-bold text-lg text-cta">R$ {total.toFixed(2).replace(".", ",")}</span>

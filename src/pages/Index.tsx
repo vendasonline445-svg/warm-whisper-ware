@@ -170,7 +170,7 @@ const Index = () => {
     <div className="min-h-screen bg-white pb-[72px]">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b bg-card">
-        <div className="mx-auto max-w-[720px] flex items-center justify-between px-4 py-3">
+        <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 py-3">
           <X className="h-5 w-5 text-muted-foreground cursor-pointer" />
           <div className="flex items-center gap-5">
             <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" />
@@ -180,7 +180,7 @@ const Index = () => {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[720px]">
+      <div className="mx-auto max-w-[480px]">
         {/* Product Gallery */}
         <section className="bg-card">
           <div className="relative aspect-square overflow-hidden bg-card">
@@ -475,7 +475,7 @@ const Index = () => {
 
       {/* Sticky Bottom Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
-        <div className="mx-auto max-w-[720px] px-2 py-2 sm:px-3 sm:py-2.5 flex items-center gap-1.5 sm:gap-2">
+        <div className="mx-auto max-w-[480px] px-2 py-2 sm:px-3 sm:py-2.5 flex items-center gap-1.5 sm:gap-2">
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <button className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[28px]">
               <Store className="h-4 w-4 sm:h-5 sm:w-5" />
