@@ -621,7 +621,7 @@ const Index = () => {
 
       {/* Exit Intent Modal - VOLTA25 */}
       <Dialog open={exitModalOpen} onOpenChange={setExitModalOpen}>
-        <DialogContent className="sm:max-w-sm rounded-2xl p-6 text-center">
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 text-center border-t-4 border-t-destructive">
           <DialogDescription className="sr-only">Cupom de desconto exclusivo</DialogDescription>
           <div className="flex flex-col items-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-coupon-bg mb-4">
@@ -629,31 +629,54 @@ const Index = () => {
             </div>
             <DialogTitle className="text-xl font-bold mb-2">Ei, espera! 🎁</DialogTitle>
             <p className="text-sm text-muted-foreground mb-5">
-              Preparamos um <strong className="text-coupon-text">desconto exclusivo</strong> pra você não sair de mãos vazias!
+              Preparamos um <strong className="text-destructive">desconto exclusivo</strong> pra você!
             </p>
 
             {/* Coupon Box */}
             <div className="w-full rounded-xl border-2 border-dashed border-coupon-border bg-coupon-bg p-4 mb-5">
               <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Cupom de Desconto</p>
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-3xl font-black tracking-wider text-foreground">VOLTA25</span>
-                <button
-                  onClick={copyCoupon}
-                  className="flex items-center gap-1 text-sm font-semibold text-coupon-text hover:underline"
-                >
-                  <Copy className="h-4 w-4" />
-                  {couponCopied ? "Copiado!" : "Copiar"}
-                </button>
+              <p className="text-3xl font-black tracking-wider text-destructive mb-1">VOLTA25</p>
+              <p className="text-sm"><strong>25% OFF</strong> na sua compra</p>
+              <p className="text-sm mt-2">⏳ Expira em <strong className="text-destructive">{fmt(countdown.m)}:{fmt(countdown.s)}</strong></p>
+              <div className="mt-2 h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full bg-destructive" style={{ width: `${Math.max(5, ((countdown.m * 60 + countdown.s) / 300) * 100)}%` }} />
               </div>
-              <p className="text-sm mt-1"><strong>25% OFF</strong> na sua compra</p>
+            </div>
+
+            {/* Color Selection */}
+            <p className="text-sm font-bold mb-3">Escolha a cor e vá direto pro checkout:</p>
+            <div className="grid grid-cols-2 gap-3 w-full mb-5">
+              {[
+                { id: "branca", name: "Branca", img: "/images/mesa-branca-popup.png" },
+                { id: "preta", name: "Preta", img: "/images/mesa-preta-popup.png" },
+              ].map((color) => (
+                <button
+                  key={color.id}
+                  onClick={() => setSelectedColor(color.id)}
+                  className={`rounded-xl border-2 overflow-hidden transition-all ${
+                    selectedColor === color.id
+                      ? "border-foreground shadow-lg"
+                      : "border-border hover:border-foreground/30"
+                  }`}
+                >
+                  <div className="aspect-[4/3] bg-background p-2">
+                    <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
+                  </div>
+                  <p className="py-2 text-center text-sm font-medium">{color.name}</p>
+                </button>
+              ))}
             </div>
 
             <Button
               onClick={() => {
-                setExitModalOpen(false);
-                openColorModal();
+                if (selectedColor) {
+                  setExitModalOpen(false);
+                  nav(`/checkout?cor=${selectedColor}&tamanho=180x60cm&cupom=VOLTA25`);
+                }
               }}
-              className="w-full bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-base py-3.5 h-auto rounded-xl"
+              disabled={!selectedColor}
+              className="w-full bg-muted text-muted-foreground hover:bg-cta hover:text-cta-foreground font-bold text-base py-3.5 h-auto rounded-xl disabled:opacity-50 transition-colors data-[active=true]:bg-cta data-[active=true]:text-cta-foreground"
+              data-active={!!selectedColor}
             >
               Aproveitar desconto 🔥
             </Button>
