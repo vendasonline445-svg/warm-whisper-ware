@@ -79,7 +79,12 @@ const Upsell1 = () => {
   }, []);
 
   const handleGeneratePix = async () => {
-    if (!customer || isLoading) return;
+    if (isLoading) return;
+    if (!customer) {
+      console.error("No customer data in sessionStorage");
+      toast({ title: "Erro", description: "Dados do pedido não encontrados. Volte ao checkout.", variant: "destructive" });
+      return;
+    }
     setIsLoading(true);
 
     try {
