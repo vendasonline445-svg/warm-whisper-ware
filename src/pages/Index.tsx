@@ -180,7 +180,7 @@ const Index = () => {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[720px]">
+      <div className="mx-auto max-w-[480px]">
         {/* Product Gallery */}
         <section className="bg-card">
           <div className="relative aspect-square overflow-hidden bg-card">
