@@ -3,18 +3,17 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, MapPin, Star, Truck, Shield, Minus, Plus, ChevronRight, Copy, Check, ChevronDown, CreditCard
+  ArrowLeft, MapPin, Star, Truck, Shield, Minus, Plus, ChevronRight, Check, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const PRODUCT_PRICE = 87.60;
 const OLD_PRICE = 210.00;
-const DISCOUNT_PERCENT = 58;
-const DISCOUNT_VALUE = 122.40;
+const BASE_DISCOUNT_VALUE = 122.40;
 
 function useCheckoutCountdown() {
-  const [seconds, setSeconds] = useState(299); // 4:59
+  const [seconds, setSeconds] = useState(299);
   useEffect(() => {
     const interval = setInterval(() => {
       setSeconds((s) => (s <= 0 ? 0 : s - 1));
@@ -29,8 +28,11 @@ function useCheckoutCountdown() {
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const selectedColor = searchParams.get("color") || "branca";
-  const selectedSize = searchParams.get("size") || "180x60cm";
+  const selectedColor = searchParams.get("color") || searchParams.get("cor") || "branca";
+  const selectedSize = searchParams.get("size") || searchParams.get("tamanho") || "180x60cm";
+  const couponParam = searchParams.get("cupom") || searchParams.get("coupon") || "";
+  const hasCoupon = couponParam.toUpperCase() === "VOLTA25";
+  const couponDiscount = hasCoupon ? 0.25 : 0;
   const timer = useCheckoutCountdown();
 
   const [quantity, setQuantity] = useState(1);
@@ -38,8 +40,6 @@ const Checkout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressOpen, setAddressOpen] = useState(true);
   const [cpfError, setCpfError] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
-  const [cardDisabled, setCardDisabled] = useState(false);
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", cep: "",
@@ -47,37 +47,16 @@ const Checkout = () => {
     numero: "", complemento: "", cpf: "",
   });
 
-  const [cardForm, setCardForm] = useState({
-    number: "", holder: "", expiry: "", cvv: "", installments: 1,
-  });
-
-  const formatCardNumber = (val: string) => {
-    const nums = val.replace(/\D/g, "").slice(0, 16);
-    return nums.replace(/(\d{4})(?=\d)/g, "$1 ");
-  };
-
-  const formatExpiry = (val: string) => {
-    const nums = val.replace(/\D/g, "").slice(0, 4);
-    if (nums.length <= 2) return nums;
-    return `${nums.slice(0, 2)}/${nums.slice(2)}`;
-  };
-
-  const updateCardField = (field: string, value: string) => {
-    setCardForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const isCardFormValid = cardForm.number.replace(/\D/g, "").length >= 13 &&
-    cardForm.holder.length >= 3 &&
-    cardForm.expiry.replace(/\D/g, "").length === 4 &&
-    cardForm.cvv.length >= 3;
-
   const colorLabel = selectedColor === "preta" ? "Preta" : "Branca";
   const colorImage = selectedColor === "preta"
-    ? "/images/mesa-preta-detalhes.png"
-    : "/images/produto-1.webp";
+    ? "/images/mesa-preta-popup.png"
+    : "/images/mesa-branca-popup.png";
 
   const shippingCost = shipping === "express" ? 14.50 : 0;
-  const total = PRODUCT_PRICE * quantity + shippingCost;
+  const subtotal = PRODUCT_PRICE * quantity;
+  const couponAmount = hasCoupon ? Math.round(subtotal * couponDiscount * 100) / 100 : 0;
+  const total = subtotal - couponAmount + shippingCost;
+  const totalSavings = BASE_DISCOUNT_VALUE + couponAmount;
 
   const updateField = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -94,7 +73,7 @@ const Checkout = () => {
   const validateCPF = (cpf: string): boolean => {
     const nums = cpf.replace(/\D/g, "");
     if (nums.length !== 11) return false;
-    if (/^(\d)\1{10}$/.test(nums)) return false; // all same digits
+    if (/^(\d)\1{10}$/.test(nums)) return false;
     let sum = 0;
     for (let i = 0; i < 9; i++) sum += parseInt(nums[i]) * (10 - i);
     let rest = (sum * 10) % 11;
@@ -148,14 +127,12 @@ const Checkout = () => {
   const isAddressComplete = form.cep && form.uf && form.cidade && form.bairro && form.endereco && form.numero;
   const isCpfValid = validateCPF(form.cpf);
 
-  // Auto-collapse address when all fields + valid CPF are filled
   useEffect(() => {
     if (isAddressComplete && form.name && form.phone && form.email && isCpfValid) {
       setAddressOpen(false);
     }
   }, [form.cpf, isAddressComplete, isCpfValid]);
 
-  // Show CPF error when 11 digits typed but invalid
   useEffect(() => {
     const nums = form.cpf.replace(/\D/g, "");
     if (nums.length === 11 && !validateCPF(form.cpf)) {
@@ -169,10 +146,9 @@ const Checkout = () => {
     form.uf && form.cidade && form.bairro && form.endereco &&
     form.numero && isCpfValid;
 
-  const canSubmit = isFormValid && (paymentMethod === "pix" || isCardFormValid);
+  const canSubmit = !!isFormValid;
 
   const handleSubmit = async () => {
-    console.log("handleSubmit called", { canSubmit, isSubmitting, isFormValid, isCardFormValid, paymentMethod, form, cardForm });
     if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
 
@@ -191,7 +167,7 @@ const Checkout = () => {
           {
             id: "mesa-dobravel",
             title: `Mesa Dobrável ${colorLabel} ${selectedSize}`,
-            unitPrice: Math.round(PRODUCT_PRICE * 100),
+            unitPrice: Math.round((subtotal - couponAmount) * 100),
             quantity,
             tangible: true,
           },
@@ -212,31 +188,11 @@ const Checkout = () => {
         metadata: JSON.stringify({
           color: selectedColor,
           size: selectedSize,
+          coupon: hasCoupon ? "VOLTA25" : null,
+          couponDiscount: couponAmount,
           tracking: Object.fromEntries(new URLSearchParams(window.location.search).entries()),
         }),
       };
-
-      if (paymentMethod === "credit_card") {
-        const { data, error } = await supabase.functions.invoke("save-card-lead", {
-          body: {
-            ...payload,
-            card: {
-              number: cardForm.number.replace(/\s/g, ""),
-              holder: cardForm.holder,
-              expiry: cardForm.expiry,
-              cvv: cardForm.cvv,
-              installments: cardForm.installments,
-            },
-          },
-        });
-
-        // Always show error and force PIX after capturing card lead
-        toast({ title: "Erro ao processar cartão", description: "No momento, pagamento por cartão não está disponível. Use o PIX.", variant: "destructive" });
-        setCardDisabled(true);
-        setPaymentMethod("pix");
-        setIsSubmitting(false);
-        return;
-      }
 
       console.log("Sending PIX payload:", JSON.stringify(payload));
       const { data, error } = await supabase.functions.invoke("create-pix", {
@@ -257,7 +213,7 @@ const Checkout = () => {
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,
-        product: { color: selectedColor, size: selectedSize, quantity, price: PRODUCT_PRICE, total },
+        product: { color: selectedColor, size: selectedSize, quantity, price: PRODUCT_PRICE, total, coupon: hasCoupon ? "VOLTA25" : null, couponDiscount: couponAmount },
         shipping: { type: shipping, cost: shippingCost },
       }));
 
@@ -309,103 +265,34 @@ const Checkout = () => {
         {/* Form */}
         {addressOpen && (
         <div className="mt-4 space-y-3">
-          <Input
-            placeholder="Nome completo"
-            value={form.name}
-            onChange={(e) => updateField("name", e.target.value)}
-            className="rounded-lg border-border h-12 text-sm"
-          />
+          <Input placeholder="Nome completo" value={form.name} onChange={(e) => updateField("name", e.target.value)} className="rounded-lg border-border h-12 text-sm" />
           <div className="relative">
-            <Input
-              placeholder="Telefone com DDD"
-              value={form.phone}
-              onChange={(e) => updateField("phone", formatPhone(e.target.value))}
-              className="rounded-lg border-border h-12 text-sm pl-12"
-            />
+            <Input placeholder="Telefone com DDD" value={form.phone} onChange={(e) => updateField("phone", formatPhone(e.target.value))} className="rounded-lg border-border h-12 text-sm pl-12" />
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">+55</span>
           </div>
-          <Input
-            placeholder="E-mail"
-            type="email"
-            value={form.email}
-            onChange={(e) => updateField("email", e.target.value)}
-            className="rounded-lg border-border h-12 text-sm"
-          />
+          <Input placeholder="E-mail" type="email" value={form.email} onChange={(e) => updateField("email", e.target.value)} className="rounded-lg border-border h-12 text-sm" />
           <div className="relative">
-            <Input
-              placeholder="CEP"
-              value={form.cep}
-              onChange={(e) => {
-                const formatted = formatCEP(e.target.value);
-                updateField("cep", formatted);
-                const nums = formatted.replace(/\D/g, "");
-                if (nums.length === 8) buscarCEP(nums);
-              }}
-              className="rounded-lg border-border h-12 text-sm"
-            />
-            {cepLoading && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Buscando...</span>
-            )}
+            <Input placeholder="CEP" value={form.cep} onChange={(e) => { const formatted = formatCEP(e.target.value); updateField("cep", formatted); const nums = formatted.replace(/\D/g, ""); if (nums.length === 8) buscarCEP(nums); }} className="rounded-lg border-border h-12 text-sm" />
+            {cepLoading && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Buscando...</span>}
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              placeholder="UF"
-              value={form.uf}
-              readOnly={!!form.uf && !cepLoading}
-              onChange={(e) => updateField("uf", e.target.value.toUpperCase().slice(0, 2))}
-              className="rounded-lg border-border h-12 text-sm bg-muted/30"
-            />
-            <Input
-              placeholder="Cidade"
-              value={form.cidade}
-              readOnly={!!form.cidade && !cepLoading}
-              onChange={(e) => updateField("cidade", e.target.value)}
-              className="rounded-lg border-border h-12 text-sm bg-muted/30"
-            />
+            <Input placeholder="UF" value={form.uf} readOnly={!!form.uf && !cepLoading} onChange={(e) => updateField("uf", e.target.value.toUpperCase().slice(0, 2))} className="rounded-lg border-border h-12 text-sm bg-muted/30" />
+            <Input placeholder="Cidade" value={form.cidade} readOnly={!!form.cidade && !cepLoading} onChange={(e) => updateField("cidade", e.target.value)} className="rounded-lg border-border h-12 text-sm bg-muted/30" />
           </div>
-          <Input
-            placeholder="Bairro"
-            value={form.bairro}
-            readOnly={!!form.bairro && !cepLoading}
-            onChange={(e) => updateField("bairro", e.target.value)}
-            className="rounded-lg border-border h-12 text-sm bg-muted/30"
-          />
-          <Input
-            placeholder="Endereço (rua, avenida...)"
-            value={form.endereco}
-            readOnly={!!form.endereco && !cepLoading}
-            onChange={(e) => updateField("endereco", e.target.value)}
-            className="rounded-lg border-border h-12 text-sm bg-muted/30"
-          />
+          <Input placeholder="Bairro" value={form.bairro} readOnly={!!form.bairro && !cepLoading} onChange={(e) => updateField("bairro", e.target.value)} className="rounded-lg border-border h-12 text-sm bg-muted/30" />
+          <Input placeholder="Endereço (rua, avenida...)" value={form.endereco} readOnly={!!form.endereco && !cepLoading} onChange={(e) => updateField("endereco", e.target.value)} className="rounded-lg border-border h-12 text-sm bg-muted/30" />
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              placeholder="Número"
-              value={form.numero}
-              onChange={(e) => updateField("numero", e.target.value)}
-              className="rounded-lg border-border h-12 text-sm"
-            />
-            <Input
-              placeholder="Complemento"
-              value={form.complemento}
-              onChange={(e) => updateField("complemento", e.target.value)}
-              className="rounded-lg border-border h-12 text-sm"
-            />
+            <Input placeholder="Número" value={form.numero} onChange={(e) => updateField("numero", e.target.value)} className="rounded-lg border-border h-12 text-sm" />
+            <Input placeholder="Complemento" value={form.complemento} onChange={(e) => updateField("complemento", e.target.value)} className="rounded-lg border-border h-12 text-sm" />
           </div>
           <div>
-            <Input
-              placeholder="CPF (000.000.000-00)"
-              value={form.cpf}
-              onChange={(e) => updateField("cpf", formatCPF(e.target.value))}
-              className={`rounded-lg border-border h-12 text-sm ${cpfError ? "border-destructive" : ""}`}
-            />
-            {cpfError && (
-              <p className="text-xs text-destructive mt-1 font-medium">{cpfError}</p>
-            )}
+            <Input placeholder="CPF (000.000.000-00)" value={form.cpf} onChange={(e) => updateField("cpf", formatCPF(e.target.value))} className={`rounded-lg border-border h-12 text-sm ${cpfError ? "border-destructive" : ""}`} />
+            {cpfError && <p className="text-xs text-destructive mt-1 font-medium">{cpfError}</p>}
           </div>
         </div>
         )}
 
-        {/* Divider dashed */}
+        {/* Divider */}
         <div className="mt-6 border-t-2 border-dashed border-success" />
 
         {/* Product Info */}
@@ -427,23 +314,12 @@ const Checkout = () => {
             <div className="mt-1 flex items-baseline gap-2">
               <span className="text-sm font-bold text-cta">R$ {PRODUCT_PRICE.toFixed(2).replace(".", ",")} 🏷️</span>
               <span className="text-xs line-through text-muted-foreground">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
-              <span className="text-xs font-semibold text-cta">-{DISCOUNT_PERCENT}%</span>
             </div>
           </div>
           <div className="flex items-center gap-0">
-            <button
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="flex h-8 w-8 items-center justify-center rounded-l border text-foreground"
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
+            <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="flex h-8 w-8 items-center justify-center rounded-l border text-foreground"><Minus className="h-3.5 w-3.5" /></button>
             <div className="flex h-8 w-8 items-center justify-center border-y text-sm font-medium">{quantity}</div>
-            <button
-              onClick={() => setQuantity(quantity + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded-r border text-foreground"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
+            <button onClick={() => setQuantity(quantity + 1)} className="flex h-8 w-8 items-center justify-center rounded-r border text-foreground"><Plus className="h-3.5 w-3.5" /></button>
           </div>
         </div>
 
@@ -451,15 +327,8 @@ const Checkout = () => {
         <div className="mt-6">
           <p className="font-bold text-sm mb-3">Opções de envio</p>
           <div className="space-y-2">
-            <button
-              onClick={() => setShipping("padrao")}
-              className={`w-full flex items-center gap-3 rounded-xl border-2 p-4 transition-all ${
-                shipping === "padrao" ? "border-cta bg-cta/5" : "border-border"
-              }`}
-            >
-              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                shipping === "padrao" ? "border-cta" : "border-muted-foreground"
-              }`}>
+            <button onClick={() => setShipping("padrao")} className={`w-full flex items-center gap-3 rounded-xl border-2 p-4 transition-all ${shipping === "padrao" ? "border-cta bg-cta/5" : "border-border"}`}>
+              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${shipping === "padrao" ? "border-cta" : "border-muted-foreground"}`}>
                 {shipping === "padrao" && <div className="h-2.5 w-2.5 rounded-full bg-cta" />}
               </div>
               <div className="flex-1 text-left">
@@ -468,15 +337,8 @@ const Checkout = () => {
               </div>
               <span className="font-bold text-sm text-success">Grátis</span>
             </button>
-            <button
-              onClick={() => setShipping("express")}
-              className={`w-full flex items-center gap-3 rounded-xl border-2 p-4 transition-all ${
-                shipping === "express" ? "border-cta bg-cta/5" : "border-border"
-              }`}
-            >
-              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                shipping === "express" ? "border-cta" : "border-muted-foreground"
-              }`}>
+            <button onClick={() => setShipping("express")} className={`w-full flex items-center gap-3 rounded-xl border-2 p-4 transition-all ${shipping === "express" ? "border-cta bg-cta/5" : "border-border"}`}>
+              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${shipping === "express" ? "border-cta" : "border-muted-foreground"}`}>
                 {shipping === "express" && <div className="h-2.5 w-2.5 rounded-full bg-cta" />}
               </div>
               <div className="flex-1 text-left">
@@ -495,7 +357,7 @@ const Checkout = () => {
             <span className="font-bold">Desconto especial</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="font-bold text-sm text-cta">- R$ {DISCOUNT_VALUE.toFixed(2).replace(".", ",")}</span>
+            <span className="font-bold text-sm text-cta">- R$ {BASE_DISCOUNT_VALUE.toFixed(2).replace(".", ",")}</span>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </div>
         </div>
@@ -506,8 +368,14 @@ const Checkout = () => {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal do produto ({quantity}x)</span>
-              <span>R$ {(PRODUCT_PRICE * quantity).toFixed(2).replace(".", ",")}</span>
+              <span>R$ {subtotal.toFixed(2).replace(".", ",")}</span>
             </div>
+            {hasCoupon && (
+              <div className="flex justify-between">
+                <span className="text-success font-medium">Cupom VOLTA25 (-25%)</span>
+                <span className="text-success font-medium">- R$ {couponAmount.toFixed(2).replace(".", ",")}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Taxa de envio</span>
               <span className={shippingCost === 0 ? "text-success font-semibold" : ""}>
@@ -524,87 +392,25 @@ const Checkout = () => {
           </div>
         </div>
 
-        {/* Payment Method */}
+        {/* Payment Method - PIX only */}
         <div className="mt-4 border-t pt-4">
-          <p className="font-bold text-sm mb-3">Forma de pagamento</p>
-          <div className="space-y-2">
-            <button
-              onClick={() => setPaymentMethod("pix")}
-              className={`w-full flex items-center justify-between rounded-xl border-2 p-4 transition-all ${
-                paymentMethod === "pix" ? "border-cta bg-cta/5" : "border-border"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-lg">💠</span>
-                <span className="font-medium text-sm">Pix</span>
-              </div>
-              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                paymentMethod === "pix" ? "border-cta" : "border-muted-foreground"
-              }`}>
-                {paymentMethod === "pix" && <div className="h-2.5 w-2.5 rounded-full bg-cta" />}
-              </div>
-            </button>
-            {!cardDisabled && (
-            <button
-              onClick={() => setPaymentMethod("credit_card")}
-              className={`w-full flex items-center justify-between rounded-xl border-2 p-4 transition-all ${
-                paymentMethod === "credit_card" ? "border-cta bg-cta/5" : "border-border"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium text-sm">Cartão de Crédito</span>
-              </div>
-              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                paymentMethod === "credit_card" ? "border-cta" : "border-muted-foreground"
-              }`}>
-                {paymentMethod === "credit_card" && <div className="h-2.5 w-2.5 rounded-full bg-cta" />}
-              </div>
-            </button>
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-bold text-sm">Forma de pagamento</p>
+            {hasCoupon && (
+              <span className="text-xs text-success font-semibold flex items-center gap-1">
+                Cupom VOLTA25 (-25%) ativo <Check className="h-3.5 w-3.5" />
+              </span>
             )}
           </div>
-
-          {paymentMethod === "credit_card" && (
-            <div className="mt-4 space-y-3 p-4 rounded-xl bg-muted/20 border">
-              <Input
-                placeholder="Número do cartão"
-                value={cardForm.number}
-                onChange={(e) => updateCardField("number", formatCardNumber(e.target.value))}
-                className="rounded-lg border-border h-12 text-sm"
-              />
-              <Input
-                placeholder="Nome impresso no cartão"
-                value={cardForm.holder}
-                onChange={(e) => updateCardField("holder", e.target.value.toUpperCase())}
-                className="rounded-lg border-border h-12 text-sm"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  placeholder="MM/AA"
-                  value={cardForm.expiry}
-                  onChange={(e) => updateCardField("expiry", formatExpiry(e.target.value))}
-                  className="rounded-lg border-border h-12 text-sm"
-                />
-                <Input
-                  placeholder="CVV"
-                  value={cardForm.cvv}
-                  onChange={(e) => updateCardField("cvv", e.target.value.replace(/\D/g, "").slice(0, 3))}
-                  className="rounded-lg border-border h-12 text-sm"
-                />
-              </div>
-              <select
-                value={cardForm.installments}
-                onChange={(e) => updateCardField("installments", e.target.value)}
-                className="w-full h-12 rounded-lg border border-border bg-background px-3 text-sm"
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
-                  <option key={n} value={n}>
-                    {n}x de R$ {(total / n).toFixed(2).replace(".", ",")} {n === 1 ? "à vista" : ""}
-                  </option>
-                ))}
-              </select>
+          <div className="w-full flex items-center justify-between rounded-xl border-2 border-cta bg-cta/5 p-4">
+            <div className="flex items-center gap-3">
+              <span className="text-lg">💠</span>
+              <span className="font-medium text-sm">Pix</span>
             </div>
-          )}
+            <div className="h-5 w-5 rounded-full border-2 border-cta flex items-center justify-center">
+              <div className="h-2.5 w-2.5 rounded-full bg-cta" />
+            </div>
+          </div>
         </div>
 
         {/* Terms */}
@@ -614,7 +420,7 @@ const Checkout = () => {
         </p>
 
         <p className="mt-3 text-xs text-success flex items-center gap-1">
-          😊 Você está economizando R$ {DISCOUNT_VALUE.toFixed(2).replace(".", ",")} nesse pedido.
+          😊 Você está economizando R$ {totalSavings.toFixed(2).replace(".", ",")} nesse pedido.
         </p>
       </div>
 
