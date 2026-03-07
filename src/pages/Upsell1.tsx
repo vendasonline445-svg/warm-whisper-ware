@@ -294,11 +294,11 @@ const Upsell1 = () => {
             disabled={isLoading || !customer}
             className="w-full font-bold text-base py-4 rounded-xl transition-all active:scale-[0.98] disabled:opacity-70"
             style={{
-              background: "linear-gradient(135deg, #1a73e8 0%, #1565c0 100%)",
+              background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
               color: "#ffffff",
               border: "none",
               cursor: isLoading ? "wait" : "pointer",
-              boxShadow: "0 2px 8px rgba(26,115,232,0.3)",
+              boxShadow: "0 2px 12px rgba(22,163,74,0.35)",
             }}
           >
             {isLoading ? (
