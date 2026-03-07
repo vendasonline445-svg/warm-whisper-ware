@@ -29,8 +29,8 @@ const productImages = [
 ];
 
 const colorImages = {
-  branca: "/images/produto-1.webp",
-  preta: "/images/mesa-preta-detalhes.png",
+  branca: "/images/mesa-branca-popup.png",
+  preta: "/images/mesa-preta-popup.png",
 };
 
 const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
