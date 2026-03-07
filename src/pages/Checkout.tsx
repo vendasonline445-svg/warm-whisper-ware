@@ -236,7 +236,7 @@ const Checkout = () => {
           <div className="flex-1 text-center">
             <p className="font-bold text-sm">Resumo do pedido</p>
             <p className="text-xs text-success flex items-center justify-center gap-1">
-              <Shield className="h-3 w-3" /> Seus dados estão seguros conosco
+              <ShieldCheck className="h-3 w-3" /> Seus dados estão seguros conosco
             </p>
           </div>
           <div className="w-5" />
