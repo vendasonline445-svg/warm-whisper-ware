@@ -10,6 +10,8 @@ import TemplateAdmin from "./pages/TemplateAdmin";
 import PixPayment from "./pages/PixPayment";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
+import TermosDeUso from "./pages/TermosDeUso";
 
 const queryClient = new QueryClient();
 
