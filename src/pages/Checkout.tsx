@@ -307,9 +307,9 @@ const Checkout = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta 180x60cm...</p>
               <p className="text-xs text-muted-foreground">{colorLabel}, {selectedSize}</p>
-              <p className="text-xs text-emerald-600 flex items-center gap-1 mt-0.5">
-                <Shield className="h-3 w-3" /> Devolução gratuita
-              </p>
+              <span className="text-xs flex items-center gap-1 mt-0.5 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
+                🔄 Devolução gratuita
+              </span>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-sm font-bold text-cta">R$ {PRODUCT_PRICE.toFixed(2).replace(".", ",")}</span>
                 <span className="text-[10px]">📦</span>
