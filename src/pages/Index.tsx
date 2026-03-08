@@ -260,13 +260,13 @@ const Index = () => {
         <div className="px-4">
           {/* Installments */}
           <div className="mt-3 flex items-center gap-2 text-sm text-foreground">
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
             <span>6x de <strong>R$ 18,57</strong> sem juros no cartão</span>
           </div>
 
           {/* Coupon badge */}
           <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-badge-green px-3 py-1 text-xs font-semibold text-badge-green-foreground">
-            <CheckCircle2 className="h-3.5 w-3.5" />
+            <Tag className="h-3.5 w-3.5" />
             Cupom Aplicado
           </div>
 
