@@ -444,17 +444,17 @@ const Index = () => {
               <p>
                 A <strong>Mesa Dobrável Tipo Maleta 180x60cm da MesaLar</strong> é 2 em 1: Mesa de apoio com a portabilidade de uma maleta. Você pode montar, usar e guardar em segundos, sem nenhuma ferramenta! A capacidade total de 180cm permite acomodar até 8 pessoas confortavelmente.
               </p>
-              <img src="/images/desc-maleta.png" alt="Mesa dobrável tipo maleta" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-maleta.webp" alt="Mesa dobrável tipo maleta" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ LEVE E PORTÁTIL:</strong> Design compacto tipo maleta com alça embutida. Fecha como uma mala e cabe em qualquer canto. Leve para camping, festas, feiras ou simplesmente guarde em casa sem ocupar espaço.</p>
-              <img src="/images/desc-montagem.png" alt="Monte em apenas 6 passos" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-montagem.webp" alt="Monte em apenas 6 passos" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ MONTAGEM INSTANTÂNEA:</strong> Monte e desmonte em menos de 30 segundos, sem ferramentas! São apenas 6 passos simples — qualquer pessoa consegue montar sozinha, sem esforço.</p>
-              <img src="/images/desc-qualidade.png" alt="Detalhes de qualidade" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-qualidade.webp" alt="Detalhes de qualidade" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ CONSTRUÇÃO REFORÇADA:</strong> Alça de transporte ergonômica, trava de segurança que impede dobramentos acidentais e tampo em HDPE com espessura larga. Material profissional que dura anos.</p>
-              <img src="/images/desc-pes.png" alt="Pés antiderrapantes" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-pes.webp" alt="Pés antiderrapantes" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ PÉS ANTIDERRAPANTES:</strong> Borrachas nos pés que protegem seu piso contra riscos e garantem estabilidade total. A mesa não escorrega nem se move durante o uso, mesmo em superfícies lisas.</p>
-              <img src="/images/desc-dimensoes.png" alt="Dimensões e capacidade" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-dimensoes.webp" alt="Dimensões e capacidade" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ LEVE E RESISTENTE:</strong> Pesa apenas 11kg mas suporta até 150kg de peso distribuído! Estrutura em aço tubular com pintura anticorrosiva. Acomoda até 8 pessoas com conforto.</p>
-              <img src="/images/desc-versatilidade.png" alt="Versatilidade de ocasiões" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-versatilidade.webp" alt="Versatilidade de ocasiões" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ PARA TODAS AS OCASIÕES:</strong> Acampamentos, piqueniques, garagem, festas, cozinha, escritório, bazares, churrascos — essa mesa se adapta a qualquer situação. Use dentro ou fora de casa com a mesma praticidade e resistência.</p>
             </div>
           </section>
