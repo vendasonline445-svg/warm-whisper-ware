@@ -39,38 +39,38 @@ const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
 const reviews = [
   {
     name: "Carla S.",
-    avatar: "/images/avatar-carla.png",
+    avatar: "/images/avatar-carla.webp",
     text: "A mesa é bem grande, boa demais! Espaçosa e super prática — montei em segundos e usei para o churrasco com a família toda. Muito resistente, suporta bastante peso sem tremer!",
     rating: 5,
-    photos: ["/images/review-carla-1.png", "/images/review-carla-2.png"],
+    photos: ["/images/review-carla-1.webp", "/images/review-carla-2.webp"],
   },
   {
     name: "Patrícia F.",
-    avatar: "/images/avatar-patricia.png",
+    avatar: "/images/avatar-patricia.webp",
     text: "Ela é muito prática. Material bom, custo muito bom. Amei, pretendo comprar outra!",
     rating: 5,
-    photos: ["/images/review-patricia-1.png", "/images/review-patricia-2.png"],
+    photos: ["/images/review-patricia-1.webp", "/images/review-patricia-2.webp"],
   },
   {
     name: "Raquel M.",
-    avatar: "/images/avatar-raquel.png",
+    avatar: "/images/avatar-raquel.webp",
     text: "Ela é linda, bem resistente. Me surpreendi com a qualidade, vou usar muito! Chegou no dia certinho.",
     rating: 5,
-    photos: ["/images/review-raquel-1.png", "/images/review-raquel-2.png", "/images/review-raquel-3.png"],
+    photos: ["/images/review-raquel-1.webp", "/images/review-raquel-2.webp", "/images/review-raquel-3.webp"],
   },
   {
     name: "Karine Porto",
-    avatar: "/images/avatar-karine.png",
+    avatar: "/images/avatar-karine.webp",
     text: "Muito boa, bem reforçada. Veio bem embalada na caixa, sem avarias. Gostei muito da mesa!",
     rating: 5,
-    photos: ["/images/review-karine-1.png", "/images/review-karine-2.png", "/images/review-karine-3.png"],
+    photos: ["/images/review-karine-1.webp", "/images/review-karine-2.webp", "/images/review-karine-3.webp"],
   },
   {
     name: "Juliana P.",
-    avatar: "/images/avatar-juliana.png",
+    avatar: "/images/avatar-juliana.webp",
     text: "Adorei a minha compra! Chegou no prazo, veio bem embalada. A mesa é linda e muito resistente. Ideal para quem tem pouco espaço, ela é bem fácil para montar. Gosteiii muitoooooo! 😍",
     rating: 5,
-    photos: ["/images/review-juliana-1.png", "/images/review-juliana-2.png"],
+    photos: ["/images/review-juliana-1.webp", "/images/review-juliana-2.webp"],
   },
 ];
 
