@@ -50,8 +50,8 @@ const Checkout = () => {
 
   const colorLabel = selectedColor === "preta" ? "Preta" : "Branca";
   const colorImage = selectedColor === "preta"
-    ? "/images/mesa-preta-popup.png"
-    : "/images/mesa-branca-popup.png";
+    ? "/images/mesa-preta-popup.webp"
+    : "/images/mesa-branca-popup.webp";
 
   const shippingCost = shipping === "express" ? 14.50 : 0;
   const subtotal = PRODUCT_PRICE * quantity;
