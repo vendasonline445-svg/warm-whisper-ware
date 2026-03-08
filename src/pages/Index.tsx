@@ -640,7 +640,7 @@ const Index = () => {
 
       {/* Exit Intent Modal - VOLTA25 */}
       <Dialog open={exitModalOpen} onOpenChange={setExitModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl p-6 text-center border-t-4 border-t-destructive">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg rounded-2xl p-6 text-center border-t-4 border-t-destructive">
           <DialogDescription className="sr-only">Cupom de desconto exclusivo</DialogDescription>
           <div className="flex flex-col items-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-coupon-bg mb-4">
