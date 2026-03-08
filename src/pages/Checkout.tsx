@@ -40,6 +40,7 @@ const Checkout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressOpen, setAddressOpen] = useState(true);
   const [cpfError, setCpfError] = useState("");
+  const productSectionRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", cep: "",
