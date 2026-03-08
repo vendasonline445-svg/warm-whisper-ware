@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -40,6 +40,7 @@ const Checkout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressOpen, setAddressOpen] = useState(true);
   const [cpfError, setCpfError] = useState("");
+  const productSectionRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", cep: "",
@@ -135,6 +136,10 @@ const Checkout = () => {
   useEffect(() => {
     if (isAddressComplete && form.name && form.phone && form.email && isCpfValid) {
       setAddressOpen(false);
+      // Scroll to product/shipping section after closing address
+      setTimeout(() => {
+        productSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     }
   }, [form.cpf, isAddressComplete, isCpfValid]);
 
@@ -299,7 +304,7 @@ const Checkout = () => {
         )}
 
         {/* Divider */}
-        <div className="mt-6 border-t-2 border-dashed border-[#5BC4D6]" />
+        <div ref={productSectionRef} className="mt-6 border-t-2 border-dashed border-[#5BC4D6]" />
 
         {/* Product Info */}
         <div className="mt-4">
