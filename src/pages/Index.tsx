@@ -331,9 +331,14 @@ const Index = () => {
               </p>
             </div>
           </div>
+        </div>
 
+        {/* Gray Divider */}
+        <div className="mt-4 h-2 bg-muted/60" />
+
+        <div className="px-4">
           {/* Size Selection */}
-          <div className="mt-5">
+          <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-semibold">Tamanho</p>
               <span className="text-muted-foreground text-sm">23 disponíveis</span>
@@ -360,9 +365,14 @@ const Index = () => {
               })}
             </div>
           </div>
+        </div>
 
+        {/* Gray Divider */}
+        <div className="mt-4 h-2 bg-muted/60" />
+
+        <div className="px-4">
           {/* Reviews */}
-          <section className="mt-8">
+          <section className="mt-4">
             <h2 className="text-base font-bold mb-1">Avaliações dos clientes (207)</h2>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-2xl font-black">4.8</span>
