@@ -114,6 +114,8 @@ const Index = () => {
 
   // Exit intent detection
   useEffect(() => {
+    // Only trigger on genuine user actions: desktop mouse leave & back button
+
     // Desktop: detect mouse moving to top of viewport (toward browser X/close)
     const handleMouseMove = (e: MouseEvent) => {
       if (e.clientY <= 3 && !exitShown) {
@@ -129,64 +131,21 @@ const Index = () => {
       }
     };
 
-    // Back button detection
+    // Back button detection — wait before registering to avoid false triggers on mobile
+    let popstateReady = false;
+    const popstateReadyTimer = setTimeout(() => {
+      popstateReady = true;
+    }, 2000);
+
     const handlePopState = () => {
-      if (!exitShown) {
+      if (!exitShown && popstateReady) {
         window.history.pushState(null, "", window.location.href);
         setExitModalOpen(true);
         setExitShown(true);
-      }
-    };
-
-    // Tab close - show native dialog + set modal for when they stay
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!exitShown) {
-        e.preventDefault();
-        e.returnValue = "";
-        setTimeout(() => {
-          setExitModalOpen(true);
-          setExitShown(true);
-        }, 100);
-      }
-    };
-
-    // Mobile: visibility change (switching tabs / closing)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && !exitShown) {
-        // Show modal when user returns to the tab (they tried to leave)
-        setExitModalOpen(true);
-        setExitShown(true);
-      }
-    };
-
-    // Mobile: detect rapid scroll to top (exit intent signal)
-    let lastScrollY = window.scrollY;
-    let scrollUpDistance = 0;
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      if (currentY < lastScrollY) {
-        scrollUpDistance += (lastScrollY - currentY);
-        // If user scrolled up more than 400px rapidly and was past the fold
-        if (scrollUpDistance > 400 && lastScrollY > 600 && !exitShown) {
-          setExitModalOpen(true);
-          setExitShown(true);
-        }
       } else {
-        scrollUpDistance = 0;
+        // Re-push state if not ready yet
+        window.history.pushState(null, "", window.location.href);
       }
-      lastScrollY = currentY;
-    };
-
-    // Mobile: inactivity timer — show after 45s of no interaction
-    let inactivityTimer: ReturnType<typeof setTimeout>;
-    const resetInactivity = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
-        if (!exitShown) {
-          setExitModalOpen(true);
-          setExitShown(true);
-        }
-      }, 45000);
     };
 
     window.history.pushState(null, "", window.location.href);
@@ -194,23 +153,12 @@ const Index = () => {
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseleave", handleMouseLeave);
     window.addEventListener("popstate", handlePopState);
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    document.addEventListener("touchstart", resetInactivity, { passive: true });
-    document.addEventListener("touchmove", resetInactivity, { passive: true });
-    resetInactivity();
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseleave", handleMouseLeave);
       window.removeEventListener("popstate", handlePopState);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("scroll", handleScroll);
-      document.removeEventListener("touchstart", resetInactivity);
-      document.removeEventListener("touchmove", resetInactivity);
-      clearTimeout(inactivityTimer);
+      clearTimeout(popstateReadyTimer);
     };
   }, [exitShown]);
 
