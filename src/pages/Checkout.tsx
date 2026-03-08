@@ -297,7 +297,7 @@ const Checkout = () => {
             <Input placeholder="Complemento" value={form.complemento} onChange={(e) => updateField("complemento", e.target.value)} className="rounded-lg border-border h-12 text-sm" />
           </div>
           <div>
-            <Input placeholder="CPF (000.000.000-00)" value={form.cpf} onChange={(e) => updateField("cpf", formatCPF(e.target.value))} className={`rounded-lg border-border h-12 text-sm ${cpfError ? "border-destructive" : ""}`} />
+            <Input placeholder="CPF (000.000.000-00)" inputMode="numeric" value={form.cpf} onChange={(e) => updateField("cpf", formatCPF(e.target.value))} className={`rounded-lg border-border h-12 text-sm ${cpfError ? "border-destructive" : ""}`} />
             {cpfError && <p className="text-xs text-destructive mt-1 font-medium">{cpfError}</p>}
           </div>
         </div>
