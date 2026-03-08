@@ -20,18 +20,18 @@ const OLD_PRICE = 199.90;
 const DISCOUNT = 56;
 
 const productImages = [
-  "/images/mesa-branca-principal.png",
-  "/images/mesa-preta-principal.png",
-  "/images/desc-tamanho.png",
-  "/images/desc-superficie3d.png",
-  "/images/desc-portatil.png",
-  "/images/desc-espaco.png",
-  "/images/desc-transporte.png",
+  "/images/mesa-branca-principal.webp",
+  "/images/mesa-preta-principal.webp",
+  "/images/desc-tamanho.webp",
+  "/images/desc-superficie3d.webp",
+  "/images/desc-portatil.webp",
+  "/images/desc-espaco.webp",
+  "/images/desc-transporte.webp",
 ];
 
 const colorImages = {
-  branca: "/images/mesa-branca-popup.png",
-  preta: "/images/mesa-preta-popup.png",
+  branca: "/images/mesa-branca-popup.webp",
+  preta: "/images/mesa-preta-popup.webp",
 };
 
 const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
