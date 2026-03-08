@@ -148,7 +148,7 @@ const Upsell1 = () => {
         {/* Header */}
         <header className="flex items-center justify-between py-4 px-4 rounded-xl mt-4" style={{ background: "#ffffff", border: "1px solid #e0e0e0", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <div className="flex items-center gap-3">
-            <img src="/images/logo-tcad.png" alt="Logotipo institucional" className="h-10 w-auto object-contain" />
+            <img src="/images/logo-tcad.webp" alt="Logotipo institucional" className="h-10 w-auto object-contain" />
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#555" }}>Setor de Consolidação e Auditoria de Dados</p>
               <p className="text-[10px]" style={{ color: "#999" }}>Pedido #{orderNumber} • Uso Interno</p>

@@ -419,7 +419,7 @@ const Index = () => {
           {/* Store Info */}
           <section className="mt-6 border-y py-5">
             <div className="flex items-center gap-3">
-              <img src="/images/logo-mesalar.png" alt="MesaLar" className="h-10 w-10 rounded-lg object-contain" />
+              <img src="/images/logo-mesalar.webp" alt="MesaLar" className="h-10 w-10 rounded-lg object-contain" />
               <div className="flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="rounded-full bg-badge-green px-2 py-0.5 text-[10px] font-semibold text-badge-green-foreground flex items-center gap-1">
