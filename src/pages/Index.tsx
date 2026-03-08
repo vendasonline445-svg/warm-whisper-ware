@@ -191,7 +191,7 @@ const Index = () => {
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b bg-card">
         <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 py-3">
-          <X className="h-5 w-5 text-muted-foreground cursor-pointer" />
+          <X className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setExitModalOpen(true); setExitShown(true); }} />
           <div className="flex items-center gap-5">
             <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" />
             <ShoppingCart className="h-5 w-5 text-muted-foreground cursor-pointer" />
