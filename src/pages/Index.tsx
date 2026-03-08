@@ -303,7 +303,7 @@ const Index = () => {
           <div className="mt-4 rounded-xl border bg-card p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-muted-foreground" />
+                <ShieldCheck className="h-5 w-5 text-muted-foreground" />
                 <span className="font-semibold text-sm">Proteção do cliente</span>
               </div>
               <span className="text-xs font-bold text-success">100% Protegido</span>
@@ -314,15 +314,15 @@ const Index = () => {
                 <span>Devolução gratuita em até 7 dias</span>
               </div>
               <div className="flex items-center gap-3">
-                <Package className="h-5 w-5 text-primary flex-shrink-0" />
+                <CreditCard className="h-5 w-5 text-blue-500 flex-shrink-0" />
                 <span>Reembolso automático por danos</span>
               </div>
               <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-success flex-shrink-0" />
+                <ShieldCheck className="h-5 w-5 text-success flex-shrink-0" />
                 <span>Pagamento seguro e criptografado</span>
               </div>
               <div className="flex items-center gap-3">
-                <Gift className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <Ticket className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                 <span>Cupom por atraso na entrega</span>
               </div>
             </div>
