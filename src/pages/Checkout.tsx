@@ -127,6 +127,11 @@ const Checkout = () => {
   const isAddressComplete = form.cep && form.uf && form.cidade && form.bairro && form.endereco && form.numero;
   const isCpfValid = validateCPF(form.cpf);
 
+  // Scroll to top on mount to show address form first
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     if (isAddressComplete && form.name && form.phone && form.email && isCpfValid) {
       setAddressOpen(false);
