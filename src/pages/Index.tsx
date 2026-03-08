@@ -616,7 +616,7 @@ const Index = () => {
                 className={`rounded-xl border-2 overflow-hidden transition-all ${
                   selectedColor === color.id
                     ? "border-destructive bg-destructive/5 shadow-lg"
-                    : "border-border hover:border-muted-foreground"
+                    : "border-border hover:border-blue-500 hover:bg-blue-50"
                 }`}
               >
                 <div className="aspect-[4/3] sm:aspect-[3/2] bg-background p-4">
