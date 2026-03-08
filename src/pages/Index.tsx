@@ -678,8 +678,8 @@ const Index = () => {
             <p className="text-xs font-bold mb-2">Escolha a cor e vá direto pro checkout:</p>
             <div className="grid grid-cols-2 gap-2.5 w-full mb-4">
               {[
-                { id: "branca", name: "Branca", img: "/images/mesa-branca-popup.png" },
-                { id: "preta", name: "Preta", img: "/images/mesa-preta-popup.png" },
+                { id: "branca", name: "Branca", img: "/images/mesa-branca-popup.webp" },
+                { id: "preta", name: "Preta", img: "/images/mesa-preta-popup.webp" },
               ].map((color) => (
                 <button
                   key={color.id}
