@@ -83,7 +83,7 @@ const faqs = [
 ];
 
 function useCountdown() {
-  const [time, setTime] = useState({ h: 2, m: 42, s: 52 });
+  const [time, setTime] = useState({ h: 0, m: 5, s: 0 });
   useEffect(() => {
     const interval = setInterval(() => {
       setTime((prev) => {
