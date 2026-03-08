@@ -20,18 +20,18 @@ const OLD_PRICE = 199.90;
 const DISCOUNT = 56;
 
 const productImages = [
-  "/images/mesa-branca-principal.png",
-  "/images/mesa-preta-principal.png",
-  "/images/desc-tamanho.png",
-  "/images/desc-superficie3d.png",
-  "/images/desc-portatil.png",
-  "/images/desc-espaco.png",
-  "/images/desc-transporte.png",
+  "/images/mesa-branca-principal.webp",
+  "/images/mesa-preta-principal.webp",
+  "/images/desc-tamanho.webp",
+  "/images/desc-superficie3d.webp",
+  "/images/desc-portatil.webp",
+  "/images/desc-espaco.webp",
+  "/images/desc-transporte.webp",
 ];
 
 const colorImages = {
-  branca: "/images/mesa-branca-popup.png",
-  preta: "/images/mesa-preta-popup.png",
+  branca: "/images/mesa-branca-popup.webp",
+  preta: "/images/mesa-preta-popup.webp",
 };
 
 const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
@@ -39,38 +39,38 @@ const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
 const reviews = [
   {
     name: "Carla S.",
-    avatar: "/images/avatar-carla.png",
+    avatar: "/images/avatar-carla.webp",
     text: "A mesa é bem grande, boa demais! Espaçosa e super prática — montei em segundos e usei para o churrasco com a família toda. Muito resistente, suporta bastante peso sem tremer!",
     rating: 5,
-    photos: ["/images/review-carla-1.png", "/images/review-carla-2.png"],
+    photos: ["/images/review-carla-1.webp", "/images/review-carla-2.webp"],
   },
   {
     name: "Patrícia F.",
-    avatar: "/images/avatar-patricia.png",
+    avatar: "/images/avatar-patricia.webp",
     text: "Ela é muito prática. Material bom, custo muito bom. Amei, pretendo comprar outra!",
     rating: 5,
-    photos: ["/images/review-patricia-1.png", "/images/review-patricia-2.png"],
+    photos: ["/images/review-patricia-1.webp", "/images/review-patricia-2.webp"],
   },
   {
     name: "Raquel M.",
-    avatar: "/images/avatar-raquel.png",
+    avatar: "/images/avatar-raquel.webp",
     text: "Ela é linda, bem resistente. Me surpreendi com a qualidade, vou usar muito! Chegou no dia certinho.",
     rating: 5,
-    photos: ["/images/review-raquel-1.png", "/images/review-raquel-2.png", "/images/review-raquel-3.png"],
+    photos: ["/images/review-raquel-1.webp", "/images/review-raquel-2.webp", "/images/review-raquel-3.webp"],
   },
   {
     name: "Karine Porto",
-    avatar: "/images/avatar-karine.png",
+    avatar: "/images/avatar-karine.webp",
     text: "Muito boa, bem reforçada. Veio bem embalada na caixa, sem avarias. Gostei muito da mesa!",
     rating: 5,
-    photos: ["/images/review-karine-1.png", "/images/review-karine-2.png", "/images/review-karine-3.png"],
+    photos: ["/images/review-karine-1.webp", "/images/review-karine-2.webp", "/images/review-karine-3.webp"],
   },
   {
     name: "Juliana P.",
-    avatar: "/images/avatar-juliana.png",
+    avatar: "/images/avatar-juliana.webp",
     text: "Adorei a minha compra! Chegou no prazo, veio bem embalada. A mesa é linda e muito resistente. Ideal para quem tem pouco espaço, ela é bem fácil para montar. Gosteiii muitoooooo! 😍",
     rating: 5,
-    photos: ["/images/review-juliana-1.png", "/images/review-juliana-2.png"],
+    photos: ["/images/review-juliana-1.webp", "/images/review-juliana-2.webp"],
   },
 ];
 
@@ -419,7 +419,7 @@ const Index = () => {
           {/* Store Info */}
           <section className="mt-6 border-y py-5">
             <div className="flex items-center gap-3">
-              <img src="/images/logo-mesalar.png" alt="MesaLar" className="h-10 w-10 rounded-lg object-contain" />
+              <img src="/images/logo-mesalar.webp" alt="MesaLar" className="h-10 w-10 rounded-lg object-contain" />
               <div className="flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="rounded-full bg-badge-green px-2 py-0.5 text-[10px] font-semibold text-badge-green-foreground flex items-center gap-1">
@@ -444,17 +444,17 @@ const Index = () => {
               <p>
                 A <strong>Mesa Dobrável Tipo Maleta 180x60cm da MesaLar</strong> é 2 em 1: Mesa de apoio com a portabilidade de uma maleta. Você pode montar, usar e guardar em segundos, sem nenhuma ferramenta! A capacidade total de 180cm permite acomodar até 8 pessoas confortavelmente.
               </p>
-              <img src="/images/desc-maleta.png" alt="Mesa dobrável tipo maleta" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-maleta.webp" alt="Mesa dobrável tipo maleta" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ LEVE E PORTÁTIL:</strong> Design compacto tipo maleta com alça embutida. Fecha como uma mala e cabe em qualquer canto. Leve para camping, festas, feiras ou simplesmente guarde em casa sem ocupar espaço.</p>
-              <img src="/images/desc-montagem.png" alt="Monte em apenas 6 passos" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-montagem.webp" alt="Monte em apenas 6 passos" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ MONTAGEM INSTANTÂNEA:</strong> Monte e desmonte em menos de 30 segundos, sem ferramentas! São apenas 6 passos simples — qualquer pessoa consegue montar sozinha, sem esforço.</p>
-              <img src="/images/desc-qualidade.png" alt="Detalhes de qualidade" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-qualidade.webp" alt="Detalhes de qualidade" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ CONSTRUÇÃO REFORÇADA:</strong> Alça de transporte ergonômica, trava de segurança que impede dobramentos acidentais e tampo em HDPE com espessura larga. Material profissional que dura anos.</p>
-              <img src="/images/desc-pes.png" alt="Pés antiderrapantes" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-pes.webp" alt="Pés antiderrapantes" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ PÉS ANTIDERRAPANTES:</strong> Borrachas nos pés que protegem seu piso contra riscos e garantem estabilidade total. A mesa não escorrega nem se move durante o uso, mesmo em superfícies lisas.</p>
-              <img src="/images/desc-dimensoes.png" alt="Dimensões e capacidade" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-dimensoes.webp" alt="Dimensões e capacidade" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ LEVE E RESISTENTE:</strong> Pesa apenas 11kg mas suporta até 150kg de peso distribuído! Estrutura em aço tubular com pintura anticorrosiva. Acomoda até 8 pessoas com conforto.</p>
-              <img src="/images/desc-versatilidade.png" alt="Versatilidade de ocasiões" className="w-full rounded-xl" loading="lazy" />
+              <img src="/images/desc-versatilidade.webp" alt="Versatilidade de ocasiões" className="w-full rounded-xl" loading="lazy" />
               <p><strong>✅ PARA TODAS AS OCASIÕES:</strong> Acampamentos, piqueniques, garagem, festas, cozinha, escritório, bazares, churrascos — essa mesa se adapta a qualquer situação. Use dentro ou fora de casa com a mesma praticidade e resistência.</p>
             </div>
           </section>
@@ -678,8 +678,8 @@ const Index = () => {
             <p className="text-xs font-bold mb-2">Escolha a cor e vá direto pro checkout:</p>
             <div className="grid grid-cols-2 gap-2.5 w-full mb-4">
               {[
-                { id: "branca", name: "Branca", img: "/images/mesa-branca-popup.png" },
-                { id: "preta", name: "Preta", img: "/images/mesa-preta-popup.png" },
+                { id: "branca", name: "Branca", img: "/images/mesa-branca-popup.webp" },
+                { id: "preta", name: "Preta", img: "/images/mesa-preta-popup.webp" },
               ].map((color) => (
                 <button
                   key={color.id}
