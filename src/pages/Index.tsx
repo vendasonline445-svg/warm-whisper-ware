@@ -4,6 +4,7 @@ import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
   Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera,
+  CreditCard, Tag, ShieldCheck, Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -259,13 +260,13 @@ const Index = () => {
         <div className="px-4">
           {/* Installments */}
           <div className="mt-3 flex items-center gap-2 text-sm text-foreground">
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
             <span>6x de <strong>R$ 18,57</strong> sem juros no cartão</span>
           </div>
 
           {/* Coupon badge */}
           <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-badge-green px-3 py-1 text-xs font-semibold text-badge-green-foreground">
-            <CheckCircle2 className="h-3.5 w-3.5" />
+            <Tag className="h-3.5 w-3.5" />
             Cupom Aplicado
           </div>
 
@@ -302,7 +303,7 @@ const Index = () => {
           <div className="mt-4 rounded-xl border bg-card p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-muted-foreground" />
+                <ShieldCheck className="h-5 w-5 text-muted-foreground" />
                 <span className="font-semibold text-sm">Proteção do cliente</span>
               </div>
               <span className="text-xs font-bold text-success">100% Protegido</span>
@@ -313,15 +314,15 @@ const Index = () => {
                 <span>Devolução gratuita em até 7 dias</span>
               </div>
               <div className="flex items-center gap-3">
-                <Package className="h-5 w-5 text-primary flex-shrink-0" />
+                <CreditCard className="h-5 w-5 text-blue-500 flex-shrink-0" />
                 <span>Reembolso automático por danos</span>
               </div>
               <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-success flex-shrink-0" />
+                <ShieldCheck className="h-5 w-5 text-success flex-shrink-0" />
                 <span>Pagamento seguro e criptografado</span>
               </div>
               <div className="flex items-center gap-3">
-                <Gift className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <Ticket className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                 <span>Cupom por atraso na entrega</span>
               </div>
             </div>
