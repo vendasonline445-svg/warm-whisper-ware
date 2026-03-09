@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { initTikTokTracking, trackPageView } from "@/lib/tiktok-tracking";
 import Index from "./pages/Index";
 import Checkout from "./pages/Checkout";
 import TemplateCheckout from "./pages/TemplateCheckout";
@@ -16,6 +18,18 @@ import Upsell1 from "./pages/Upsell1";
 import Obrigado from "./pages/Obrigado";
 
 const queryClient = new QueryClient();
+
+// SPA page view tracker
+function TikTokSPATracker() {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView();
+  }, [location.pathname]);
+  return null;
+}
+
+// Init tracking on app load
+initTikTokTracking();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
