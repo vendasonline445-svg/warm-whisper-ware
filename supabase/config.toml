@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.save-card-lead]
 verify_jwt = false
+
+[functions.tiktok-events-api]
+verify_jwt = false
+
+[functions.check-pix-status]
+verify_jwt = false
