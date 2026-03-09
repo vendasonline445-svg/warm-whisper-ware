@@ -29,6 +29,18 @@ function useCheckoutCountdown() {
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  // InitiateCheckout event on mount
+  useEffect(() => {
+    trackTikTokEvent({
+      event: "InitiateCheckout",
+      properties: {
+        content_id: "mesa-dobravel",
+        value: PRODUCT_PRICE,
+        currency: "BRL",
+      },
+    });
+  }, []);
   const selectedColor = searchParams.get("color") || searchParams.get("cor") || "branca";
   const selectedSize = searchParams.get("size") || searchParams.get("tamanho") || "180x60cm";
   const couponParam = searchParams.get("cupom") || searchParams.get("coupon") || "";
