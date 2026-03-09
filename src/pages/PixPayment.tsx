@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, AlertTriangle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 
 function usePixCountdown(expiresAt?: string) {
   const target = useMemo(() => {
@@ -42,14 +43,18 @@ const PixPayment = () => {
       });
       if (!error && data?.paid) {
         if (pollingRef.current) clearInterval(pollingRef.current);
-        const ttq = (window as any).ttq;
-        if (ttq) {
-          ttq.track("CompletePayment", {
+        const purchaseValue = orderData?.product?.total || pixData?.amount / 100 || 87.60;
+        
+        // TikTok tracking: CompletePayment via Pixel + Events API
+        trackTikTokEvent({
+          event: "CompletePayment",
+          properties: {
             content_id: "mesa-dobravel",
-            value: orderData?.product?.total || pixData?.amount / 100 || 87.60,
+            value: purchaseValue,
             currency: "BRL",
-          });
-        }
+          },
+        });
+        
         navigate("/obrigado");
       }
     } catch (err) {

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { trackTikTokEvent, identifyTikTokUser, setUserData } from "@/lib/tiktok-tracking";
 import {
   ArrowLeft, MapPin, Star, Truck, ShieldCheck, Minus, Plus, ChevronRight, Check, ChevronDown
 } from "lucide-react";
@@ -28,6 +29,18 @@ function useCheckoutCountdown() {
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  // InitiateCheckout event on mount
+  useEffect(() => {
+    trackTikTokEvent({
+      event: "InitiateCheckout",
+      properties: {
+        content_id: "mesa-dobravel",
+        value: PRODUCT_PRICE,
+        currency: "BRL",
+      },
+    });
+  }, []);
   const selectedColor = searchParams.get("color") || searchParams.get("cor") || "branca";
   const selectedSize = searchParams.get("size") || searchParams.get("tamanho") || "180x60cm";
   const couponParam = searchParams.get("cupom") || searchParams.get("coupon") || "";
@@ -161,6 +174,18 @@ const Checkout = () => {
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
+
+    // Identify user for TikTok before submitting
+    await identifyTikTokUser({
+      email: form.email,
+      phone: form.phone,
+      externalId: form.cpf,
+    });
+    await setUserData({
+      email: form.email,
+      phone: form.phone,
+      externalId: form.cpf,
+    });
 
     try {
       const totalAmountInCents = Math.round(total * 100);

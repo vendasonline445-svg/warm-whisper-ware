@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
@@ -113,7 +114,18 @@ const Index = () => {
   const [couponCopied, setCouponCopied] = useState(false);
   const countdown = useCountdown();
 
-  // Exit intent detection
+  // ViewContent event on mount
+  useEffect(() => {
+    trackTikTokEvent({
+      event: "ViewContent",
+      properties: {
+        content_id: PRODUCT_ID,
+        content_name: "Mesa Dobrável 180x60cm",
+        value: PRICE,
+        currency: "BRL",
+      },
+    });
+  }, []);
   useEffect(() => {
     // Only trigger on genuine user actions: desktop mouse leave & back button
 
@@ -166,6 +178,15 @@ const Index = () => {
   const openColorModal = () => {
     setSelectedColor(null);
     setColorModalOpen(true);
+    trackTikTokEvent({
+      event: "AddToCart",
+      properties: {
+        content_id: PRODUCT_ID,
+        content_name: "Mesa Dobrável 180x60cm",
+        value: PRICE,
+        currency: "BRL",
+      },
+    });
   };
 
   const nav = useNavigate();
