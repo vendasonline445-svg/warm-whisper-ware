@@ -114,7 +114,18 @@ const Index = () => {
   const [couponCopied, setCouponCopied] = useState(false);
   const countdown = useCountdown();
 
-  // Exit intent detection
+  // ViewContent event on mount
+  useEffect(() => {
+    trackTikTokEvent({
+      event: "ViewContent",
+      properties: {
+        content_id: PRODUCT_ID,
+        content_name: "Mesa Dobrável 180x60cm",
+        value: PRICE,
+        currency: "BRL",
+      },
+    });
+  }, []);
   useEffect(() => {
     // Only trigger on genuine user actions: desktop mouse leave & back button
 
