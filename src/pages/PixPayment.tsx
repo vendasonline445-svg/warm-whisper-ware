@@ -45,14 +45,23 @@ const PixPayment = () => {
         if (pollingRef.current) clearInterval(pollingRef.current);
         const purchaseValue = orderData?.product?.total || pixData?.amount / 100 || 87.60;
         
-        // TikTok tracking: CompletePayment via Pixel + Events API
+        // TikTok tracking: Purchase via Pixel + Events API (deduplication)
+        const orderId = transactionId || `order-${Date.now()}`;
         trackTikTokEvent({
-          event: "CompletePayment",
+          event: "Purchase",
           properties: {
+            content_type: "product",
             content_id: "mesa-dobravel",
             value: purchaseValue,
             currency: "BRL",
+            order_id: orderId,
+            contents: [{ content_id: "mesa-dobravel", quantity: orderData?.product?.quantity || 1 }],
           },
+          userData: orderData?.customer ? {
+            email: orderData.customer.email,
+            phone: orderData.customer.phone,
+            externalId: orderData.customer.cpf,
+          } : undefined,
         });
         
         navigate("/obrigado");

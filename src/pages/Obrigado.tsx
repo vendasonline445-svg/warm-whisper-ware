@@ -17,21 +17,8 @@ const Obrigado = () => {
     const orderId = pixData?.id || pixData?.transactionId || `order-${Date.now()}`;
     const purchaseValue = orderData?.product?.total || pixData?.amount / 100 || 87.60;
 
-    trackTikTokEvent({
-      event: "Purchase",
-      properties: {
-        content_id: "mesa-dobravel",
-        value: purchaseValue,
-        currency: "BRL",
-        order_id: orderId,
-        contents: [{ content_id: "mesa-dobravel", quantity: orderData?.product?.quantity || 1 }],
-      },
-      userData: orderData?.customer ? {
-        email: orderData.customer.email,
-        phone: orderData.customer.phone,
-        externalId: orderData.customer.cpf,
-      } : undefined,
-    });
+    // Purchase already fired in PixPayment — skip duplicate here
+    console.log("[TikTok] Obrigado page loaded — Purchase already sent from PixPayment");
   }, []);
 
   return (
