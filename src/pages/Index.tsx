@@ -119,10 +119,12 @@ const Index = () => {
     trackTikTokEvent({
       event: "ViewContent",
       properties: {
-        content_id: PRODUCT_ID,
+        content_type: "product",
+        content_id: "mesa-dobravel",
         content_name: "Mesa Dobrável 180x60cm",
         value: PRICE,
         currency: "BRL",
+        contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
     });
   }, []);
@@ -181,10 +183,12 @@ const Index = () => {
     trackTikTokEvent({
       event: "AddToCart",
       properties: {
-        content_id: PRODUCT_ID,
+        content_type: "product",
+        content_id: "mesa-dobravel",
         content_name: "Mesa Dobrável 180x60cm",
         value: PRICE,
         currency: "BRL",
+        contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
     });
   };

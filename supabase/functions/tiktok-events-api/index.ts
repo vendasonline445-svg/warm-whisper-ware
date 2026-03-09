@@ -29,32 +29,35 @@ Deno.serve(async (req) => {
       req.headers.get("x-real-ip") ||
       "";
 
-    const tiktokPayload = {
-      pixel_code: pixel_code || "D6JQATBC77UBUNE442EG",
+    const eventData = {
       event,
       event_id,
-      timestamp: timestamp || new Date().toISOString(),
-      context: {
-        user: {
-          email: user?.email || undefined,
-          phone_number: user?.phone_number || undefined,
-          external_id: user?.external_id || undefined,
-          ip: clientIp || undefined,
-          user_agent: user?.user_agent || undefined,
-          ttclid: user?.ttclid || undefined,
-        },
-        page: {
-          url: user?.page_url || undefined,
-        },
+      event_time: Math.floor(new Date(timestamp || new Date().toISOString()).getTime() / 1000),
+      user: {
+        email: user?.email || undefined,
+        phone_number: user?.phone_number || undefined,
+        external_id: user?.external_id || undefined,
+        ip: clientIp || undefined,
+        user_agent: user?.user_agent || undefined,
+        ttclid: user?.ttclid || undefined,
+      },
+      page: {
+        url: user?.page_url || undefined,
       },
       properties: properties || {},
     };
 
-    // Clean undefined values from user context
-    const cleanUser = Object.fromEntries(
-      Object.entries(tiktokPayload.context.user).filter(([_, v]) => v)
-    );
-    tiktokPayload.context.user = cleanUser as any;
+    // Clean undefined values from user
+    eventData.user = Object.fromEntries(
+      Object.entries(eventData.user).filter(([_, v]) => v)
+    ) as any;
+
+    // TikTok Events API v1.3 payload format
+    const tiktokPayload = {
+      event_source: "web",
+      event_source_id: pixel_code || "D6JQATBC77UBUNE442EG",
+      data: [eventData],
+    };
 
     console.log("Sending to TikTok Events API:", JSON.stringify(tiktokPayload));
 
@@ -66,9 +69,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
           "Access-Token": accessToken,
         },
-        body: JSON.stringify({
-          data: [tiktokPayload],
-        }),
+        body: JSON.stringify(tiktokPayload),
       }
     );
 

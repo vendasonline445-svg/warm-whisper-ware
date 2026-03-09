@@ -155,7 +155,7 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
   if (ttq) {
     try {
       ttq.track(event, properties, { event_id: eventId });
-      console.log(`${DEBUG_PREFIX} Pixel.track("${event}")`, { eventId, properties });
+      console.log(`${DEBUG_PREFIX} ${event} fired`, { eventId, properties });
     } catch (e) {
       console.warn(`${DEBUG_PREFIX} Pixel error:`, e);
     }
