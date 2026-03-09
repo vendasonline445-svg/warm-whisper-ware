@@ -71,6 +71,18 @@ const PixPayment = () => {
     };
   }, [transactionId, checkPaymentStatus]);
 
+  // AddPaymentInfo event on mount
+  useEffect(() => {
+    trackTikTokEvent({
+      event: "AddPaymentInfo",
+      properties: {
+        content_id: "mesa-dobravel",
+        value: total,
+        currency: "BRL",
+      },
+    });
+  }, []);
+
   const pixInfo = pixData?.pix || pixData?.pixQrCode || {};
   const qrCode = pixInfo?.qrcode || pixInfo?.qr_code || pixData?.pix_qr_code || "";
   const pixCode = pixInfo?.qrcode || pixInfo?.qr_code || pixData?.pix_qr_code || "";

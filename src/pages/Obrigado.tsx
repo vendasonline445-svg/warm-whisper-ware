@@ -1,14 +1,37 @@
 import { useEffect } from "react";
 import { CheckCircle, Package, Truck, Mail } from "lucide-react";
+import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 
 const Obrigado = () => {
   const orderDataStr = sessionStorage.getItem("orderData");
   const orderData = orderDataStr ? JSON.parse(orderDataStr) : null;
+  const pixDataStr = sessionStorage.getItem("pixData");
+  const pixData = pixDataStr ? JSON.parse(pixDataStr) : null;
   const customerName = orderData?.customer?.name || "Cliente";
   const customerEmail = orderData?.customer?.email || "";
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // Purchase event with deduplication (same event_id as server-side)
+    const orderId = pixData?.id || pixData?.transactionId || `order-${Date.now()}`;
+    const purchaseValue = orderData?.product?.total || pixData?.amount / 100 || 87.60;
+
+    trackTikTokEvent({
+      event: "Purchase",
+      properties: {
+        content_id: "mesa-dobravel",
+        value: purchaseValue,
+        currency: "BRL",
+        order_id: orderId,
+        contents: [{ content_id: "mesa-dobravel", quantity: orderData?.product?.quantity || 1 }],
+      },
+      userData: orderData?.customer ? {
+        email: orderData.customer.email,
+        phone: orderData.customer.phone,
+        externalId: orderData.customer.cpf,
+      } : undefined,
+    });
   }, []);
 
   return (
