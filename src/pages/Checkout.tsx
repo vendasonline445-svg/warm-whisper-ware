@@ -175,6 +175,18 @@ const Checkout = () => {
     if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
 
+    // Identify user for TikTok before submitting
+    await identifyTikTokUser({
+      email: form.email,
+      phone: form.phone,
+      externalId: form.cpf,
+    });
+    await setUserData({
+      email: form.email,
+      phone: form.phone,
+      externalId: form.cpf,
+    });
+
     try {
       const totalAmountInCents = Math.round(total * 100);
 

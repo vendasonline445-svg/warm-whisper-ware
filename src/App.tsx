@@ -37,6 +37,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <TikTokSPATracker />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/checkout" element={<Checkout />} />

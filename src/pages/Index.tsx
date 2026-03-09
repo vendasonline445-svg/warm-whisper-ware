@@ -178,6 +178,15 @@ const Index = () => {
   const openColorModal = () => {
     setSelectedColor(null);
     setColorModalOpen(true);
+    trackTikTokEvent({
+      event: "AddToCart",
+      properties: {
+        content_id: PRODUCT_ID,
+        content_name: "Mesa Dobrável 180x60cm",
+        value: PRICE,
+        currency: "BRL",
+      },
+    });
   };
 
   const nav = useNavigate();
