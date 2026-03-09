@@ -35,9 +35,11 @@ const Checkout = () => {
     trackTikTokEvent({
       event: "InitiateCheckout",
       properties: {
+        content_type: "product",
         content_id: "mesa-dobravel",
         value: PRODUCT_PRICE,
         currency: "BRL",
+        contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
     });
   }, []);
