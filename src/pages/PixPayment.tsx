@@ -85,10 +85,17 @@ const PixPayment = () => {
     trackTikTokEvent({
       event: "AddPaymentInfo",
       properties: {
+        content_type: "product",
         content_id: "mesa-dobravel",
         value: total,
         currency: "BRL",
+        contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
+      userData: orderData?.customer ? {
+        email: orderData.customer.email,
+        phone: orderData.customer.phone,
+        externalId: orderData.customer.cpf,
+      } : undefined,
     });
   }, []);
 
