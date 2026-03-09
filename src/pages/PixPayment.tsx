@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, AlertTriangle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 
 function usePixCountdown(expiresAt?: string) {
   const target = useMemo(() => {
