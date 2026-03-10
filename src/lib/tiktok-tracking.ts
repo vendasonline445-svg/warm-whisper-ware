@@ -122,11 +122,11 @@ export async function setUserData(data: {
 }) {
   if (data.email) _userData.email_hash = await sha256(data.email);
   if (data.phone) {
-    let phone = data.phone.replace(/\D/g, "");
-    if (!phone.startsWith("55")) phone = "55" + phone;
-    _userData.phone_hash = await sha256(phone);
+    // Hash normalized E.164 digits (without +) for server-side
+    const normalized = normalizePhone(data.phone).replace("+", "");
+    _userData.phone_hash = await sha256(normalized);
   }
-  if (data.externalId) _userData.external_id_hash = await sha256(data.externalId);
+  if (data.externalId) _userData.external_id_hash = await sha256(data.externalId.replace(/\D/g, ""));
 }
 
 export function getUserData() {
