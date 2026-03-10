@@ -70,6 +70,15 @@ export function generateEventId(): string {
 
 // ── Identify user ─────────────────────────────────────────────────────
 
+/**
+ * Normalize phone to E.164 format for Brazil: +55XXXXXXXXXXX
+ */
+export function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("55")) return "+" + digits;
+  return "+55" + digits;
+}
+
 export async function identifyTikTokUser(data: {
   email?: string;
   phone?: string;
@@ -81,22 +90,20 @@ export async function identifyTikTokUser(data: {
     return;
   }
 
+  // ttq.identify() expects RAW (unhashed) values — the Pixel SDK hashes internally
   const identifyData: Record<string, string> = {};
 
   if (data.email) {
-    identifyData.email = await sha256(data.email);
+    identifyData.email = data.email.trim().toLowerCase();
   }
   if (data.phone) {
-    // Normalize: remove non-digits, add +55 if needed
-    let phone = data.phone.replace(/\D/g, "");
-    if (!phone.startsWith("55")) phone = "55" + phone;
-    identifyData.phone_number = await sha256(phone);
+    identifyData.phone_number = normalizePhone(data.phone);
   }
   if (data.externalId) {
-    identifyData.external_id = await sha256(data.externalId);
+    identifyData.external_id = data.externalId.replace(/\D/g, "");
   }
 
-  console.log(`${DEBUG_PREFIX} identify()`, identifyData);
+  console.log(`${DEBUG_PREFIX} identify() RAW (Pixel hashes internally)`, identifyData);
   ttq.identify(identifyData);
 }
 
