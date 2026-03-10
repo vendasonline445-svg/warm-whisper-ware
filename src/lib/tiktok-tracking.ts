@@ -70,6 +70,15 @@ export function generateEventId(): string {
 
 // ── Identify user ─────────────────────────────────────────────────────
 
+/**
+ * Normalize phone to E.164 format for Brazil: +55XXXXXXXXXXX
+ */
+export function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("55")) return "+" + digits;
+  return "+55" + digits;
+}
+
 export async function identifyTikTokUser(data: {
   email?: string;
   phone?: string;
@@ -81,22 +90,20 @@ export async function identifyTikTokUser(data: {
     return;
   }
 
+  // ttq.identify() expects RAW (unhashed) values — the Pixel SDK hashes internally
   const identifyData: Record<string, string> = {};
 
   if (data.email) {
-    identifyData.email = await sha256(data.email);
+    identifyData.email = data.email.trim().toLowerCase();
   }
   if (data.phone) {
-    // Normalize: remove non-digits, add +55 if needed
-    let phone = data.phone.replace(/\D/g, "");
-    if (!phone.startsWith("55")) phone = "55" + phone;
-    identifyData.phone_number = await sha256(phone);
+    identifyData.phone_number = normalizePhone(data.phone);
   }
   if (data.externalId) {
-    identifyData.external_id = await sha256(data.externalId);
+    identifyData.external_id = data.externalId.replace(/\D/g, "");
   }
 
-  console.log(`${DEBUG_PREFIX} identify()`, identifyData);
+  console.log(`${DEBUG_PREFIX} identify() RAW (Pixel hashes internally)`, identifyData);
   ttq.identify(identifyData);
 }
 
@@ -115,11 +122,11 @@ export async function setUserData(data: {
 }) {
   if (data.email) _userData.email_hash = await sha256(data.email);
   if (data.phone) {
-    let phone = data.phone.replace(/\D/g, "");
-    if (!phone.startsWith("55")) phone = "55" + phone;
-    _userData.phone_hash = await sha256(phone);
+    // Hash normalized E.164 digits (without +) for server-side
+    const normalized = normalizePhone(data.phone).replace("+", "");
+    _userData.phone_hash = await sha256(normalized);
   }
-  if (data.externalId) _userData.external_id_hash = await sha256(data.externalId);
+  if (data.externalId) _userData.external_id_hash = await sha256(data.externalId.replace(/\D/g, ""));
 }
 
 export function getUserData() {
@@ -176,6 +183,7 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
       external_id: storedUser.external_id_hash || "",
       ttclid: ttclid || "",
       user_agent: navigator.userAgent,
+      page_url: window.location.href,
     },
     properties,
   };
