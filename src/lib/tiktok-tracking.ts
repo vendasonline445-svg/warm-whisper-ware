@@ -183,6 +183,7 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
       external_id: storedUser.external_id_hash || "",
       ttclid: ttclid || "",
       user_agent: navigator.userAgent,
+      page_url: window.location.href,
     },
     properties,
   };
