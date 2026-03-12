@@ -129,48 +129,38 @@ const Index = () => {
     });
   }, []);
   useEffect(() => {
-    // Only trigger on genuine user actions: desktop mouse leave & back button
+    if (exitShown) return; // Stop intercepting once popup was shown
 
-    // Desktop: detect mouse moving to top of viewport (toward browser X/close)
-    const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientY <= 3 && !exitShown) {
-        setExitModalOpen(true);
-        setExitShown(true);
-      }
-    };
-
+    // Desktop: detect mouse leaving viewport from the top (exit intent)
     const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 10 && !exitShown) {
+      if (e.clientY <= 0 && e.relatedTarget === null) {
         setExitModalOpen(true);
         setExitShown(true);
       }
     };
 
-    // Back button detection — wait before registering to avoid false triggers on mobile
+    // Back button detection — wait before registering to avoid false triggers
     let popstateReady = false;
     const popstateReadyTimer = setTimeout(() => {
       popstateReady = true;
     }, 2000);
 
     const handlePopState = () => {
-      if (!exitShown && popstateReady) {
+      if (!popstateReady) {
         window.history.pushState(null, "", window.location.href);
-        setExitModalOpen(true);
-        setExitShown(true);
-      } else {
-        // Re-push state if not ready yet
-        window.history.pushState(null, "", window.location.href);
+        return;
       }
+      window.history.pushState(null, "", window.location.href);
+      setExitModalOpen(true);
+      setExitShown(true);
     };
 
     window.history.pushState(null, "", window.location.href);
 
-    document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseleave", handleMouseLeave);
     window.addEventListener("popstate", handlePopState);
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseleave", handleMouseLeave);
       window.removeEventListener("popstate", handlePopState);
       clearTimeout(popstateReadyTimer);
