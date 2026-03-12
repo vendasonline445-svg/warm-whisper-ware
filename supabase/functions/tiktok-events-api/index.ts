@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // TikTok Events API v1.3 payload format
     const tiktokPayload = {
       event_source: "web",
-      event_source_id: pixel_code || "D6JQATBC77UBUNE442EG",
+      event_source_id: pixel_code || "222752121e344b0b8c080840e51c8b4938c1051d",
       data: [eventData],
     };
 
