@@ -125,6 +125,12 @@ const Index = () => {
     { role: 'bot', text: 'Olá! Como posso te ajudar com informações sobre a Mesa Dobrável Mesalar?' }
   ]);
   const [chatTyping, setChatTyping] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, chatTyping]);
 
   const closeStore = () => {
     setStoreClosing(true);
@@ -136,14 +142,45 @@ const Index = () => {
     setTimeout(() => { setChatOpen(false); setChatClosing(false); }, 300);
   };
 
-  const handleQuickQuestion = (faq: { q: string; a: string }) => {
-    setChatMessages(prev => [...prev, { role: 'user', text: faq.q }]);
+  const sendChatMessage = async (text: string) => {
+    if (!text.trim() || chatTyping) return;
+    const userMsg = text.trim();
+    setChatInput('');
+    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setChatTyping(true);
-    const delay = 1200 + Math.random() * 1800; // 1.2s - 3s
-    setTimeout(() => {
+
+    try {
+      const history = chatMessages.map(m => ({
+        role: m.role === 'bot' ? 'assistant' as const : 'user' as const,
+        content: m.text,
+      }));
+      history.push({ role: 'user', content: userMsg });
+
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: history }),
+      });
+
+      const data = await resp.json();
       setChatTyping(false);
-      setChatMessages(prev => [...prev, { role: 'bot', text: faq.a }]);
-    }, delay);
+
+      if (data.reply) {
+        setChatMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
+      } else {
+        setChatMessages(prev => [...prev, { role: 'bot', text: data.error || 'Desculpe, não consegui responder. Tente novamente!' }]);
+      }
+    } catch {
+      setChatTyping(false);
+      setChatMessages(prev => [...prev, { role: 'bot', text: 'Erro de conexão. Tente novamente!' }]);
+    }
+  };
+
+  const handleQuickQuestion = (faq: { q: string; a: string }) => {
+    sendChatMessage(faq.q);
   };
   const countdown = useCountdown();
 
