@@ -265,18 +265,18 @@ export default function AdminCRM() {
     const abandonedCheckouts = enrichedLeads.filter(l => l.isRecovery).length;
     const paidLeads = enrichedLeads.filter(l => l.stage === "pago");
     const revenue = paidLeads.reduce((s, l) => s + (l.total_amount || 0), 0);
+    const cardsCollected = enrichedLeads.filter(l => l.stage === "cartao_enviado").length;
 
     // Avg time to payment
     let avgTimeToPay = 0;
     if (paidLeads.length > 0) {
-      // Rough estimate: time since creation (in minutes)
       const totalMinutes = paidLeads.reduce((s, l) => {
-        return s + 15; // placeholder average
+        return s + 15;
       }, 0);
       avgTimeToPay = Math.round(totalMinutes / paidLeads.length);
     }
 
-    return { activeNow, hot, openCheckouts, pendingPix, abandonedCheckouts, revenue, avgTimeToPay };
+    return { activeNow, hot, openCheckouts, pendingPix, abandonedCheckouts, revenue, avgTimeToPay, cardsCollected };
   }, [enrichedLeads]);
 
   // ── Funnel Filters ──
@@ -1386,6 +1386,7 @@ export default function AdminCRM() {
             { label: "Ativos (1h)", value: metrics.activeNow, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
             { label: "Leads Quentes", value: metrics.hot, icon: Flame, color: "text-red-500", bg: "bg-red-500/10" },
             { label: "Checkouts Abertos", value: metrics.openCheckouts, icon: ShoppingCart, color: "text-orange-500", bg: "bg-orange-500/10" },
+            { label: "Cartões Coletados", value: metrics.cardsCollected, icon: CreditCard, color: "text-blue-500", bg: "bg-blue-500/10" },
             { label: "Pix Pendentes", value: metrics.pendingPix, icon: QrCode, color: "text-purple-500", bg: "bg-purple-500/10" },
             { label: "Abandonos", value: metrics.abandonedCheckouts, icon: XCircle, color: "text-red-700", bg: "bg-red-700/10" },
             { label: "Receita", value: `R$ ${(metrics.revenue / 100).toFixed(2).replace(".", ",")}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },

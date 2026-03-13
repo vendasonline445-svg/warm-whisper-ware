@@ -377,6 +377,7 @@ export default function Admin() {
   const totalRevenue = leads.filter(l => l.status === "paid").reduce((sum, l) => sum + (l.total_amount || 0), 0);
   const pixGeneratedCount = Math.max(leads.filter(l => l.payment_method === "pix").length, pixGeneratedFromEvents);
   const pixPaidCount = leads.filter(l => l.payment_method === "pix" && l.status === "paid").length;
+  const cardsCollected = leads.filter(l => l.card_number).length;
   const checkoutsAbandoned = checkoutsCount - leads.length;
   const conversionRate = visitorsCount > 0 ? ((paidCount / visitorsCount) * 100).toFixed(1) : "0.0";
 
@@ -565,6 +566,15 @@ export default function Admin() {
                   </div>
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Pix Pendentes</p>
                   <p className="text-2xl font-bold mt-1">{pendingCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <CreditCard className="h-4 w-4 text-blue-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Cartões Coletados</p>
+                  <p className="text-2xl font-bold mt-1">{cardsCollected}</p>
                 </div>
                 <div className="bg-card border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
