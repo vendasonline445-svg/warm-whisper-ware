@@ -482,6 +482,13 @@ export default function Admin() {
             >
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
+            <button
+              onClick={() => { sessionStorage.removeItem("admin_auth"); setAuthenticated(false); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+              title="Sair"
+            >
+              <LogOut className="h-4 w-4" /> Sair
+            </button>
           </div>
         </div>
       </header>
