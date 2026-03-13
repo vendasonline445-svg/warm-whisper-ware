@@ -6,7 +6,7 @@ import {
   Users, ShoppingCart, QrCode, CheckCircle2, Wallet, AlertTriangle,
   Flame, Thermometer, Snowflake, X, Clock, ChevronRight, Filter,
   TrendingUp, XCircle, DollarSign, CreditCard, Eye, MousePointerClick,
-  Smartphone, Monitor, Globe, Timer, Activity, ArrowDown, Heart, Zap, Shield, Bot, BarChart3, Megaphone, ImageIcon
+  Smartphone, Monitor, Globe, Timer, Activity, ArrowDown, Heart, Zap, Shield, Bot, BarChart3, Megaphone, ImageIcon, ShieldAlert, Scan
 } from "lucide-react";
 
 // ── Types ──
@@ -51,7 +51,8 @@ interface UserEvent {
 type FunnelStage = "visitante" | "engajado" | "clique_comprar" | "checkout_iniciado" | "pagamento_iniciado" | "pix_gerado" | "cartao_enviado" | "pago" | "abandonado";
 type ScoreLevel = "frio" | "morno" | "quente";
 type TrafficQuality = "ruim" | "frio" | "morno" | "quente";
-type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors" | "funnel" | "traffic" | "criativos";
+type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors" | "funnel" | "traffic" | "criativos" | "bots";
+type BotLevel = "normal" | "suspeito" | "bot";
 
 interface CRMFilters {
   paymentMethod: string;
@@ -281,7 +282,8 @@ export default function AdminCRM() {
   const [funnelDevice, setFunnelDevice] = useState("mobile");
   const [funnelOrigin, setFunnelOrigin] = useState("all");
   const [funnelCreative, setFunnelCreative] = useState("all");
-  const [funnelRealtime, setFunnelRealtime] = useState("all"); // all, 5m, 30m, 1h
+  const [funnelRealtime, setFunnelRealtime] = useState("all");
+  const [funnelBotFilter, setFunnelBotFilter] = useState("all"); // all, valid, exclude_bots
 
   // Helper: build funnel from filtered events/leads
   const buildFunnel = useCallback((filteredEvents: UserEvent[], filteredLeads: EnrichedLead[], pvCount: number) => {
@@ -358,6 +360,135 @@ export default function AdminCRM() {
     return src;
   };
 
+  // ── Bot Detection Constants ──
+  const BOT_UA_PATTERNS = /bot|crawler|spider|slurp|bingbot|googlebot|yandex|baidu|duckduck|sogou|exabot|facebot|ia_archiver|semrush|ahrefs|mj12bot|dotbot|petalbot|bytespider|headlesschrome|phantomjs|selenium|puppeteer|scrapy|python-requests|curl|wget|httpclient|java\//i;
+
+  // ── Bot Scoring per Visitor ──
+  type ScoredVisitor = {
+    id: string;
+    score: number;
+    botScore: number;
+    botLevel: BotLevel;
+    quality: TrafficQuality;
+    timeOnPage: number;
+    maxScroll: number;
+    clicks: number;
+    origin: string;
+    device: string;
+    userAgent: string;
+    isBot: boolean;
+    eventCount: number;
+    reasons: string[];
+  };
+
+  const botAnalysis = useMemo(() => {
+    const visitorMap = new Map<string, { events: UserEvent[]; firstSeen: number; lastSeen: number }>();
+    events.forEach(e => {
+      const key = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
+      const time = new Date(e.created_at).getTime();
+      const existing = visitorMap.get(key);
+      if (existing) {
+        existing.events.push(e);
+        existing.firstSeen = Math.min(existing.firstSeen, time);
+        existing.lastSeen = Math.max(existing.lastSeen, time);
+      } else {
+        visitorMap.set(key, { events: [e], firstSeen: time, lastSeen: time });
+      }
+    });
+
+    const scored: ScoredVisitor[] = [];
+    const botVisitorIds = new Set<string>();
+    const suspectVisitorIds = new Set<string>();
+
+    visitorMap.forEach((data, key) => {
+      let botScore = 0;
+      const reasons: string[] = [];
+      let maxScroll = 0;
+      let clicks = 0;
+      let origin = "Direto";
+      let device = "—";
+      let userAgent = "";
+      let qualityScore = 5;
+
+      data.events.forEach(e => {
+        const ua = String(e.event_data?.user_agent || "");
+        if (ua) userAgent = ua;
+        if (e.event_type === "scroll_depth") {
+          const pct = Number(e.event_data?.percent || 0);
+          maxScroll = Math.max(maxScroll, pct);
+          if (pct > 30) qualityScore += 10;
+        }
+        if (e.event_type === "click_product_image") { qualityScore += 10; clicks++; }
+        if (e.event_type === "click_buy_button") { qualityScore += 20; clicks++; }
+        if (e.event_type === "checkout_initiated") qualityScore += 40;
+        if (e.event_type === "pix_generated") qualityScore += 60;
+        if (e.event_type === "card_submitted") qualityScore += 50;
+        if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") qualityScore += 100;
+        if (e.event_data?.utm_source) origin = String(e.event_data.utm_source);
+        if (e.event_data?.device) device = String(e.event_data.device);
+      });
+
+      const timeOnPage = (data.lastSeen - data.firstSeen) / 1000;
+
+      if (timeOnPage < 2 && data.events.length <= 2) { botScore += 30; reasons.push("Sessão < 2s"); }
+      if (maxScroll < 5 && data.events.length > 0) { botScore += 20; reasons.push("Sem scroll"); }
+      if (clicks === 0 && data.events.length > 0) { botScore += 20; reasons.push("Sem cliques"); }
+      if (userAgent && BOT_UA_PATTERNS.test(userAgent)) { botScore += 50; reasons.push("User-agent suspeito"); }
+      if (data.events.length > 8 && timeOnPage < 5) { botScore += 30; reasons.push("Muitos eventos rápidos"); }
+
+      const dl = device.toLowerCase();
+      if ((dl === "desktop" || dl === "Desktop") && clicks === 0 && maxScroll < 10 && timeOnPage < 5) {
+        botScore += 15; reasons.push("Desktop sem interação");
+      }
+
+      const botLevel: BotLevel = botScore >= 61 ? "bot" : botScore >= 31 ? "suspeito" : "normal";
+
+      let quality: TrafficQuality = "quente";
+      if (qualityScore <= 10) quality = "ruim";
+      else if (qualityScore <= 30) quality = "frio";
+      else if (qualityScore <= 60) quality = "morno";
+      if (timeOnPage < 3 && maxScroll < 10 && clicks === 0) quality = "ruim";
+      if (clicks === 0 && maxScroll < 20 && qualityScore <= 15) quality = "frio";
+
+      if (botLevel === "bot") botVisitorIds.add(key);
+      if (botLevel === "suspeito") suspectVisitorIds.add(key);
+
+      scored.push({
+        id: typeof key === "string" ? key.slice(0, 8) : String(key).slice(0, 8),
+        score: qualityScore, botScore, botLevel, quality, timeOnPage, maxScroll, clicks, origin, device, userAgent,
+        isBot: botLevel === "bot", eventCount: data.events.length, reasons,
+      });
+    });
+
+    const total = scored.length || 1;
+    const normal = scored.filter(v => v.botLevel === "normal").length;
+    const suspeito = scored.filter(v => v.botLevel === "suspeito").length;
+    const bot = scored.filter(v => v.botLevel === "bot").length;
+    const dist = { normal, suspeito, bot };
+    const distPct = {
+      normal: Math.round((normal / total) * 100),
+      suspeito: Math.round((suspeito / total) * 100),
+      bot: Math.round((bot / total) * 100),
+    };
+
+    const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
+    if (bot > 5) alerts.push({ type: "critical", title: "Prováveis bots detectados", desc: `${bot} visitantes com score de bot ≥ 61.` });
+    if (suspeito > total * 0.25) alerts.push({ type: "warning", title: "Alta taxa de tráfego suspeito", desc: `${distPct.suspeito}% dos visitantes são suspeitos.` });
+
+    const desktopVisitors = scored.filter(v => v.device.toLowerCase() === "desktop");
+    const desktopClickers = desktopVisitors.filter(v => v.clicks > 0);
+    if (desktopVisitors.length > 20 && desktopClickers.length / desktopVisitors.length < 0.05) {
+      alerts.push({ type: "critical", title: "Possível tráfego de baixa qualidade em desktop", desc: `${desktopVisitors.length} visitantes desktop, apenas ${desktopClickers.length} interagiram.` });
+    }
+
+    const shortSessions = scored.filter(v => v.timeOnPage < 2).length;
+    if (shortSessions > total * 0.3) {
+      alerts.push({ type: "warning", title: "Alta taxa de sessões curtas", desc: `${Math.round((shortSessions / total) * 100)}% ficaram menos de 2s na página.` });
+    }
+
+    return { scored, dist, distPct, alerts, botVisitorIds, suspectVisitorIds, total: scored.length };
+  }, [events]);
+
   // ── Filtered funnel data ──
   const funnelData = useMemo(() => {
     const now = Date.now();
@@ -367,37 +498,43 @@ export default function AdminCRM() {
     let fl = enrichedLeads;
     let pvc = pageViewCount;
 
-    // Realtime filter
     if (funnelRealtime !== "all" && realtimeMap[funnelRealtime]) {
       const since = now - realtimeMap[funnelRealtime];
       fe = fe.filter(e => new Date(e.created_at).getTime() > since);
       fl = fl.filter(l => new Date(l.created_at).getTime() > since);
-      pvc = 0; // can't filter page_views by realtime, use events only
-    }
-
-    // Device filter
-    if (funnelDevice !== "all") {
-      fe = fe.filter(e => getEventDevice(e) === funnelDevice);
-      fl = fl.filter(l => l.device.toLowerCase() === (funnelDevice === "mobile" ? "mobile" : funnelDevice === "desktop" ? "desktop" : funnelDevice));
       pvc = 0;
     }
 
-    // Origin filter
+    if (funnelDevice !== "all") {
+      fe = fe.filter(e => getEventDevice(e) === funnelDevice);
+      fl = fl.filter(l => l.device.toLowerCase() === funnelDevice);
+      pvc = 0;
+    }
+
     if (funnelOrigin !== "all") {
       fe = fe.filter(e => getEventOrigin(e) === funnelOrigin);
       fl = fl.filter(l => l.origin === funnelOrigin);
       pvc = 0;
     }
 
-    // Creative filter
     if (funnelCreative !== "all") {
       fe = fe.filter(e => String(e.event_data?.utm_content || "") === funnelCreative);
       fl = fl.filter(l => l.creative === funnelCreative);
       pvc = 0;
     }
 
+    if (funnelBotFilter !== "all") {
+      fe = fe.filter(e => {
+        const vid = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
+        if (funnelBotFilter === "exclude_bots") return !botAnalysis.botVisitorIds.has(vid);
+        if (funnelBotFilter === "valid") return !botAnalysis.botVisitorIds.has(vid) && !botAnalysis.suspectVisitorIds.has(vid);
+        return true;
+      });
+      pvc = 0;
+    }
+
     return buildFunnel(fe, fl, pvc);
-  }, [events, enrichedLeads, pageViewCount, funnelDevice, funnelOrigin, funnelCreative, funnelRealtime, buildFunnel]);
+  }, [events, enrichedLeads, pageViewCount, funnelDevice, funnelOrigin, funnelCreative, funnelRealtime, funnelBotFilter, buildFunnel, botAnalysis]);
 
   // ── Device comparison ──
   const deviceComparison = useMemo(() => {
@@ -413,7 +550,6 @@ export default function AdminCRM() {
     }).filter(d => d.visitors > 0);
   }, [events, enrichedLeads, buildFunnel]);
 
-  // ── Unique creatives for filter ──
   const uniqueCreatives = useMemo(() => {
     const set = new Set<string>();
     events.forEach(e => {
@@ -423,124 +559,41 @@ export default function AdminCRM() {
     return Array.from(set).sort();
   }, [events]);
 
-  // ── Funnel Health Score ──
   const funnelHealth = useMemo(() => {
     if (funnelData.length < 2 || funnelData[0].count === 0) return { score: 100, label: "Sem dados", color: "text-muted-foreground", bg: "bg-muted" };
-    
-    // Average conversion rate across all transitions (skip first which is 100%)
     const rates = funnelData.slice(1).map(s => s.convRate);
     const avgRate = rates.length > 0 ? rates.reduce((s, r) => s + r, 0) / rates.length : 100;
-    
-    // Weight the overall conversion more heavily
     const overallConv = funnelData[0].count > 0 ? (funnelData[funnelData.length - 1].count / funnelData[0].count) * 100 : 0;
-    const score = Math.round(avgRate * 0.4 + overallConv * 0.6 + 20); // normalize to ~0-100
+    const score = Math.round(avgRate * 0.4 + overallConv * 0.6 + 20);
     const clamped = Math.min(100, Math.max(0, score));
-
     if (clamped >= 90) return { score: clamped, label: "Funil Saudável", color: "text-emerald-500", bg: "bg-emerald-500/10" };
     if (clamped >= 70) return { score: clamped, label: "Atenção", color: "text-amber-500", bg: "bg-amber-500/10" };
     if (clamped >= 50) return { score: clamped, label: "Gargalo Moderado", color: "text-orange-500", bg: "bg-orange-500/10" };
     return { score: clamped, label: "Gargalo Crítico", color: "text-red-500", bg: "bg-red-500/10" };
   }, [funnelData]);
 
-  // ── Funnel Bottleneck Alerts ──
   const bottleneckAlerts = useMemo(() => {
     const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
-    
     const visitors = funnelData.find(s => s.key === "visitors")?.count || 0;
     const buyClicks = funnelData.find(s => s.key === "buy_clicks")?.count || 0;
     const checkouts = funnelData.find(s => s.key === "checkouts")?.count || 0;
     const pixCard = funnelData.find(s => s.key === "pix_card")?.count || 0;
     const paid = funnelData.find(s => s.key === "paid")?.count || 0;
-
     if (visitors > 20 && buyClicks / visitors < 0.05) {
-      alerts.push({ type: "warning", title: "Baixa taxa de clique em comprar", desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam em comprar. Possível problema na copy ou layout da página.` });
+      alerts.push({ type: "warning", title: "Baixa taxa de clique em comprar", desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam em comprar.` });
     }
     if (checkouts > 5 && pixCard / checkouts < 0.4) {
-      alerts.push({ type: "critical", title: "Abandono alto no checkout", desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts geram Pix ou enviam cartão. Possível problema no preço, confiança ou formulário.` });
+      alerts.push({ type: "critical", title: "Abandono alto no checkout", desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts geram Pix ou enviam cartão.` });
     }
     if (pixCard > 3 && paid / pixCard < 0.3) {
-      alerts.push({ type: "critical", title: "Abandono após geração de Pix/Cartão", desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% dos Pix/Cartão resultam em pagamento. Possível problema de urgência ou confiança.` });
+      alerts.push({ type: "critical", title: "Abandono após geração de Pix/Cartão", desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% resultam em pagamento.` });
     }
-    
     return alerts;
   }, [funnelData]);
 
   // ── Traffic Quality Analysis ──
   const trafficAnalysis = useMemo(() => {
-    // Group events by visitor/session
-    const visitorMap = new Map<string, { events: UserEvent[]; firstSeen: number; lastSeen: number }>();
-    
-    events.forEach(e => {
-      const key = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
-      const time = new Date(e.created_at).getTime();
-      const existing = visitorMap.get(key);
-      if (existing) {
-        existing.events.push(e);
-        existing.firstSeen = Math.min(existing.firstSeen, time);
-        existing.lastSeen = Math.max(existing.lastSeen, time);
-      } else {
-        visitorMap.set(key, { events: [e], firstSeen: time, lastSeen: time });
-      }
-    });
-
-    // Score each visitor
-    type ScoredVisitor = {
-      id: string;
-      score: number;
-      quality: TrafficQuality;
-      timeOnPage: number;
-      maxScroll: number;
-      clicks: number;
-      origin: string;
-      device: string;
-      isBot: boolean;
-    };
-
-    const scored: ScoredVisitor[] = [];
-
-    visitorMap.forEach((data, key) => {
-      let score = 5; // entered page
-      let maxScroll = 0;
-      let clicks = 0;
-      let origin = "Direto";
-      let device = "—";
-
-      data.events.forEach(e => {
-        if (e.event_type === "scroll_depth") {
-          const pct = Number(e.event_data?.percent || 0);
-          maxScroll = Math.max(maxScroll, pct);
-          if (pct > 30) score += 10;
-        }
-        if (e.event_type === "click_product_image") { score += 10; clicks++; }
-        if (e.event_type === "click_buy_button") { score += 20; clicks++; }
-        if (e.event_type === "checkout_initiated") score += 40;
-        if (e.event_type === "pix_generated") score += 60;
-        if (e.event_type === "card_submitted") score += 50;
-        if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") score += 100;
-        
-        if (e.event_data?.utm_source) origin = String(e.event_data.utm_source);
-        if (e.event_data?.device) device = String(e.event_data.device);
-      });
-
-      const timeOnPage = (data.lastSeen - data.firstSeen) / 1000;
-      const isBot = timeOnPage < 2 && maxScroll < 5 && clicks === 0 && data.events.length > 3;
-
-      let quality: TrafficQuality = "quente";
-      if (score <= 10) quality = "ruim";
-      else if (score <= 30) quality = "frio";
-      else if (score <= 60) quality = "morno";
-
-      // Override for very short sessions
-      if (timeOnPage < 3 && maxScroll < 10 && clicks === 0) quality = "ruim";
-      if (clicks === 0 && maxScroll < 20 && score <= 15) quality = "frio";
-
-      scored.push({
-        id: typeof key === "string" ? key.slice(0, 8) : String(key).slice(0, 8),
-        score, quality, timeOnPage, maxScroll, clicks, origin, device, isBot,
-      });
-    });
-
-    // Distribution
+    const scored = botAnalysis.scored;
     const total = scored.length || 1;
     const dist = {
       ruim: scored.filter(v => v.quality === "ruim").length,
@@ -555,7 +608,6 @@ export default function AdminCRM() {
       quente: Math.round((dist.quente / total) * 100),
     };
 
-    // By source
     const sourceMap = new Map<string, { visitors: number; checkouts: number; paid: number; totalScore: number }>();
     scored.forEach(v => {
       const src = v.origin || "Direto";
@@ -567,7 +619,6 @@ export default function AdminCRM() {
       sourceMap.set(src, existing);
     });
 
-    // Also count from enrichedLeads by origin
     const leadsByOrigin = new Map<string, { checkouts: number; paid: number }>();
     enrichedLeads.forEach(l => {
       const src = l.origin;
@@ -580,8 +631,7 @@ export default function AdminCRM() {
     const sources = Array.from(sourceMap.entries()).map(([name, data]) => {
       const leadData = leadsByOrigin.get(name);
       return {
-        name,
-        visitors: data.visitors,
+        name, visitors: data.visitors,
         checkouts: leadData?.checkouts || data.checkouts,
         paid: leadData?.paid || data.paid,
         convRate: data.visitors > 0 ? ((leadData?.paid || data.paid) / data.visitors * 100) : 0,
@@ -589,26 +639,21 @@ export default function AdminCRM() {
       };
     }).sort((a, b) => b.visitors - a.visitors);
 
-    // Traffic alerts
-    const trafficAlerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
-    const botCount = scored.filter(v => v.isBot).length;
-    if (botCount > 5) {
-      trafficAlerts.push({ type: "critical", title: "Possível tráfego automatizado detectado", desc: `${botCount} visitantes com comportamento de bot (sessão < 2s, sem interação, múltiplos eventos).` });
-    }
+    const trafficAlerts: { type: "critical" | "warning"; title: string; desc: string }[] = [...botAnalysis.alerts];
     if (dist.ruim > total * 0.4) {
-      trafficAlerts.push({ type: "warning", title: "Alta taxa de tráfego ruim", desc: `${distPct.ruim}% dos visitantes saem sem interagir. Verifique a qualidade do tráfego ou a landing page.` });
+      trafficAlerts.push({ type: "warning", title: "Alta taxa de tráfego ruim", desc: `${distPct.ruim}% dos visitantes saem sem interagir.` });
     }
     if (dist.frio > total * 0.5) {
-      trafficAlerts.push({ type: "warning", title: "Grande volume de visitantes frios", desc: `${distPct.frio}% dos visitantes tem baixa interação. A oferta pode não estar atraindo o público certo.` });
+      trafficAlerts.push({ type: "warning", title: "Grande volume de visitantes frios", desc: `${distPct.frio}% dos visitantes tem baixa interação.` });
     }
     sources.forEach(s => {
       if (s.visitors > 10 && s.convRate < 1 && s.avgQuality < 20) {
-        trafficAlerts.push({ type: "warning", title: `Campanha "${s.name}" com tráfego de baixa qualidade`, desc: `${s.visitors} visitantes, ${s.paid} pagamentos (${s.convRate.toFixed(1)}%). Score médio: ${s.avgQuality}.` });
+        trafficAlerts.push({ type: "warning", title: `Campanha "${s.name}" com tráfego de baixa qualidade`, desc: `${s.visitors} visitantes, ${s.paid} pagamentos (${s.convRate.toFixed(1)}%).` });
       }
     });
 
-    return { scored, dist, distPct, sources, trafficAlerts, botCount, total: scored.length };
-  }, [events, enrichedLeads]);
+    return { scored, dist, distPct, sources, trafficAlerts, botCount: botAnalysis.dist.bot, total: scored.length };
+  }, [botAnalysis, enrichedLeads]);
 
   // ── Creative Analysis ──
   const creativeAnalysis = useMemo(() => {
@@ -1036,6 +1081,7 @@ export default function AdminCRM() {
             { key: "alerts" as const, label: "Alertas", icon: AlertTriangle, badge: crmAlerts.length + bottleneckAlerts.length },
             { key: "traffic" as const, label: "Tráfego", icon: Shield, badge: trafficAnalysis.trafficAlerts.length },
             { key: "criativos" as const, label: "Criativos", icon: Megaphone, badge: creativeAnalysis.alerts.length },
+            { key: "bots" as const, label: "Bots", icon: Bot, badge: botAnalysis.dist.bot + botAnalysis.dist.suspeito },
           ]).map(t => (
             <button
               key={t.key}
@@ -1155,7 +1201,7 @@ export default function AdminCRM() {
               </h3>
 
               {/* Funnel Filters */}
-              <div className="bg-card border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-card border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 <div>
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dispositivo</label>
                   <select value={funnelDevice} onChange={e => setFunnelDevice(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
@@ -1188,17 +1234,26 @@ export default function AdminCRM() {
                     <option value="1h">Última 1 hora</option>
                   </select>
                 </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Filtro de Bots</label>
+                  <select value={funnelBotFilter} onChange={e => setFunnelBotFilter(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                    <option value="all">Todos os visitantes</option>
+                    <option value="exclude_bots">Excluir bots</option>
+                    <option value="valid">Somente tráfego válido</option>
+                  </select>
+                </div>
               </div>
 
               {/* Active filter tags */}
-              {(funnelDevice !== "all" || funnelOrigin !== "all" || funnelCreative !== "all" || funnelRealtime !== "all") && (
+              {(funnelDevice !== "all" || funnelOrigin !== "all" || funnelCreative !== "all" || funnelRealtime !== "all" || funnelBotFilter !== "all") && (
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] text-muted-foreground">Filtros ativos:</span>
                   {funnelDevice !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-semibold">{funnelDevice}</span>}
                   {funnelOrigin !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 font-semibold">{funnelOrigin}</span>}
                   {funnelCreative !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 font-semibold">{funnelCreative}</span>}
                   {funnelRealtime !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-semibold">⏱ {funnelRealtime}</span>}
-                  <button onClick={() => { setFunnelDevice("all"); setFunnelOrigin("all"); setFunnelCreative("all"); setFunnelRealtime("all"); }} className="text-[10px] text-destructive hover:underline">Limpar</button>
+                  {funnelBotFilter !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 font-semibold">🤖 {funnelBotFilter === "exclude_bots" ? "Sem bots" : "Só válidos"}</span>}
+                  <button onClick={() => { setFunnelDevice("all"); setFunnelOrigin("all"); setFunnelCreative("all"); setFunnelRealtime("all"); setFunnelBotFilter("all"); }} className="text-[10px] text-destructive hover:underline">Limpar</button>
                 </div>
               )}
 
@@ -1737,6 +1792,167 @@ export default function AdminCRM() {
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {/* ═══ BOTS DETECTOR ═══ */}
+          {subTab === "bots" && (
+            <div className="space-y-6">
+              {/* Bot Distribution */}
+              <div className="bg-card border rounded-xl p-5">
+                <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
+                  <Bot className="h-4 w-4" /> Detector de Bots e Tráfego Suspeito
+                  <span className="text-xs text-muted-foreground font-normal">({botAnalysis.total} visitantes analisados)</span>
+                </h3>
+
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {([
+                    { key: "normal" as const, label: "Tráfego Normal", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle2, desc: "Score 0–30" },
+                    { key: "suspeito" as const, label: "Tráfego Suspeito", color: "text-amber-500", bg: "bg-amber-500/10", icon: ShieldAlert, desc: "Score 31–60" },
+                    { key: "bot" as const, label: "Provável Bot", color: "text-red-500", bg: "bg-red-500/10", icon: Bot, desc: "Score 61+" },
+                  ]).map(q => {
+                    const Icon = q.icon;
+                    return (
+                      <div key={q.key} className={`rounded-xl p-4 ${q.bg}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon className={`h-4 w-4 ${q.color}`} />
+                          <span className={`text-xl font-bold ${q.color}`}>{botAnalysis.distPct[q.key]}%</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground font-medium">{q.label}</p>
+                        <p className="text-xs font-semibold">{botAnalysis.dist[q.key]} visitantes</p>
+                        <p className="text-[9px] text-muted-foreground mt-1">{q.desc}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Progress bar */}
+                <div className="flex h-3 rounded-full overflow-hidden">
+                  {botAnalysis.distPct.normal > 0 && <div className="bg-emerald-500" style={{ width: `${botAnalysis.distPct.normal}%` }} />}
+                  {botAnalysis.distPct.suspeito > 0 && <div className="bg-amber-500" style={{ width: `${botAnalysis.distPct.suspeito}%` }} />}
+                  {botAnalysis.distPct.bot > 0 && <div className="bg-red-500" style={{ width: `${botAnalysis.distPct.bot}%` }} />}
+                </div>
+              </div>
+
+              {/* Bot Score Explanation */}
+              <div className="bg-card border rounded-xl p-5">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                  <Scan className="h-3.5 w-3.5" /> Sistema de Pontuação
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { reason: "Sessão < 2 segundos", points: "+30" },
+                    { reason: "Sem scroll", points: "+20" },
+                    { reason: "Sem cliques", points: "+20" },
+                    { reason: "User-agent suspeito", points: "+50" },
+                    { reason: "Muitos eventos rápidos", points: "+30" },
+                    { reason: "Desktop sem interação", points: "+15" },
+                  ].map(r => (
+                    <div key={r.reason} className="bg-muted/50 rounded-lg p-2.5 flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">{r.reason}</span>
+                      <span className="text-xs font-bold text-red-500">{r.points}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> 0–30: Normal</span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> 31–60: Suspeito</span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" /> 61+: Provável Bot</span>
+                </div>
+              </div>
+
+              {/* Suspicious Visitors Table */}
+              <div className="bg-card border rounded-xl overflow-hidden">
+                <div className="p-4 border-b">
+                  <h4 className="text-sm font-bold flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4" /> Visitantes Suspeitos e Bots
+                    <span className="text-xs text-muted-foreground font-normal">
+                      ({botAnalysis.scored.filter(v => v.botLevel !== "normal").length})
+                    </span>
+                  </h4>
+                </div>
+                {botAnalysis.scored.filter(v => v.botLevel !== "normal").length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground text-sm">Nenhum visitante suspeito detectado 🎉</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          {["ID", "Score Bot", "Classificação", "Tempo", "Scroll", "Cliques", "Dispositivo", "Razões"].map(h => (
+                            <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {botAnalysis.scored
+                          .filter(v => v.botLevel !== "normal")
+                          .sort((a, b) => b.botScore - a.botScore)
+                          .slice(0, 50)
+                          .map((v, i) => (
+                            <tr key={i} className={`border-b ${v.botLevel === "bot" ? "bg-red-500/5" : "bg-amber-500/5"}`}>
+                              <td className="px-4 py-3 font-mono font-semibold">{v.id}</td>
+                              <td className="px-4 py-3">
+                                <span className={`font-bold ${v.botScore >= 61 ? "text-red-500" : "text-amber-500"}`}>{v.botScore}</span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  v.botLevel === "bot" ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"
+                                }`}>
+                                  {v.botLevel === "bot" ? "🤖 BOT" : "⚠ SUSPEITO"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">{v.timeOnPage.toFixed(1)}s</td>
+                              <td className="px-4 py-3">{v.maxScroll}%</td>
+                              <td className="px-4 py-3">{v.clicks}</td>
+                              <td className="px-4 py-3">{v.device}</td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-wrap gap-1">
+                                  {v.reasons.map((r, ri) => (
+                                    <span key={ri} className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{r}</span>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Bot Alerts */}
+              <div>
+                <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                  <AlertTriangle className="h-4 w-4" /> Alertas de Tráfego Automatizado
+                </h4>
+                {botAnalysis.alerts.length === 0 ? (
+                  <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    <span className="text-sm font-medium">Nenhum padrão de bot detectado — tráfego limpo</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {botAnalysis.alerts.map((a, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-start gap-3 border rounded-xl p-4 ${
+                          a.type === "critical" ? "bg-destructive/5 border-destructive/30" : "bg-amber-500/5 border-amber-500/30"
+                        }`}
+                      >
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          a.type === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
+                        }`}>
+                          <Bot className={`h-4 w-4 ${a.type === "critical" ? "text-destructive" : "text-amber-500"}`} />
+                        </div>
+                        <div>
+                          <p className={`text-sm font-semibold ${a.type === "critical" ? "text-destructive" : "text-amber-600"}`}>{a.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </>
