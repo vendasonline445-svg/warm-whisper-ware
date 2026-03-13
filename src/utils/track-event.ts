@@ -97,11 +97,8 @@ function getUtmParams(): Record<string, string> {
     if (v) utm[k] = v;
   });
 
-  const extra = ["fbclid", "gclid", "ttclid", "xcod"];
-  extra.forEach(k => {
-    const v = params.get(k);
-    if (v) utm[k] = v;
-  });
+  // Click IDs are NOT UTM params — store them separately for click_id tracking only
+  // Do NOT include ttclid, fbclid, gclid, xcod in UTM params
 
   if (!utm.utm_source && document.referrer) {
     try {
