@@ -548,9 +548,15 @@ const Checkout = () => {
 
         {/* Discount */}
         <div className="mt-4 flex items-center justify-between py-3 border-t">
-          <span className="text-sm flex items-center gap-1.5">🏷 Desconto especial</span>
-          <span className="text-sm font-semibold text-cta flex items-center gap-1">
-            - R$ {BASE_DISCOUNT_VALUE.toFixed(2).replace(".", ",")} <ChevronRight className="h-4 w-4" />
+          <span className="text-sm flex items-center gap-2">
+            <span className="text-base">🏷</span>
+            Desconto especial
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: '#ffe3e8', color: '#fe2b54' }}>
+              - R$ {BASE_DISCOUNT_VALUE.toFixed(2).replace(".", ",")}
+            </span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </span>
         </div>
 
