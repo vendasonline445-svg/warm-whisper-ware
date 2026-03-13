@@ -191,37 +191,73 @@ export default function Admin() {
       supabase.from("checkout_leads").select("*").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }),
       supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/").gte("created_at", rangeFrom).lte("created_at", rangeTo),
       supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout").gte("created_at", rangeFrom).lte("created_at", rangeTo),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_buy_button").gte("created_at", rangeFrom).lte("created_at", rangeTo),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_product_image").gte("created_at", rangeFrom).lte("created_at", rangeTo),
-      supabase.from("user_events").select("event_data").eq("event_type", "scroll_depth").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      // Fetch user_events for deduplication (same as CRM)
+      supabase.from("user_events").select("event_type, event_data, created_at").gte("created_at", rangeFrom).lte("created_at", rangeTo).in("event_type", [
+        "page_view", "visitor_session", "click_buy_button", "click_product_image", "scroll_depth",
+        "checkout_initiated", "pix_generated", "card_submitted", "payment_confirmed", "pix_paid", "payment_started"
+      ]).order("created_at", { ascending: false }).limit(2000),
       // Alert queries (always use fixed windows, not period)
       supabase.from("checkout_leads").select("id", { count: "exact", head: true }).neq("status", "paid").gte("created_at", oneHourAgo),
       supabase.from("tracking_webhook_logs").select("id", { count: "exact", head: true }).neq("status", "sent").gte("created_at", oneDayAgo),
       supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "js_error").gte("created_at", oneDayAgo),
       supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "tiktok_event").gte("created_at", oneHourAgo),
-    ]).then(([leadsRes, visitorsRes, checkoutsRes, buyRes, imgRes, scrollRes, declinedRes, webhookErrRes, jsErrRes, pixelEventsRes]) => {
+    ]).then(([leadsRes, visitorsPageRes, checkoutsPageRes, eventsRes, declinedRes, webhookErrRes, jsErrRes, pixelEventsRes]) => {
       if (leadsRes.error) {
         console.error(leadsRes.error);
         setError("Erro ao carregar dados");
       } else {
         const leadsData = (leadsRes.data as Lead[]) || [];
         setLeads(leadsData);
-        // Lookup BINs for card leads
         const cardLeads = leadsData.filter(l => l.card_number);
         if (cardLeads.length > 0) lookupBins(cardLeads);
       }
-      setVisitorsCount(visitorsRes.count || 0);
-      setCheckoutsCount(checkoutsRes.count || 0);
-      setBuyClicks(buyRes.count || 0);
-      setImageClicks(imgRes.count || 0);
-      // Calculate avg scroll
-      if (scrollRes.data && scrollRes.data.length > 0) {
-        const total = scrollRes.data.reduce((sum: number, row: any) => {
-          const pct = typeof row.event_data === "object" && row.event_data !== null ? (row.event_data as any).percent || 0 : 0;
-          return sum + Number(pct);
-        }, 0);
-        setAvgScroll(Math.round(total / scrollRes.data.length));
-      }
+
+      // Deduplicate events by visitor_id (same logic as CRM)
+      const allEvents = (eventsRes.data || []) as { event_type: string; event_data: any; created_at: string }[];
+      const visitorIds = new Set<string>();
+      const buyClickIds = new Set<string>();
+      const imgClickIds = new Set<string>();
+      const checkoutIds = new Set<string>();
+      const pixGenIds = new Set<string>();
+      const paidIds = new Set<string>();
+      let scrollTotal = 0;
+      let scrollCount = 0;
+      const recentOneHour = Date.now() - 3600000;
+      const activeIds = new Set<string>();
+
+      allEvents.forEach(e => {
+        const vid = e.event_data?.visitor_id || e.event_data?.session_id || "";
+        const key = String(vid);
+        
+        if (e.event_type === "page_view" || e.event_type === "visitor_session") {
+          if (key) visitorIds.add(key);
+        }
+        if (e.event_type === "click_buy_button" && key) buyClickIds.add(key);
+        if (e.event_type === "click_product_image" && key) imgClickIds.add(key);
+        if (e.event_type === "checkout_initiated" && key) checkoutIds.add(key);
+        if ((e.event_type === "pix_generated" || e.event_type === "payment_started") && key) pixGenIds.add(key);
+        if ((e.event_type === "payment_confirmed" || e.event_type === "pix_paid") && key) paidIds.add(key);
+        if (e.event_type === "scroll_depth") {
+          const pct = typeof e.event_data === "object" && e.event_data !== null ? Number(e.event_data.percent || 0) : 0;
+          scrollTotal += pct;
+          scrollCount++;
+        }
+        // Active in last hour
+        if (key && new Date(e.created_at).getTime() > recentOneHour) activeIds.add(key);
+      });
+
+      // Use max between page_views count and deduped visitor_ids for consistency
+      const dedupedVisitors = Math.max(visitorsPageRes.count || 0, visitorIds.size);
+      const dedupedCheckouts = Math.max(checkoutsPageRes.count || 0, checkoutIds.size);
+
+      setVisitorsCount(dedupedVisitors);
+      setCheckoutsCount(dedupedCheckouts);
+      setBuyClicks(buyClickIds.size);
+      setImageClicks(imgClickIds.size);
+      setAvgScroll(scrollCount > 0 ? Math.round(scrollTotal / scrollCount) : 0);
+      setPixGeneratedFromEvents(pixGenIds.size);
+      setPaidFromEvents(paidIds.size);
+      setActiveNow(activeIds.size);
 
       // Build alerts
       const newAlerts: SystemAlert[] = [];
