@@ -121,6 +121,20 @@ const PixPayment = () => {
     ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`
     : "";
 
+  if (paid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(180deg, #f0f2f8 0%, #fdf0f2 50%, #f8f8fa 100%)" }}>
+        <div className="text-center p-8 rounded-2xl bg-white shadow-lg border border-border/30 mx-4">
+          <div className="w-16 h-16 rounded-full bg-[#22c55e] flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <Check className="h-8 w-8 text-white" />
+          </div>
+          <h1 className="text-xl font-extrabold text-foreground mb-2">Pagamento confirmado!</h1>
+          <p className="text-sm text-muted-foreground">Redirecionando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #f0f2f8 0%, #fdf0f2 50%, #f8f8fa 100%)" }}>
       {/* Header */}
