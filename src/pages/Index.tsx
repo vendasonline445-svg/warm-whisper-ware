@@ -1377,8 +1377,9 @@ const Index = () => {
               <button
                 onClick={() => {
                   if (selectedColor && selectedSize) {
+                    saveCart([{ color: selectedColor, size: selectedSize, quantity: 1 }]);
                     setExit2Open(false);
-                    nav(`/checkout?cor=${selectedColor}&tamanho=${selectedSize}&cupom=ULTIMA50`);
+                    nav(`/checkout?cupom=ULTIMA50`);
                   }
                 }}
                 disabled={!selectedColor}
