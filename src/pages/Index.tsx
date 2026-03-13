@@ -293,7 +293,7 @@ const Index = () => {
           <X className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setExitModalOpen(true); setExitShown(true); }} />
           <div className="flex items-center gap-5">
             <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" />
-            <ShoppingCart className="h-5 w-5 text-muted-foreground cursor-pointer" />
+            <ShoppingCart onClick={() => setCartOpen(true)} className="h-5 w-5 text-muted-foreground cursor-pointer" />
             <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer" />
           </div>
         </div>
