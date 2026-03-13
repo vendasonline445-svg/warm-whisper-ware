@@ -120,6 +120,18 @@ const Index = () => {
   const [zoomOpen, setZoomOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartClosing, setCartClosing] = useState(false);
+  const [cartItem, setCartItem] = useState<{color: string; size: string; quantity: number} | null>(() => {
+    try {
+      const saved = localStorage.getItem('mesalar_cart');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  const updateCart = (item: {color: string; size: string; quantity: number} | null) => {
+    setCartItem(item);
+    if (item) localStorage.setItem('mesalar_cart', JSON.stringify(item));
+    else localStorage.removeItem('mesalar_cart');
+  };
 
   const closeCart = () => {
     setCartClosing(true);
@@ -270,9 +282,18 @@ const Index = () => {
 
   const handleCheckout = () => {
     if (!selectedColor) return;
+    updateCart({ color: selectedColor, size: selectedSize, quantity: cartItem?.quantity || 1 });
     const params = new URLSearchParams(window.location.search);
     params.set("color", selectedColor);
     params.set("size", selectedSize);
+    nav(`/checkout?${params.toString()}`);
+  };
+
+  const handleCartCheckout = () => {
+    if (!cartItem) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set("color", cartItem.color);
+    params.set("size", cartItem.size);
     nav(`/checkout?${params.toString()}`);
   };
 
@@ -1109,7 +1130,7 @@ const Index = () => {
         </div>
       )}
 
-      {/* Cart Empty - Bottom Sheet */}
+      {/* Cart - Bottom Sheet */}
       {cartOpen && (
         <div className="fixed inset-0 z-[60]" onClick={closeCart}>
           <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${cartClosing ? 'opacity-0' : 'opacity-100 animate-in fade-in-0'}`} />
@@ -1117,11 +1138,9 @@ const Index = () => {
             className={`absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl transition-transform duration-300 mx-auto sm:max-w-md ${cartClosing ? 'translate-y-full' : 'animate-in slide-in-from-bottom'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
             </div>
-            {/* Close button */}
             <button
               onClick={closeCart}
               className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
@@ -1130,20 +1149,67 @@ const Index = () => {
             </button>
 
             <div className="px-5 pt-2 pb-3 border-b">
-              <p className="text-base font-bold text-center">Carrinho de compras (0)</p>
+              <p className="text-base font-bold text-center">Carrinho de compras ({cartItem ? cartItem.quantity : 0})</p>
             </div>
 
-            <div className="flex flex-col items-center justify-center py-12 px-6">
-              <ShoppingCart className="h-16 w-16 text-muted-foreground/30 mb-4" />
-              <p className="text-lg font-bold text-foreground mb-1">Seu carrinho está vazio</p>
-              <p className="text-sm text-muted-foreground text-center mb-6">Vamos preenchê-lo com seus produtos favoritos e ótimas ofertas!</p>
-              <button
-                onClick={closeCart}
-                className="bg-cta text-white font-bold text-sm py-3 px-10 rounded-full hover:bg-cta-hover transition-colors"
-              >
-                Começar a comprar
-              </button>
-            </div>
+            {!cartItem ? (
+              <div className="flex flex-col items-center justify-center py-12 px-6">
+                <ShoppingCart className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                <p className="text-lg font-bold text-foreground mb-1">Seu carrinho está vazio</p>
+                <p className="text-sm text-muted-foreground text-center mb-6">Vamos preenchê-lo com seus produtos favoritos e ótimas ofertas!</p>
+                <button onClick={closeCart} className="bg-cta text-white font-bold text-sm py-3 px-10 rounded-full hover:bg-cta-hover transition-colors">
+                  Começar a comprar
+                </button>
+              </div>
+            ) : (
+              <div className="px-5 py-4">
+                {/* Product in cart */}
+                <div className="flex gap-3 pb-4 border-b">
+                  <img
+                    src={cartItem.color === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
+                    alt="Mesa Dobrável"
+                    className="h-20 w-20 rounded-lg object-contain border bg-muted/30 p-1 flex-shrink-0"
+                  />
+                  <div className="flex-1">
+                    <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                    <p className="text-xs text-muted-foreground">Cor: {cartItem.color === 'preta' ? 'Preta' : 'Branca'} · {cartItem.size}</p>
+                    <p className="text-cta font-extrabold text-base mt-1">R$ {(PRICE * cartItem.quantity).toFixed(2).replace('.', ',')}</p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <button
+                        onClick={() => {
+                          if (cartItem.quantity <= 1) { updateCart(null); }
+                          else updateCart({ ...cartItem, quantity: cartItem.quantity - 1 });
+                        }}
+                        className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
+                      >
+                        <span className="text-sm font-bold">−</span>
+                      </button>
+                      <span className="text-sm font-bold w-5 text-center">{cartItem.quantity}</span>
+                      <button
+                        onClick={() => updateCart({ ...cartItem, quantity: cartItem.quantity + 1 })}
+                        className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
+                      >
+                        <span className="text-sm font-bold">+</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total */}
+                <div className="flex justify-between items-center py-3 border-b">
+                  <span className="text-sm font-semibold">Total</span>
+                  <span className="text-lg font-extrabold text-cta">R$ {(PRICE * cartItem.quantity).toFixed(2).replace('.', ',')}</span>
+                </div>
+
+                {/* Checkout button */}
+                <button
+                  onClick={handleCartCheckout}
+                  className="w-full bg-cta text-white font-bold text-base py-3.5 rounded-2xl mt-4 hover:bg-cta-hover transition-colors"
+                >
+                  Finalizar compra
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
