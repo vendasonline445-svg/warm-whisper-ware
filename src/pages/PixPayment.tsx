@@ -117,6 +117,8 @@ const PixPayment = () => {
         externalId: orderData.customer.cpf,
       } : undefined,
     });
+    trackPageViewOnce("/pix");
+    trackEvent("payment_started", { method: "pix", transaction_id: transactionId });
   }, []);
 
   const pixInfo = pixData?.pix || pixData?.pixQrCode || pixData?.qr_code_data || {};
