@@ -262,6 +262,7 @@ const Index = () => {
 
   const openColorModal = (mode: 'cart' | 'buy') => {
     setSelectedColor(null);
+    setModalQty(1);
     setColorModalMode(mode);
     setColorModalOpen(true);
     trackTikTokEvent({
