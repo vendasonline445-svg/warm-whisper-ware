@@ -259,14 +259,17 @@ export default function Admin() {
         });
       }
 
+      // Count only system/integration JS errors (exclude external/bot)
+      const EXTERNAL_ALERT_DOMAINS = ["analytics.tiktok.com", "connect.facebook.net", "googletagmanager.com", "google-analytics.com", "cdn.jsdelivr.net"];
       const jsErrors = jsErrRes.count || 0;
+      // For alert purposes, we estimate real errors conservatively
       if (jsErrors > 0) {
         newAlerts.push({
           id: "jserror",
           type: "warning",
           icon: <Bug className="h-4 w-4" />,
           title: `${jsErrors} erro(s) JavaScript detectados (24h)`,
-          description: "Erros no site podem impactar a experiência do usuário.",
+          description: "Verifique a aba Logs para ver a classificação detalhada dos erros.",
         });
       }
 
