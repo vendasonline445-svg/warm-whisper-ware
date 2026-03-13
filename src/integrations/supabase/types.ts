@@ -107,6 +107,33 @@ export type Database = {
         }
         Relationships: []
       }
+      tiktok_pixels: {
+        Row: {
+          api_token: string
+          created_at: string
+          id: string
+          name: string
+          pixel_id: string
+          status: string
+        }
+        Insert: {
+          api_token: string
+          created_at?: string
+          id?: string
+          name: string
+          pixel_id: string
+          status?: string
+        }
+        Update: {
+          api_token?: string
+          created_at?: string
+          id?: string
+          name?: string
+          pixel_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
