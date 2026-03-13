@@ -673,7 +673,7 @@ const Index = () => {
               {reviews.map((r, idx) => (
                 <div key={idx} className="py-5 first:pt-0">
                   <div className="flex items-center gap-3 mb-2">
-                    <img src={r.avatar} alt={r.name} className="h-10 w-10 rounded-full object-cover" />
+                    <img src={r.avatar} alt={r.name} className="h-10 w-10 rounded-full object-cover" loading="lazy" />
                     <span className="font-semibold text-sm">{r.name}</span>
                   </div>
                   <div className="flex gap-0.5 mb-2">
