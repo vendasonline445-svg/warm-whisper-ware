@@ -617,7 +617,7 @@ const Checkout = () => {
             </button>
 
             {/* Show card brands preview only when NOT expanded */}
-            {paymentMethod !== "credit_card" && !cardDisabled && (
+            {paymentMethod !== "credit_card" && (
               <div className="px-3 pb-3">
                 <span className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: '#ffe3e8', color: '#fe2b54' }}>
                   Sem juros em até 3x <ChevronRight className="h-3 w-3 ml-0.5" />
