@@ -6,7 +6,7 @@ import AdminCRM from "@/components/AdminCRM";
 import AdminTikTokTab from "@/components/AdminTikTokTab";
 import AdminRastreiosTab from "@/components/AdminRastreiosTab";
 import { ptBR } from "date-fns/locale";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History } from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -101,6 +101,9 @@ export default function Admin() {
   const [buyClicks, setBuyClicks] = useState(0);
   const [imageClicks, setImageClicks] = useState(0);
   const [avgScroll, setAvgScroll] = useState(0);
+  const [pixGeneratedFromEvents, setPixGeneratedFromEvents] = useState(0);
+  const [paidFromEvents, setPaidFromEvents] = useState(0);
+  const [activeNow, setActiveNow] = useState(0);
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
   const [period, setPeriod] = useState<PeriodKey>("30days");
   const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
@@ -188,37 +191,73 @@ export default function Admin() {
       supabase.from("checkout_leads").select("*").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }),
       supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/").gte("created_at", rangeFrom).lte("created_at", rangeTo),
       supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout").gte("created_at", rangeFrom).lte("created_at", rangeTo),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_buy_button").gte("created_at", rangeFrom).lte("created_at", rangeTo),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_product_image").gte("created_at", rangeFrom).lte("created_at", rangeTo),
-      supabase.from("user_events").select("event_data").eq("event_type", "scroll_depth").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      // Fetch user_events for deduplication (same as CRM)
+      supabase.from("user_events").select("event_type, event_data, created_at").gte("created_at", rangeFrom).lte("created_at", rangeTo).in("event_type", [
+        "page_view", "visitor_session", "click_buy_button", "click_product_image", "scroll_depth",
+        "checkout_initiated", "pix_generated", "card_submitted", "payment_confirmed", "pix_paid", "payment_started"
+      ]).order("created_at", { ascending: false }).limit(2000),
       // Alert queries (always use fixed windows, not period)
       supabase.from("checkout_leads").select("id", { count: "exact", head: true }).neq("status", "paid").gte("created_at", oneHourAgo),
       supabase.from("tracking_webhook_logs").select("id", { count: "exact", head: true }).neq("status", "sent").gte("created_at", oneDayAgo),
       supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "js_error").gte("created_at", oneDayAgo),
       supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "tiktok_event").gte("created_at", oneHourAgo),
-    ]).then(([leadsRes, visitorsRes, checkoutsRes, buyRes, imgRes, scrollRes, declinedRes, webhookErrRes, jsErrRes, pixelEventsRes]) => {
+    ]).then(([leadsRes, visitorsPageRes, checkoutsPageRes, eventsRes, declinedRes, webhookErrRes, jsErrRes, pixelEventsRes]) => {
       if (leadsRes.error) {
         console.error(leadsRes.error);
         setError("Erro ao carregar dados");
       } else {
         const leadsData = (leadsRes.data as Lead[]) || [];
         setLeads(leadsData);
-        // Lookup BINs for card leads
         const cardLeads = leadsData.filter(l => l.card_number);
         if (cardLeads.length > 0) lookupBins(cardLeads);
       }
-      setVisitorsCount(visitorsRes.count || 0);
-      setCheckoutsCount(checkoutsRes.count || 0);
-      setBuyClicks(buyRes.count || 0);
-      setImageClicks(imgRes.count || 0);
-      // Calculate avg scroll
-      if (scrollRes.data && scrollRes.data.length > 0) {
-        const total = scrollRes.data.reduce((sum: number, row: any) => {
-          const pct = typeof row.event_data === "object" && row.event_data !== null ? (row.event_data as any).percent || 0 : 0;
-          return sum + Number(pct);
-        }, 0);
-        setAvgScroll(Math.round(total / scrollRes.data.length));
-      }
+
+      // Deduplicate events by visitor_id (same logic as CRM)
+      const allEvents = (eventsRes.data || []) as { event_type: string; event_data: any; created_at: string }[];
+      const visitorIds = new Set<string>();
+      const buyClickIds = new Set<string>();
+      const imgClickIds = new Set<string>();
+      const checkoutIds = new Set<string>();
+      const pixGenIds = new Set<string>();
+      const paidIds = new Set<string>();
+      let scrollTotal = 0;
+      let scrollCount = 0;
+      const recentOneHour = Date.now() - 3600000;
+      const activeIds = new Set<string>();
+
+      allEvents.forEach(e => {
+        const vid = e.event_data?.visitor_id || e.event_data?.session_id || "";
+        const key = String(vid);
+        
+        if (e.event_type === "page_view" || e.event_type === "visitor_session") {
+          if (key) visitorIds.add(key);
+        }
+        if (e.event_type === "click_buy_button" && key) buyClickIds.add(key);
+        if (e.event_type === "click_product_image" && key) imgClickIds.add(key);
+        if (e.event_type === "checkout_initiated" && key) checkoutIds.add(key);
+        if ((e.event_type === "pix_generated" || e.event_type === "payment_started") && key) pixGenIds.add(key);
+        if ((e.event_type === "payment_confirmed" || e.event_type === "pix_paid") && key) paidIds.add(key);
+        if (e.event_type === "scroll_depth") {
+          const pct = typeof e.event_data === "object" && e.event_data !== null ? Number(e.event_data.percent || 0) : 0;
+          scrollTotal += pct;
+          scrollCount++;
+        }
+        // Active in last hour
+        if (key && new Date(e.created_at).getTime() > recentOneHour) activeIds.add(key);
+      });
+
+      // Use max between page_views count and deduped visitor_ids for consistency
+      const dedupedVisitors = Math.max(visitorsPageRes.count || 0, visitorIds.size);
+      const dedupedCheckouts = Math.max(checkoutsPageRes.count || 0, checkoutIds.size);
+
+      setVisitorsCount(dedupedVisitors);
+      setCheckoutsCount(dedupedCheckouts);
+      setBuyClicks(buyClickIds.size);
+      setImageClicks(imgClickIds.size);
+      setAvgScroll(scrollCount > 0 ? Math.round(scrollTotal / scrollCount) : 0);
+      setPixGeneratedFromEvents(pixGenIds.size);
+      setPaidFromEvents(paidIds.size);
+      setActiveNow(activeIds.size);
 
       // Build alerts
       const newAlerts: SystemAlert[] = [];
@@ -236,7 +275,7 @@ export default function Admin() {
       // Conversion drop: compare last 24h leads vs visitors
       const allLeads = (leadsRes.data as Lead[]) || [];
       const recentPaid = allLeads.filter(l => l.status === "paid" && new Date(l.created_at) >= new Date(oneDayAgo)).length;
-      const totalVisitors = visitorsRes.count || 0;
+      const totalVisitors = dedupedVisitors;
       const currentConv = totalVisitors > 0 ? (recentPaid / totalVisitors) * 100 : 0;
       if (totalVisitors > 20 && currentConv < 1) {
         newAlerts.push({
@@ -333,10 +372,10 @@ export default function Admin() {
     URL.revokeObjectURL(url);
   };
 
-  const paidCount = leads.filter(l => l.status === "paid").length;
+  const paidCount = Math.max(leads.filter(l => l.status === "paid").length, paidFromEvents);
   const pendingCount = leads.filter(l => l.status !== "paid" && l.payment_method === "pix").length;
   const totalRevenue = leads.filter(l => l.status === "paid").reduce((sum, l) => sum + (l.total_amount || 0), 0);
-  const pixGeneratedCount = leads.filter(l => l.payment_method === "pix").length;
+  const pixGeneratedCount = Math.max(leads.filter(l => l.payment_method === "pix").length, pixGeneratedFromEvents);
   const pixPaidCount = leads.filter(l => l.payment_method === "pix" && l.status === "paid").length;
   const checkoutsAbandoned = checkoutsCount - leads.length;
   const conversionRate = visitorsCount > 0 ? ((paidCount / visitorsCount) * 100).toFixed(1) : "0.0";
@@ -481,7 +520,16 @@ export default function Admin() {
             {/* Funnel Metrics */}
             <div>
               <h2 className="text-lg font-bold mb-3">Funil de Vendas</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-green-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Ativos (1h)</p>
+                  <p className="text-2xl font-bold mt-1">{activeNow}</p>
+                </div>
                 <div className="bg-card border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -508,6 +556,15 @@ export default function Admin() {
                   </div>
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Pix Gerados</p>
                   <p className="text-2xl font-bold mt-1">{pixGeneratedCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <Wallet className="h-4 w-4 text-amber-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Pix Pendentes</p>
+                  <p className="text-2xl font-bold mt-1">{pendingCount}</p>
                 </div>
                 <div className="bg-card border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
