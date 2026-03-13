@@ -479,7 +479,7 @@ const Checkout = () => {
                   <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta {item.size}</p>
                   {/* Flash Sale badge + timer */}
                   <div className="flex items-center gap-1.5 mt-1">
-                    <span className="relative inline-flex items-center whitespace-nowrap bg-gradient-to-r from-[#FF4D4D] to-[#FF6B35] text-white text-[10px] font-bold pl-1.5 pr-2 py-0.5 rounded">
+                    <span className="relative inline-flex items-center whitespace-nowrap text-white text-[10px] font-bold pl-1.5 pr-2 py-0.5 rounded" style={{ background: 'linear-gradient(to right, #FF4D4D 80%, #FF6B35 100%)' }}>
                       Oferta Relâmpago
                       <span className="absolute -right-1.5 -top-1 text-sm drop-shadow-sm">⚡</span>
                     </span>
