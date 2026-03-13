@@ -35,6 +35,14 @@ function getOrCreateClickId(): string {
   if (id) return id;
 
   const params = new URLSearchParams(window.location.search);
+
+  // Accept click_id from URL (cross-domain handoff)
+  const fromUrl = params.get("click_id");
+  if (fromUrl) {
+    sessionStorage.setItem(KEY, fromUrl);
+    return fromUrl;
+  }
+
   const hasAdParams = params.get("utm_source") || params.get("fbclid") || params.get("gclid") || params.get("ttclid") || params.get("xcod");
 
   if (hasAdParams) {
