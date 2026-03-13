@@ -371,26 +371,62 @@ export default function AdminRastreios() {
             {/* Manual Test Section */}
             <div className="border-t pt-6 mt-6">
               <h3 className="text-md font-bold mb-4">Teste de envio manual</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Order ID</label>
+                  <input type="text" value={manualOrderId} onChange={(e) => setManualOrderId(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="ID do pedido" />
+                </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Nome *</label>
-                  <input type="text" value={manualName} onChange={(e) => setManualName(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do cliente" required />
+                  <input type="text" value={manualName} onChange={(e) => setManualName(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do cliente" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Email *</label>
-                  <input type="email" value={manualEmail} onChange={(e) => setManualEmail(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="email@exemplo.com" required />
+                  <input type="email" value={manualEmail} onChange={(e) => setManualEmail(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="email@exemplo.com" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Telefone</label>
+                  <input type="text" value={manualPhone} onChange={(e) => setManualPhone(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="(11) 99999-9999" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Rua</label>
+                  <input type="text" value={manualRua} onChange={(e) => setManualRua(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Rua exemplo" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Número</label>
+                  <input type="text" value={manualNumero} onChange={(e) => setManualNumero(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="123" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Complemento</label>
+                  <input type="text" value={manualComplemento} onChange={(e) => setManualComplemento(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Apto 101" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Bairro</label>
+                  <input type="text" value={manualBairro} onChange={(e) => setManualBairro(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Centro" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">CEP *</label>
-                  <input type="text" value={manualCep} onChange={(e) => setManualCep(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="01001000" required />
+                  <input type="text" value={manualCep} onChange={(e) => setManualCep(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="01001000" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Endereço *</label>
-                  <input type="text" value={manualEndereco} onChange={(e) => setManualEndereco(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Rua, número" required />
+                  <label className="block text-sm font-medium mb-1">Cidade</label>
+                  <input type="text" value={manualCidade} onChange={(e) => setManualCidade(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="São Paulo" />
                 </div>
-                <div className="sm:col-span-2">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Estado</label>
+                  <input type="text" value={manualEstado} onChange={(e) => setManualEstado(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="SP" />
+                </div>
+                <div>
                   <label className="block text-sm font-medium mb-1">Produto *</label>
-                  <input type="text" value={manualProduto} onChange={(e) => setManualProduto(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do produto" required />
+                  <input type="text" value={manualProduto} onChange={(e) => setManualProduto(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do produto" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Quantidade</label>
+                  <input type="number" value={manualQuantidade} onChange={(e) => setManualQuantidade(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="1" min="1" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Preço (centavos)</label>
+                  <input type="number" value={manualPreco} onChange={(e) => setManualPreco(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="9900" />
                 </div>
               </div>
               <button
