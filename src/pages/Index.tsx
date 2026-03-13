@@ -258,11 +258,8 @@ const Index = () => {
 
   // Defer below-fold content to speed up first paint
   useEffect(() => {
-    const timer = requestIdleCallback ? requestIdleCallback(() => setBelowFoldReady(true)) : setTimeout(() => setBelowFoldReady(true), 100);
-    return () => {
-      if (typeof cancelIdleCallback !== 'undefined') cancelIdleCallback(timer as number);
-      else clearTimeout(timer as number);
-    };
+    const timer = setTimeout(() => setBelowFoldReady(true), 50);
+    return () => clearTimeout(timer);
   }, []);
 
   // ViewContent event on mount
