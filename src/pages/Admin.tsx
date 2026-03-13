@@ -823,93 +823,250 @@ export default function Admin() {
               <p className="text-center text-muted-foreground py-8">Carregando logs...</p>
             ) : (
               <>
-                {/* JS Errors */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-bold flex items-center gap-2">
-                      <Bug className="h-5 w-5" /> Erros JavaScript ({errorLogs.length})
-                    </h2>
-                    {errorLogs.length > 0 && (
-                      <button
-                        onClick={() => {
-                          supabase.from("user_events").delete().eq("event_type", "js_error").then(() => {
-                            setErrorLogs([]);
-                          });
-                        }}
-                        className="text-xs text-destructive hover:underline"
-                      >
-                        Limpar todos
-                      </button>
-                    )}
-                  </div>
-                  {errorLogs.length === 0 ? (
-                    <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                      <span className="text-sm text-emerald-600 font-medium">Nenhum erro JavaScript registrado</span>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {errorLogs.map((log: any) => (
-                        <div key={log.id} className="bg-destructive/5 border border-destructive/20 rounded-xl p-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-semibold text-destructive break-all">
-                              {typeof log.event_data === "object" ? (log.event_data as any)?.message : "Erro desconhecido"}
-                            </p>
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">
-                              {new Date(log.created_at).toLocaleString("pt-BR")}
-                            </span>
-                          </div>
-                          {typeof log.event_data === "object" && (log.event_data as any)?.source && (
-                            <p className="text-xs text-muted-foreground mt-1 font-mono break-all">
-                              {(log.event_data as any).source}
-                              {(log.event_data as any).line ? `:${(log.event_data as any).line}` : ""}
-                            </p>
+                {/* ── Log Classification Engine ── */}
+                {(() => {
+                  const EXTERNAL_DOMAINS = ["analytics.tiktok.com", "connect.facebook.net", "googletagmanager.com", "google-analytics.com", "cdn.jsdelivr.net", "www.googletagmanager.com", "mc.yandex.ru", "bat.bing.com", "snap.licdn.com"];
+                  const INTEGRATION_KEYWORDS = ["payment", "pagamento", "gateway", "webhook", "trackly", "hygros", "pix", "stripe", "mercadopago"];
+                  const BOT_UA_PATTERNS = /bot|crawler|spider|headless|phantom|selenium|puppeteer|scrapy|slurp|wget|curl/i;
+
+                  type LogCategory = "system" | "integration" | "external" | "bot" | "unknown";
+
+                  interface ClassifiedLog {
+                    id: string;
+                    created_at: string;
+                    message: string;
+                    source: string;
+                    line?: number;
+                    category: LogCategory;
+                    priority: "high" | "medium" | "low";
+                    raw: any;
+                  }
+
+                  const classifyLog = (log: any): ClassifiedLog => {
+                    const data = typeof log.event_data === "object" ? log.event_data : {};
+                    const message = data?.message || "Erro desconhecido";
+                    const source = data?.source || "";
+                    const line = data?.line;
+                    const userAgent = data?.user_agent || "";
+
+                    // Check bot
+                    if (BOT_UA_PATTERNS.test(userAgent)) {
+                      return { id: log.id, created_at: log.created_at, message, source, line, category: "bot", priority: "low", raw: log };
+                    }
+
+                    // Check external script
+                    const isExternal = EXTERNAL_DOMAINS.some(d => source.includes(d)) || message.toLowerCase().includes("script load failed");
+                    if (isExternal) {
+                      return { id: log.id, created_at: log.created_at, message, source, line, category: "external", priority: "low", raw: log };
+                    }
+
+                    // Check integration
+                    const isIntegration = INTEGRATION_KEYWORDS.some(k => message.toLowerCase().includes(k) || source.toLowerCase().includes(k));
+                    if (isIntegration) {
+                      return { id: log.id, created_at: log.created_at, message, source, line, category: "integration", priority: "medium", raw: log };
+                    }
+
+                    // Check system (internal source or no source)
+                    if (!source || source.includes(window.location.hostname) || source.startsWith("/") || source.includes("localhost")) {
+                      return { id: log.id, created_at: log.created_at, message, source, line, category: "system", priority: "high", raw: log };
+                    }
+
+                    return { id: log.id, created_at: log.created_at, message, source, line, category: "unknown", priority: "medium", raw: log };
+                  };
+
+                  const classified = errorLogs.map(classifyLog);
+
+                  // Group duplicates
+                  const groupMap = new Map<string, { log: ClassifiedLog; count: number }>();
+                  classified.forEach(cl => {
+                    const key = `${cl.category}::${cl.message}::${cl.source}`;
+                    const existing = groupMap.get(key);
+                    if (existing) {
+                      existing.count++;
+                    } else {
+                      groupMap.set(key, { log: cl, count: 1 });
+                    }
+                  });
+                  const grouped = Array.from(groupMap.values());
+
+                  // Filter
+                  const filtered = grouped.filter(g => logFilter.has(g.log.category));
+
+                  // Counts per category
+                  const counts: Record<LogCategory, number> = { system: 0, integration: 0, external: 0, bot: 0, unknown: 0 };
+                  classified.forEach(cl => counts[cl.category]++);
+
+                  const CATEGORY_CONFIG: Record<LogCategory, { label: string; icon: React.ReactNode; color: string; bgColor: string; borderColor: string }> = {
+                    system: { label: "Erro do Sistema", icon: <Server className="h-3.5 w-3.5" />, color: "text-destructive", bgColor: "bg-destructive/10", borderColor: "border-destructive/30" },
+                    integration: { label: "Erro de Integração", icon: <Plug className="h-3.5 w-3.5" />, color: "text-amber-600", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/30" },
+                    external: { label: "Script Externo", icon: <Globe className="h-3.5 w-3.5" />, color: "text-muted-foreground", bgColor: "bg-muted", borderColor: "border-border" },
+                    bot: { label: "Erro de Bot", icon: <Bot className="h-3.5 w-3.5" />, color: "text-muted-foreground", bgColor: "bg-muted", borderColor: "border-border" },
+                    unknown: { label: "Desconhecido", icon: <HelpCircle className="h-3.5 w-3.5" />, color: "text-muted-foreground", bgColor: "bg-muted", borderColor: "border-border" },
+                  };
+
+                  const toggleFilter = (cat: LogCategory) => {
+                    setLogFilter(prev => {
+                      const next = new Set(prev);
+                      if (next.has(cat)) next.delete(cat); else next.add(cat);
+                      return next;
+                    });
+                  };
+
+                  return (
+                    <>
+                      {/* Summary Cards */}
+                      <div>
+                        <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                          <Bug className="h-5 w-5" /> Logs Inteligentes
+                        </h2>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+                          {(["system", "integration", "external", "bot", "unknown"] as LogCategory[]).map(cat => {
+                            const cfg = CATEGORY_CONFIG[cat];
+                            const active = logFilter.has(cat);
+                            return (
+                              <button
+                                key={cat}
+                                onClick={() => toggleFilter(cat)}
+                                className={`bg-card border rounded-xl p-3 text-left transition-all ${active ? `ring-2 ring-primary/50 ${cfg.borderColor}` : "opacity-60 hover:opacity-80"}`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className={`h-6 w-6 rounded flex items-center justify-center ${cfg.bgColor} ${cfg.color}`}>
+                                    {cfg.icon}
+                                  </div>
+                                  <span className="text-lg font-bold">{counts[cat]}</span>
+                                </div>
+                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{cfg.label}</p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Filter indicator */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Filtros ativos:</span>
+                        {Array.from(logFilter).map(cat => (
+                          <span key={cat} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${CATEGORY_CONFIG[cat as LogCategory].bgColor} ${CATEGORY_CONFIG[cat as LogCategory].color}`}>
+                            {CATEGORY_CONFIG[cat as LogCategory].label}
+                          </span>
+                        ))}
+                        {logFilter.size === 0 && <span className="text-xs text-muted-foreground italic">Nenhum — clique nos cards acima</span>}
+                      </div>
+
+                      {/* JS Errors - Classified */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-bold">
+                            Erros JavaScript ({filtered.reduce((s, g) => s + g.count, 0)} ocorrências em {filtered.length} grupos)
+                          </h3>
+                          {errorLogs.length > 0 && (
+                            <button
+                              onClick={() => {
+                                supabase.from("user_events").delete().eq("event_type", "js_error").then(() => {
+                                  setErrorLogs([]);
+                                });
+                              }}
+                              className="text-xs text-destructive hover:underline"
+                            >
+                              Limpar todos
+                            </button>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
 
-                {/* Webhook Logs */}
-                <div>
-                  <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-                    <Webhook className="h-5 w-5" /> Webhook Trackly ({webhookLogs.length})
-                  </h2>
-                  {webhookLogs.length === 0 ? (
-                    <div className="bg-muted border rounded-xl p-4 flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">Nenhum log de webhook registrado</span>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto border rounded-xl">
-                      <table className="w-full text-xs">
-                        <thead className="bg-muted">
-                          <tr>
-                            {["Data", "Pedido", "Status", "HTTP", "URL", "Resposta"].map((h) => (
-                              <th key={h} className="px-3 py-2 text-left whitespace-nowrap font-semibold">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {webhookLogs.map((log: any) => (
-                            <tr key={log.id} className="border-t hover:bg-muted/50">
-                              <td className="px-3 py-2 whitespace-nowrap">{new Date(log.created_at).toLocaleString("pt-BR")}</td>
-                              <td className="px-3 py-2 whitespace-nowrap font-mono text-[10px]">{log.order_id?.slice(0, 8) || "—"}</td>
-                              <td className="px-3 py-2">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${log.status === "sent" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}`}>
-                                  {log.status}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2">{log.http_status || "—"}</td>
-                              <td className="px-3 py-2 max-w-[200px] truncate font-mono text-[10px]">{log.webhook_url}</td>
-                              <td className="px-3 py-2 max-w-[200px] truncate font-mono text-[10px]">{log.response || "—"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
+                        {filtered.length === 0 ? (
+                          <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                            <span className="text-sm text-emerald-600 font-medium">
+                              {errorLogs.length === 0 ? "Nenhum erro JavaScript registrado" : "Nenhum erro nos filtros selecionados"}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {filtered.map((g, idx) => {
+                              const cfg = CATEGORY_CONFIG[g.log.category];
+                              return (
+                                <div key={idx} className={`border rounded-xl p-4 ${cfg.bgColor} ${cfg.borderColor}`}>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                      <div className={`h-6 w-6 rounded flex items-center justify-center flex-shrink-0 ${cfg.bgColor} ${cfg.color}`}>
+                                        {cfg.icon}
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${cfg.bgColor} ${cfg.color} uppercase`}>
+                                            {cfg.label}
+                                          </span>
+                                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${g.log.priority === "high" ? "bg-destructive/20 text-destructive" : g.log.priority === "medium" ? "bg-amber-500/20 text-amber-600" : "bg-muted text-muted-foreground"}`}>
+                                            {g.log.priority === "high" ? "ALTA" : g.log.priority === "medium" ? "MÉDIA" : "BAIXA"}
+                                          </span>
+                                          {g.count > 1 && (
+                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
+                                              {g.count}x ocorrências
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-sm font-semibold text-foreground break-all mt-1">{g.log.message}</p>
+                                      </div>
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">
+                                      {new Date(g.log.created_at).toLocaleString("pt-BR")}
+                                    </span>
+                                  </div>
+                                  {g.log.source && (
+                                    <p className="text-xs text-muted-foreground mt-1.5 font-mono break-all pl-8">
+                                      {g.log.source}{g.log.line ? `:${g.log.line}` : ""}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Webhook Logs */}
+                      <div>
+                        <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                          <Webhook className="h-5 w-5" /> Webhook Trackly ({webhookLogs.length})
+                        </h2>
+                        {webhookLogs.length === 0 ? (
+                          <div className="bg-muted border rounded-xl p-4 flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">Nenhum log de webhook registrado</span>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto border rounded-xl">
+                            <table className="w-full text-xs">
+                              <thead className="bg-muted">
+                                <tr>
+                                  {["Data", "Pedido", "Status", "HTTP", "URL", "Resposta"].map((h) => (
+                                    <th key={h} className="px-3 py-2 text-left whitespace-nowrap font-semibold">{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {webhookLogs.map((log: any) => (
+                                  <tr key={log.id} className="border-t hover:bg-muted/50">
+                                    <td className="px-3 py-2 whitespace-nowrap">{new Date(log.created_at).toLocaleString("pt-BR")}</td>
+                                    <td className="px-3 py-2 whitespace-nowrap font-mono text-[10px]">{log.order_id?.slice(0, 8) || "—"}</td>
+                                    <td className="px-3 py-2">
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${log.status === "sent" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}`}>
+                                        {log.status}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-2">{log.http_status || "—"}</td>
+                                    <td className="px-3 py-2 max-w-[200px] truncate font-mono text-[10px]">{log.webhook_url}</td>
+                                    <td className="px-3 py-2 max-w-[200px] truncate font-mono text-[10px]">{log.response || "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </>
             )}
           </div>
