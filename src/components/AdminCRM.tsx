@@ -1081,6 +1081,7 @@ export default function AdminCRM() {
             { key: "alerts" as const, label: "Alertas", icon: AlertTriangle, badge: crmAlerts.length + bottleneckAlerts.length },
             { key: "traffic" as const, label: "Tráfego", icon: Shield, badge: trafficAnalysis.trafficAlerts.length },
             { key: "criativos" as const, label: "Criativos", icon: Megaphone, badge: creativeAnalysis.alerts.length },
+            { key: "bots" as const, label: "Bots", icon: Bot, badge: botAnalysis.dist.bot + botAnalysis.dist.suspeito },
           ]).map(t => (
             <button
               key={t.key}
