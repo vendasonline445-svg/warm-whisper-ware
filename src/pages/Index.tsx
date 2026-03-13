@@ -803,13 +803,28 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Store Info Modal */}
-      <Dialog open={storeOpen} onOpenChange={setStoreOpen}>
-        <DialogContent className="fixed bottom-0 left-0 right-0 top-auto translate-x-0 translate-y-0 sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] max-w-full sm:max-w-md p-0 gap-0 rounded-t-2xl sm:rounded-2xl border-0 sm:border data-[state=open]:slide-in-from-bottom sm:data-[state=open]:slide-in-from-bottom-0 sm:data-[state=open]:slide-in-from-left-1/2 max-h-[85vh] overflow-y-auto">
-          <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b sticky top-0 bg-card z-10">
-            <DialogTitle className="text-base font-bold">Informações da Loja</DialogTitle>
-            <DialogDescription className="sr-only">Detalhes da loja Mesalar</DialogDescription>
-          </div>
+      {/* Store Info Modal - Bottom Sheet */}
+      {storeOpen && (
+        <div className="fixed inset-0 z-[60]" onClick={() => setStoreOpen(false)}>
+          <div className="absolute inset-0 bg-black/60 animate-in fade-in-0 duration-300" />
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300 mx-auto sm:max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+            {/* Close button */}
+            <button
+              onClick={() => setStoreOpen(false)}
+              className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+            <div className="px-5 pt-2 pb-3 border-b">
+              <p className="text-base font-bold">Informações da Loja</p>
+            </div>
           <div className="px-5 py-4 space-y-5">
             {/* Store header */}
             <div className="flex items-center gap-3">
