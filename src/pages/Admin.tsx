@@ -401,10 +401,16 @@ export default function Admin() {
               <Bug className="h-4 w-4" /> Logs
             </button>
             <span className="w-px bg-border mx-1 self-stretch" />
-            <button onClick={() => navigate("/admin/tiktok")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+            <button
+              onClick={() => setTab("tiktok")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "tiktok" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            >
               <Megaphone className="h-4 w-4" /> TikTok
             </button>
-            <button onClick={() => navigate("/admin/rastreios")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+            <button
+              onClick={() => setTab("rastreios")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "rastreios" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            >
               <Package className="h-4 w-4" /> Rastreios
             </button>
             <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
