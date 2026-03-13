@@ -114,22 +114,23 @@ export default function Admin() {
     }
   };
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     if (!authenticated) return;
     setLoading(true);
 
+    const { from: rangeFrom, to: rangeTo } = getDateRange(period, customFrom, customTo);
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     // Fetch leads + page views + events + alert data in parallel
     Promise.all([
-      supabase.from("checkout_leads").select("*").order("created_at", { ascending: false }),
-      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/"),
-      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout"),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_buy_button"),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_product_image"),
-      supabase.from("user_events").select("event_data").eq("event_type", "scroll_depth"),
-      // Alert queries
+      supabase.from("checkout_leads").select("*").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }),
+      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_buy_button").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_product_image").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      supabase.from("user_events").select("event_data").eq("event_type", "scroll_depth").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      // Alert queries (always use fixed windows, not period)
       supabase.from("checkout_leads").select("id", { count: "exact", head: true }).neq("status", "paid").gte("created_at", oneHourAgo),
       supabase.from("tracking_webhook_logs").select("id", { count: "exact", head: true }).neq("status", "sent").gte("created_at", oneDayAgo),
       supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "js_error").gte("created_at", oneDayAgo),
