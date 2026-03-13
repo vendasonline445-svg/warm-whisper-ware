@@ -134,7 +134,7 @@ const STAGE_LABELS: Record<FunnelStage, string> = {
   checkout_iniciado: "Checkout Iniciado",
   pagamento_iniciado: "Pagamento Iniciado",
   pix_gerado: "Pix Gerado",
-  cartao_enviado: "Cartão Enviado",
+  cartao_enviado: "Coletado",
   pago: "Pago",
   abandonado: "Abandonado",
 };
