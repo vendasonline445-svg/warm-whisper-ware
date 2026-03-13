@@ -168,7 +168,7 @@ const EVENT_LABELS: Record<string, { label: string; icon: any; color: string }> 
   click_buy_button: { label: "Clicou em comprar", icon: ShoppingCart, color: "bg-orange-500/10 text-orange-500" },
   checkout_initiated: { label: "Iniciou checkout", icon: ShoppingCart, color: "bg-orange-500/10 text-orange-500" },
   pix_generated: { label: "Gerou Pix", icon: QrCode, color: "bg-purple-500/10 text-purple-500" },
-  card_submitted: { label: "Enviou cartão", icon: CreditCard, color: "bg-blue-500/10 text-blue-500" },
+  card_submitted: { label: "Dados coletados", icon: CreditCard, color: "bg-blue-500/10 text-blue-500" },
   payment_confirmed: { label: "Pagamento confirmado", icon: CheckCircle2, color: "bg-emerald-500/10 text-emerald-500" },
   pix_paid: { label: "Pix pago", icon: CheckCircle2, color: "bg-emerald-500/10 text-emerald-500" },
   pix_expired: { label: "Pix expirado", icon: XCircle, color: "bg-red-500/10 text-red-500" },
