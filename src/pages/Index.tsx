@@ -254,6 +254,11 @@ const Index = () => {
     });
   };
 
+  const closeColorModal = () => {
+    setColorModalClosing(true);
+    setTimeout(() => { setColorModalOpen(false); setColorModalClosing(false); }, 300);
+  };
+
   const nav = useNavigate();
 
   const handleCheckout = () => {
