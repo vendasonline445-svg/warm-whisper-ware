@@ -11,21 +11,49 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { nome, email, cep, produto, webhook_url } = body;
+    const {
+      webhook_url,
+      order_id,
+      nome,
+      email,
+      telefone,
+      rua,
+      numero,
+      complemento,
+      bairro,
+      cep,
+      cidade,
+      estado,
+      produto,
+      quantidade,
+      preco_centavos,
+    } = body;
 
     const targetUrl = webhook_url || "https://tracklybrasil.tech/public/webhook.php?token=wh_73e5eecea7881d9dc7765fbb3d3fffd4593dd823f14b3353a92a87b0b58f49d5&source=vegacheckout";
 
     const payload = {
-      status: "approved",
+      status: "paid",
+      orderId: order_id || "",
       customer: {
         name: nome || "",
         email: email || "",
+        phone: telefone || "",
       },
       address: {
-        zip_code: cep || "",
+        street: rua || "",
+        number: numero || "",
+        complement: complemento || "",
+        neighborhood: bairro || "",
+        zipcode: cep || "",
+        city: cidade || "",
+        state: estado || "",
       },
       products: [
-        { title: produto || "" },
+        {
+          name: produto || "",
+          quantity: parseInt(quantidade) || 1,
+          priceInCents: parseInt(preco_centavos) || 0,
+        },
       ],
     };
 

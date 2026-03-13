@@ -44,11 +44,20 @@ export default function AdminRastreios() {
   const [testingWebhook, setTestingWebhook] = useState(false);
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [activeTab, setActiveTab] = useState<"rastreios" | "config" | "logs">("rastreios");
+  const [manualOrderId, setManualOrderId] = useState("");
   const [manualName, setManualName] = useState("");
   const [manualEmail, setManualEmail] = useState("");
+  const [manualPhone, setManualPhone] = useState("");
+  const [manualRua, setManualRua] = useState("");
+  const [manualNumero, setManualNumero] = useState("");
+  const [manualComplemento, setManualComplemento] = useState("");
+  const [manualBairro, setManualBairro] = useState("");
   const [manualCep, setManualCep] = useState("");
-  const [manualEndereco, setManualEndereco] = useState("");
+  const [manualCidade, setManualCidade] = useState("");
+  const [manualEstado, setManualEstado] = useState("");
   const [manualProduto, setManualProduto] = useState("");
+  const [manualQuantidade, setManualQuantidade] = useState("1");
+  const [manualPreco, setManualPreco] = useState("");
   const [sendingManual, setSendingManual] = useState(false);
   const [debugResult, setDebugResult] = useState<{
     status_http: number;
@@ -59,8 +68,8 @@ export default function AdminRastreios() {
   const navigate = useNavigate();
 
   const sendTracklyTest = async () => {
-    if (!manualName || !manualEmail || !manualCep || !manualEndereco || !manualProduto) {
-      toast.error("Preencha todos os campos");
+    if (!manualName || !manualEmail || !manualCep || !manualProduto) {
+      toast.error("Preencha os campos obrigatórios");
       return;
     }
     setSendingManual(true);
@@ -68,11 +77,20 @@ export default function AdminRastreios() {
     try {
       const { data: result, error } = await supabase.functions.invoke("send-trackly-webhook", {
         body: {
+          order_id: manualOrderId,
           nome: manualName,
           email: manualEmail,
+          telefone: manualPhone,
+          rua: manualRua,
+          numero: manualNumero,
+          complemento: manualComplemento,
+          bairro: manualBairro,
           cep: manualCep,
-          endereco: manualEndereco,
+          cidade: manualCidade,
+          estado: manualEstado,
           produto: manualProduto,
+          quantidade: manualQuantidade,
+          preco_centavos: manualPreco,
           webhook_url: webhookUrl,
         },
       });
@@ -156,10 +174,20 @@ export default function AdminRastreios() {
     try {
       const { data: result, error } = await supabase.functions.invoke("send-trackly-webhook", {
         body: {
+          order_id: "TESTE-001",
           nome: "Cliente Teste",
           email: "teste@cliente.com",
+          telefone: "(11) 99999-0000",
+          rua: "Rua Teste",
+          numero: "100",
+          complemento: "",
+          bairro: "Centro",
           cep: "01001000",
+          cidade: "São Paulo",
+          estado: "SP",
           produto: "Produto Teste",
+          quantidade: "1",
+          preco_centavos: "9900",
           webhook_url: webhookUrl,
         },
       });
@@ -353,26 +381,62 @@ export default function AdminRastreios() {
             {/* Manual Test Section */}
             <div className="border-t pt-6 mt-6">
               <h3 className="text-md font-bold mb-4">Teste de envio manual</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Order ID</label>
+                  <input type="text" value={manualOrderId} onChange={(e) => setManualOrderId(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="ID do pedido" />
+                </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Nome *</label>
-                  <input type="text" value={manualName} onChange={(e) => setManualName(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do cliente" required />
+                  <input type="text" value={manualName} onChange={(e) => setManualName(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do cliente" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Email *</label>
-                  <input type="email" value={manualEmail} onChange={(e) => setManualEmail(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="email@exemplo.com" required />
+                  <input type="email" value={manualEmail} onChange={(e) => setManualEmail(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="email@exemplo.com" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Telefone</label>
+                  <input type="text" value={manualPhone} onChange={(e) => setManualPhone(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="(11) 99999-9999" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Rua</label>
+                  <input type="text" value={manualRua} onChange={(e) => setManualRua(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Rua exemplo" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Número</label>
+                  <input type="text" value={manualNumero} onChange={(e) => setManualNumero(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="123" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Complemento</label>
+                  <input type="text" value={manualComplemento} onChange={(e) => setManualComplemento(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Apto 101" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Bairro</label>
+                  <input type="text" value={manualBairro} onChange={(e) => setManualBairro(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Centro" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">CEP *</label>
-                  <input type="text" value={manualCep} onChange={(e) => setManualCep(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="01001000" required />
+                  <input type="text" value={manualCep} onChange={(e) => setManualCep(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="01001000" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Endereço *</label>
-                  <input type="text" value={manualEndereco} onChange={(e) => setManualEndereco(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Rua, número" required />
+                  <label className="block text-sm font-medium mb-1">Cidade</label>
+                  <input type="text" value={manualCidade} onChange={(e) => setManualCidade(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="São Paulo" />
                 </div>
-                <div className="sm:col-span-2">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Estado</label>
+                  <input type="text" value={manualEstado} onChange={(e) => setManualEstado(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="SP" />
+                </div>
+                <div>
                   <label className="block text-sm font-medium mb-1">Produto *</label>
-                  <input type="text" value={manualProduto} onChange={(e) => setManualProduto(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do produto" required />
+                  <input type="text" value={manualProduto} onChange={(e) => setManualProduto(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do produto" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Quantidade</label>
+                  <input type="number" value={manualQuantidade} onChange={(e) => setManualQuantidade(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="1" min="1" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Preço (centavos)</label>
+                  <input type="number" value={manualPreco} onChange={(e) => setManualPreco(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="9900" />
                 </div>
               </div>
               <button
