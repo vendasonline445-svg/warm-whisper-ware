@@ -842,6 +842,26 @@ const Index = () => {
               </div>
             </div>
 
+            {/* Size selection in modal */}
+            <div className="px-5 pb-4">
+              <p className="text-sm font-semibold mb-2">Tamanho:</p>
+              <div className="flex flex-wrap gap-2">
+                {sizes.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSelectedSize(s)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                      selectedSize === s
+                        ? "border-cta bg-cta/5 text-cta"
+                        : "border-border text-foreground hover:border-foreground/40"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Quantity selector */}
             <div className="px-5 pb-4">
               <p className="text-sm font-semibold mb-2">Quantidade:</p>
