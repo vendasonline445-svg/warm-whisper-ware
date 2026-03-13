@@ -573,8 +573,8 @@ const Checkout = () => {
             </div>
             {hasCoupon && (
               <div className="flex justify-between">
-                <span className="text-coupon font-medium">Cupom {couponLabel}</span>
-                <span className="text-coupon font-medium">- R$ {couponAmount.toFixed(2).replace(".", ",")}</span>
+                <span className="font-medium" style={{ color: '#fe2b54' }}>Cupom {couponLabel}</span>
+                <span className="font-medium" style={{ color: '#fe2b54' }}>- R$ {couponAmount.toFixed(2).replace(".", ",")}</span>
               </div>
             )}
             <div className="flex justify-between">
