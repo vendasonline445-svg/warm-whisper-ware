@@ -224,6 +224,36 @@ Deno.serve(async (req) => {
       const leads = await findRes.json();
       const lead = Array.isArray(leads) ? leads[0] : null;
 
+      // Record payment_confirmed event in user_events for funnel tracking
+      if (lead) {
+        const metadata = typeof lead.metadata === "string" ? JSON.parse(lead.metadata) : (lead.metadata || {});
+        const eventData = {
+          visitor_id: metadata.visitor_id || "",
+          session_id: metadata.session_id || "",
+          click_id: metadata.click_id || "",
+          device: metadata.device || "",
+          referrer: metadata.referrer || "",
+          utm_source: metadata.utm_source || "",
+          utm_campaign: metadata.utm_campaign || "",
+          utm_content: metadata.utm_content || "",
+          transaction_id: transactionId,
+          value: (data.amount || 0) / 100,
+          method: "pix",
+          source: "webhook",
+        };
+        await fetch(`${supabaseUrl}/rest/v1/user_events`, {
+          method: "POST",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({ event_type: "payment_confirmed", event_data: eventData }),
+        });
+        console.log("[Tracking] payment_confirmed event saved for visitor:", metadata.visitor_id);
+      }
+
       if (lead && !lead.tracking_sent) {
         await sendTracklyWebhook(supabaseUrl, supabaseKey, lead, data);
       } else if (lead?.tracking_sent) {
