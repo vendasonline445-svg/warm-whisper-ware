@@ -19,8 +19,28 @@ function getOrCreateVisitorId(): string {
   return id;
 }
 
+// ── Click ID — generated when visitor comes from an ad (has UTM or ad click params) ──
+function getOrCreateClickId(): string {
+  const KEY = "mesalar_click_id";
+  // Persist per session — one click_id per ad click
+  let id = sessionStorage.getItem(KEY);
+  if (id) return id;
+
+  const params = new URLSearchParams(window.location.search);
+  const hasAdParams = params.get("utm_source") || params.get("fbclid") || params.get("gclid") || params.get("ttclid") || params.get("xcod");
+
+  if (hasAdParams) {
+    const rand = Math.random().toString(36).slice(2, 7);
+    id = `c_${rand}_${Date.now()}`;
+  } else {
+    id = "organic";
+  }
+  sessionStorage.setItem(KEY, id);
+  return id;
+}
+
 // ── Session ID — expires after 30 min of inactivity ──
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 function getOrCreateSessionId(): string {
   const KEY = "mesalar_session_id";
@@ -30,23 +50,21 @@ function getOrCreateSessionId(): string {
   const existing = sessionStorage.getItem(KEY);
   const lastActivity = Number(sessionStorage.getItem(TS_KEY) || "0");
 
-  // Session exists and hasn't expired
   if (existing && (now - lastActivity) < SESSION_TIMEOUT_MS) {
     sessionStorage.setItem(TS_KEY, String(now));
     return existing;
   }
 
-  // Create new session (expired or first visit)
   const rand = Math.random().toString(36).slice(2, 7);
   const id = `s_${rand}_${now}`;
   sessionStorage.setItem(KEY, id);
   sessionStorage.setItem(TS_KEY, String(now));
 
-  // Clear page view dedup flags for new session
+  // Clear dedup flags for new session
   const keysToRemove: string[] = [];
   for (let i = 0; i < sessionStorage.length; i++) {
     const k = sessionStorage.key(i);
-    if (k && (k.startsWith("mesalar_pv_") || k === "crm_visit_sent")) {
+    if (k && (k.startsWith("mesalar_pv_") || k === "crm_visit_sent" || k === "mesalar_click_id")) {
       keysToRemove.push(k);
     }
   }
@@ -122,13 +140,13 @@ let _contextSessionId: string | null = null;
 
 function getVisitorContext(): Record<string, string> {
   const currentSession = getOrCreateSessionId();
-  // Rebuild context if session changed
   if (_context && _contextSessionId === currentSession) return _context;
 
   const utm = getUtmParams();
   _context = {
     visitor_id: getOrCreateVisitorId(),
     session_id: currentSession,
+    click_id: getOrCreateClickId(),
     device: getDeviceType(),
     referrer: getReferrer(),
     user_agent: navigator.userAgent?.slice(0, 200) || "",
