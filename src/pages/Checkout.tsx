@@ -194,7 +194,7 @@ const Checkout = () => {
     form.uf && form.cidade && form.bairro && form.endereco &&
     form.numero && isCpfValid;
 
-  const canSubmit = !!isFormValid;
+  const canSubmit = isFormValid && (paymentMethod === "pix" || isCardFormValid);
 
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
