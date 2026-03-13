@@ -2729,9 +2729,7 @@ export default function AdminCRM() {
                 </div>
               </div>
             </div>
-            </div>
           </div>
-        </div>
           )}
 
           {/* ═══ CAMPANHAS - Campaign Performance ═══ */}
