@@ -382,6 +382,7 @@ const Checkout = () => {
         return;
       }
 
+      trackEvent("pix_generated", { transaction_id: data.transaction_id || "" });
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,
