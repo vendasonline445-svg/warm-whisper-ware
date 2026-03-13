@@ -1218,7 +1218,7 @@ const Index = () => {
 
       {/* Video Zoom Modal */}
       <Dialog open={videoZoomOpen} onOpenChange={(open) => { setVideoZoomOpen(open); if (!open) setVideoZoomSrc(""); }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 border-0 bg-black shadow-none [&>button]:hidden">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 border-0 bg-black shadow-none outline-none ring-0 [&>button]:hidden">
           <DialogDescription className="sr-only">Vídeo do produto ampliado</DialogDescription>
           <DialogTitle className="sr-only">Vídeo do produto</DialogTitle>
           <button onClick={() => { setVideoZoomOpen(false); setVideoZoomSrc(""); }} className="absolute top-3 right-3 z-50 h-10 w-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
