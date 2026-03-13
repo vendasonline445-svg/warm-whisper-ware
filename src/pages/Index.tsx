@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 import {
@@ -105,6 +105,8 @@ function useCountdown() {
 const fmt = (n: number) => String(n).padStart(2, "0");
 
 const Index = () => {
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
   const [currentImage, setCurrentImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("180x60cm");
   const [colorModalOpen, setColorModalOpen] = useState(false);
@@ -219,7 +221,19 @@ const Index = () => {
       <div className="mx-auto max-w-[480px]">
         {/* Product Gallery */}
         <section className="bg-card">
-          <div className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-pointer" onClick={openColorModal}>
+          <div
+            className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-pointer"
+            onClick={openColorModal}
+            onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+            onTouchMove={(e) => { touchEndX.current = e.touches[0].clientX; }}
+            onTouchEnd={() => {
+              const diff = touchStartX.current - touchEndX.current;
+              if (Math.abs(diff) > 50) {
+                if (diff > 0) nextImage();
+                else prevImage();
+              }
+            }}
+          >
             <img
               src={productImages[currentImage]}
               alt="Mesa dobrável"
