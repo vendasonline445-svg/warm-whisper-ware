@@ -343,13 +343,10 @@ export default function AdminCRM() {
     ];
 
     // Enforce monotonic decrease: each step <= previous step
-    const steps = rawCounts.map((step, i) => {
-      const prevCount = i > 0 ? rawCounts[i - 1].count : step.rawCount;
-      const count = Math.min(step.rawCount, i > 0 ? (rawCounts[i - 1] as any).count : step.rawCount);
-      return { ...step, count };
-    });
-
-    // Fix: need to do it iteratively
+    const steps: (typeof rawCounts[0] & { count: number })[] = rawCounts.map((step, i) => ({
+      ...step,
+      count: step.rawCount,
+    }));
     for (let i = 1; i < steps.length; i++) {
       steps[i].count = Math.min(steps[i].rawCount, steps[i - 1].count);
     }
