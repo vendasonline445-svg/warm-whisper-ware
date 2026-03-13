@@ -1,16 +1,14 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, AlertTriangle, Check } from "lucide-react";
+import { ArrowLeft, Copy, AlertTriangle, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 
-function usePixCountdown(expiresAt?: string) {
-  const target = useMemo(() => {
-    // Always use 30 minutes from now regardless of API expiration
-    return Date.now() + 30 * 60 * 1000;
-  }, [expiresAt]);
+const PIX_TIMEOUT_MINUTES = 15;
 
+function usePixCountdown() {
+  const target = useMemo(() => Date.now() + PIX_TIMEOUT_MINUTES * 60 * 1000, []);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -19,10 +17,10 @@ function usePixCountdown(expiresAt?: string) {
   }, []);
 
   const diff = Math.max(0, Math.floor((target - now) / 1000));
-  const h = Math.floor(diff / 3600);
-  const m = Math.floor((diff % 3600) / 60);
+  const expired = diff === 0;
+  const m = Math.floor(diff / 60);
   const s = diff % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return { display: `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`, expired };
 }
 
 const PixPayment = () => {
@@ -34,7 +32,16 @@ const PixPayment = () => {
   const orderData = JSON.parse(sessionStorage.getItem("orderData") || "{}");
   const transactionId = pixData?.id || pixData?.transactionId || "";
 
-  // Poll payment status every 5s and redirect to upsell when paid
+  const { display: timer, expired } = usePixCountdown();
+
+  // Stop polling when expired
+  useEffect(() => {
+    if (expired && pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, [expired]);
+
   const checkPaymentStatus = useCallback(async () => {
     if (!transactionId) return;
     try {
@@ -44,8 +51,6 @@ const PixPayment = () => {
       if (!error && data?.paid) {
         if (pollingRef.current) clearInterval(pollingRef.current);
         const purchaseValue = orderData?.product?.total || pixData?.amount / 100 || 87.60;
-        
-        // TikTok tracking: Purchase via Pixel + Events API (deduplication)
         const orderId = transactionId || `order-${Date.now()}`;
         trackTikTokEvent({
           event: "Purchase",
@@ -63,7 +68,6 @@ const PixPayment = () => {
             externalId: orderData.customer.cpf,
           } : undefined,
         });
-        
         navigate("/obrigado");
       }
     } catch (err) {
@@ -80,7 +84,6 @@ const PixPayment = () => {
     };
   }, [transactionId, checkPaymentStatus]);
 
-  // AddPaymentInfo event on mount
   useEffect(() => {
     trackTikTokEvent({
       event: "AddPaymentInfo",
@@ -99,20 +102,11 @@ const PixPayment = () => {
     });
   }, []);
 
-  // Robust PIX data extraction — covers multiple API response formats
   const pixInfo = pixData?.pix || pixData?.pixQrCode || pixData?.qr_code_data || {};
   const qrCode = pixInfo?.qrcode || pixInfo?.qr_code || pixInfo?.emv || pixData?.pix_qr_code || pixData?.qrcode || pixData?.qr_code || pixData?.emv || "";
   const pixCode = qrCode;
 
   const total = orderData?.product?.total || (pixData?.amount ? pixData.amount / 100 : null) || (pixData?.value ? pixData.value / 100 : null) || 87.60;
-  const expiresAt = pixInfo?.expirationDate || pixInfo?.expiresAt || pixInfo?.expires_at || pixData?.date_expiration || pixData?.expiresAt || "";
-
-  const timer = usePixCountdown(expiresAt);
-
-  const now = new Date();
-  const deadline = new Date(now.getTime() + 30 * 60 * 1000);
-  const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-  const deadlineStr = `${String(deadline.getHours()).padStart(2, "0")}:${String(deadline.getMinutes()).padStart(2, "0")}, ${deadline.getDate()} de ${meses[deadline.getMonth()]} ${deadline.getFullYear()}`;
 
   const handleCopy = () => {
     if (pixCode) {
@@ -145,91 +139,118 @@ const PixPayment = () => {
         <div
           className="mt-5 rounded-2xl p-6"
           style={{
-            background: "linear-gradient(180deg, #dfe3f0 0%, #f0e8f0 60%, #fce8ec 100%)",
+            background: expired
+              ? "linear-gradient(180deg, #fce8ec 0%, #f5d0d0 100%)"
+              : "linear-gradient(180deg, #dfe3f0 0%, #f0e8f0 60%, #fce8ec 100%)",
           }}
         >
           <h1 className="text-[22px] font-extrabold leading-tight text-foreground tracking-tight">
-            Aguardando o pagamento
+            {expired ? "Pagamento expirado" : "Aguardando o pagamento"}
           </h1>
           <p className="text-[28px] font-black mt-1 text-foreground tracking-tight">
             R$ {total.toFixed(2).replace(".", ",")}
           </p>
+
+          {/* Countdown */}
           <div className="mt-4 flex items-center gap-2.5">
-            <span className="text-sm text-muted-foreground">Vence em</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#22c55e] px-3 py-1 text-xs font-bold text-white shadow-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            <span className="text-sm text-muted-foreground">
+              {expired ? "Tempo esgotado" : "Seu pagamento expira em:"}
+            </span>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm ${
+                expired ? "bg-destructive" : "bg-[#22c55e]"
+              }`}
+            >
+              {!expired && <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />}
               {timer}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground mt-1.5">
-            Prazo <strong className="text-foreground">{deadlineStr}</strong>
-          </p>
         </div>
 
-        {/* QR Code Card */}
-        <div className="mt-5 rounded-2xl bg-white border border-border/30 p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center gap-2 mb-5">
-            <span className="text-lg">💠</span>
-            <span className="font-bold text-sm tracking-tight">PIX</span>
-          </div>
-
-          <div className="flex justify-center mb-5">
-            {qrImageUrl ? (
-              <img src={qrImageUrl} alt="QR Code PIX" className="w-60 h-60 rounded-lg" />
-            ) : (
-              <div className="w-60 h-60 flex items-center justify-center bg-muted/30 rounded-lg animate-pulse">
-                <p className="text-sm text-muted-foreground">Gerando QR Code...</p>
-              </div>
-            )}
-          </div>
-
-          {pixCode && (
-            <p className="text-[13px] font-mono text-foreground/80 leading-relaxed break-all mb-5 px-1">
-              {pixCode.length > 50 ? pixCode.slice(0, 50) + "..." : pixCode}
+        {/* Expired state */}
+        {expired ? (
+          <div className="mt-5 rounded-2xl bg-white border border-border/30 p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)] text-center">
+            <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-3" />
+            <h2 className="font-bold text-base mb-2">O tempo para pagamento expirou</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              O código PIX não é mais válido. Gere um novo código para concluir sua compra.
             </p>
-          )}
+            <Button
+              onClick={() => navigate("/checkout" + (orderData?.product?.color ? `?color=${orderData.product.color}&size=${orderData.product.size || "180x60cm"}` : ""))}
+              className="w-full font-bold text-[15px] py-4 h-auto rounded-2xl shadow-md text-white"
+              style={{ background: "linear-gradient(135deg, #e8687a 0%, #d4556a 100%)" }}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" /> Gerar novo PIX
+            </Button>
+          </div>
+        ) : (
+          <>
+            {/* QR Code Card */}
+            <div className="mt-5 rounded-2xl bg-white border border-border/30 p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-lg">💠</span>
+                <span className="font-bold text-sm tracking-tight">PIX</span>
+              </div>
 
-          <Button
-            onClick={handleCopy}
-            disabled={!pixCode}
-            className="w-full font-bold text-[15px] py-4 h-auto rounded-2xl shadow-md transition-all active:scale-[0.98] text-white"
-            style={{
-              background: copied
-                ? "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
-                : "linear-gradient(135deg, #e8687a 0%, #d4556a 100%)",
-            }}
-          >
-            {copied ? (
-              <><Check className="mr-2 h-4 w-4" /> Copiado!</>
-            ) : (
-              <><Copy className="mr-2 h-4 w-4" /> Copiar</>
-            )}
-          </Button>
-        </div>
+              <div className="flex justify-center mb-5">
+                {qrImageUrl ? (
+                  <img src={qrImageUrl} alt="QR Code PIX" className="w-60 h-60 rounded-lg" />
+                ) : (
+                  <div className="w-60 h-60 flex items-center justify-center bg-muted/30 rounded-lg animate-pulse">
+                    <p className="text-sm text-muted-foreground">Gerando QR Code...</p>
+                  </div>
+                )}
+              </div>
 
-        {/* Instructions */}
-        <p className="mt-5 text-xs text-muted-foreground text-center leading-relaxed px-2">
-          Para acessar esta página no app, abra <strong className="text-foreground">Loja</strong> &gt; <strong className="text-foreground">Pedidos</strong> &gt; <strong className="text-foreground">Sem pagamento</strong> &gt;
-          <span className="text-[#e8687a] font-semibold"> Visualizar o código</span>
-        </p>
+              {pixCode && (
+                <p className="text-[13px] font-mono text-foreground/80 leading-relaxed break-all mb-5 px-1">
+                  {pixCode.length > 50 ? pixCode.slice(0, 50) + "..." : pixCode}
+                </p>
+              )}
 
-        {/* How to pay */}
-        <div className="mt-6 rounded-2xl bg-white border border-border/30 p-5 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-          <h3 className="font-bold text-sm mb-2 tracking-tight">Como fazer pagamentos com PIX?</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Copie o código de pagamento acima, selecione Pix no seu app de internet ou de banco e cole o código.
-          </p>
-        </div>
+              <Button
+                onClick={handleCopy}
+                disabled={!pixCode}
+                className="w-full font-bold text-[15px] py-4 h-auto rounded-2xl shadow-md transition-all active:scale-[0.98] text-white"
+                style={{
+                  background: copied
+                    ? "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
+                    : "linear-gradient(135deg, #e8687a 0%, #d4556a 100%)",
+                }}
+              >
+                {copied ? (
+                  <><Check className="mr-2 h-4 w-4" /> Copiado!</>
+                ) : (
+                  <><Copy className="mr-2 h-4 w-4" /> Copiar</>
+                )}
+              </Button>
+            </div>
 
-        {/* Warning */}
-        <div className="mt-4 mb-10 rounded-2xl bg-[#fef9ee] border border-[#f5dea0] p-5 shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
-          <h3 className="font-bold text-sm flex items-center gap-1.5 mb-2">
-            <AlertTriangle className="h-4 w-4 text-[#c9952a]" /> Atenção:
-          </h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Os bancos reforçaram a segurança do Pix e podem exibir avisos preventivos. Não se preocupe, sua transação está protegida.
-          </p>
-        </div>
+            {/* Instructions */}
+            <p className="mt-5 text-xs text-muted-foreground text-center leading-relaxed px-2">
+              Para acessar esta página no app, abra <strong className="text-foreground">Loja</strong> &gt; <strong className="text-foreground">Pedidos</strong> &gt; <strong className="text-foreground">Sem pagamento</strong> &gt;
+              <span className="text-[#e8687a] font-semibold"> Visualizar o código</span>
+            </p>
+
+            {/* How to pay */}
+            <div className="mt-6 rounded-2xl bg-white border border-border/30 p-5 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+              <h3 className="font-bold text-sm mb-2 tracking-tight">Como fazer pagamentos com PIX?</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Copie o código de pagamento acima, selecione Pix no seu app de internet ou de banco e cole o código.
+              </p>
+            </div>
+
+            {/* Warning */}
+            <div className="mt-4 mb-10 rounded-2xl bg-[#fef9ee] border border-[#f5dea0] p-5 shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
+              <h3 className="font-bold text-sm flex items-center gap-1.5 mb-2">
+                <AlertTriangle className="h-4 w-4 text-[#c9952a]" /> Atenção:
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Os bancos reforçaram a segurança do Pix e podem exibir avisos preventivos. Não se preocupe, sua transação está protegida.
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
