@@ -1221,8 +1221,6 @@ const Index = () => {
 
       {/* Video Zoom Modal */}
       <Dialog open={videoZoomOpen} onOpenChange={(open) => { setVideoZoomOpen(open); if (!open) setVideoZoomSrc(""); }}>
-      {/* Video Zoom Modal */}
-      <Dialog open={videoZoomOpen} onOpenChange={(open) => { setVideoZoomOpen(open); if (!open) setVideoZoomSrc(""); }}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 border-0 bg-black shadow-none [&>button]:hidden">
           <DialogDescription className="sr-only">Vídeo do produto ampliado</DialogDescription>
           <DialogTitle className="sr-only">Vídeo do produto</DialogTitle>
