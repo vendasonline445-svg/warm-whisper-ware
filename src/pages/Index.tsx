@@ -858,8 +858,8 @@ const Index = () => {
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 <span className="font-semibold text-sm">Localização</span>
               </div>
-              <p className="text-sm text-muted-foreground">Rua das Mesas, 500 - Centro</p>
-              <p className="text-sm text-muted-foreground">São Paulo - SP, 01001-000</p>
+              <p className="text-sm text-muted-foreground">Av. Manoel Ribas, 2660 - Vista Alegre</p>
+              <p className="text-sm text-muted-foreground">Curitiba - PR, 80810-345</p>
             </div>
 
             {/* Políticas */}
