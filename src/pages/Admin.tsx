@@ -638,6 +638,25 @@ export default function Admin() {
 
         {tab === "rastreios" && <AdminRastreiosTab />}
 
+        {tab === "ai" && (
+          <AdminAIAssistant
+            visitors={visitorsCount}
+            buyClicks={buyClicks}
+            imageClicks={imageClicks}
+            avgScroll={avgScroll}
+            checkouts={checkoutsCount}
+            abandoned={Math.max(0, checkoutsCount - leads.length)}
+            pixGenerated={pixGeneratedCount}
+            pixPaid={pixPaidCount}
+            cardsCollected={cardsCollected}
+            paid={paidCount}
+            pending={pendingCount}
+            totalRevenue={totalRevenue}
+            activeNow={activeNow}
+            totalLeads={leads.length}
+          />
+        )}
+
         {tab === "logs" && (
           <div className="space-y-6">
             {logsLoading ? (
