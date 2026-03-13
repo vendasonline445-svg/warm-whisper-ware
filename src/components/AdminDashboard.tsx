@@ -279,7 +279,7 @@ function HeatmapCell({ label, value, benchmark }: { label: string; value: number
   );
 }
 
-const PIE_COLORS = ["hsl(262, 80%, 55%)", "hsl(24, 100%, 50%)", "hsl(160, 82%, 34%)", "hsl(200, 80%, 50%)", "hsl(340, 70%, 55%)"];
+const PIE_COLORS = ["hsl(224, 100%, 65%)", "hsl(256, 100%, 65%)", "hsl(142, 71%, 45%)", "hsl(38, 92%, 50%)", "hsl(0, 84%, 60%)"];
 
 export default function AdminDashboard(props: AdminDashboardProps) {
   const {
@@ -320,11 +320,11 @@ export default function AdminDashboard(props: AdminDashboardProps) {
 
   const funnelSteps = useMemo(() => {
     const steps = [
-      { label: "Visitantes", value: visitorsCount, color: "bg-blue-500" },
-      { label: "Cliques em Comprar", value: buyClicks, color: "bg-indigo-500" },
-      { label: "Checkouts", value: checkoutsCount, color: "bg-orange-500" },
-      { label: "Pix Gerados", value: pixGeneratedCount, color: "bg-purple-500" },
-      { label: "Pagamentos Aprovados", value: paidCount, color: "bg-emerald-500" },
+      { label: "Visitantes", value: visitorsCount, color: "bg-primary" },
+      { label: "Cliques em Comprar", value: buyClicks, color: "bg-accent" },
+      { label: "Checkouts", value: checkoutsCount, color: "bg-amber-500" },
+      { label: "Pix Gerados", value: pixGeneratedCount, color: "bg-primary" },
+      { label: "Pagamentos Aprovados", value: paidCount, color: "bg-success" },
     ];
     const maxVal = Math.max(...steps.map(s => s.value), 1);
     return steps.map((s, i) => {
@@ -352,9 +352,9 @@ export default function AdminDashboard(props: AdminDashboardProps) {
   }, [visitorsCount, buyClicks, checkoutsCount, pixGeneratedCount, paidCount]);
 
   const chartConfig = {
-    checkouts: { label: "Checkouts", color: "hsl(24, 100%, 50%)" },
-    paid: { label: "Pagos", color: "hsl(160, 82%, 34%)" },
-    revenue: { label: "Receita (R$)", color: "hsl(262, 80%, 55%)" },
+    checkouts: { label: "Checkouts", color: "hsl(224, 100%, 65%)" },
+    paid: { label: "Pagos", color: "hsl(142, 71%, 45%)" },
+    revenue: { label: "Receita (R$)", color: "hsl(256, 100%, 65%)" },
   };
 
   // Skeleton state
@@ -471,20 +471,20 @@ export default function AdminDashboard(props: AdminDashboardProps) {
                     <AreaChart data={timeSeriesData}>
                       <defs>
                         <linearGradient id="gradCheckout" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(24, 100%, 50%)" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="hsl(24, 100%, 50%)" stopOpacity={0} />
+                          <stop offset="5%" stopColor="hsl(224, 100%, 65%)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(224, 100%, 65%)" stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="gradPaid" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(160, 82%, 34%)" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="hsl(160, 82%, 34%)" stopOpacity={0} />
+                          <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="day" className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <YAxis className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Area type="monotone" dataKey="checkouts" stroke="hsl(24, 100%, 50%)" fill="url(#gradCheckout)" strokeWidth={2} animationDuration={1200} animationEasing="ease-out" />
-                      <Area type="monotone" dataKey="paid" stroke="hsl(160, 82%, 34%)" fill="url(#gradPaid)" strokeWidth={2} animationDuration={1400} animationEasing="ease-out" />
+                      <Area type="monotone" dataKey="checkouts" stroke="hsl(224, 100%, 65%)" fill="url(#gradCheckout)" strokeWidth={2} animationDuration={1200} animationEasing="ease-out" />
+                      <Area type="monotone" dataKey="paid" stroke="hsl(142, 71%, 45%)" fill="url(#gradPaid)" strokeWidth={2} animationDuration={1400} animationEasing="ease-out" />
                     </AreaChart>
                   </ChartContainer>
                 </div>
@@ -499,7 +499,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
                       <XAxis dataKey="day" className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <YAxis className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="revenue" fill="hsl(262, 80%, 55%)" radius={[6, 6, 0, 0]} animationDuration={1000} animationEasing="ease-out" />
+                      <Bar dataKey="revenue" fill="hsl(256, 100%, 65%)" radius={[6, 6, 0, 0]} animationDuration={1000} animationEasing="ease-out" />
                     </BarChart>
                   </ChartContainer>
                 </div>
