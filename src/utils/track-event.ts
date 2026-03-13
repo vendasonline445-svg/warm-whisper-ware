@@ -181,10 +181,15 @@ export function getTrackingContext(): Record<string, string> {
 let _visitorEnsured = false;
 let _sessionEnsured = false;
 
+// Helper for new tables not yet in generated types
+const db = supabase as any;
+
 async function ensureVisitor() {
   if (_visitorEnsured) return;
   _visitorEnsured = true;
   const vid = getOrCreateVisitorId();
+  try {
+    await db.from("visitors").upsert(
   try {
     await supabase.from("visitors").upsert(
       { visitor_id: vid, device: getDeviceType(), first_seen: new Date().toISOString() },
