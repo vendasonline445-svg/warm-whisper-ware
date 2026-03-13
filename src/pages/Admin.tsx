@@ -320,6 +320,50 @@ export default function Admin() {
       <div className="max-w-[1400px] mx-auto p-4">
         {tab === "dashboard" && (
           <div className="space-y-6">
+            {/* Period Filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-muted-foreground mr-1">Período:</span>
+              {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setPeriod(key);
+                    if (key !== "custom") { setCustomFrom(undefined); setCustomTo(undefined); }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${period === key ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+                >
+                  {PERIOD_LABELS[key]}
+                </button>
+              ))}
+              {period === "custom" && (
+                <div className="flex items-center gap-2 ml-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("text-xs gap-1", !customFrom && "text-muted-foreground")}>
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        {customFrom ? format(customFrom, "dd/MM/yyyy", { locale: ptBR }) : "De"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                  <span className="text-xs text-muted-foreground">até</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("text-xs gap-1", !customTo && "text-muted-foreground")}>
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        {customTo ? format(customTo, "dd/MM/yyyy", { locale: ptBR }) : "Até"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={customTo} onSelect={setCustomTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+            </div>
+
             {/* Funnel Metrics */}
             <div>
               <h2 className="text-lg font-bold mb-3">Funil de Vendas</h2>
