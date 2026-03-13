@@ -643,9 +643,6 @@ const Checkout = () => {
                     <CreditCard className="w-4 h-4" style={{ color: '#fe2b54' }} />
                     <span className="text-xs font-medium">Sem juros em até 3x</span>
                   </div>
-                  <button className="text-xs font-medium flex items-center gap-0.5" style={{ color: '#fe2b54' }}>
-                    Ver todas ({Math.min(6, 6)}) <ChevronRight className="h-3 w-3" />
-                  </button>
                 </div>
 
                 <div className="p-4 space-y-4">
