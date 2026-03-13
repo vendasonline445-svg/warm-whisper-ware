@@ -329,7 +329,8 @@ export default function AdminDashboard(props: AdminDashboardProps) {
     const maxVal = Math.max(...steps.map(s => s.value), 1);
     return steps.map((s, i) => {
       const prev = i > 0 ? steps[i - 1].value : null;
-      const rate = prev && prev > 0 ? ((s.value / prev) * 100).toFixed(1) : null;
+      // Cap conversion at 100% to avoid impossible rates
+      const rate = prev && prev > 0 ? Math.min((s.value / prev) * 100, 100).toFixed(1) : null;
       const rateNum = rate ? Number(rate) : null;
       const rateColor = rateNum != null
         ? rateNum < 20 ? "text-red-500" : rateNum < 50 ? "text-amber-500" : "text-emerald-500"
