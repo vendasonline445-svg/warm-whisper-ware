@@ -259,8 +259,9 @@ const Index = () => {
     };
   }, [exitShown]);
 
-  const openColorModal = () => {
+  const openColorModal = (mode: 'cart' | 'buy') => {
     setSelectedColor(null);
+    setColorModalMode(mode);
     setColorModalOpen(true);
     trackTikTokEvent({
       event: "AddToCart",
@@ -282,13 +283,35 @@ const Index = () => {
 
   const nav = useNavigate();
 
-  const handleCheckout = () => {
+  const handleColorConfirm = () => {
     if (!selectedColor) return;
-    updateCart({ color: selectedColor, size: selectedSize, quantity: cartItem?.quantity || 1 });
-    const params = new URLSearchParams(window.location.search);
-    params.set("color", selectedColor);
-    params.set("size", selectedSize);
-    nav(`/checkout?${params.toString()}`);
+
+    if (colorModalMode === 'buy') {
+      updateCart({ color: selectedColor, size: selectedSize, quantity: cartItem?.quantity || 1 });
+      const params = new URLSearchParams(window.location.search);
+      params.set("color", selectedColor);
+      params.set("size", selectedSize);
+      nav(`/checkout?${params.toString()}`);
+    } else {
+      // Add to cart mode - animate dot to cart icon
+      updateCart({ color: selectedColor, size: selectedSize, quantity: (cartItem?.quantity || 0) + 1 });
+      closeColorModal();
+      setTimeout(() => {
+        setFlyingDot(true);
+        setTimeout(() => setFlyingDot(false), 800);
+      }, 350);
+    }
+  };
+
+  const handleBuyNow = () => {
+    if (cartItem) {
+      const params = new URLSearchParams(window.location.search);
+      params.set("color", cartItem.color);
+      params.set("size", cartItem.size);
+      nav(`/checkout?${params.toString()}`);
+    } else {
+      openColorModal('buy');
+    }
   };
 
   const handleCartCheckout = () => {
