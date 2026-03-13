@@ -2,31 +2,66 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 
 // ── Bot Detection ──
-const BOT_UA = /bot|crawler|spider|headless|phantom|selenium|puppeteer|scrapy|slurp|wget|curl/i;
+const BOT_UA = /bot|crawler|spider|headless|phantom|selenium|puppeteer|scrapy|slurp|wget|curl|scraper/i;
 function isBotUA(): boolean {
   return BOT_UA.test(navigator.userAgent || "");
 }
 
-// ── Visitor ID — persistent across sessions via localStorage ──
+// ── Visitor ID — persistent via localStorage, format: v_xxxxx_timestamp ──
 function getOrCreateVisitorId(): string {
   const KEY = "mesalar_visitor_id";
   let id = localStorage.getItem(KEY);
   if (!id) {
-    id = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const rand = Math.random().toString(36).slice(2, 7);
+    id = `v_${rand}_${Date.now()}`;
     localStorage.setItem(KEY, id);
   }
   return id;
 }
 
-// ── Session ID — unique per browser session via sessionStorage ──
+// ── Session ID — expires after 30 min of inactivity ──
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
 function getOrCreateSessionId(): string {
   const KEY = "mesalar_session_id";
-  let id = sessionStorage.getItem(KEY);
-  if (!id) {
-    id = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    sessionStorage.setItem(KEY, id);
+  const TS_KEY = "mesalar_session_ts";
+  const now = Date.now();
+
+  const existing = sessionStorage.getItem(KEY);
+  const lastActivity = Number(sessionStorage.getItem(TS_KEY) || "0");
+
+  // Session exists and hasn't expired
+  if (existing && (now - lastActivity) < SESSION_TIMEOUT_MS) {
+    sessionStorage.setItem(TS_KEY, String(now));
+    return existing;
   }
+
+  // Create new session (expired or first visit)
+  const rand = Math.random().toString(36).slice(2, 7);
+  const id = `s_${rand}_${now}`;
+  sessionStorage.setItem(KEY, id);
+  sessionStorage.setItem(TS_KEY, String(now));
+
+  // Clear page view dedup flags for new session
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const k = sessionStorage.key(i);
+    if (k && (k.startsWith("mesalar_pv_") || k === "crm_visit_sent")) {
+      keysToRemove.push(k);
+    }
+  }
+  keysToRemove.forEach(k => sessionStorage.removeItem(k));
+  registeredPageViews.clear();
+
   return id;
+}
+
+// Keep session alive on user interaction
+if (typeof window !== "undefined") {
+  const touchSession = () => sessionStorage.setItem("mesalar_session_ts", String(Date.now()));
+  window.addEventListener("click", touchSession, { passive: true });
+  window.addEventListener("scroll", touchSession, { passive: true });
+  window.addEventListener("keydown", touchSession, { passive: true });
 }
 
 function getUtmParams(): Record<string, string> {
@@ -83,17 +118,23 @@ function getReferrer(): string {
 
 // Build context once per session
 let _context: Record<string, string> | null = null;
+let _contextSessionId: string | null = null;
+
 function getVisitorContext(): Record<string, string> {
-  if (_context) return _context;
+  const currentSession = getOrCreateSessionId();
+  // Rebuild context if session changed
+  if (_context && _contextSessionId === currentSession) return _context;
+
   const utm = getUtmParams();
   _context = {
     visitor_id: getOrCreateVisitorId(),
-    session_id: getOrCreateSessionId(),
+    session_id: currentSession,
     device: getDeviceType(),
     referrer: getReferrer(),
     user_agent: navigator.userAgent?.slice(0, 200) || "",
     ...utm,
   };
+  _contextSessionId = currentSession;
   return _context;
 }
 
@@ -106,16 +147,13 @@ export function getTrackingContext(): Record<string, string> {
 const registeredPageViews = new Set<string>();
 
 export function trackPageViewOnce(page: string): void {
-  // Skip bots
   if (isBotUA()) return;
 
   const sessionId = getOrCreateSessionId();
   const key = `${sessionId}::${page}`;
 
-  // Already registered this session
   if (registeredPageViews.has(key)) return;
 
-  // Also check sessionStorage for SPA reload resilience
   const storageKey = `mesalar_pv_${page}`;
   if (sessionStorage.getItem(storageKey)) return;
 
@@ -123,6 +161,19 @@ export function trackPageViewOnce(page: string): void {
   sessionStorage.setItem(storageKey, "1");
 
   supabase.from("page_views").insert({ page }).then(() => {});
+
+  // Send visitor_session event only once per session (first page)
+  if (!sessionStorage.getItem("crm_visit_sent")) {
+    sessionStorage.setItem("crm_visit_sent", "1");
+    const ctx = getVisitorContext();
+    trackEvent("visitor_session", {
+      page_url: window.location.href,
+      screen_width: window.screen?.width || 0,
+      screen_height: window.screen?.height || 0,
+      ...ctx,
+    });
+  }
+
   trackEvent("page_view", { page, metric_type: "session" });
 }
 
@@ -138,7 +189,6 @@ function flush() {
 }
 
 export function trackEvent(event_type: string, event_data?: Record<string, string | number | boolean>) {
-  // Skip bot events entirely (except js_error which has its own filtering)
   if (event_type !== "js_error" && event_type !== "autocorrection" && isBotUA()) return;
 
   const context = getVisitorContext();
