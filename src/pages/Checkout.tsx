@@ -477,7 +477,7 @@ const Checkout = () => {
             </div>
             {hasCoupon && (
               <div className="flex justify-between">
-                <span className="text-coupon font-medium">Cupom VOLTA25 (-25%)</span>
+                <span className="text-coupon font-medium">Cupom {couponLabel}</span>
                 <span className="text-coupon font-medium">- R$ {couponAmount.toFixed(2).replace(".", ",")}</span>
               </div>
             )}
