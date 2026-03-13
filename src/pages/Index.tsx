@@ -927,6 +927,76 @@ const Index = () => {
           </div>
         </div>
       )}
+
+      {/* Chat Modal - Bottom Sheet */}
+      {chatOpen && (
+        <div className="fixed inset-0 z-[60]" onClick={closeChat}>
+          <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${chatClosing ? 'opacity-0' : 'opacity-100 animate-in fade-in-0'}`} />
+          <div
+            className={`absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl max-h-[85vh] flex flex-col transition-transform duration-300 mx-auto sm:max-w-md ${chatClosing ? 'translate-y-full' : 'animate-in slide-in-from-bottom'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+            {/* Close button */}
+            <button
+              onClick={closeChat}
+              className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+            <div className="px-5 pt-2 pb-3 border-b">
+              <p className="text-base font-bold">Chat - Mesa Dobrável Mesalar</p>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-[200px] max-h-[50vh]">
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                    msg.role === 'user'
+                      ? 'bg-cta text-white rounded-br-sm'
+                      : 'bg-muted text-foreground rounded-bl-sm'
+                  }`}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick questions */}
+            <div className="border-t px-4 py-3 space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">Perguntas rápidas:</p>
+              <div className="flex flex-wrap gap-2">
+                {faqs.map((faq, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleQuickQuestion(faq)}
+                    className="text-xs border border-border rounded-full px-3 py-1.5 text-foreground hover:bg-muted transition-colors"
+                  >
+                    {faq.q}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Input */}
+            <div className="border-t px-4 py-3 flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Digite sua pergunta..."
+                className="flex-1 rounded-full border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-cta"
+                readOnly
+              />
+              <button className="bg-cta text-white rounded-full p-2.5">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
