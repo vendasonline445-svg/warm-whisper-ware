@@ -838,7 +838,7 @@ export default function AdminCRM() {
   }, [events, botAnalysis]);
 
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
-  const [funnelSubView, setFunnelSubView] = useState<"funnel" | "replay" | "heatmap">("funnel");
+  const [funnelSubView, setFunnelSubView] = useState<"funnel" | "replay" | "heatmap" | "radar">("funnel");
 
   // ── Radar: Heatmap Insights (must be after heatmapData) ──
   const radarHeatmapInsights = useMemo(() => {
