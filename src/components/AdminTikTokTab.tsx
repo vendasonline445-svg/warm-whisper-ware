@@ -270,14 +270,12 @@ export default function AdminTikTokTab() {
       log("✅ Purchase enviado");
 
       // Verify persistence
-      const visitorIdAfter = localStorage.getItem("mesalar_visitor_id") || "perdido!";
-      const clickIdAfter = sessionStorage.getItem("mesalar_click_id") || "perdido!";
       log("");
       log("🔗 Verificação de persistência:");
-      const visitorIdAfter = localStorage.getItem("mesalar_visitor_id") || "";
-      const clickIdAfter = sessionStorage.getItem("mesalar_click_id") || "";
-      log(`   visitor_id: ${visitorIdAfter ? "✅ mantido" : "❌ PERDIDO"}`);
-      log(`   click_id: ${clickIdAfter ? "✅ mantido" : "❌ PERDIDO"}`);
+      const vAfter = localStorage.getItem("mesalar_visitor_id") || "";
+      const cAfter = sessionStorage.getItem("mesalar_click_id") || "";
+      log(`   visitor_id: ${vAfter ? "✅ mantido" : "❌ PERDIDO"}`);
+      log(`   click_id: ${cAfter ? "✅ mantido" : "❌ PERDIDO"}`);
       log(`   campaign: ${campaign !== "—" ? "✅ associado" : "ℹ️ sem campanha (normal sem UTM)"}`);
       log("");
       log("🎉 Simulação concluída!");
