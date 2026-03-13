@@ -161,12 +161,17 @@ export async function setUserData(data: {
   phone?: string;
   externalId?: string;
 }) {
-  if (data.email) _userData.email_hash = await sha256(data.email);
-  if (data.phone) {
+  if (data.email && data.email.trim()) _userData.email_hash = await sha256(data.email);
+  if (data.phone && data.phone.trim()) {
     const normalized = normalizePhone(data.phone).replace("+", "");
     _userData.phone_hash = await sha256(normalized);
   }
-  if (data.externalId) _userData.external_id_hash = await sha256(data.externalId.replace(/\D/g, ""));
+  if (data.externalId && data.externalId.trim()) {
+    const cleaned = /^\d[\d.\-/]*$/.test(data.externalId.trim())
+      ? data.externalId.replace(/\D/g, "")
+      : data.externalId.trim();
+    _userData.external_id_hash = await sha256(cleaned);
+  }
 }
 
 export function getUserData() {
