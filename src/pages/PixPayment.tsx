@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, AlertTriangle, Check, RefreshCw, Clock } from "lucide-react";
+import { getUrlWithUtm } from "@/utils/utm";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
