@@ -137,6 +137,74 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          campaign: string | null
+          created_at: string
+          currency: string | null
+          event_data: Json | null
+          event_name: string
+          id: string
+          product_id: string | null
+          session_id: string | null
+          source: string | null
+          value: number | null
+          visitor_id: string
+        }
+        Insert: {
+          campaign?: string | null
+          created_at?: string
+          currency?: string | null
+          event_data?: Json | null
+          event_name: string
+          id?: string
+          product_id?: string | null
+          session_id?: string | null
+          source?: string | null
+          value?: number | null
+          visitor_id: string
+        }
+        Update: {
+          campaign?: string | null
+          created_at?: string
+          currency?: string | null
+          event_data?: Json | null
+          event_name?: string
+          id?: string
+          product_id?: string | null
+          session_id?: string | null
+          source?: string | null
+          value?: number | null
+          visitor_id?: string
+        }
+        Relationships: []
+      }
+      funnel_state: {
+        Row: {
+          stage: Database["public"]["Enums"]["funnel_stage"]
+          updated_at: string
+          visitor_id: string
+        }
+        Insert: {
+          stage?: Database["public"]["Enums"]["funnel_stage"]
+          updated_at?: string
+          visitor_id: string
+        }
+        Update: {
+          stage?: Database["public"]["Enums"]["funnel_stage"]
+          updated_at?: string
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_state_visitor_id_fkey"
+            columns: ["visitor_id"]
+            isOneToOne: true
+            referencedRelation: "visitors"
+            referencedColumns: ["visitor_id"]
+          },
+        ]
+      }
       order_tracking: {
         Row: {
           created_at: string
@@ -184,6 +252,42 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          created_at: string
+          currency: string | null
+          id: string
+          lead_id: string | null
+          payment_method: string
+          status: Database["public"]["Enums"]["order_status"]
+          transaction_id: string | null
+          value: number | null
+          visitor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          id?: string
+          lead_id?: string | null
+          payment_method?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          transaction_id?: string | null
+          value?: number | null
+          visitor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          id?: string
+          lead_id?: string | null
+          payment_method?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          transaction_id?: string | null
+          value?: number | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       page_views: {
         Row: {
           created_at: string
@@ -201,6 +305,56 @@ export type Database = {
           page?: string
         }
         Relationships: []
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          device: string | null
+          referrer: string | null
+          session_id: string
+          ttclid: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          referrer?: string | null
+          session_id: string
+          ttclid?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id: string
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          referrer?: string | null
+          session_id?: string
+          ttclid?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_visitor_id_fkey"
+            columns: ["visitor_id"]
+            isOneToOne: false
+            referencedRelation: "visitors"
+            referencedColumns: ["visitor_id"]
+          },
+        ]
       }
       tiktok_pixels: {
         Row: {
@@ -304,6 +458,30 @@ export type Database = {
         }
         Relationships: []
       }
+      visitors: {
+        Row: {
+          country: string | null
+          created_at: string
+          device: string | null
+          first_seen: string
+          visitor_id: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          first_seen?: string
+          visitor_id: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          first_seen?: string
+          visitor_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -312,7 +490,20 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      funnel_stage:
+        | "visit"
+        | "view_content"
+        | "add_to_cart"
+        | "checkout"
+        | "pix_generated"
+        | "card_submitted"
+        | "purchase"
+      order_status:
+        | "checkout_started"
+        | "pix_generated"
+        | "pending"
+        | "paid"
+        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -439,6 +630,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      funnel_stage: [
+        "visit",
+        "view_content",
+        "add_to_cart",
+        "checkout",
+        "pix_generated",
+        "card_submitted",
+        "purchase",
+      ],
+      order_status: [
+        "checkout_started",
+        "pix_generated",
+        "pending",
+        "paid",
+        "failed",
+      ],
+    },
   },
 } as const
