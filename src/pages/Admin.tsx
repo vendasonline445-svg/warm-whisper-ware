@@ -316,6 +316,23 @@ export default function Admin() {
             >
               <Users className="h-4 w-4" /> Leads
             </button>
+            <button
+              onClick={() => {
+                setTab("logs");
+                setLogsLoading(true);
+                Promise.all([
+                  supabase.from("user_events").select("*").eq("event_type", "js_error").order("created_at", { ascending: false }).limit(50),
+                  supabase.from("tracking_webhook_logs").select("*").order("created_at", { ascending: false }).limit(50),
+                ]).then(([errRes, whRes]) => {
+                  setErrorLogs(errRes.data || []);
+                  setWebhookLogs(whRes.data || []);
+                  setLogsLoading(false);
+                });
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "logs" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            >
+              <Bug className="h-4 w-4" /> Logs
+            </button>
           </div>
         </div>
       </header>
