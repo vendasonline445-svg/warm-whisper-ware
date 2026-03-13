@@ -289,14 +289,15 @@ const Index = () => {
     if (!selectedColor) return;
 
     if (colorModalMode === 'buy') {
-      updateCart({ color: selectedColor, size: selectedSize, quantity: cartItem?.quantity || 1 });
+      updateCart({ color: selectedColor, size: selectedSize, quantity: modalQty });
       const params = new URLSearchParams(window.location.search);
       params.set("color", selectedColor);
       params.set("size", selectedSize);
+      params.set("qty", modalQty.toString());
       nav(`/checkout?${params.toString()}`);
     } else {
       // Add to cart mode - animate dot to cart icon
-      updateCart({ color: selectedColor, size: selectedSize, quantity: (cartItem?.quantity || 0) + 1 });
+      updateCart({ color: selectedColor, size: selectedSize, quantity: (cartItem?.quantity || 0) + modalQty });
       closeColorModal();
       setTimeout(() => {
         setFlyingDot(true);
