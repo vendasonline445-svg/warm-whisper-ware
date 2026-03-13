@@ -15,10 +15,14 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const PRODUCT_ID = "mesa-dobravel-180x60";
-const PRICE = 87.60;
-const OLD_PRICE = 199.90;
-const DISCOUNT = 56;
+const PRODUCT_ID = "mesa-dobravel";
+
+const SIZE_PRICES: Record<string, { price: number; oldPrice: number; discount: number }> = {
+  "120x60cm": { price: 69.90, oldPrice: 159.90, discount: 56 },
+  "150x60cm": { price: 79.90, oldPrice: 179.90, discount: 55 },
+  "180x60cm": { price: 87.60, oldPrice: 199.90, discount: 56 },
+  "240x60cm": { price: 109.90, oldPrice: 249.90, discount: 56 },
+};
 
 const productImages = [
   "/images/mesa-branca-principal.webp",
@@ -111,6 +115,10 @@ const Index = () => {
   const swiping = useRef(false);
   const [currentImage, setCurrentImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("180x60cm");
+  const currentSizeData = SIZE_PRICES[selectedSize] || SIZE_PRICES["180x60cm"];
+  const PRICE = currentSizeData.price;
+  const OLD_PRICE = currentSizeData.oldPrice;
+  const DISCOUNT = currentSizeData.discount;
   const [colorModalOpen, setColorModalOpen] = useState(false);
   const [colorModalClosing, setColorModalClosing] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -547,18 +555,14 @@ const Index = () => {
             </div>
             <div className="flex flex-wrap gap-2">
               {sizes.map((s) => {
-                const available = s === "180x60cm";
                 return (
                   <button
                     key={s}
-                    onClick={() => available && setSelectedSize(s)}
-                    disabled={!available}
+                    onClick={() => setSelectedSize(s)}
                     className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                       selectedSize === s
-                        ? "border-cta bg-cta/5 text-cta"
-                        : available
-                          ? "border-border text-foreground hover:border-foreground/40"
-                          : "border-border/50 text-muted-foreground/50 cursor-not-allowed"
+                      ? "border-cta bg-cta/5 text-cta"
+                      : "border-border text-foreground hover:border-foreground/40"
                     }`}
                   >
                     {s}
@@ -833,6 +837,26 @@ const Index = () => {
                       <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
                     </div>
                     <p className="py-2 text-center text-sm font-medium">{color.name}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Size selection in modal */}
+            <div className="px-5 pb-4">
+              <p className="text-sm font-semibold mb-2">Tamanho:</p>
+              <div className="flex flex-wrap gap-2">
+                {sizes.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSelectedSize(s)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                      selectedSize === s
+                        ? "border-cta bg-cta/5 text-cta"
+                        : "border-border text-foreground hover:border-foreground/40"
+                    }`}
+                  >
+                    {s}
                   </button>
                 ))}
               </div>
@@ -1398,7 +1422,7 @@ const Index = () => {
                   <div className="flex-1">
                     <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
                     <p className="text-xs text-muted-foreground">Cor: {cartItem.color === 'preta' ? 'Preta' : 'Branca'} · {cartItem.size}</p>
-                    <p className="text-cta font-extrabold text-base mt-1">R$ {(PRICE * cartItem.quantity).toFixed(2).replace('.', ',')}</p>
+                    <p className="text-cta font-extrabold text-base mt-1">R$ {((SIZE_PRICES[cartItem.size]?.price || PRICE) * cartItem.quantity).toFixed(2).replace('.', ',')}</p>
                     <div className="flex items-center gap-3 mt-2">
                       <button
                         onClick={() => {
@@ -1423,7 +1447,7 @@ const Index = () => {
                 {/* Total */}
                 <div className="flex justify-between items-center py-3 border-b">
                   <span className="text-sm font-semibold">Total</span>
-                  <span className="text-lg font-extrabold text-cta">R$ {(PRICE * cartItem.quantity).toFixed(2).replace('.', ',')}</span>
+                  <span className="text-lg font-extrabold text-cta">R$ {((SIZE_PRICES[cartItem.size]?.price || PRICE) * cartItem.quantity).toFixed(2).replace('.', ',')}</span>
                 </div>
 
                 {/* Checkout button */}
