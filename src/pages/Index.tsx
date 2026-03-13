@@ -1397,7 +1397,7 @@ const Index = () => {
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                Garantir com 50% OFF 🔥 - R$ {((SIZE_PRICES[selectedSize]?.oldPrice ?? 159.90) * 0.5).toFixed(2).replace('.', ',')}
+                Garantir com 50% OFF 🔥 - R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.50).toFixed(2).replace('.', ',')}
               </button>
               <p className="text-[10px] text-muted-foreground mt-2 text-center">Última oferta. Após fechar, o desconto será perdido!</p>
             </div>
