@@ -710,7 +710,7 @@ const Checkout = () => {
                       className="w-full h-12 rounded-lg border border-border bg-muted/40 px-3 text-sm"
                     >
                       <option value={1}>1x de R$ {total.toFixed(2).replace(".", ",")} (sem juros)</option>
-                      {[2,3,4,5,6].map(n => {
+                      {[2,3].map(n => {
                         const installmentValue = (total / n).toFixed(2).replace(".", ",");
                         return <option key={n} value={n}>{n}x de R$ {installmentValue} (sem juros)</option>;
                       })}
