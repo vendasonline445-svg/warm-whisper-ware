@@ -311,6 +311,11 @@ const Checkout = () => {
         shipping: { type: shipping, cost: shippingCost },
       }));
 
+      if (hasCoupon && couponUpper === 'DESCULPA80') {
+        localStorage.setItem('mesalar_coupon_used', 'true');
+        localStorage.removeItem('mesalar_coupon');
+      }
+
       navigate("/pix");
     } catch (err) {
       console.error("Submit error:", err);
