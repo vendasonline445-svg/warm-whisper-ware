@@ -402,8 +402,8 @@ const Index = () => {
             <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => setShareOpen(true)} />
             <div className="relative cursor-pointer" onClick={() => setCartOpen(true)}>
               <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-              {cartItem && (
-                <span className="absolute -top-1.5 -right-1.5 bg-cta text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">{cartItem.quantity}</span>
+              {cartTotalQty > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-cta text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">{cartTotalQty}</span>
               )}
             </div>
             <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setReportStep('menu'); setReportMenuOpen(true); }} />
