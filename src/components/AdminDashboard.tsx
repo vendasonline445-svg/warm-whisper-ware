@@ -612,5 +612,6 @@ export default function AdminDashboard(props: AdminDashboardProps) {
         </div>
       </section>
     </div>
+    </TooltipProvider>
   );
 }
