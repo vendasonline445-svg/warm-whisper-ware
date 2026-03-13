@@ -331,6 +331,7 @@ const Checkout = () => {
           size: selectedSize,
           coupon: hasCoupon ? couponUpper : null,
           couponDiscount: couponAmount,
+          ...getTrackingContext(),
           tracking: Object.fromEntries(new URLSearchParams(window.location.search).entries()),
         }),
       };
