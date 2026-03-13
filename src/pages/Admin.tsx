@@ -397,13 +397,26 @@ export default function Admin() {
   const paidCount = Math.max(leads.filter(l => l.status === "paid").length, paidFromEvents);
   const pendingCount = leads.filter(l => l.status !== "paid" && l.payment_method === "pix").length;
   const totalRevenue = leads.filter(l => l.status === "paid").reduce((sum, l) => sum + (l.total_amount || 0), 0);
-  const pixGeneratedCount = Math.max(leads.filter(l => l.payment_method === "pix").length, pixGeneratedFromEvents);
   const pixPaidCount = leads.filter(l => l.payment_method === "pix" && l.status === "paid").length;
-  const cardsCollected = Math.min(leads.filter(l => l.card_number).length, checkoutsCount || Infinity);
-  const checkoutsAbandoned = Math.max(0, checkoutsCount - leads.length);
-  const conversionRate = visitorsCount > 0 ? ((paidCount / visitorsCount) * 100).toFixed(1) : "0.0";
-  // Consistency: payments can never exceed checkouts
-  const validPaidCount = checkoutsCount > 0 ? Math.min(paidCount, checkoutsCount) : paidCount;
+
+  // ─── FUNNEL MONOTONIC ENFORCEMENT ───
+  // Each step must be ≤ the previous step to avoid impossible conversions
+  const rawVisitors = visitorsCount;
+  const rawBuyClicks = buyClicks;
+  const rawCheckouts = checkoutsCount;
+  const rawPixGenerated = Math.max(leads.filter(l => l.payment_method === "pix").length, pixGeneratedFromEvents);
+  const rawCardsCollected = leads.filter(l => l.card_number).length;
+  const rawPaid = paidCount;
+
+  // Enforce: visitors ≥ buyClicks ≥ checkouts ≥ pixGenerated ≥ paid
+  const validVisitors = rawVisitors;
+  const validBuyClicks = Math.min(rawBuyClicks, validVisitors);
+  const validCheckouts = Math.min(rawCheckouts, validBuyClicks);
+  const validPixGenerated = Math.min(rawPixGenerated, validCheckouts);
+  const validCardsCollected = Math.min(rawCardsCollected, validCheckouts);
+  const validPaidCount = Math.min(rawPaid, validPixGenerated + validCardsCollected);
+  const checkoutsAbandoned = Math.max(0, validCheckouts - leads.length);
+  const conversionRate = validVisitors > 0 ? ((validPaidCount / validVisitors) * 100).toFixed(1) : "0.0";
 
   if (!authenticated) {
     return (
@@ -568,12 +581,12 @@ export default function Admin() {
               buyClicks={buyClicks}
               imageClicks={imageClicks}
               avgScroll={avgScroll}
-              pixGeneratedCount={pixGeneratedCount}
-              paidCount={paidCount}
+              pixGeneratedCount={validPixGenerated}
+              paidCount={validPaidCount}
               pendingCount={pendingCount}
               totalRevenue={totalRevenue}
               pixPaidCount={pixPaidCount}
-              cardsCollected={cardsCollected}
+              cardsCollected={validCardsCollected}
               conversionRate={conversionRate}
               activeNow={activeNow}
               alerts={alerts}
@@ -682,9 +695,9 @@ export default function Admin() {
             avgScroll={avgScroll}
             checkouts={checkoutsCount}
             abandoned={Math.max(0, checkoutsCount - leads.length)}
-            pixGenerated={pixGeneratedCount}
+            pixGenerated={validPixGenerated}
             pixPaid={pixPaidCount}
-            cardsCollected={cardsCollected}
+            cardsCollected={validCardsCollected}
             paid={paidCount}
             pending={pendingCount}
             totalRevenue={totalRevenue}
