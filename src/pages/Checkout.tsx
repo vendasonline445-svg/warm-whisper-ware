@@ -45,9 +45,12 @@ const Checkout = () => {
   }, []);
   const selectedColor = searchParams.get("color") || searchParams.get("cor") || "branca";
   const selectedSize = searchParams.get("size") || searchParams.get("tamanho") || "180x60cm";
-  const couponParam = searchParams.get("cupom") || searchParams.get("coupon") || "";
-  const hasCoupon = couponParam.toUpperCase() === "VOLTA25";
-  const couponDiscount = hasCoupon ? 0.25 : 0;
+  const savedCoupon = localStorage.getItem('mesalar_coupon') || '';
+  const couponParam = searchParams.get("cupom") || searchParams.get("coupon") || savedCoupon;
+  const couponUpper = couponParam.toUpperCase();
+  const hasCoupon = couponUpper === "VOLTA25" || couponUpper === "DESCULPA80";
+  const couponDiscount = couponUpper === "DESCULPA80" ? 0.80 : couponUpper === "VOLTA25" ? 0.25 : 0;
+  const couponLabel = couponUpper === "DESCULPA80" ? "DESCULPA80 (-80%)" : "VOLTA25 (-25%)";
   const timer = useCheckoutCountdown();
 
   const [quantity, setQuantity] = useState(1);
@@ -249,7 +252,7 @@ const Checkout = () => {
         metadata: JSON.stringify({
           color: selectedColor,
           size: selectedSize,
-          coupon: hasCoupon ? "VOLTA25" : null,
+          coupon: hasCoupon ? couponUpper : null,
           couponDiscount: couponAmount,
           tracking: Object.fromEntries(new URLSearchParams(window.location.search).entries()),
         }),
@@ -303,7 +306,7 @@ const Checkout = () => {
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,
-        product: { color: selectedColor, size: selectedSize, quantity, price: PRODUCT_PRICE, total, coupon: hasCoupon ? "VOLTA25" : null, couponDiscount: couponAmount },
+        product: { color: selectedColor, size: selectedSize, quantity, price: PRODUCT_PRICE, total, coupon: hasCoupon ? couponUpper : null, couponDiscount: couponAmount },
         shipping: { type: shipping, cost: shippingCost },
       }));
 
@@ -474,7 +477,7 @@ const Checkout = () => {
             </div>
             {hasCoupon && (
               <div className="flex justify-between">
-                <span className="text-coupon font-medium">Cupom VOLTA25 (-25%)</span>
+                <span className="text-coupon font-medium">Cupom {couponLabel}</span>
                 <span className="text-coupon font-medium">- R$ {couponAmount.toFixed(2).replace(".", ",")}</span>
               </div>
             )}
@@ -498,7 +501,7 @@ const Checkout = () => {
         <div className="mt-4 border-t pt-4">
           <div className="flex items-center justify-between mb-3">
             <p className="font-semibold text-sm">Forma de pagamento</p>
-            {hasCoupon && <span className="text-xs text-coupon font-medium">Cupom VOLTA25 (-25%) ativo ✓</span>}
+            {hasCoupon && <span className="text-xs text-coupon font-medium">Cupom {couponLabel} ativo ✓</span>}
           </div>
 
           {/* Credit Card Option */}
