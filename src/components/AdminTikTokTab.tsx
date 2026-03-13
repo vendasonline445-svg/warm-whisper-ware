@@ -215,6 +215,7 @@ export default function AdminTikTokTab() {
           properties: {
             content_type: "product",
             content_id: "test-diagnostico",
+            content_name: "Mesa Dobrável Retrátil",
             value: 1,
             currency: "BRL",
             _test: true,
@@ -256,22 +257,22 @@ export default function AdminTikTokTab() {
       const { trackTikTokEvent } = await import("@/lib/tiktok-tracking");
 
       log("📤 Enviando ViewContent...");
-      await trackTikTokEvent({ event: "ViewContent", properties: { content_id: "sim-test", value: 87.6, currency: "BRL", _test: true } });
+      await trackTikTokEvent({ event: "ViewContent", properties: { content_id: "sim-test", content_name: "Mesa Dobrável Retrátil", value: 87.6, currency: "BRL", _test: true } });
       log("✅ ViewContent enviado");
 
       await new Promise(r => setTimeout(r, 300));
       log("📤 Enviando AddToCart...");
-      await trackTikTokEvent({ event: "AddToCart", properties: { content_id: "sim-test", value: 87.6, currency: "BRL", _test: true } });
+      await trackTikTokEvent({ event: "AddToCart", properties: { content_id: "sim-test", content_name: "Mesa Dobrável Retrátil", value: 87.6, currency: "BRL", _test: true } });
       log("✅ AddToCart enviado");
 
       await new Promise(r => setTimeout(r, 300));
       log("📤 Enviando InitiateCheckout...");
-      await trackTikTokEvent({ event: "InitiateCheckout", properties: { content_id: "sim-test", value: 87.6, currency: "BRL", _test: true } });
+      await trackTikTokEvent({ event: "InitiateCheckout", properties: { content_id: "sim-test", content_name: "Mesa Dobrável Retrátil", value: 87.6, currency: "BRL", _test: true } });
       log("✅ InitiateCheckout enviado");
 
       await new Promise(r => setTimeout(r, 300));
       log("📤 Enviando Purchase...");
-      await trackTikTokEvent({ event: "Purchase", properties: { content_id: "sim-test", value: 87.6, currency: "BRL", order_id: `sim-${Date.now()}`, _test: true } });
+      await trackTikTokEvent({ event: "Purchase", properties: { content_id: "sim-test", content_name: "Mesa Dobrável Retrátil", value: 87.6, currency: "BRL", order_id: `sim-${Date.now()}`, _test: true } });
       log("✅ Purchase enviado");
 
       // Verify persistence
