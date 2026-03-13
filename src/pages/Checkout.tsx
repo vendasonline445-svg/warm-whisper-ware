@@ -757,24 +757,27 @@ const Checkout = () => {
       </div>
 
       {/* Sticky Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
-        <div className="mx-auto max-w-[480px] px-4">
-          <div className="w-full py-2 px-3 rounded-lg mt-2" style={{ backgroundColor: '#fff0f3' }}>
-            <p className="text-xs flex items-center gap-1" style={{ color: '#fe2b54' }}>
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
+        <div className="mx-auto max-w-[480px]">
+          {/* Savings banner - full width, no rounding */}
+          <div className="w-full py-2.5 px-4" style={{ backgroundColor: '#fff0f3', borderTop: '1px solid #ffe0e6' }}>
+            <p className="text-[13px] flex items-center gap-1.5" style={{ color: '#fe2b54' }}>
               😊 Parabéns! Você está economizando R$ {totalSavings.toFixed(2).replace(".", ",")} nesse pedido.
             </p>
           </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="font-bold text-sm">Total ({totalQty} {totalQty === 1 ? 'item' : 'itens'})</span>
-            <span className="font-bold text-lg text-cta">R$ {total.toFixed(2).replace(".", ",")}</span>
+          <div className="px-4">
+            <div className="flex items-center justify-between py-3">
+              <span className="font-bold text-base">Total ({totalQty} {totalQty === 1 ? 'item' : 'itens'})</span>
+              <span className="font-bold text-lg" style={{ color: '#fe2b54' }}>R$ {total.toFixed(2).replace(".", ",")}</span>
+            </div>
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit || isSubmitting}
+              className={`w-full font-bold text-base py-4 h-auto rounded-xl mb-3 transition-all duration-300 shadow-lg ${!canSubmit || isSubmitting ? 'bg-[#F23D6B]/40 text-white/60 cursor-not-allowed' : 'bg-[#F23D6B] hover:bg-[#e0335f] text-white'}`}
+            >
+              {isSubmitting ? "Processando..." : "Fazer pedido"}
+            </Button>
           </div>
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit || isSubmitting}
-            className={`w-full font-bold text-base py-4 h-auto rounded-xl mb-3 transition-all duration-300 shadow-lg ${!canSubmit || isSubmitting ? 'bg-[#F23D6B]/40 text-white/60 cursor-not-allowed' : 'bg-[#F23D6B] hover:bg-[#e0335f] text-white'}`}
-          >
-            {isSubmitting ? "Processando..." : "Fazer pedido"}
-          </Button>
         </div>
       </div>
     </div>
