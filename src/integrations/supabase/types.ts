@@ -208,24 +208,30 @@ export type Database = {
       tracking_webhook_logs: {
         Row: {
           created_at: string
+          http_status: number | null
           id: string
           order_id: string | null
+          payload_sent: string | null
           response: string | null
           status: string
           webhook_url: string
         }
         Insert: {
           created_at?: string
+          http_status?: number | null
           id?: string
           order_id?: string | null
+          payload_sent?: string | null
           response?: string | null
           status?: string
           webhook_url: string
         }
         Update: {
           created_at?: string
+          http_status?: number | null
           id?: string
           order_id?: string | null
+          payload_sent?: string | null
           response?: string | null
           status?: string
           webhook_url?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.tracking_webhook_logs ADD COLUMN IF NOT EXISTS payload_sent text NULL, ADD COLUMN IF NOT EXISTS http_status integer NULL;
