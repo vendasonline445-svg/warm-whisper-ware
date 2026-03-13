@@ -346,10 +346,11 @@ const Index = () => {
   };
 
   const handleBuyNow = () => {
-    if (cartItem) {
+    if (cartItems.length > 0) {
+      const first = cartItems[0];
       const params = new URLSearchParams(window.location.search);
-      params.set("color", cartItem.color);
-      params.set("size", cartItem.size);
+      params.set("color", first.color);
+      params.set("size", first.size);
       nav(`/checkout?${params.toString()}`);
     } else {
       openColorModal('buy');
@@ -357,10 +358,11 @@ const Index = () => {
   };
 
   const handleCartCheckout = () => {
-    if (!cartItem) return;
+    if (cartItems.length === 0) return;
+    const first = cartItems[0];
     const params = new URLSearchParams(window.location.search);
-    params.set("color", cartItem.color);
-    params.set("size", cartItem.size);
+    params.set("color", first.color);
+    params.set("size", first.size);
     nav(`/checkout?${params.toString()}`);
   };
 
