@@ -374,6 +374,7 @@ export default function Admin() {
               <Contact className="h-4 w-4" /> CRM
             </button>
             <button
+              onClick={() => {
                 setTab("logs");
                 setLogsLoading(true);
                 Promise.all([
