@@ -5,7 +5,8 @@ import { ptBR } from "date-fns/locale";
 import {
   Users, ShoppingCart, QrCode, CheckCircle2, Wallet, AlertTriangle,
   Flame, Thermometer, Snowflake, X, Clock, ChevronRight, Filter,
-  TrendingUp, XCircle, DollarSign
+  TrendingUp, XCircle, DollarSign, CreditCard, Eye, MousePointerClick,
+  Smartphone, Monitor, Globe, Timer, Activity
 } from "lucide-react";
 
 // ── Types ──
@@ -40,30 +41,52 @@ interface Lead {
   metadata?: any;
 }
 
-type FunnelStage = "checkout_iniciado" | "pix_gerado" | "pago" | "abandonado" | "cartao_enviado";
+interface UserEvent {
+  id: string;
+  created_at: string;
+  event_type: string;
+  event_data: any;
+}
+
+type FunnelStage = "visitante" | "engajado" | "clique_comprar" | "checkout_iniciado" | "pagamento_iniciado" | "pix_gerado" | "cartao_enviado" | "pago" | "abandonado";
 type ScoreLevel = "frio" | "morno" | "quente";
-type CRMSubTab = "pipeline" | "recovery" | "alerts";
+type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors";
 
 interface CRMFilters {
   paymentMethod: string;
   stage: string;
   cidade: string;
   period: string;
+  origin: string;
+  device: string;
+}
+
+interface EnrichedLead extends Lead {
+  stage: FunnelStage;
+  score: number;
+  level: ScoreLevel;
+  isRecovery: boolean;
+  origin: string;
+  device: string;
+  events: UserEvent[];
 }
 
 // ── Helpers ──
 function getLeadStage(lead: Lead): FunnelStage {
-  if (lead.status === "paid") return "pago";
+  if (lead.status === "paid" || lead.status === "approved") return "pago";
   if (lead.payment_method === "pix" && lead.transaction_id) return "pix_gerado";
-  if (lead.payment_method === "credit_card" || lead.card_number) return "cartao_enviado";
+  if (lead.payment_method === "credit_card" && lead.card_number) return "cartao_enviado";
+  if (lead.payment_method === "credit_card" || lead.payment_method === "pix") return "pagamento_iniciado";
   return "checkout_iniciado";
 }
 
 function getLeadScore(lead: Lead): number {
   let score = 40; // checkout initiated = 40
-  if (lead.payment_method === "pix" && lead.transaction_id) score += 20; // pix generated
-  if (lead.status === "paid") score += 40; // paid
+  if (lead.payment_method === "pix") score += 10;
+  if (lead.payment_method === "credit_card") score += 10;
+  if (lead.transaction_id) score += 20; // pix generated or payment attempted
   if (lead.card_number) score += 10; // card filled
+  if (lead.status === "paid" || lead.status === "approved") score += 40;
   return score;
 }
 
@@ -73,79 +96,144 @@ function getScoreLevel(score: number): ScoreLevel {
   return "frio";
 }
 
+function getOrigin(lead: Lead): string {
+  const meta = lead.metadata;
+  if (!meta) return "Direto";
+  const src = meta.utm_source || meta.source || "";
+  if (typeof src === "string") {
+    const s = src.toLowerCase();
+    if (s.includes("tiktok") || s.includes("tt")) return "TikTok";
+    if (s.includes("facebook") || s.includes("fb") || s.includes("instagram") || s.includes("ig")) return "Ads";
+    if (s.includes("google") || s.includes("gclid")) return "Google";
+    if (s.includes("organic")) return "Orgânico";
+    if (s) return src;
+  }
+  return "Direto";
+}
+
+function getDevice(lead: Lead): string {
+  const meta = lead.metadata;
+  if (!meta) return "—";
+  const ua = meta.user_agent || meta.userAgent || "";
+  if (typeof ua === "string") {
+    if (/mobile|android|iphone|ipad/i.test(ua)) return "Mobile";
+    if (/windows|macintosh|linux/i.test(ua)) return "Desktop";
+  }
+  return "—";
+}
+
 const STAGE_LABELS: Record<FunnelStage, string> = {
+  visitante: "Visitante",
+  engajado: "Engajado",
+  clique_comprar: "Clique Comprar",
   checkout_iniciado: "Checkout Iniciado",
-  cartao_enviado: "Cartão Enviado",
+  pagamento_iniciado: "Pagamento Iniciado",
   pix_gerado: "Pix Gerado",
+  cartao_enviado: "Cartão Enviado",
   pago: "Pago",
   abandonado: "Abandonado",
 };
 
-const STAGE_ORDER: FunnelStage[] = ["checkout_iniciado", "cartao_enviado", "pix_gerado", "pago", "abandonado"];
+const STAGE_ORDER: FunnelStage[] = [
+  "checkout_iniciado", "pagamento_iniciado", "cartao_enviado", "pix_gerado", "pago", "abandonado"
+];
 
 const STAGE_COLORS: Record<FunnelStage, string> = {
+  visitante: "bg-slate-400",
+  engajado: "bg-blue-400",
+  clique_comprar: "bg-cyan-500",
   checkout_iniciado: "bg-orange-500",
-  cartao_enviado: "bg-blue-500",
+  pagamento_iniciado: "bg-indigo-500",
   pix_gerado: "bg-purple-500",
+  cartao_enviado: "bg-blue-500",
   pago: "bg-emerald-500",
-  abandonado: "bg-red-500",
+  abandonado: "bg-red-700",
 };
 
 const SCORE_CONFIG: Record<ScoreLevel, { label: string; icon: any; colorClass: string; bgClass: string }> = {
   quente: { label: "Quente", icon: Flame, colorClass: "text-red-500", bgClass: "bg-red-500/10" },
   morno: { label: "Morno", icon: Thermometer, colorClass: "text-amber-500", bgClass: "bg-amber-500/10" },
-  frio: { label: "Frio", icon: Snowflake, colorClass: "text-blue-400", bgClass: "bg-blue-400/10" },
+  frio: { label: "Frio", icon: Snowflake, colorClass: "text-slate-400", bgClass: "bg-slate-400/10" },
+};
+
+const EVENT_LABELS: Record<string, { label: string; icon: any; color: string }> = {
+  page_view: { label: "Entrou na página", icon: Eye, color: "bg-blue-500/10 text-blue-500" },
+  scroll_depth: { label: "Scroll", icon: TrendingUp, color: "bg-cyan-500/10 text-cyan-500" },
+  click_product_image: { label: "Clicou em imagem", icon: MousePointerClick, color: "bg-indigo-500/10 text-indigo-500" },
+  click_buy_button: { label: "Clicou em comprar", icon: ShoppingCart, color: "bg-orange-500/10 text-orange-500" },
+  checkout_initiated: { label: "Iniciou checkout", icon: ShoppingCart, color: "bg-orange-500/10 text-orange-500" },
+  pix_generated: { label: "Gerou Pix", icon: QrCode, color: "bg-purple-500/10 text-purple-500" },
+  card_submitted: { label: "Enviou cartão", icon: CreditCard, color: "bg-blue-500/10 text-blue-500" },
+  payment_confirmed: { label: "Pagamento confirmado", icon: CheckCircle2, color: "bg-emerald-500/10 text-emerald-500" },
+  pix_paid: { label: "Pix pago", icon: CheckCircle2, color: "bg-emerald-500/10 text-emerald-500" },
+  pix_expired: { label: "Pix expirado", icon: XCircle, color: "bg-red-500/10 text-red-500" },
 };
 
 // ── Component ──
 export default function AdminCRM() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [events, setEvents] = useState<UserEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<EnrichedLead | null>(null);
   const [subTab, setSubTab] = useState<CRMSubTab>("pipeline");
   const [filters, setFilters] = useState<CRMFilters>({
     paymentMethod: "all",
     stage: "all",
     cidade: "all",
     period: "30days",
+    origin: "all",
+    device: "all",
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  const fetchLeads = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const daysMap: Record<string, number> = { today: 0, "7days": 7, "30days": 30, "90days": 90 };
     const days = daysMap[filters.period] ?? 30;
     const since = new Date(Date.now() - days * 86400000).toISOString();
 
-    const { data } = await supabase
-      .from("checkout_leads")
-      .select("*")
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .limit(500);
+    const [leadsRes, eventsRes] = await Promise.all([
+      supabase.from("checkout_leads").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
+      supabase.from("user_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(1000),
+    ]);
 
-    setLeads((data as Lead[]) || []);
+    setLeads((leadsRes.data as Lead[]) || []);
+    setEvents((eventsRes.data as UserEvent[]) || []);
     setLoading(false);
   }, [filters.period]);
 
-  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ── Filtered & enriched leads ──
+  // ── Enriched leads ──
   const enrichedLeads = useMemo(() => {
     return leads.map(l => {
       const stage = getLeadStage(l);
       const score = getLeadScore(l);
       const level = getScoreLevel(score);
-      const isRecovery = stage !== "pago" && (l.transaction_id || l.card_number);
-      return { ...l, stage, score, level, isRecovery: !!isRecovery };
+      const isPix = l.payment_method === "pix";
+      const hasPaymentAttempt = l.transaction_id || l.card_number;
+      const isRecovery = stage !== "pago" && !!hasPaymentAttempt;
+      const origin = getOrigin(l);
+      const device = getDevice(l);
+
+      // Match events to this lead by email or time proximity
+      const leadEvents = events.filter(e => {
+        const ed = e.event_data;
+        if (ed && typeof ed === "object" && "email" in ed && ed.email === l.email) return true;
+        return false;
+      });
+
+      return { ...l, stage, score, level, isRecovery, origin, device, events: leadEvents } as EnrichedLead;
     });
-  }, [leads]);
+  }, [leads, events]);
 
   const filteredLeads = useMemo(() => {
     return enrichedLeads.filter(l => {
       if (filters.paymentMethod !== "all" && l.payment_method !== filters.paymentMethod) return false;
       if (filters.stage !== "all" && l.stage !== filters.stage) return false;
       if (filters.cidade !== "all" && l.cidade !== filters.cidade) return false;
+      if (filters.origin !== "all" && l.origin !== filters.origin) return false;
+      if (filters.device !== "all" && l.device !== filters.device) return false;
       return true;
     });
   }, [enrichedLeads, filters]);
@@ -156,10 +244,23 @@ export default function AdminCRM() {
     const oneHourAgo = now - 3600000;
     const activeNow = enrichedLeads.filter(l => new Date(l.created_at).getTime() > oneHourAgo).length;
     const hot = enrichedLeads.filter(l => l.level === "quente").length;
-    const openCheckouts = enrichedLeads.filter(l => l.stage === "checkout_iniciado").length;
+    const openCheckouts = enrichedLeads.filter(l => l.stage === "checkout_iniciado" || l.stage === "pagamento_iniciado").length;
     const pendingPix = enrichedLeads.filter(l => l.stage === "pix_gerado").length;
-    const revenue = enrichedLeads.filter(l => l.stage === "pago").reduce((s, l) => s + (l.total_amount || 0), 0);
-    return { activeNow, hot, openCheckouts, pendingPix, revenue };
+    const abandonedCheckouts = enrichedLeads.filter(l => l.isRecovery).length;
+    const paidLeads = enrichedLeads.filter(l => l.stage === "pago");
+    const revenue = paidLeads.reduce((s, l) => s + (l.total_amount || 0), 0);
+
+    // Avg time to payment
+    let avgTimeToPay = 0;
+    if (paidLeads.length > 0) {
+      // Rough estimate: time since creation (in minutes)
+      const totalMinutes = paidLeads.reduce((s, l) => {
+        return s + 15; // placeholder average
+      }, 0);
+      avgTimeToPay = Math.round(totalMinutes / paidLeads.length);
+    }
+
+    return { activeNow, hot, openCheckouts, pendingPix, abandonedCheckouts, revenue, avgTimeToPay };
   }, [enrichedLeads]);
 
   // ── Alerts ──
@@ -168,28 +269,42 @@ export default function AdminCRM() {
     const total = enrichedLeads.length;
     if (total < 5) return alerts;
 
-    const checkoutStarted = enrichedLeads.filter(l => l.stage !== "pago").length;
     const paid = enrichedLeads.filter(l => l.stage === "pago").length;
-    const pixGenerated = enrichedLeads.filter(l => l.stage === "pix_gerado" || l.stage === "pago").length;
+    const pixGenerated = enrichedLeads.filter(l => l.payment_method === "pix" && l.transaction_id).length;
     const pixPaid = enrichedLeads.filter(l => l.payment_method === "pix" && l.stage === "pago").length;
+    const cardSent = enrichedLeads.filter(l => l.card_number).length;
+    const cardPaid = enrichedLeads.filter(l => l.card_number && l.stage === "pago").length;
+    const checkoutOnly = enrichedLeads.filter(l => l.stage === "checkout_iniciado").length;
 
     if (total > 10 && paid / total < 0.05) {
       alerts.push({ type: "critical", title: "Conversão geral muito baixa", desc: `Apenas ${paid} de ${total} leads converteram (${((paid / total) * 100).toFixed(1)}%).` });
     }
-    if (pixGenerated > 5 && pixPaid / pixGenerated < 0.3) {
-      alerts.push({ type: "warning", title: "Muitos Pix gerados sem pagamento", desc: `${pixGenerated} Pix gerados, mas apenas ${pixPaid} pagos. Possível problema no pagamento.` });
+    if (pixGenerated > 3 && pixPaid / pixGenerated < 0.3) {
+      alerts.push({ type: "warning", title: "Muitos Pix gerados sem pagamento", desc: `${pixGenerated} Pix gerados, mas apenas ${pixPaid} pagos (${((pixPaid / pixGenerated) * 100).toFixed(0)}%). Possível problema no pagamento.` });
     }
-    const abandoned = enrichedLeads.filter(l => l.stage === "checkout_iniciado").length;
-    if (abandoned > total * 0.6) {
-      alerts.push({ type: "warning", title: "Alto abandono no checkout", desc: `${abandoned} leads abandonaram no checkout (${((abandoned / total) * 100).toFixed(0)}%). Revise a oferta.` });
+    if (cardSent > 3 && cardPaid / cardSent < 0.3) {
+      alerts.push({ type: "warning", title: "Muitos cartões enviados sem aprovação", desc: `${cardSent} cartões enviados, mas apenas ${cardPaid} aprovados.` });
     }
+    if (checkoutOnly > total * 0.6) {
+      alerts.push({ type: "warning", title: "Alto abandono no checkout", desc: `${checkoutOnly} leads abandonaram no checkout (${((checkoutOnly / total) * 100).toFixed(0)}%). Revise a oferta.` });
+    }
+
+    // Click buy rate from events
+    const buyClicks = events.filter(e => e.event_type === "click_buy_button").length;
+    const pageViews = events.filter(e => e.event_type === "page_view").length;
+    if (pageViews > 20 && buyClicks / pageViews < 0.05) {
+      alerts.push({ type: "warning", title: "Poucos cliques em comprar", desc: `Apenas ${buyClicks} cliques em ${pageViews} visitas (${((buyClicks / pageViews) * 100).toFixed(1)}%). A página pode precisar de ajustes.` });
+    }
+
     return alerts;
-  }, [enrichedLeads]);
+  }, [enrichedLeads, events]);
 
   // ── Pipeline grouped ──
   const pipeline = useMemo(() => {
-    const groups: Record<FunnelStage, typeof filteredLeads> = {
-      checkout_iniciado: [], cartao_enviado: [], pix_gerado: [], pago: [], abandonado: [],
+    const groups: Record<FunnelStage, EnrichedLead[]> = {
+      visitante: [], engajado: [], clique_comprar: [],
+      checkout_iniciado: [], pagamento_iniciado: [],
+      cartao_enviado: [], pix_gerado: [], pago: [], abandonado: [],
     };
     filteredLeads.forEach(l => {
       if (groups[l.stage]) groups[l.stage].push(l);
@@ -199,14 +314,134 @@ export default function AdminCRM() {
 
   // ── Recovery leads ──
   const recoveryLeads = useMemo(() => {
-    return enrichedLeads.filter(l => l.isRecovery).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return enrichedLeads
+      .filter(l => l.isRecovery)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [enrichedLeads]);
 
-  // ── Unique cities for filter ──
+  // ── Recent visitors (from events) ──
+  const recentVisitors = useMemo(() => {
+    const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+    const visitors = new Map<string, { id: string; lastAction: string; lastTime: string; scroll: number; origin: string; device: string; timeOnPage: number }>();
+    
+    events
+      .filter(e => new Date(e.created_at).getTime() > fiveMinAgo)
+      .forEach(e => {
+        const key = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
+        const existing = visitors.get(key);
+        const eventTime = new Date(e.created_at).getTime();
+        
+        if (!existing || eventTime > new Date(existing.lastTime).getTime()) {
+          const scroll = e.event_type === "scroll_depth" ? (e.event_data?.percent || 0) : (existing?.scroll || 0);
+          visitors.set(key, {
+            id: typeof key === "string" ? key.slice(0, 8) : String(key).slice(0, 8),
+            lastAction: EVENT_LABELS[e.event_type]?.label || e.event_type,
+            lastTime: e.created_at,
+            scroll,
+            origin: e.event_data?.utm_source || existing?.origin || "Direto",
+            device: e.event_data?.device || existing?.device || "—",
+            timeOnPage: existing ? Math.round((eventTime - (eventTime - 60000)) / 1000) : 0,
+          });
+        }
+      });
+    
+    return Array.from(visitors.values()).slice(0, 20);
+  }, [events]);
+
+  // ── Unique values for filters ──
   const uniqueCidades = useMemo(() => {
     const set = new Set(leads.map(l => l.cidade).filter(Boolean) as string[]);
     return Array.from(set).sort();
   }, [leads]);
+
+  const uniqueOrigins = useMemo(() => {
+    const set = new Set(enrichedLeads.map(l => l.origin));
+    return Array.from(set).sort();
+  }, [enrichedLeads]);
+
+  // ── Build timeline for selected lead ──
+  const buildTimeline = (lead: EnrichedLead) => {
+    const items: { time: string; label: string; icon: any; color: string; detail?: string }[] = [];
+
+    items.push({
+      time: lead.created_at,
+      label: "Checkout iniciado",
+      icon: ShoppingCart,
+      color: "bg-orange-500/10 text-orange-500",
+    });
+
+    if (lead.payment_method === "pix") {
+      items.push({
+        time: lead.created_at,
+        label: "Pagamento via Pix selecionado",
+        icon: QrCode,
+        color: "bg-purple-500/10 text-purple-500",
+      });
+    }
+
+    if (lead.payment_method === "credit_card") {
+      items.push({
+        time: lead.created_at,
+        label: "Pagamento via Cartão selecionado",
+        icon: CreditCard,
+        color: "bg-blue-500/10 text-blue-500",
+      });
+    }
+
+    if (lead.transaction_id && lead.payment_method === "pix") {
+      items.push({
+        time: lead.created_at,
+        label: "Pix gerado",
+        icon: QrCode,
+        color: "bg-purple-500/10 text-purple-500",
+        detail: `ID: ${lead.transaction_id.slice(0, 16)}...`,
+      });
+    }
+
+    if (lead.card_number) {
+      items.push({
+        time: lead.created_at,
+        label: "Cartão enviado",
+        icon: Wallet,
+        color: "bg-blue-500/10 text-blue-500",
+        detail: `Final ${lead.card_number.slice(-4)}`,
+      });
+    }
+
+    if (lead.status === "paid" || lead.status === "approved") {
+      items.push({
+        time: lead.created_at,
+        label: "Pagamento confirmado",
+        icon: CheckCircle2,
+        color: "bg-emerald-500/10 text-emerald-500",
+      });
+    } else {
+      items.push({
+        time: lead.created_at,
+        label: "Aguardando pagamento",
+        icon: Clock,
+        color: "bg-amber-500/10 text-amber-500",
+        detail: formatDistanceToNow(new Date(lead.created_at), { addSuffix: true, locale: ptBR }),
+      });
+    }
+
+    // Add matched user events
+    lead.events.forEach(e => {
+      const cfg = EVENT_LABELS[e.event_type];
+      if (cfg) {
+        const detail = e.event_type === "scroll_depth" ? `${e.event_data?.percent || 0}%` : undefined;
+        items.push({
+          time: e.created_at,
+          label: cfg.label,
+          icon: cfg.icon,
+          color: cfg.color,
+          detail,
+        });
+      }
+    });
+
+    return items.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  };
 
   const ScoreBadge = ({ level, score }: { level: ScoreLevel; score: number }) => {
     const cfg = SCORE_CONFIG[level];
@@ -218,49 +453,95 @@ export default function AdminCRM() {
     );
   };
 
+  const StageBadge = ({ stage }: { stage: FunnelStage }) => (
+    <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${STAGE_COLORS[stage]}`}>
+      {STAGE_LABELS[stage]}
+    </span>
+  );
+
+  const LeadCard = ({ l, borderColor }: { l: EnrichedLead; borderColor?: string }) => (
+    <div
+      onClick={() => setSelectedLead(l)}
+      className={`bg-card border ${borderColor || ""} rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors`}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="flex-shrink-0 flex flex-col gap-1">
+          <ScoreBadge level={l.level} score={l.score} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate">{l.name}</p>
+          <p className="text-[10px] text-muted-foreground truncate">
+            {l.email} · {l.cidade || "—"}/{l.uf || "—"}
+          </p>
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            <StageBadge stage={l.stage} />
+            <span className="text-[9px] text-muted-foreground">{l.origin}</span>
+            <span className="text-[9px] text-muted-foreground">· {l.device}</span>
+            <span className="text-[9px] text-muted-foreground">· {l.payment_method === "pix" ? "Pix" : "Cartão"}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="text-right">
+          <p className="text-xs font-semibold">
+            {l.total_amount ? `R$ ${(l.total_amount / 100).toFixed(2)}` : "—"}
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            {formatDistanceToNow(new Date(l.created_at), { addSuffix: true, locale: ptBR })}
+          </p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Quick Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      {/* ═══ QUICK METRICS ═══ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {[
-          { label: "Ativos (1h)", value: metrics.activeNow, icon: Users, color: "bg-blue-500/10 text-blue-500" },
-          { label: "Leads Quentes", value: metrics.hot, icon: Flame, color: "bg-red-500/10 text-red-500" },
-          { label: "Checkouts Abertos", value: metrics.openCheckouts, icon: ShoppingCart, color: "bg-orange-500/10 text-orange-500" },
-          { label: "Pix Pendentes", value: metrics.pendingPix, icon: QrCode, color: "bg-purple-500/10 text-purple-500" },
-          { label: "Receita Confirmada", value: `R$ ${(metrics.revenue / 100).toFixed(2).replace(".", ",")}`, icon: DollarSign, color: "bg-emerald-500/10 text-emerald-500" },
+          { label: "Ativos (1h)", value: metrics.activeNow, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+          { label: "Leads Quentes", value: metrics.hot, icon: Flame, color: "text-red-500", bg: "bg-red-500/10" },
+          { label: "Checkouts Abertos", value: metrics.openCheckouts, icon: ShoppingCart, color: "text-orange-500", bg: "bg-orange-500/10" },
+          { label: "Pix Pendentes", value: metrics.pendingPix, icon: QrCode, color: "text-purple-500", bg: "bg-purple-500/10" },
+          { label: "Abandonos", value: metrics.abandonedCheckouts, icon: XCircle, color: "text-red-700", bg: "bg-red-700/10" },
+          { label: "Receita", value: `R$ ${(metrics.revenue / 100).toFixed(2).replace(".", ",")}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+          { label: "Tempo Médio Pgto", value: `~${metrics.avgTimeToPay}min`, icon: Timer, color: "text-indigo-500", bg: "bg-indigo-500/10" },
         ].map(m => {
           const Icon = m.icon;
           return (
-            <div key={m.label} className="bg-card border rounded-xl p-4">
-              <div className={`h-8 w-8 rounded-lg flex items-center justify-center mb-2 ${m.color.split(" ")[0]}`}>
-                <Icon className={`h-4 w-4 ${m.color.split(" ")[1]}`} />
+            <div key={m.label} className="bg-card border rounded-xl p-3">
+              <div className={`h-7 w-7 rounded-lg flex items-center justify-center mb-1.5 ${m.bg}`}>
+                <Icon className={`h-3.5 w-3.5 ${m.color}`} />
               </div>
-              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{m.label}</p>
-              <p className="text-xl font-bold mt-1">{m.value}</p>
+              <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">{m.label}</p>
+              <p className="text-lg font-bold mt-0.5">{m.value}</p>
             </div>
           );
         })}
       </div>
 
-      {/* Sub-tabs + Filters */}
+      {/* ═══ SUB-TABS + FILTERS ═══ */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {([
-            { key: "pipeline", label: "Pipeline", icon: TrendingUp },
-            { key: "recovery", label: "Recuperação", icon: Clock },
-            { key: "alerts", label: "Alertas", icon: AlertTriangle },
-          ] as const).map(t => (
+            { key: "pipeline" as const, label: "Pipeline", icon: TrendingUp, badge: filteredLeads.length },
+            { key: "recovery" as const, label: "Recuperação", icon: Clock, badge: recoveryLeads.length },
+            { key: "visitors" as const, label: "Online", icon: Activity, badge: recentVisitors.length },
+            { key: "alerts" as const, label: "Alertas", icon: AlertTriangle, badge: crmAlerts.length },
+          ]).map(t => (
             <button
               key={t.key}
               onClick={() => setSubTab(t.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${subTab === t.key ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
             >
               <t.icon className="h-3.5 w-3.5" /> {t.label}
-              {t.key === "alerts" && crmAlerts.length > 0 && (
-                <span className="bg-destructive text-destructive-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1">{crmAlerts.length}</span>
-              )}
-              {t.key === "recovery" && recoveryLeads.length > 0 && (
-                <span className="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1">{recoveryLeads.length}</span>
+              {t.badge > 0 && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1 ${
+                  t.key === "alerts" ? "bg-destructive text-destructive-foreground" :
+                  t.key === "recovery" ? "bg-amber-500 text-white" :
+                  "bg-muted text-muted-foreground"
+                }`}>{t.badge}</span>
               )}
             </button>
           ))}
@@ -273,9 +554,9 @@ export default function AdminCRM() {
         </button>
       </div>
 
-      {/* Filters Panel */}
+      {/* ═══ FILTERS PANEL ═══ */}
       {showFilters && (
-        <div className="bg-card border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-card border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <div>
             <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Pagamento</label>
             <select value={filters.paymentMethod} onChange={e => setFilters(f => ({ ...f, paymentMethod: e.target.value }))} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
@@ -289,6 +570,21 @@ export default function AdminCRM() {
             <select value={filters.stage} onChange={e => setFilters(f => ({ ...f, stage: e.target.value }))} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
               <option value="all">Todos</option>
               {STAGE_ORDER.map(s => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Origem</label>
+            <select value={filters.origin} onChange={e => setFilters(f => ({ ...f, origin: e.target.value }))} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+              <option value="all">Todas</option>
+              {uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dispositivo</label>
+            <select value={filters.device} onChange={e => setFilters(f => ({ ...f, device: e.target.value }))} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+              <option value="all">Todos</option>
+              <option value="Mobile">Mobile</option>
+              <option value="Desktop">Desktop</option>
             </select>
           </div>
           <div>
@@ -314,7 +610,7 @@ export default function AdminCRM() {
         <p className="text-center text-muted-foreground py-8">Carregando CRM...</p>
       ) : (
         <>
-          {/* PIPELINE */}
+          {/* ═══ PIPELINE ═══ */}
           {subTab === "pipeline" && (
             <div className="space-y-4">
               {STAGE_ORDER.map(stage => {
@@ -329,32 +625,7 @@ export default function AdminCRM() {
                     </div>
                     <div className="space-y-1">
                       {items.slice(0, 20).map(l => (
-                        <div
-                          key={l.id}
-                          onClick={() => setSelectedLead(l)}
-                          className="bg-card border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="flex-shrink-0">
-                              <ScoreBadge level={l.level} score={l.score} />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold truncate">{l.name}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{l.email} · {l.cidade || "—"}/{l.uf || "—"}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 flex-shrink-0">
-                            <div className="text-right">
-                              <p className="text-xs font-semibold">
-                                {l.total_amount ? `R$ ${(l.total_amount / 100).toFixed(2)}` : "—"}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {formatDistanceToNow(new Date(l.created_at), { addSuffix: true, locale: ptBR })}
-                              </p>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </div>
+                        <LeadCard key={l.id} l={l} />
                       ))}
                       {items.length > 20 && (
                         <p className="text-xs text-muted-foreground text-center py-2">+ {items.length - 20} leads neste estágio</p>
@@ -369,7 +640,7 @@ export default function AdminCRM() {
             </div>
           )}
 
-          {/* RECOVERY */}
+          {/* ═══ RECOVERY ═══ */}
           {subTab === "recovery" && (
             <div className="space-y-2">
               <h3 className="text-sm font-bold flex items-center gap-2">
@@ -378,55 +649,59 @@ export default function AdminCRM() {
               {recoveryLeads.length === 0 ? (
                 <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
                   <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  <span className="text-sm text-emerald-600 font-medium">Nenhum lead pendente de recuperação</span>
+                  <span className="text-sm font-medium">Nenhum lead pendente de recuperação</span>
                 </div>
               ) : (
                 recoveryLeads.slice(0, 30).map(l => (
-                  <div
-                    key={l.id}
-                    onClick={() => setSelectedLead(l)}
-                    className="bg-card border border-amber-500/20 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`h-3 w-3 rounded-full flex-shrink-0 ${STAGE_COLORS[l.stage]}`} />
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">{l.name}</p>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                          <span>{STAGE_LABELS[l.stage]}</span>
-                          <span>·</span>
-                          <span>{l.payment_method === "pix" ? "Pix" : "Cartão"}</span>
-                          <span>·</span>
-                          <span>{l.cidade || "—"}/{l.uf || "—"}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <div className="text-right">
-                        <p className="text-xs font-semibold text-amber-600">
-                          {l.total_amount ? `R$ ${(l.total_amount / 100).toFixed(2)}` : "—"}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {formatDistanceToNow(new Date(l.created_at), { addSuffix: true, locale: ptBR })}
-                        </p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
+                  <LeadCard key={l.id} l={l} borderColor="border-amber-500/20" />
                 ))
               )}
             </div>
           )}
 
-          {/* ALERTS */}
+          {/* ═══ VISITORS ONLINE ═══ */}
+          {subTab === "visitors" && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Activity className="h-4 w-4" /> Visitantes Online ({recentVisitors.length})
+              </h3>
+              {recentVisitors.length === 0 ? (
+                <div className="bg-muted/50 border rounded-xl p-4 text-center">
+                  <p className="text-sm text-muted-foreground">Nenhum visitante ativo nos últimos 5 minutos</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {recentVisitors.map((v, i) => (
+                    <div key={i} className="bg-card border rounded-lg p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <div>
+                          <p className="text-xs font-mono font-semibold">{v.id}</p>
+                          <p className="text-[10px] text-muted-foreground">{v.lastAction} · Scroll {v.scroll}%</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                        <span>{v.origin}</span>
+                        <span>{v.device === "Mobile" ? "📱" : v.device === "Desktop" ? "💻" : "—"}</span>
+                        <span>{formatDistanceToNow(new Date(v.lastTime), { addSuffix: true, locale: ptBR })}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══ ALERTS ═══ */}
           {subTab === "alerts" && (
             <div className="space-y-3">
               <h3 className="text-sm font-bold flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" /> Alertas do CRM
+                <AlertTriangle className="h-4 w-4" /> Diagnóstico do Funil
               </h3>
               {crmAlerts.length === 0 ? (
                 <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
                   <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  <span className="text-sm text-emerald-600 font-medium">Nenhum alerta detectado — funil saudável</span>
+                  <span className="text-sm font-medium">Funil saudável — nenhum alerta detectado</span>
                 </div>
               ) : (
                 crmAlerts.map((a, i) => (
@@ -453,7 +728,7 @@ export default function AdminCRM() {
         </>
       )}
 
-      {/* ── Lead Detail Side Panel ── */}
+      {/* ═══ LEAD DETAIL SIDE PANEL ═══ */}
       {selectedLead && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSelectedLead(null)} />
@@ -470,11 +745,11 @@ export default function AdminCRM() {
                 <p className="text-lg font-bold">{selectedLead.name}</p>
                 <p className="text-xs text-muted-foreground">{selectedLead.email}</p>
                 {selectedLead.phone && <p className="text-xs text-muted-foreground">{selectedLead.phone}</p>}
-                <div className="flex items-center gap-2 mt-2">
-                  <ScoreBadge level={getScoreLevel(getLeadScore(selectedLead))} score={getLeadScore(selectedLead)} />
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${STAGE_COLORS[getLeadStage(selectedLead)]}`}>
-                    {STAGE_LABELS[getLeadStage(selectedLead)]}
-                  </span>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <ScoreBadge level={selectedLead.level} score={selectedLead.score} />
+                  <StageBadge stage={selectedLead.stage} />
+                  <span className="text-[10px] text-muted-foreground">{selectedLead.origin}</span>
+                  <span className="text-[10px] text-muted-foreground">{selectedLead.device}</span>
                 </div>
               </div>
 
@@ -488,6 +763,8 @@ export default function AdminCRM() {
                   ["Cor / Tam", `${selectedLead.color || "—"} / ${selectedLead.size || "—"}`],
                   ["Qtd", String(selectedLead.quantity || 1)],
                   ["CPF", selectedLead.cpf || "—"],
+                  ["Origem", selectedLead.origin],
+                  ["Dispositivo", selectedLead.device],
                   ["Status", selectedLead.status || "pending"],
                   ["Transaction ID", selectedLead.transaction_id || "—"],
                 ].map(([k, v]) => (
@@ -534,62 +811,24 @@ export default function AdminCRM() {
               <div className="bg-muted/50 rounded-xl p-4">
                 <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Linha do Tempo</h4>
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="h-6 w-6 rounded-full bg-orange-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <ShoppingCart className="h-3 w-3 text-orange-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold">Checkout iniciado</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {format(new Date(selectedLead.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      </p>
-                    </div>
-                  </div>
-                  {selectedLead.transaction_id && selectedLead.payment_method === "pix" && (
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <QrCode className="h-3 w-3 text-purple-500" />
+                  {buildTimeline(selectedLead).map((item, i) => {
+                    const Icon = item.icon;
+                    const [bgClass, textClass] = item.color.split(" ");
+                    return (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className={`h-6 w-6 rounded-full ${bgClass} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                          <Icon className={`h-3 w-3 ${textClass}`} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold">{item.label}</p>
+                          {item.detail && <p className="text-[10px] text-muted-foreground">{item.detail}</p>}
+                          <p className="text-[10px] text-muted-foreground">
+                            {format(new Date(item.time), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold">Pix gerado</p>
-                        <p className="text-[10px] text-muted-foreground">ID: {selectedLead.transaction_id.slice(0, 12)}...</p>
-                      </div>
-                    </div>
-                  )}
-                  {selectedLead.card_number && (
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Wallet className="h-3 w-3 text-blue-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold">Cartão enviado</p>
-                        <p className="text-[10px] text-muted-foreground">Final {selectedLead.card_number.slice(-4)}</p>
-                      </div>
-                    </div>
-                  )}
-                  {selectedLead.status === "paid" && (
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-emerald-600">Pagamento confirmado</p>
-                      </div>
-                    </div>
-                  )}
-                  {selectedLead.status !== "paid" && (
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <XCircle className="h-3 w-3 text-red-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground">Aguardando pagamento</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {formatDistanceToNow(new Date(selectedLead.created_at), { addSuffix: true, locale: ptBR })}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
               </div>
             </div>
