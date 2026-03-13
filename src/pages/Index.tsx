@@ -254,6 +254,16 @@ const Index = () => {
     sendChatMessage(faq.q);
   };
   const countdown = useCountdown();
+  const [belowFoldReady, setBelowFoldReady] = useState(false);
+
+  // Defer below-fold content to speed up first paint
+  useEffect(() => {
+    const timer = requestIdleCallback ? requestIdleCallback(() => setBelowFoldReady(true)) : setTimeout(() => setBelowFoldReady(true), 100);
+    return () => {
+      if (typeof cancelIdleCallback !== 'undefined') cancelIdleCallback(timer as number);
+      else clearTimeout(timer as number);
+    };
+  }, []);
 
   // ViewContent event on mount
   useEffect(() => {
