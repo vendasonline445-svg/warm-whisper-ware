@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, AlertTriangle, Check, RefreshCw } from "lucide-react";
+import { ArrowLeft, Copy, AlertTriangle, Check, RefreshCw, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
@@ -120,6 +120,11 @@ const PixPayment = () => {
     }
   };
 
+  const nowDate = new Date();
+  const deadline = new Date(nowDate.getTime() + PIX_TIMEOUT_MINUTES * 60 * 1000);
+  const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const deadlineStr = `${String(deadline.getHours()).padStart(2, "0")}:${String(deadline.getMinutes()).padStart(2, "0")}, ${deadline.getDate()} de ${meses[deadline.getMonth()]} ${deadline.getFullYear()}`;
+
   const qrImageUrl = qrCode
     ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`
     : "";
@@ -156,34 +161,49 @@ const PixPayment = () => {
       <div className="mx-auto max-w-[480px] px-4">
         {/* Payment Status Card */}
         <div
-          className="mt-5 rounded-2xl p-6"
+          className="mt-5 rounded-2xl p-6 relative"
           style={{
             background: expired
               ? "linear-gradient(180deg, #fce8ec 0%, #f5d0d0 100%)"
               : "linear-gradient(180deg, #dfe3f0 0%, #f0e8f0 60%, #fce8ec 100%)",
           }}
         >
-          <h1 className="text-[22px] font-extrabold leading-tight text-foreground tracking-tight">
-            {expired ? "Pagamento expirado" : "Aguardando o pagamento"}
-          </h1>
-          <p className="text-[28px] font-black mt-1 text-foreground tracking-tight">
-            R$ {total.toFixed(2).replace(".", ",")}
-          </p>
+          {/* Yellow clock icon top-right */}
+          {!expired && (
+            <div className="absolute top-5 right-5 h-12 w-12 rounded-full bg-[#f59e0b] flex items-center justify-center">
+              <Clock className="h-6 w-6 text-white" />
+            </div>
+          )}
+
+          <div className="pr-16">
+            <h1 className="text-[22px] font-extrabold leading-tight text-foreground tracking-tight">
+              {expired ? "Pagamento expirado" : "Aguardando o pagamento"}
+            </h1>
+            <p className="text-[28px] font-black mt-0.5 text-foreground tracking-tight">
+              R$ {total.toFixed(2).replace(".", ",")}
+            </p>
+          </div>
 
           {/* Countdown */}
-          <div className="mt-4 flex items-center gap-2.5">
+          <div className="mt-4 flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
               {expired ? "Tempo esgotado" : "Seu pagamento expira em:"}
             </span>
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm ${
-                expired ? "bg-destructive" : "bg-[#22c55e]"
+                expired ? "bg-muted-foreground" : "bg-[#ef4444]"
               }`}
             >
-              {!expired && <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />}
+              <Clock className="h-3 w-3" />
               {timer}
             </span>
           </div>
+
+          {!expired && (
+            <p className="text-sm text-muted-foreground mt-1.5">
+              Prazo <strong className="text-foreground">{deadlineStr}</strong>
+            </p>
+          )}
         </div>
 
         {/* Expired state */}
