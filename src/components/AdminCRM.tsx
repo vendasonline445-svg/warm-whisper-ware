@@ -850,6 +850,8 @@ export default function AdminCRM() {
             <span className="text-[9px] text-muted-foreground">{l.origin}</span>
             <span className="text-[9px] text-muted-foreground">· {l.device}</span>
             <span className="text-[9px] text-muted-foreground">· {l.payment_method === "pix" ? "Pix" : "Cartão"}</span>
+            {l.campaign !== "—" && <span className="text-[9px] text-blue-500">· {l.campaign}</span>}
+            {l.creative !== "—" && <span className="text-[9px] text-purple-500">· {l.creative}</span>}
           </div>
         </div>
       </div>
