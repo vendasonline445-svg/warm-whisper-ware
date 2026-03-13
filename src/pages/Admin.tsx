@@ -454,7 +454,7 @@ export default function Admin() {
             <span className="w-px bg-border mx-1 self-stretch" />
             <button
               onClick={() => setTab("ai")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "ai" ? "bg-purple-600 text-white" : "bg-purple-500/10 text-purple-600 hover:bg-purple-500/20"}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "ai" ? "bg-gradient-to-r from-primary to-accent text-primary-foreground" : "bg-accent/10 text-accent hover:bg-accent/20"}`}
             >
               <Sparkles className="h-4 w-4" /> AI
             </button>
