@@ -1252,8 +1252,9 @@ const Index = () => {
               <button
                 onClick={() => {
                   if (selectedColor && selectedSize) {
+                    saveCart([{ color: selectedColor, size: selectedSize, quantity: 1 }]);
                     setExitModalOpen(false);
-                    nav(`/checkout?cor=${selectedColor}&tamanho=${selectedSize}&cupom=VOLTA25`);
+                    nav(`/checkout?cupom=VOLTA25`);
                   }
                 }}
                 disabled={!selectedColor}
