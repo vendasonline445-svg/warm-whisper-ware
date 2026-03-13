@@ -696,11 +696,38 @@ const Index = () => {
         <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
           <DialogDescription className="sr-only">Imagem ampliada do produto</DialogDescription>
           <DialogTitle className="sr-only">Imagem do produto</DialogTitle>
-          <img
-            src={productImages[currentImage]}
-            alt="Mesa dobrável ampliada"
-            className="w-full h-auto rounded-lg"
-          />
+          <div
+            className="relative"
+            onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; swiping.current = false; }}
+            onTouchMove={(e) => {
+              const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+              const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+              if (dx > dy && dx > 10) { swiping.current = true; e.preventDefault(); }
+              touchEndX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={() => {
+              const diff = touchStartX.current - touchEndX.current;
+              if (swiping.current && Math.abs(diff) > 50) {
+                if (diff > 0) nextImage();
+                else prevImage();
+              }
+            }}
+          >
+            <img
+              src={productImages[currentImage]}
+              alt="Mesa dobrável ampliada"
+              className="w-full h-auto rounded-lg"
+            />
+            <button onClick={(e) => { e.stopPropagation(); prevImage(); }} className="absolute left-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-foreground/30 backdrop-blur-sm flex items-center justify-center">
+              <ChevronLeft className="h-5 w-5 text-white" />
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); nextImage(); }} className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-foreground/30 backdrop-blur-sm flex items-center justify-center">
+              <ChevronRight className="h-5 w-5 text-white" />
+            </button>
+            <span className="absolute bottom-3 right-3 rounded-full bg-foreground/60 px-2.5 py-1 text-xs font-medium text-white">
+              {currentImage + 1}/{productImages.length}
+            </span>
+          </div>
         </DialogContent>
       </Dialog>
 
