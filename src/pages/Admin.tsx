@@ -787,6 +787,8 @@ export default function Admin() {
           </div>
         )}
 
+        {tab === "crm" && <AdminCRM />}
+
         {tab === "logs" && (
           <div className="space-y-6">
             {logsLoading ? (
