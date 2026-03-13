@@ -762,8 +762,8 @@ const Checkout = () => {
           {/* Savings banner - full width, no rounding */}
           <div className="w-full py-2.5 px-4" style={{ backgroundColor: '#fff0f3', borderTop: '1px solid #ffe0e6' }}>
             <p className="text-[13px] flex items-center gap-2" style={{ color: '#fe2b54' }}>
-              <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#ffe0e6' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fe2b54" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#ffe0e6' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fe2b54" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
               </span>
               Parabéns! Você está economizando R$ {totalSavings.toFixed(2).replace(".", ",")} nesse pedido.
             </p>
