@@ -10,19 +10,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const accessToken = Deno.env.get("TIKTOK_EVENTS_API_TOKEN");
+    const body = await req.json();
+    const { event, event_id, timestamp, pixel_code, api_token, user, properties } = body;
+
+    // Use per-pixel token from payload, fallback to env
+    const accessToken = api_token || Deno.env.get("TIKTOK_EVENTS_API_TOKEN");
     if (!accessToken) {
-      console.error("TIKTOK_EVENTS_API_TOKEN not configured");
+      console.error("No TikTok API token provided");
       return new Response(
         JSON.stringify({ error: "TikTok token not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const body = await req.json();
-    const { event, event_id, timestamp, pixel_code, user, properties } = body;
+    if (!pixel_code) {
+      return new Response(
+        JSON.stringify({ error: "pixel_code is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Get client IP from headers
     const clientIp =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") ||
@@ -47,19 +54,17 @@ Deno.serve(async (req) => {
       properties: properties || {},
     };
 
-    // Clean undefined values from user
     eventData.user = Object.fromEntries(
       Object.entries(eventData.user).filter(([_, v]) => v)
     ) as any;
 
-    // TikTok Events API v1.3 payload format
     const tiktokPayload = {
       event_source: "web",
-      event_source_id: pixel_code || "D6GM4RBC77UAAN00B800",
+      event_source_id: pixel_code,
       data: [eventData],
     };
 
-    console.log("Sending to TikTok Events API:", JSON.stringify(tiktokPayload));
+    console.log(`Sending to TikTok (${pixel_code}):`, JSON.stringify(tiktokPayload));
 
     const response = await fetch(
       "https://business-api.tiktok.com/open_api/v1.3/event/track/",
@@ -74,7 +79,7 @@ Deno.serve(async (req) => {
     );
 
     const resText = await response.text();
-    console.log(`TikTok Events API response (${response.status}):`, resText);
+    console.log(`TikTok response (${pixel_code}, ${response.status}):`, resText);
 
     let resData;
     try {
