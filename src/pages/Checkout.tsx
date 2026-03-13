@@ -715,7 +715,7 @@ const Checkout = () => {
                         const installmentValue = juros
                           ? (total / n).toFixed(2).replace(".", ",")
                           : ((total * (1 + 0.0199 * (n - 3))) / n).toFixed(2).replace(".", ",");
-                        return <option key={n} value={n}>{n}x de R$ {installmentValue} {juros ? "(sem juros)" : "(com juros)"}</option>;
+                        return <option key={n} value={n}>{n}x de R$ {installmentValue} {juros ? "(sem juros)" : ""}</option>;
                       })}
                     </select>
                   </div>
