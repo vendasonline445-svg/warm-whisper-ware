@@ -3137,9 +3137,12 @@ export default function AdminCRM() {
               try {
                 meta = typeof lead.metadata === "string" ? JSON.parse(lead.metadata) : lead.metadata || {};
               } catch {}
-              const source = meta.utm_source || meta.referrer || "direct";
-              const campaign = meta.utm_campaign || "(sem campanha)";
-              const content = meta.utm_content || "(sem criativo)";
+              let source = String(meta.utm_source || meta.referrer || "direct");
+              if (source.length > 50 || source.startsWith("E.C.P.") || source.startsWith("fb.") || source.match(/^[A-Za-z0-9_-]{40,}$/)) {
+                source = "direct";
+              }
+              const campaign = String(meta.utm_campaign || "(sem campanha)");
+              const content = String(meta.utm_content || "(sem criativo)");
               const key = `${source}::${campaign}::${content}`;
 
               if (!campaignMap.has(key)) {
