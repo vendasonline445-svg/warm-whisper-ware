@@ -43,6 +43,40 @@ interface Lead {
 
 type Tab = "dashboard" | "leads";
 
+type PeriodKey = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
+
+const PERIOD_LABELS: Record<PeriodKey, string> = {
+  today: "Hoje",
+  yesterday: "Ontem",
+  "7days": "Últimos 7 dias",
+  "30days": "Últimos 30 dias",
+  month: "Este mês",
+  custom: "Personalizado",
+};
+
+function getDateRange(period: PeriodKey, customFrom?: Date, customTo?: Date): { from: string; to: string } {
+  const now = new Date();
+  switch (period) {
+    case "today":
+      return { from: startOfDay(now).toISOString(), to: endOfDay(now).toISOString() };
+    case "yesterday": {
+      const y = subDays(now, 1);
+      return { from: startOfDay(y).toISOString(), to: endOfDay(y).toISOString() };
+    }
+    case "7days":
+      return { from: startOfDay(subDays(now, 7)).toISOString(), to: endOfDay(now).toISOString() };
+    case "30days":
+      return { from: startOfDay(subDays(now, 30)).toISOString(), to: endOfDay(now).toISOString() };
+    case "month":
+      return { from: startOfMonth(now).toISOString(), to: endOfDay(now).toISOString() };
+    case "custom":
+      return {
+        from: customFrom ? startOfDay(customFrom).toISOString() : startOfDay(subDays(now, 7)).toISOString(),
+        to: customTo ? endOfDay(customTo).toISOString() : endOfDay(now).toISOString(),
+      };
+  }
+}
+
 interface SystemAlert {
   id: string;
   type: "critical" | "warning" | "info";
