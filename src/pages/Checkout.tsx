@@ -212,13 +212,17 @@ const Checkout = () => {
       const res = await fetch(`https://viacep.com.br/ws/${nums}/json/`);
       const data = await res.json();
       if (!data.erro) {
-        setForm((prev) => ({
-          ...prev,
-          endereco: data.logradouro || "",
-          bairro: data.bairro || "",
-          cidade: data.localidade || "",
-          uf: data.uf || "",
-        }));
+        setForm((prev: typeof form) => {
+          const updated = {
+            ...prev,
+            endereco: data.logradouro || "",
+            bairro: data.bairro || "",
+            cidade: data.localidade || "",
+            uf: data.uf || "",
+          };
+          localStorage.setItem('mesalar_checkout_form', JSON.stringify(updated));
+          return updated;
+        });
       }
     } catch (e) {
       console.error("Erro ao buscar CEP", e);
