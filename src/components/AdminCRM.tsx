@@ -572,6 +572,235 @@ export default function AdminCRM() {
     return { score: clamped, label: "Gargalo Crítico", color: "text-red-500", bg: "bg-red-500/10" };
   }, [funnelData]);
 
+  // ── Funnel Diagnostic ──
+  const funnelDiagnostic = useMemo(() => {
+    if (funnelData.length < 2 || funnelData[0].count === 0) return null;
+
+    // Find biggest bottleneck (highest drop rate after visitors)
+    let worstIdx = 1;
+    let worstDrop = 0;
+    funnelData.slice(1).forEach((step, i) => {
+      if (step.dropRate > worstDrop) {
+        worstDrop = step.dropRate;
+        worstIdx = i + 1;
+      }
+    });
+
+    const bottleneckStep = funnelData[worstIdx];
+    const prevStep = funnelData[worstIdx - 1];
+    const overallConv = funnelData[0].count > 0 ? (funnelData[funnelData.length - 1].count / funnelData[0].count * 100) : 0;
+
+    type DiagItem = { title: string; desc: string; severity: "critical" | "warning" | "info" };
+    type Suggestion = { icon: string; text: string };
+
+    const diagnostics: DiagItem[] = [];
+    const suggestions: Suggestion[] = [];
+
+    // Main bottleneck
+    diagnostics.push({
+      title: `Gargalo detectado: ${prevStep.label} → ${bottleneckStep.label}`,
+      desc: `Apenas ${bottleneckStep.convRate.toFixed(1)}% dos usuários avançam nesta etapa. ${prevStep.count - bottleneckStep.count} visitantes abandonam aqui (${bottleneckStep.dropRate.toFixed(0)}% de queda).`,
+      severity: bottleneckStep.dropRate > 70 ? "critical" : "warning",
+    });
+
+    // Specific analysis per bottleneck type
+    const visitors = funnelData[0]?.count || 0;
+    const engaged = funnelData[1]?.count || 0;
+    const buyClicks = funnelData[2]?.count || 0;
+    const checkouts = funnelData[3]?.count || 0;
+    const pixCard = funnelData[5]?.count || 0;
+    const paid = funnelData[6]?.count || 0;
+
+    // Low engagement
+    if (visitors > 20 && engaged / visitors < 0.3) {
+      diagnostics.push({
+        title: "Baixo engajamento na página",
+        desc: `Apenas ${((engaged / visitors) * 100).toFixed(1)}% dos visitantes interagem com a página. A maioria sai sem scrollar ou clicar.`,
+        severity: "warning",
+      });
+      suggestions.push(
+        { icon: "🎯", text: "Melhorar headline e primeira dobra da página" },
+        { icon: "📱", text: "Verificar velocidade de carregamento no mobile" },
+        { icon: "🎨", text: "Adicionar elementos visuais que prendam atenção" },
+      );
+    }
+
+    // Low buy click rate
+    if (visitors > 20 && buyClicks / visitors < 0.05) {
+      diagnostics.push({
+        title: "Baixa taxa de clique em comprar",
+        desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam no botão de compra. Isso pode indicar problema na proposta de valor ou no preço.`,
+        severity: buyClicks / visitors < 0.02 ? "critical" : "warning",
+      });
+      suggestions.push(
+        { icon: "💰", text: "Destacar preço e desconto mais claramente" },
+        { icon: "🛒", text: "Tornar o botão de compra mais visível e urgente" },
+        { icon: "⭐", text: "Adicionar mais prova social acima do botão" },
+        { icon: "🎁", text: "Testar oferta com bônus ou frete grátis" },
+      );
+    }
+
+    // High checkout abandonment
+    if (checkouts > 5 && pixCard / checkouts < 0.4) {
+      diagnostics.push({
+        title: "Alto abandono no checkout",
+        desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts resultam em tentativa de pagamento. Possível fricção no formulário.`,
+        severity: "critical",
+      });
+      suggestions.push(
+        { icon: "📋", text: "Simplificar formulário de checkout" },
+        { icon: "🔒", text: "Adicionar selos de segurança no checkout" },
+        { icon: "⏱", text: "Adicionar timer de urgência no checkout" },
+      );
+    }
+
+    // Low payment completion
+    if (pixCard > 3 && paid / pixCard < 0.3) {
+      diagnostics.push({
+        title: "Baixa taxa de conclusão de pagamento",
+        desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% das tentativas de pagamento são concluídas. Possível problema com Pix ou cartão.`,
+        severity: "warning",
+      });
+      suggestions.push(
+        { icon: "📱", text: "Verificar se QR code Pix funciona corretamente" },
+        { icon: "💳", text: "Verificar integração de pagamento por cartão" },
+        { icon: "📩", text: "Implementar lembrete de pagamento Pix" },
+      );
+    }
+
+    // Traffic quality alert
+    if (visitors > 50 && engaged / visitors < 0.15) {
+      diagnostics.push({
+        title: "Possível tráfego de baixa qualidade",
+        desc: `Grande volume de visitantes (${visitors}) com baixíssima interação (${((engaged / visitors) * 100).toFixed(1)}%). Pode ser tráfego automatizado ou público errado.`,
+        severity: "critical",
+      });
+      suggestions.push(
+        { icon: "🎯", text: "Revisar segmentação de público nas campanhas" },
+        { icon: "🤖", text: "Verificar aba de Bots para tráfego suspeito" },
+        { icon: "📊", text: "Testar novos criativos com público diferente" },
+      );
+    }
+
+    // Remove duplicate suggestions
+    const uniqueSuggestions = suggestions.filter((s, i, arr) => arr.findIndex(x => x.text === s.text) === i);
+
+    return { diagnostics, suggestions: uniqueSuggestions, overallConv, bottleneckStep: prevStep.label + " → " + bottleneckStep.label };
+  }, [funnelData]);
+
+  // ── Device Funnel Analysis ──
+  const deviceFunnelAnalysis = useMemo(() => {
+    const devices = ["mobile", "desktop", "tablet"];
+    const results: { device: string; visitors: number; paid: number; convRate: number; alerts: string[] }[] = [];
+
+    devices.forEach(dev => {
+      const de = events.filter(e => getEventDevice(e) === dev);
+      const dl = enrichedLeads.filter(l => l.device.toLowerCase() === dev);
+      const funnel = buildFunnel(de, dl, 0);
+      const visitors = funnel[0]?.count || 0;
+      const engaged = funnel[1]?.count || 0;
+      const paid = funnel[funnel.length - 1]?.count || 0;
+      const convRate = visitors > 0 ? (paid / visitors * 100) : 0;
+      const alerts: string[] = [];
+
+      if (visitors > 20 && convRate < 1) alerts.push("Conversão muito baixa. Verificar qualidade do tráfego.");
+      if (visitors > 20 && engaged / visitors < 0.1) alerts.push("Quase nenhuma interação. Possível tráfego automatizado.");
+      if (dev === "desktop" && visitors > 50 && paid === 0) alerts.push("Zero vendas em desktop. Verificar layout ou tráfego.");
+
+      if (visitors > 0) results.push({ device: dev, visitors, paid, convRate, alerts });
+    });
+
+    return results;
+  }, [events, enrichedLeads, buildFunnel]);
+
+  // ── Session Replay Data (visitor timelines) ──
+  const visitorSessions = useMemo(() => {
+    const visitorMap = new Map<string, { events: UserEvent[]; firstSeen: number; lastSeen: number; device: string; origin: string }>();
+    events.forEach(e => {
+      const vid = e.event_data?.visitor_id || e.event_data?.session_id;
+      if (!vid) return;
+      const key = String(vid);
+      // Skip bots
+      if (botAnalysis.botVisitorIds.has(key)) return;
+
+      const time = new Date(e.created_at).getTime();
+      const existing = visitorMap.get(key);
+      if (existing) {
+        existing.events.push(e);
+        existing.firstSeen = Math.min(existing.firstSeen, time);
+        existing.lastSeen = Math.max(existing.lastSeen, time);
+      } else {
+        visitorMap.set(key, {
+          events: [e],
+          firstSeen: time,
+          lastSeen: time,
+          device: String(e.event_data?.device || "—"),
+          origin: String(e.event_data?.utm_source || "Direto"),
+        });
+      }
+    });
+
+    return Array.from(visitorMap.entries())
+      .map(([id, data]) => ({
+        id: id.slice(0, 8),
+        fullId: id,
+        events: data.events.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+        duration: Math.round((data.lastSeen - data.firstSeen) / 1000),
+        device: data.device,
+        origin: data.origin,
+        eventCount: data.events.length,
+        firstSeen: data.firstSeen,
+      }))
+      .filter(s => s.eventCount >= 2)
+      .sort((a, b) => b.firstSeen - a.firstSeen)
+      .slice(0, 50);
+  }, [events, botAnalysis]);
+
+  // ── Heatmap Data ──
+  const heatmapData = useMemo(() => {
+    const clicksBySection = new Map<string, number>();
+    const scrollDepths: number[] = [];
+
+    events.forEach(e => {
+      if (botAnalysis.botVisitorIds.has(e.event_data?.visitor_id)) return;
+
+      if (e.event_type === "click_position") {
+        const section = String(e.event_data?.section || "unknown");
+        clicksBySection.set(section, (clicksBySection.get(section) || 0) + 1);
+      }
+      if (e.event_type === "scroll_depth" || e.event_type === "scroll_milestone") {
+        const pct = Number(e.event_data?.percent || 0);
+        if (pct > 0) scrollDepths.push(pct);
+      }
+    });
+
+    const totalClicks = Array.from(clicksBySection.values()).reduce((s, v) => s + v, 0) || 1;
+    const sections = Array.from(clicksBySection.entries())
+      .map(([section, clicks]) => ({ section, clicks, pct: Math.round((clicks / totalClicks) * 100) }))
+      .sort((a, b) => b.clicks - a.clicks);
+
+    // Scroll depth distribution
+    const scrollBuckets = [
+      { label: "0-25%", min: 0, max: 25, count: 0 },
+      { label: "25-50%", min: 25, max: 50, count: 0 },
+      { label: "50-75%", min: 50, max: 75, count: 0 },
+      { label: "75-90%", min: 75, max: 90, count: 0 },
+      { label: "90-100%", min: 90, max: 100, count: 0 },
+    ];
+    scrollDepths.forEach(d => {
+      for (const b of scrollBuckets) {
+        if (d >= b.min && d < b.max) { b.count++; break; }
+        if (d >= 90 && b.min === 90) { b.count++; break; }
+      }
+    });
+    const maxBucket = Math.max(...scrollBuckets.map(b => b.count), 1);
+
+    return { sections, scrollBuckets, maxBucket, totalClicks, totalScrollEvents: scrollDepths.length };
+  }, [events, botAnalysis]);
+
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [funnelSubView, setFunnelSubView] = useState<"funnel" | "replay" | "heatmap">("funnel");
+
   const bottleneckAlerts = useMemo(() => {
     const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
     const visitors = funnelData.find(s => s.key === "visitors")?.count || 0;
@@ -1196,213 +1425,501 @@ export default function AdminCRM() {
           {/* ═══ FUNNEL MAP ═══ */}
           {subTab === "funnel" && (
             <div className="space-y-6">
-              <h3 className="text-sm font-bold flex items-center gap-2">
-                <Zap className="h-4 w-4" /> Mapa do Funil de Conversão
-              </h3>
-
-              {/* Funnel Filters */}
-              <div className="bg-card border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dispositivo</label>
-                  <select value={funnelDevice} onChange={e => setFunnelDevice(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
-                    <option value="all">Todos</option>
-                    <option value="mobile">📱 Mobile</option>
-                    <option value="desktop">💻 Desktop</option>
-                    <option value="tablet">📟 Tablet</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Origem</label>
-                  <select value={funnelOrigin} onChange={e => setFunnelOrigin(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
-                    <option value="all">Todas</option>
-                    {uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Criativo</label>
-                  <select value={funnelCreative} onChange={e => setFunnelCreative(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
-                    <option value="all">Todos</option>
-                    {uniqueCreatives.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Tempo Real</label>
-                  <select value={funnelRealtime} onChange={e => setFunnelRealtime(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
-                    <option value="all">Todo período</option>
-                    <option value="5m">Últimos 5 min</option>
-                    <option value="30m">Últimos 30 min</option>
-                    <option value="1h">Última 1 hora</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Filtro de Bots</label>
-                  <select value={funnelBotFilter} onChange={e => setFunnelBotFilter(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
-                    <option value="all">Todos os visitantes</option>
-                    <option value="exclude_bots">Excluir bots</option>
-                    <option value="valid">Somente tráfego válido</option>
-                  </select>
-                </div>
+              {/* Sub-navigation */}
+              <div className="flex items-center gap-2">
+                {([
+                  { key: "funnel" as const, label: "📊 Funil", },
+                  { key: "replay" as const, label: "🎬 Replays de Sessão" },
+                  { key: "heatmap" as const, label: "🔥 Heatmap" },
+                ] as const).map(v => (
+                  <button
+                    key={v.key}
+                    onClick={() => setFunnelSubView(v.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${funnelSubView === v.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
               </div>
 
-              {/* Active filter tags */}
-              {(funnelDevice !== "all" || funnelOrigin !== "all" || funnelCreative !== "all" || funnelRealtime !== "all" || funnelBotFilter !== "all") && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] text-muted-foreground">Filtros ativos:</span>
-                  {funnelDevice !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-semibold">{funnelDevice}</span>}
-                  {funnelOrigin !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 font-semibold">{funnelOrigin}</span>}
-                  {funnelCreative !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 font-semibold">{funnelCreative}</span>}
-                  {funnelRealtime !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-semibold">⏱ {funnelRealtime}</span>}
-                  {funnelBotFilter !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 font-semibold">🤖 {funnelBotFilter === "exclude_bots" ? "Sem bots" : "Só válidos"}</span>}
-                  <button onClick={() => { setFunnelDevice("all"); setFunnelOrigin("all"); setFunnelCreative("all"); setFunnelRealtime("all"); setFunnelBotFilter("all"); }} className="text-[10px] text-destructive hover:underline">Limpar</button>
-                </div>
-              )}
+              {/* ── FUNNEL VIEW ── */}
+              {funnelSubView === "funnel" && (
+                <div className="space-y-6">
+                  <h3 className="text-sm font-bold flex items-center gap-2">
+                    <Zap className="h-4 w-4" /> Mapa do Funil de Conversão
+                  </h3>
 
-              {/* Visual Funnel */}
-              <div className="space-y-0">
-                {funnelData.map((step, i) => {
-                  const Icon = step.icon;
-                  const maxCount = funnelData[0].count || 1;
-                  const widthPct = Math.max(25, (step.count / maxCount) * 100);
-                  const dropColor = step.dropSeverity === "green" ? "text-emerald-500" : step.dropSeverity === "yellow" ? "text-amber-500" : "text-red-500";
-                  const dropBg = step.dropSeverity === "green" ? "bg-emerald-500" : step.dropSeverity === "yellow" ? "bg-amber-500" : "bg-red-500";
-
-                  return (
-                    <div key={step.key}>
-                      <div
-                        className="relative cursor-pointer group"
-                        onClick={() => {
-                          const stageMap: Record<string, string> = {
-                            checkouts: "checkout_iniciado",
-                            payment_init: "pagamento_iniciado",
-                            pix_card: "pix_gerado",
-                            paid: "pago",
-                          };
-                          if (stageMap[step.key]) {
-                            setFilters(f => ({ ...f, stage: stageMap[step.key] }));
-                            setSubTab("pipeline");
-                          }
-                        }}
-                      >
-                        <div
-                          className={`${step.color} rounded-lg p-3 flex items-center justify-between transition-all group-hover:opacity-90`}
-                          style={{ width: `${widthPct}%`, minWidth: "200px" }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Icon className="h-4 w-4 text-white" />
-                            <span className="text-white text-xs font-semibold">{step.label}</span>
-                          </div>
-                          <span className="text-white text-sm font-bold">{step.count.toLocaleString("pt-BR")}</span>
-                        </div>
-                      </div>
-
-                      {i < funnelData.length - 1 && (
-                        <div className="flex items-center gap-2 py-1.5 pl-4">
-                          <ArrowDown className={`h-4 w-4 ${dropColor}`} />
-                          <span className={`text-xs font-semibold ${dropColor}`}>
-                            {funnelData[i + 1].convRate.toFixed(1)}% conversão
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            ({step.count - funnelData[i + 1].count} abandonaram · {funnelData[i + 1].dropRate.toFixed(0)}% queda)
-                          </span>
-                          <div className={`h-1.5 w-1.5 rounded-full ${dropBg}`} />
-                        </div>
-                      )}
+                  {/* Funnel Filters */}
+                  <div className="bg-card border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dispositivo</label>
+                      <select value={funnelDevice} onChange={e => setFunnelDevice(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                        <option value="all">Todos</option>
+                        <option value="mobile">📱 Mobile</option>
+                        <option value="desktop">💻 Desktop</option>
+                        <option value="tablet">📟 Tablet</option>
+                      </select>
                     </div>
-                  );
-                })}
-              </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Origem</label>
+                      <select value={funnelOrigin} onChange={e => setFunnelOrigin(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                        <option value="all">Todas</option>
+                        {uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Criativo</label>
+                      <select value={funnelCreative} onChange={e => setFunnelCreative(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                        <option value="all">Todos</option>
+                        {uniqueCreatives.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Tempo Real</label>
+                      <select value={funnelRealtime} onChange={e => setFunnelRealtime(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                        <option value="all">Todo período</option>
+                        <option value="5m">Últimos 5 min</option>
+                        <option value="30m">Últimos 30 min</option>
+                        <option value="1h">Última 1 hora</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Filtro de Bots</label>
+                      <select value={funnelBotFilter} onChange={e => setFunnelBotFilter(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                        <option value="all">Todos os visitantes</option>
+                        <option value="exclude_bots">Excluir bots</option>
+                        <option value="valid">Somente tráfego válido</option>
+                      </select>
+                    </div>
+                  </div>
 
-              {/* Device Comparison */}
-              {deviceComparison.length > 1 && funnelDevice === "all" && (
-                <div className="bg-card border rounded-xl p-4">
-                  <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
-                    <Smartphone className="h-3.5 w-3.5" /> Comparação por Dispositivo
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {deviceComparison.map(d => {
-                      const icon = d.device === "mobile" ? "📱" : d.device === "desktop" ? "💻" : "📟";
-                      const isLow = d.convRate < 1 && d.visitors > 20;
+                  {/* Active filter tags */}
+                  {(funnelDevice !== "all" || funnelOrigin !== "all" || funnelCreative !== "all" || funnelRealtime !== "all" || funnelBotFilter !== "all") && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] text-muted-foreground">Filtros ativos:</span>
+                      {funnelDevice !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-semibold">{funnelDevice}</span>}
+                      {funnelOrigin !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 font-semibold">{funnelOrigin}</span>}
+                      {funnelCreative !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 font-semibold">{funnelCreative}</span>}
+                      {funnelRealtime !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-semibold">⏱ {funnelRealtime}</span>}
+                      {funnelBotFilter !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 font-semibold">🤖 {funnelBotFilter === "exclude_bots" ? "Sem bots" : "Só válidos"}</span>}
+                      <button onClick={() => { setFunnelDevice("all"); setFunnelOrigin("all"); setFunnelCreative("all"); setFunnelRealtime("all"); setFunnelBotFilter("all"); }} className="text-[10px] text-destructive hover:underline">Limpar</button>
+                    </div>
+                  )}
+
+                  {/* Visual Funnel */}
+                  <div className="space-y-0">
+                    {funnelData.map((step, i) => {
+                      const Icon = step.icon;
+                      const maxCount = funnelData[0].count || 1;
+                      const widthPct = Math.max(25, (step.count / maxCount) * 100);
+                      const dropColor = step.dropSeverity === "green" ? "text-emerald-500" : step.dropSeverity === "yellow" ? "text-amber-500" : "text-red-500";
+                      const dropBg = step.dropSeverity === "green" ? "bg-emerald-500" : step.dropSeverity === "yellow" ? "bg-amber-500" : "bg-red-500";
+
                       return (
-                        <div
-                          key={d.device}
-                          onClick={() => setFunnelDevice(d.device)}
-                          className={`rounded-xl p-4 border cursor-pointer hover:bg-muted/50 transition-colors ${isLow ? "border-red-500/30 bg-red-500/5" : "bg-muted/30"}`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-bold capitalize">{icon} {d.device}</span>
-                            <span className={`text-xs font-bold ${d.convRate >= 3 ? "text-emerald-500" : d.convRate >= 1 ? "text-amber-500" : "text-red-500"}`}>
-                              {d.convRate.toFixed(1)}%
-                            </span>
+                        <div key={step.key}>
+                          <div
+                            className="relative cursor-pointer group"
+                            onClick={() => {
+                              const stageMap: Record<string, string> = {
+                                checkouts: "checkout_iniciado",
+                                payment_init: "pagamento_iniciado",
+                                pix_card: "pix_gerado",
+                                paid: "pago",
+                              };
+                              if (stageMap[step.key]) {
+                                setFilters(f => ({ ...f, stage: stageMap[step.key] }));
+                                setSubTab("pipeline");
+                              }
+                            }}
+                          >
+                            <div
+                              className={`${step.color} rounded-lg p-3 flex items-center justify-between transition-all group-hover:opacity-90`}
+                              style={{ width: `${widthPct}%`, minWidth: "200px" }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Icon className="h-4 w-4 text-white" />
+                                <span className="text-white text-xs font-semibold">{step.label}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-white/70 text-[10px]">
+                                  {i > 0 ? `${step.convRate.toFixed(1)}%` : ""}
+                                </span>
+                                <span className="text-white text-sm font-bold">{step.count.toLocaleString("pt-BR")}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>{d.visitors} visitantes</span>
-                            <span>{d.paid} pagos</span>
-                          </div>
-                          {isLow && (
-                            <p className="text-[10px] text-red-500 mt-2 font-medium">⚠ Possível tráfego de baixa qualidade</p>
+
+                          {i < funnelData.length - 1 && (
+                            <div className="flex items-center gap-2 py-1.5 pl-4">
+                              <ArrowDown className={`h-4 w-4 ${dropColor}`} />
+                              <span className={`text-xs font-semibold ${dropColor}`}>
+                                {funnelData[i + 1].convRate.toFixed(1)}% conversão
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                ({step.count - funnelData[i + 1].count} abandonaram · {funnelData[i + 1].dropRate.toFixed(0)}% queda)
+                              </span>
+                              <div className={`h-1.5 w-1.5 rounded-full ${dropBg}`} />
+                            </div>
                           )}
                         </div>
                       );
                     })}
                   </div>
+
+                  {/* ── Diagnóstico do Funil ── */}
+                  {funnelDiagnostic && (
+                    <div className="bg-card border rounded-xl p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-bold flex items-center gap-2">
+                          <Activity className="h-4 w-4" /> Diagnóstico do Funil
+                        </h4>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                          funnelDiagnostic.overallConv >= 3 ? "bg-emerald-500/10 text-emerald-500" :
+                          funnelDiagnostic.overallConv >= 1 ? "bg-amber-500/10 text-amber-500" :
+                          "bg-red-500/10 text-red-500"
+                        }`}>
+                          Conversão geral: {funnelDiagnostic.overallConv.toFixed(2)}%
+                        </span>
+                      </div>
+
+                      {/* Diagnostic items */}
+                      <div className="space-y-2">
+                        {funnelDiagnostic.diagnostics.map((d, i) => (
+                          <div
+                            key={i}
+                            className={`flex items-start gap-3 border rounded-xl p-4 ${
+                              d.severity === "critical" ? "bg-destructive/5 border-destructive/30" :
+                              d.severity === "warning" ? "bg-amber-500/5 border-amber-500/30" :
+                              "bg-blue-500/5 border-blue-500/30"
+                            }`}
+                          >
+                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              d.severity === "critical" ? "bg-destructive/10" :
+                              d.severity === "warning" ? "bg-amber-500/10" :
+                              "bg-blue-500/10"
+                            }`}>
+                              <AlertTriangle className={`h-4 w-4 ${
+                                d.severity === "critical" ? "text-destructive" :
+                                d.severity === "warning" ? "text-amber-500" :
+                                "text-blue-500"
+                              }`} />
+                            </div>
+                            <div>
+                              <p className={`text-sm font-semibold ${
+                                d.severity === "critical" ? "text-destructive" :
+                                d.severity === "warning" ? "text-amber-600" :
+                                "text-blue-600"
+                              }`}>{d.title}</p>
+                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{d.desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Suggestions */}
+                      {funnelDiagnostic.suggestions.length > 0 && (
+                        <div>
+                          <h5 className="text-xs font-bold uppercase text-muted-foreground mb-2 flex items-center gap-1.5">
+                            💡 Sugestões de Melhoria
+                          </h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {funnelDiagnostic.suggestions.map((s, i) => (
+                              <div key={i} className="bg-muted/50 rounded-lg p-3 flex items-center gap-2.5">
+                                <span className="text-lg">{s.icon}</span>
+                                <span className="text-xs font-medium">{s.text}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Conversion Rates Table */}
+                  <div className="bg-card border rounded-xl p-4">
+                    <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Taxas de Conversão e Abandono por Etapa</h4>
+                    <div className="space-y-2">
+                      {funnelData.slice(1).map((step, i) => {
+                        const prev = funnelData[i];
+                        const dropColor = step.dropSeverity === "green" ? "text-emerald-500 bg-emerald-500/10" : step.dropSeverity === "yellow" ? "text-amber-500 bg-amber-500/10" : "text-red-500 bg-red-500/10";
+                        return (
+                          <div key={step.key} className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">{prev.label} → {step.label}</span>
+                            <div className="flex items-center gap-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${dropColor}`}>
+                                {step.convRate.toFixed(1)}% conv
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {step.dropRate.toFixed(0)}% abandono
+                              </span>
+                              <span className="text-muted-foreground text-[10px]">({prev.count} → {step.count})</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Device Comparison with Alerts */}
+                  {deviceFunnelAnalysis.length > 1 && funnelDevice === "all" && (
+                    <div className="bg-card border rounded-xl p-4">
+                      <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                        <Smartphone className="h-3.5 w-3.5" /> Análise por Dispositivo
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {deviceFunnelAnalysis.map(d => {
+                          const icon = d.device === "mobile" ? "📱" : d.device === "desktop" ? "💻" : "📟";
+                          const hasAlerts = d.alerts.length > 0;
+                          return (
+                            <div
+                              key={d.device}
+                              onClick={() => setFunnelDevice(d.device)}
+                              className={`rounded-xl p-4 border cursor-pointer hover:bg-muted/50 transition-colors ${hasAlerts ? "border-red-500/30 bg-red-500/5" : "bg-muted/30"}`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-bold capitalize">{icon} {d.device}</span>
+                                <span className={`text-xs font-bold ${d.convRate >= 3 ? "text-emerald-500" : d.convRate >= 1 ? "text-amber-500" : "text-red-500"}`}>
+                                  {d.convRate.toFixed(1)}%
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-[10px] text-muted-foreground">
+                                <span>{d.visitors} visitantes</span>
+                                <span>{d.paid} pagos</span>
+                              </div>
+                              {d.alerts.map((a, i) => (
+                                <p key={i} className="text-[10px] text-red-500 mt-2 font-medium">⚠ {a}</p>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bottleneck Detector */}
+                  {bottleneckAlerts.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                        <AlertTriangle className="h-3.5 w-3.5" /> Alertas do Funil
+                      </h4>
+                      <div className="space-y-2">
+                        {bottleneckAlerts.map((a, i) => (
+                          <div
+                            key={i}
+                            className={`flex items-start gap-3 border rounded-xl p-4 ${
+                              a.type === "critical" ? "bg-destructive/5 border-destructive/30" : "bg-amber-500/5 border-amber-500/30"
+                            }`}
+                          >
+                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              a.type === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
+                            }`}>
+                              <AlertTriangle className={`h-4 w-4 ${a.type === "critical" ? "text-destructive" : "text-amber-500"}`} />
+                            </div>
+                            <div>
+                              <p className={`text-sm font-semibold ${a.type === "critical" ? "text-destructive" : "text-amber-600"}`}>{a.title}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Conversion Summary */}
-              <div className="bg-card border rounded-xl p-4">
-                <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Taxas de Conversão por Etapa</h4>
-                <div className="space-y-2">
-                  {funnelData.slice(1).map((step, i) => {
-                    const prev = funnelData[i];
-                    const dropColor = step.dropSeverity === "green" ? "text-emerald-500 bg-emerald-500/10" : step.dropSeverity === "yellow" ? "text-amber-500 bg-amber-500/10" : "text-red-500 bg-red-500/10";
-                    return (
-                      <div key={step.key} className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">{prev.label} → {step.label}</span>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${dropColor}`}>
-                            {step.convRate.toFixed(1)}%
-                          </span>
-                          <span className="text-muted-foreground text-[10px]">({prev.count} → {step.count})</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              {/* ── SESSION REPLAY VIEW ── */}
+              {funnelSubView === "replay" && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold flex items-center gap-2">
+                    🎬 Replays de Sessão
+                    <span className="text-xs text-muted-foreground font-normal">({visitorSessions.length} sessões)</span>
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Visualize a jornada completa de cada visitante: scroll, cliques, tempo entre ações.
+                  </p>
 
-              {/* Bottleneck Detector */}
-              <div>
-                <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5" /> Detector de Gargalos
-                </h4>
-                {bottleneckAlerts.length === 0 ? (
-                  <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                    <span className="text-sm font-medium">Nenhum gargalo detectado — funil fluindo bem</span>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {bottleneckAlerts.map((a, i) => (
-                      <div
-                        key={i}
-                        className={`flex items-start gap-3 border rounded-xl p-4 ${
-                          a.type === "critical" ? "bg-destructive/5 border-destructive/30" : "bg-amber-500/5 border-amber-500/30"
-                        }`}
-                      >
-                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          a.type === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
-                        }`}>
-                          <AlertTriangle className={`h-4 w-4 ${a.type === "critical" ? "text-destructive" : "text-amber-500"}`} />
+                  {selectedSession ? (
+                    <div className="space-y-3">
+                      <button onClick={() => setSelectedSession(null)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                        ← Voltar para lista
+                      </button>
+                      {(() => {
+                        const session = visitorSessions.find(s => s.fullId === selectedSession);
+                        if (!session) return <p className="text-sm text-muted-foreground">Sessão não encontrada</p>;
+                        return (
+                          <div className="bg-card border rounded-xl p-5">
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <h4 className="text-sm font-bold">Sessão: {session.id}</h4>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {session.device} · {session.origin} · Duração: {session.duration}s · {session.eventCount} eventos
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Event Timeline Player */}
+                            <div className="space-y-0">
+                              {session.events.map((e, i) => {
+                                const cfg = EVENT_LABELS[e.event_type];
+                                const prevTime = i > 0 ? new Date(session.events[i - 1].created_at).getTime() : new Date(e.created_at).getTime();
+                                const currTime = new Date(e.created_at).getTime();
+                                const gap = Math.round((currTime - prevTime) / 1000);
+                                const Icon = cfg?.icon || Eye;
+                                const colorCls = cfg?.color || "bg-muted text-muted-foreground";
+
+                                let detail = "";
+                                if (e.event_type === "scroll_depth" || e.event_type === "scroll_milestone") detail = `Scroll: ${e.event_data?.percent || 0}%`;
+                                if (e.event_type === "click_position") detail = `Seção: ${e.event_data?.section || "—"} · Elemento: ${e.event_data?.element_text || e.event_data?.element || "—"}`;
+                                if (e.event_type === "click_buy_button") detail = "Clicou em comprar";
+
+                                return (
+                                  <div key={i}>
+                                    {i > 0 && gap > 0 && (
+                                      <div className="flex items-center gap-2 pl-6 py-1">
+                                        <div className="w-px h-4 bg-border" />
+                                        <span className="text-[9px] text-muted-foreground">+{gap}s</span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-3 py-1.5">
+                                      <div className={`h-7 w-7 rounded-full ${colorCls.split(" ")[0]} flex items-center justify-center flex-shrink-0`}>
+                                        <Icon className={`h-3.5 w-3.5 ${colorCls.split(" ")[1]}`} />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-semibold">{cfg?.label || e.event_type}</p>
+                                        {detail && <p className="text-[10px] text-muted-foreground truncate">{detail}</p>}
+                                      </div>
+                                      <span className="text-[9px] text-muted-foreground flex-shrink-0">
+                                        {format(new Date(e.created_at), "HH:mm:ss", { locale: ptBR })}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {visitorSessions.length === 0 ? (
+                        <div className="bg-muted/50 border rounded-xl p-6 text-center">
+                          <p className="text-sm text-muted-foreground">Nenhuma sessão com interações suficientes</p>
                         </div>
-                        <div>
-                          <p className={`text-sm font-semibold ${a.type === "critical" ? "text-destructive" : "text-amber-600"}`}>{a.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
-                        </div>
+                      ) : (
+                        visitorSessions.map(s => (
+                          <div
+                            key={s.fullId}
+                            onClick={() => setSelectedSession(s.fullId)}
+                            className="bg-card border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Eye className="h-3.5 w-3.5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold font-mono">{s.id}</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {s.device} · {s.origin} · {s.eventCount} eventos · {s.duration}s
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground">
+                                {formatDistanceToNow(new Date(s.firstSeen), { addSuffix: true, locale: ptBR })}
+                              </span>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── HEATMAP VIEW ── */}
+              {funnelSubView === "heatmap" && (
+                <div className="space-y-6">
+                  <h3 className="text-sm font-bold flex items-center gap-2">
+                    🔥 Heatmap de Interação
+                  </h3>
+
+                  {/* Click Heatmap by Section */}
+                  <div className="bg-card border rounded-xl p-5">
+                    <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                      <MousePointerClick className="h-3.5 w-3.5" /> Heatmap de Cliques por Seção
+                      <span className="text-[10px] font-normal">({heatmapData.totalClicks} cliques rastreados)</span>
+                    </h4>
+                    {heatmapData.sections.length === 0 ? (
+                      <div className="bg-muted/50 rounded-lg p-4 text-center">
+                        <p className="text-xs text-muted-foreground">Nenhum dado de clique disponível ainda. Os cliques serão rastreados automaticamente.</p>
                       </div>
-                    ))}
+                    ) : (
+                      <div className="space-y-2">
+                        {heatmapData.sections.map(s => {
+                          const heat = s.pct >= 30 ? "bg-red-500" : s.pct >= 15 ? "bg-orange-500" : s.pct >= 5 ? "bg-amber-500" : "bg-blue-500";
+                          const sectionLabels: Record<string, string> = {
+                            hero: "🏠 Hero / Topo",
+                            galeria: "📸 Galeria de Imagens",
+                            detalhes: "📋 Detalhes do Produto",
+                            descricao: "📝 Descrição",
+                            avaliacoes: "⭐ Avaliações",
+                            faq: "❓ FAQ / Perguntas",
+                            rodape: "📎 Rodapé",
+                            unknown: "❔ Outra Seção",
+                          };
+                          return (
+                            <div key={s.section} className="flex items-center gap-3">
+                              <span className="text-xs w-40 flex-shrink-0">{sectionLabels[s.section] || s.section}</span>
+                              <div className="flex-1 h-6 bg-muted/50 rounded-full overflow-hidden">
+                                <div className={`h-full ${heat} rounded-full flex items-center justify-end pr-2 transition-all`} style={{ width: `${Math.max(s.pct, 5)}%` }}>
+                                  <span className="text-[9px] text-white font-bold">{s.pct}%</span>
+                                </div>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground w-16 text-right">{s.clicks} cliques</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+
+                  {/* Scroll Depth Heatmap */}
+                  <div className="bg-card border rounded-xl p-5">
+                    <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                      <TrendingUp className="h-3.5 w-3.5" /> Heatmap de Scroll
+                      <span className="text-[10px] font-normal">({heatmapData.totalScrollEvents} eventos de scroll)</span>
+                    </h4>
+                    {heatmapData.totalScrollEvents === 0 ? (
+                      <div className="bg-muted/50 rounded-lg p-4 text-center">
+                        <p className="text-xs text-muted-foreground">Nenhum dado de scroll disponível ainda.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-xs text-muted-foreground">Até onde os visitantes chegam na página:</p>
+                        {heatmapData.scrollBuckets.map(b => {
+                          const pct = Math.round((b.count / heatmapData.maxBucket) * 100);
+                          const heat = b.min >= 75 ? "bg-emerald-500" : b.min >= 50 ? "bg-blue-500" : b.min >= 25 ? "bg-amber-500" : "bg-red-500";
+                          return (
+                            <div key={b.label} className="flex items-center gap-3">
+                              <span className="text-xs w-20 flex-shrink-0 font-medium">{b.label}</span>
+                              <div className="flex-1 h-6 bg-muted/50 rounded-full overflow-hidden">
+                                <div className={`h-full ${heat} rounded-full flex items-center justify-end pr-2 transition-all`} style={{ width: `${Math.max(pct, 5)}%` }}>
+                                  <span className="text-[9px] text-white font-bold">{b.count}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <p className="text-[10px] text-muted-foreground mt-2">
+                          💡 Se poucos visitantes chegam até 50%, considere mover elementos importantes para o topo da página.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
