@@ -37,6 +37,14 @@ interface Lead {
 
 type Tab = "dashboard" | "leads";
 
+interface SystemAlert {
+  id: string;
+  type: "critical" | "warning" | "info";
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
 export default function Admin() {
   const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem("admin_auth") === "true");
