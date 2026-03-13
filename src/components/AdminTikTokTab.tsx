@@ -215,6 +215,7 @@ export default function AdminTikTokTab() {
           properties: {
             content_type: "product",
             content_id: "test-diagnostico",
+            content_name: "Mesa Dobrável Retrátil",
             value: 1,
             currency: "BRL",
             _test: true,

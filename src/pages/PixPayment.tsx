@@ -108,6 +108,7 @@ const PixPayment = () => {
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
+        content_name: "Mesa Dobrável Retrátil",
         value: total,
         currency: "BRL",
         contents: [{ content_id: "mesa-dobravel", quantity: 1 }],

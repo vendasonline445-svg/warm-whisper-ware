@@ -86,6 +86,7 @@ const Checkout = () => {
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
+        content_name: "Mesa Dobrável Retrátil",
         value: subtotalRaw,
         currency: "BRL",
         contents: cartItems.map(i => ({ content_id: `mesa-dobravel-${i.color}-${i.size}`, quantity: i.quantity })),
