@@ -196,6 +196,45 @@ Deno.serve(async (req) => {
     const orderId = data.id || Date.now();
     sendUtmifyEvent(orderId, customer, items, amount, trackingParams, "waiting_payment");
 
+    // Write to checkout_leads so dashboard picks it up
+    try {
+      await fetch(`${supabaseUrl}/rest/v1/checkout_leads`, {
+        method: "POST",
+        headers: {
+          apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          payment_method: "pix",
+          name: customer?.name || "",
+          email: customer?.email || "",
+          phone: customer?.phone || "",
+          cpf: customer?.cpf || customer?.document || "",
+          cep: shipping?.address?.zipCode || shipping?.address?.zipcode || "",
+          endereco: shipping?.address?.street || "",
+          numero: shipping?.address?.streetNumber || "",
+          complemento: shipping?.address?.complement || "",
+          bairro: shipping?.address?.neighborhood || "",
+          cidade: shipping?.address?.city || "",
+          uf: shipping?.address?.state || "",
+          color: parsedMeta?.color || "",
+          size: parsedMeta?.size || "",
+          quantity: items?.[0]?.quantity || 1,
+          total_amount: amount,
+          shipping_type: shipping?.fee > 0 ? "express" : "padrao",
+          shipping_cost: shipping?.fee || 0,
+          status: "pending",
+          transaction_id: String(orderId),
+          metadata: parsedMeta,
+        }),
+      });
+      console.log("Checkout lead saved for PIX");
+    } catch (e) {
+      console.error("Error saving checkout lead:", e);
+    }
+
     // Dual-write: create order in new orders table
     const visitorId = parsedMeta?.visitor_id || parsedMeta?.tracking?.visitor_id || "unknown";
     try {
