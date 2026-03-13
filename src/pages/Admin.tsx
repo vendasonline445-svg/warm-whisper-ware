@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Users, Megaphone, Package, CreditCard, Download } from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp } from "lucide-react";
 
 const ADMIN_PASSWORD = "12345";
 
@@ -45,6 +45,8 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [visitorsCount, setVisitorsCount] = useState(0);
+  const [checkoutsCount, setCheckoutsCount] = useState(0);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,19 +62,23 @@ export default function Admin() {
   useEffect(() => {
     if (!authenticated) return;
     setLoading(true);
-    supabase
-      .from("checkout_leads")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error(error);
-          setError("Erro ao carregar dados");
-        } else {
-          setLeads((data as Lead[]) || []);
-        }
-        setLoading(false);
-      });
+
+    // Fetch leads + page views in parallel
+    Promise.all([
+      supabase.from("checkout_leads").select("*").order("created_at", { ascending: false }),
+      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/"),
+      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout"),
+    ]).then(([leadsRes, visitorsRes, checkoutsRes]) => {
+      if (leadsRes.error) {
+        console.error(leadsRes.error);
+        setError("Erro ao carregar dados");
+      } else {
+        setLeads((leadsRes.data as Lead[]) || []);
+      }
+      setVisitorsCount(visitorsRes.count || 0);
+      setCheckoutsCount(checkoutsRes.count || 0);
+      setLoading(false);
+    });
   }, [authenticated]);
 
   const exportCSV = () => {
@@ -108,6 +114,8 @@ export default function Admin() {
   const paidCount = leads.filter(l => l.status === "paid").length;
   const pendingCount = leads.filter(l => l.status !== "paid").length;
   const totalRevenue = leads.filter(l => l.status === "paid").reduce((sum, l) => sum + (l.total_amount || 0), 0);
+  const pixGeneratedCount = leads.filter(l => l.payment_method === "pix").length;
+  const conversionRate = visitorsCount > 0 ? ((paidCount / visitorsCount) * 100).toFixed(1) : "0.0";
 
   if (!authenticated) {
     return (

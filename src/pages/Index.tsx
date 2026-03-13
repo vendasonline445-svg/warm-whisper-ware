@@ -264,7 +264,7 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // ViewContent event on mount
+  // ViewContent event on mount + track page view
   useEffect(() => {
     trackTikTokEvent({
       event: "ViewContent",
@@ -277,6 +277,7 @@ const Index = () => {
         contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
     });
+    supabase.from("page_views").insert({ page: "/" }).then(() => {});
   }, []);
 
   // Lock body scroll when modals are open
