@@ -252,7 +252,7 @@ const Checkout = () => {
         metadata: JSON.stringify({
           color: selectedColor,
           size: selectedSize,
-          coupon: hasCoupon ? "VOLTA25" : null,
+          coupon: hasCoupon ? couponUpper : null,
           couponDiscount: couponAmount,
           tracking: Object.fromEntries(new URLSearchParams(window.location.search).entries()),
         }),
