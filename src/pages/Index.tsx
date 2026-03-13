@@ -1017,15 +1017,30 @@ const Index = () => {
 
             {/* Step: Done */}
             {reportStep === 'done' && (
-              <div className="flex-1 flex flex-col items-center justify-center px-5 py-16">
+              <div className="flex-1 flex flex-col items-center px-5 py-10">
                 <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                   <Check className="h-8 w-8 text-cta" />
                 </div>
                 <h4 className="font-bold text-base mb-2">Obrigado por reportar</h4>
-                <p className="text-sm text-muted-foreground text-center max-w-xs">
+                <p className="text-sm text-muted-foreground text-center max-w-xs mb-6">
                   Analisaremos seu report e tomaremos as medidas necessárias caso haja uma violação das diretrizes.
                 </p>
-                <div className="w-full mt-auto pt-8 pb-2">
+
+                {/* Coupon */}
+                <div className="w-full rounded-2xl border-2 border-dashed border-cta/40 bg-cta/5 p-5 text-center mb-6">
+                  <p className="text-xs text-muted-foreground mb-1">Como pedido de desculpas, aqui vai um cupom especial:</p>
+                  <p className="text-2xl font-extrabold text-cta tracking-wider my-2">DESCULPA80</p>
+                  <p className="text-sm font-semibold text-cta">80% OFF na sua próxima compra</p>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText('DESCULPA80'); setCouponCopied(true); setTimeout(() => setCouponCopied(false), 2000); }}
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-cta hover:underline"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    {couponCopied ? 'Copiado!' : 'Copiar cupom'}
+                  </button>
+                </div>
+
+                <div className="w-full mt-auto pt-4 pb-2">
                   <button
                     onClick={() => setReportMenuOpen(false)}
                     className="w-full py-3.5 rounded-xl bg-cta text-white font-bold text-sm hover:bg-cta-hover transition-colors"
