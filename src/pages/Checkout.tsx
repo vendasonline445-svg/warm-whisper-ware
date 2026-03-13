@@ -597,7 +597,7 @@ const Checkout = () => {
         <div className="mt-4 border-t pt-4">
           <div className="flex items-center justify-between mb-3">
             <p className="font-semibold text-sm">Forma de pagamento</p>
-            {hasCoupon && <span className="text-xs text-coupon font-medium">Cupom {couponLabel} ativo ✓</span>}
+            {hasCoupon && <span className="text-xs font-medium" style={{ color: '#fe2b54' }}>Cupom {couponLabel} ativo ✓</span>}
           </div>
 
           {/* Credit Card Option */}
