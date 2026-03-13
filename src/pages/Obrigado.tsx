@@ -89,7 +89,7 @@ const Obrigado = () => {
             <div>
               <h3 className="font-bold text-sm text-foreground mb-1">Código de rastreio</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                O código de rastreio será enviado para o seu e-mail {customerEmail && <strong className="text-foreground">{customerEmail}</strong>} assim que o produto for despachado pela transportadora. Fique de olho na sua caixa de entrada!
+                O código de rastreio já foi enviado para o seu e-mail {customerEmail && <strong className="text-foreground">{customerEmail}</strong>}. Caso não tenha recebido, verifique a pasta de <strong className="text-foreground">Spam</strong> — ele estará lá!
               </p>
             </div>
           </div>
