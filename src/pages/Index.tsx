@@ -433,7 +433,7 @@ const Index = () => {
         <section className="bg-card">
           <div
             className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-pointer"
-            onClick={() => { if (!swiping.current) setZoomOpen(true); }}
+            onClick={() => { if (!swiping.current) { trackEvent("click_product_image"); setZoomOpen(true); } }}
             onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; swiping.current = false; }}
             onTouchMove={(e) => {
               const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
