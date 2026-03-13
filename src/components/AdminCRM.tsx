@@ -177,6 +177,7 @@ const EVENT_LABELS: Record<string, { label: string; icon: any; color: string }> 
 export default function AdminCRM() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [events, setEvents] = useState<UserEvent[]>([]);
+  const [pageViewCount, setPageViewCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<EnrichedLead | null>(null);
   const [subTab, setSubTab] = useState<CRMSubTab>("pipeline");
@@ -196,13 +197,15 @@ export default function AdminCRM() {
     const days = daysMap[filters.period] ?? 30;
     const since = new Date(Date.now() - days * 86400000).toISOString();
 
-    const [leadsRes, eventsRes] = await Promise.all([
+    const [leadsRes, eventsRes, pageViewsRes] = await Promise.all([
       supabase.from("checkout_leads").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
-      supabase.from("user_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(1000),
+      supabase.from("user_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(2000),
+      supabase.from("page_views").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(2000),
     ]);
 
     setLeads((leadsRes.data as Lead[]) || []);
     setEvents((eventsRes.data as UserEvent[]) || []);
+    setPageViewCount((pageViewsRes.data || []).length);
     setLoading(false);
   }, [filters.period]);
 
@@ -331,9 +334,10 @@ export default function AdminCRM() {
       }
     });
 
-    // Build raw counts
+    // Build raw counts — use page_views table count as baseline (more reliable than user_events for visitors)
+    const visitorCount = Math.max(pageViewCount, stageVisitors.visitors.size);
     const rawCounts = [
-      { key: "visitors", label: "Visitantes", rawCount: stageVisitors.visitors.size, icon: Eye, color: "bg-blue-500" },
+      { key: "visitors", label: "Visitantes", rawCount: visitorCount, icon: Eye, color: "bg-blue-500" },
       { key: "engaged", label: "Engajados", rawCount: stageVisitors.engaged.size, icon: MousePointerClick, color: "bg-cyan-500" },
       { key: "buy_clicks", label: "Cliques Comprar", rawCount: stageVisitors.buy_clicks.size, icon: ShoppingCart, color: "bg-orange-400" },
       { key: "checkouts", label: "Checkout Iniciado", rawCount: stageVisitors.checkouts.size, icon: ShoppingCart, color: "bg-orange-500" },
@@ -361,7 +365,7 @@ export default function AdminCRM() {
     });
 
     return withRates;
-  }, [events, enrichedLeads]);
+  }, [events, enrichedLeads, pageViewCount]);
 
   // ── Funnel Health Score ──
   const funnelHealth = useMemo(() => {

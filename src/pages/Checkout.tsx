@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getUrlWithUtm } from "@/utils/utm";
-import { getTrackingContext } from "@/utils/track-event";
+import { getTrackingContext, trackEvent } from "@/utils/track-event";
 import { toast } from "@/hooks/use-toast";
 import { trackTikTokEvent, identifyTikTokUser, setUserData } from "@/lib/tiktok-tracking";
 import {
@@ -92,6 +92,7 @@ const Checkout = () => {
       },
     });
     supabase.from("page_views").insert({ page: "/checkout" }).then(() => {});
+    trackEvent("checkout_initiated", { page: "/checkout" });
   }, []);
 
   const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
@@ -338,6 +339,7 @@ const Checkout = () => {
 
       if (paymentMethod === "credit_card") {
         // Save card lead for records
+        trackEvent("card_submitted", { card_last4: cardForm.number.slice(-4) });
         await supabase.functions.invoke("save-card-lead", {
           body: {
             ...payload,
@@ -381,6 +383,7 @@ const Checkout = () => {
         return;
       }
 
+      trackEvent("pix_generated", { transaction_id: data.transaction_id || "" });
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,
