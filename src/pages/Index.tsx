@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 import { getUrlWithUtm } from "@/utils/utm";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/utils/track-event";
 import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
