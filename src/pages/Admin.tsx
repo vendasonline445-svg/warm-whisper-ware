@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfDay, endOfDay, subDays, startOfMonth } from "date-fns";
 import AdminCRM from "@/components/AdminCRM";
+import AdminTikTokTab from "@/components/AdminTikTokTab";
+import AdminRastreiosTab from "@/components/AdminRastreiosTab";
 import { ptBR } from "date-fns/locale";
 import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
