@@ -775,11 +775,11 @@ const Index = () => {
             <span>Chat</span>
           </button>
         </div>
-        <button onClick={openColorModal} className="flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-bold text-cta whitespace-nowrap">
+        <button onClick={() => openColorModal('cart')} className="flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-bold text-cta whitespace-nowrap">
           <ShoppingCart className="h-3.5 w-3.5 flex-shrink-0 text-cta" />
           <span className="text-cta font-bold text-[11px]">Adicionar ao carrinho</span>
         </button>
-        <Button onClick={openColorModal} className="flex-shrink-0 bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-[11px] py-2.5 px-4 h-auto rounded-lg uppercase tracking-wide whitespace-nowrap">
+        <Button onClick={handleBuyNow} className="flex-shrink-0 bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-[11px] py-2.5 px-4 h-auto rounded-lg uppercase tracking-wide whitespace-nowrap">
           COMPRAR AGORA
         </Button>
       </div>
