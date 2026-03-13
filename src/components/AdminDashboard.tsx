@@ -1,11 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, TrendingDown,
   MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet,
   AlertTriangle, CreditCard, Activity, ChevronDown, BarChart3,
-  Layers, DollarSign, Users, Maximize2, Minimize2,
+  DollarSign, Users, Maximize2, Minimize2,
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
 } from "@/components/ui/chart";
@@ -14,6 +13,62 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer,
 } from "recharts";
 
+// ─── Animated Counter Hook ───
+function useAnimatedNumber(target: number, duration = 900) {
+  const [display, setDisplay] = useState(0);
+  const prev = useRef(0);
+  const raf = useRef<number>();
+
+  useEffect(() => {
+    const start = prev.current;
+    const diff = target - start;
+    if (diff === 0) return;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(start + diff * ease);
+      setDisplay(current);
+      if (progress < 1) {
+        raf.current = requestAnimationFrame(tick);
+      } else {
+        prev.current = target;
+      }
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
+  }, [target, duration]);
+
+  return display;
+}
+
+// ─── Skeleton ───
+function SkeletonCard() {
+  return (
+    <div className="glass-card rounded-2xl p-5 space-y-3 animate-pulse">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-xl bg-muted" />
+        <div className="h-4 w-16 rounded bg-muted" />
+      </div>
+      <div className="h-3 w-24 rounded bg-muted" />
+      <div className="h-8 w-20 rounded bg-muted" />
+    </div>
+  );
+}
+
+function SkeletonChart() {
+  return (
+    <div className="glass-card rounded-2xl p-6 animate-pulse">
+      <div className="h-4 w-40 rounded bg-muted mb-4" />
+      <div className="h-[250px] bg-muted rounded-xl" />
+    </div>
+  );
+}
+
+// ─── Interfaces ───
 interface SystemAlert {
   id: string;
   type: "critical" | "warning" | "info";
@@ -69,39 +124,47 @@ interface AdminDashboardProps {
   activeNow: number;
   alerts: SystemAlert[];
   checkoutsAbandoned: number;
+  loading?: boolean;
 }
 
-// ─── Metric Card ───
-function MetricCard({
-  icon, label, value, trend, color, subtitle,
+// ─── Glass Metric Card ───
+function GlassMetricCard({
+  icon, label, value, numericValue, color, subtitle, delay = 0,
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string | number;
-  trend?: number | null;
+  value?: string;
+  numericValue?: number;
   color: string;
   subtitle?: string;
+  delay?: number;
 }) {
+  const animated = useAnimatedNumber(numericValue ?? 0, 900);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+
   return (
-    <div className={`group relative bg-card border rounded-2xl p-5 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-${color}/5 overflow-hidden`}>
-      {/* Subtle gradient overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-br from-${color}/5 to-transparent opacity-60 pointer-events-none`} />
+    <div
+      className={`glass-card group relative rounded-2xl p-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl cursor-default overflow-hidden ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+      }`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {/* Gradient glow */}
+      <div className={`absolute -top-8 -right-8 h-24 w-24 rounded-full bg-${color} opacity-[0.07] blur-2xl group-hover:opacity-[0.15] transition-opacity duration-500 pointer-events-none`} />
       <div className="relative">
         <div className="flex items-center justify-between mb-3">
-          <div className={`h-10 w-10 rounded-xl bg-${color}/10 flex items-center justify-center transition-transform group-hover:scale-110`}>
+          <div className={`h-10 w-10 rounded-xl bg-${color}/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-${color}/20`}>
             {icon}
           </div>
-          {trend != null && trend !== 0 && (
-            <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${
-              trend > 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-500"
-            }`}>
-              {trend > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {Math.abs(trend).toFixed(1)}%
-            </div>
-          )}
         </div>
         <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">{label}</p>
-        <p className="text-3xl font-extrabold mt-1 tracking-tight">{value}</p>
+        <p className="text-3xl font-extrabold mt-1 tracking-tight tabular-nums">
+          {value ?? animated.toLocaleString("pt-BR")}
+        </p>
         {subtitle && <p className="text-[10px] text-muted-foreground mt-1">{subtitle}</p>}
       </div>
     </div>
@@ -110,7 +173,7 @@ function MetricCard({
 
 // ─── Funnel Step ───
 function FunnelStep({
-  label, value, maxVal, color, rate, rateColor,
+  label, value, maxVal, color, rate, rateColor, delay = 0,
 }: {
   label: string;
   value: number;
@@ -118,10 +181,17 @@ function FunnelStep({
   color: string;
   rate?: string | null;
   rateColor?: string;
+  delay?: number;
 }) {
   const pct = Math.max((value / maxVal) * 100, 6);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setWidth(pct), delay + 100);
+    return () => clearTimeout(t);
+  }, [pct, delay]);
+
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-foreground">{label}</span>
         <div className="flex items-center gap-2">
@@ -131,10 +201,10 @@ function FunnelStep({
           <span className="text-sm font-bold tabular-nums">{value.toLocaleString("pt-BR")}</span>
         </div>
       </div>
-      <div className="h-3 bg-muted rounded-full overflow-hidden">
+      <div className="h-3.5 bg-muted/60 rounded-full overflow-hidden backdrop-blur-sm">
         <div
-          className={`h-full ${color} rounded-full transition-all duration-700 ease-out`}
-          style={{ width: `${pct}%` }}
+          className={`h-full ${color} rounded-full transition-all duration-1000 ease-out`}
+          style={{ width: `${width}%` }}
         />
       </div>
     </div>
@@ -143,17 +213,19 @@ function FunnelStep({
 
 // ─── Heatmap Cell ───
 function HeatmapCell({ label, value, benchmark }: { label: string; value: number; benchmark: [number, number] }) {
-  const bg = value >= benchmark[1]
-    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-600"
-    : value >= benchmark[0]
-    ? "bg-amber-500/15 border-amber-500/30 text-amber-600"
-    : "bg-red-500/15 border-red-500/30 text-red-500";
-  const status = value >= benchmark[1] ? "Saudável" : value >= benchmark[0] ? "Atenção" : "Gargalo";
+  const isGood = value >= benchmark[1];
+  const isOk = value >= benchmark[0];
+  const bg = isGood
+    ? "glass-card-success"
+    : isOk ? "glass-card-warning" : "glass-card-danger";
+  const textColor = isGood ? "text-emerald-500" : isOk ? "text-amber-500" : "text-red-500";
+  const status = isGood ? "Saudável" : isOk ? "Atenção" : "Gargalo";
+
   return (
-    <div className={`border rounded-xl p-4 ${bg} transition-all hover:scale-[1.02]`}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{label}</p>
-      <p className="text-2xl font-extrabold mt-1">{value.toFixed(1)}%</p>
-      <p className="text-[10px] font-bold mt-1 uppercase">{status}</p>
+    <div className={`${bg} rounded-2xl p-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg cursor-default`}>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={`text-2xl font-extrabold mt-2 ${textColor}`}>{value.toFixed(1)}%</p>
+      <p className={`text-[10px] font-bold mt-1 uppercase ${textColor}`}>{status}</p>
     </div>
   );
 }
@@ -165,9 +237,12 @@ export default function AdminDashboard(props: AdminDashboardProps) {
     leads, visitorsCount, checkoutsCount, buyClicks, imageClicks, avgScroll,
     pixGeneratedCount, paidCount, pendingCount, totalRevenue, pixPaidCount,
     cardsCollected, conversionRate, activeNow, alerts, checkoutsAbandoned,
+    loading = false,
   } = props;
 
   const [viewMode, setViewMode] = useState<"compact" | "detailed">("detailed");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // ─── Chart Data ───
   const timeSeriesData = useMemo(() => {
@@ -182,9 +257,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       }
       dayMap.set(day, entry);
     });
-    return Array.from(dayMap.entries())
-      .map(([day, d]) => ({ day, ...d }))
-      .reverse();
+    return Array.from(dayMap.entries()).map(([day, d]) => ({ day, ...d })).reverse();
   }, [leads]);
 
   const paymentDistribution = useMemo(() => {
@@ -196,7 +269,6 @@ export default function AdminDashboard(props: AdminDashboardProps) {
     return Object.entries(methods).map(([name, value]) => ({ name, value }));
   }, [leads]);
 
-  // ─── Funnel Rates ───
   const funnelSteps = useMemo(() => {
     const steps = [
       { label: "Visitantes", value: visitorsCount, color: "bg-blue-500" },
@@ -217,7 +289,6 @@ export default function AdminDashboard(props: AdminDashboardProps) {
     });
   }, [visitorsCount, buyClicks, checkoutsCount, pixGeneratedCount, paidCount]);
 
-  // ─── Heatmap Data ───
   const heatmapData = useMemo(() => {
     const visToClick = visitorsCount > 0 ? (buyClicks / visitorsCount) * 100 : 0;
     const clickToCheckout = buyClicks > 0 ? (checkoutsCount / buyClicks) * 100 : 0;
@@ -237,14 +308,36 @@ export default function AdminDashboard(props: AdminDashboardProps) {
     revenue: { label: "Receita (R$)", color: "hsl(262, 80%, 55%)" },
   };
 
+  // Skeleton state
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div className="h-7 w-32 rounded bg-muted animate-pulse" />
+          <div className="h-9 w-36 rounded-xl bg-muted animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonChart />
+          <SkeletonChart />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
+    <div className={`space-y-8 transition-opacity duration-500 ${mounted ? "opacity-100" : "opacity-0"}`}>
       {/* Mode Toggle */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-extrabold tracking-tight">Dashboard</h2>
         <button
           onClick={() => setViewMode(v => v === "compact" ? "detailed" : "compact")}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold glass-card hover:bg-muted/50 transition-all active:scale-95"
         >
           {viewMode === "compact" ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
           {viewMode === "compact" ? "Modo Detalhado" : "Modo Compacto"}
@@ -255,23 +348,23 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       <section>
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Funil de Vendas</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          <MetricCard icon={<Activity className="h-5 w-5 text-green-500" />} label="Ativos (1h)" value={activeNow} color="green-500" />
-          <MetricCard icon={<Eye className="h-5 w-5 text-blue-500" />} label="Visitantes" value={visitorsCount} color="blue-500" />
-          <MetricCard icon={<ShoppingCart className="h-5 w-5 text-orange-500" />} label="Checkouts" value={checkoutsCount} color="orange-500" />
-          <MetricCard icon={<QrCode className="h-5 w-5 text-purple-500" />} label="Pix Gerados" value={pixGeneratedCount} color="purple-500" />
-          <MetricCard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Pix Pendentes" value={pendingCount} color="amber-500" />
-          <MetricCard icon={<CreditCard className="h-5 w-5 text-blue-500" />} label="Cartões Coletados" value={cardsCollected} color="blue-500" />
-          <MetricCard icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />} label="Aprovados" value={paidCount} color="emerald-500" />
-          <MetricCard icon={<TrendingUp className="h-5 w-5 text-amber-500" />} label="Conversão" value={`${conversionRate}%`} color="amber-500" />
+          <GlassMetricCard icon={<Activity className="h-5 w-5 text-green-500" />} label="Ativos (1h)" numericValue={activeNow} color="green-500" delay={0} />
+          <GlassMetricCard icon={<Eye className="h-5 w-5 text-blue-500" />} label="Visitantes" numericValue={visitorsCount} color="blue-500" delay={50} />
+          <GlassMetricCard icon={<ShoppingCart className="h-5 w-5 text-orange-500" />} label="Checkouts" numericValue={checkoutsCount} color="orange-500" delay={100} />
+          <GlassMetricCard icon={<QrCode className="h-5 w-5 text-purple-500" />} label="Pix Gerados" numericValue={pixGeneratedCount} color="purple-500" delay={150} />
+          <GlassMetricCard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Pix Pendentes" numericValue={pendingCount} color="amber-500" delay={200} />
+          <GlassMetricCard icon={<CreditCard className="h-5 w-5 text-blue-500" />} label="Cartões Coletados" numericValue={cardsCollected} color="blue-500" delay={250} />
+          <GlassMetricCard icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />} label="Aprovados" numericValue={paidCount} color="emerald-500" delay={300} />
+          <GlassMetricCard icon={<TrendingUp className="h-5 w-5 text-amber-500" />} label="Conversão" value={`${conversionRate}%`} color="amber-500" delay={350} />
         </div>
       </section>
 
       {/* ═══ REVENUE CARDS ═══ */}
       <section>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <MetricCard icon={<Users className="h-5 w-5 text-blue-500" />} label="Total de Leads" value={leads.length} color="blue-500" />
-          <MetricCard icon={<DollarSign className="h-5 w-5 text-emerald-500" />} label="Receita Total" value={`R$ ${(totalRevenue / 100).toFixed(2).replace(".", ",")}`} color="emerald-500" />
-          <MetricCard icon={<BarChart3 className="h-5 w-5 text-purple-500" />} label="Ticket Médio" value={paidCount > 0 ? `R$ ${((totalRevenue / 100) / paidCount).toFixed(2).replace(".", ",")}` : "R$ 0,00"} color="purple-500" />
+          <GlassMetricCard icon={<Users className="h-5 w-5 text-blue-500" />} label="Total de Leads" numericValue={leads.length} color="blue-500" delay={100} />
+          <GlassMetricCard icon={<DollarSign className="h-5 w-5 text-emerald-500" />} label="Receita Total" value={`R$ ${(totalRevenue / 100).toFixed(2).replace(".", ",")}`} color="emerald-500" delay={150} />
+          <GlassMetricCard icon={<BarChart3 className="h-5 w-5 text-purple-500" />} label="Ticket Médio" value={paidCount > 0 ? `R$ ${((totalRevenue / 100) / paidCount).toFixed(2).replace(".", ",")}` : "R$ 0,00"} color="purple-500" delay={200} />
         </div>
       </section>
 
@@ -281,20 +374,20 @@ export default function AdminDashboard(props: AdminDashboardProps) {
           <section>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Comportamento</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              <MetricCard icon={<MousePointerClick className="h-5 w-5 text-blue-500" />} label="Cliques Comprar" value={buyClicks} color="blue-500" />
-              <MetricCard icon={<Image className="h-5 w-5 text-indigo-500" />} label="Cliques Imagens" value={imageClicks} color="indigo-500" />
-              <MetricCard icon={<ArrowDownWideNarrow className="h-5 w-5 text-cyan-500" />} label="Scroll Médio" value={`${avgScroll}%`} color="cyan-500" />
-              <MetricCard icon={<XCircle className="h-5 w-5 text-red-500" />} label="Abandonados" value={Math.max(0, checkoutsAbandoned)} color="red-500" />
-              <MetricCard icon={<Wallet className="h-5 w-5 text-emerald-500" />} label="Pix Pagos" value={pixPaidCount} color="emerald-500" />
+              <GlassMetricCard icon={<MousePointerClick className="h-5 w-5 text-blue-500" />} label="Cliques Comprar" numericValue={buyClicks} color="blue-500" delay={0} />
+              <GlassMetricCard icon={<Image className="h-5 w-5 text-indigo-500" />} label="Cliques Imagens" numericValue={imageClicks} color="indigo-500" delay={50} />
+              <GlassMetricCard icon={<ArrowDownWideNarrow className="h-5 w-5 text-cyan-500" />} label="Scroll Médio" value={`${avgScroll}%`} color="cyan-500" delay={100} />
+              <GlassMetricCard icon={<XCircle className="h-5 w-5 text-red-500" />} label="Abandonados" numericValue={Math.max(0, checkoutsAbandoned)} color="red-500" delay={150} />
+              <GlassMetricCard icon={<Wallet className="h-5 w-5 text-emerald-500" />} label="Pix Pagos" numericValue={pixPaidCount} color="emerald-500" delay={200} />
             </div>
           </section>
 
           {/* ═══ FUNNEL PROGRESS BARS ═══ */}
           <section>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Barras de Conversão</h3>
-            <div className="bg-card border rounded-2xl p-6 space-y-4">
-              {funnelSteps.map((step) => (
-                <FunnelStep key={step.label} {...step} />
+            <div className="glass-card rounded-2xl p-6 space-y-5">
+              {funnelSteps.map((step, i) => (
+                <FunnelStep key={step.label} {...step} delay={i * 100} />
               ))}
             </div>
           </section>
@@ -311,9 +404,8 @@ export default function AdminDashboard(props: AdminDashboardProps) {
           <section>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Performance</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Area Chart - Checkouts & Paid */}
               {timeSeriesData.length > 1 && (
-                <div className="bg-card border rounded-2xl p-6">
+                <div className="glass-card rounded-2xl p-6 transition-all duration-300 hover:shadow-lg">
                   <h4 className="text-sm font-bold mb-4">Checkouts & Vendas por Dia</h4>
                   <ChartContainer config={chartConfig} className="h-[250px] w-full">
                     <AreaChart data={timeSeriesData}>
@@ -338,9 +430,8 @@ export default function AdminDashboard(props: AdminDashboardProps) {
                 </div>
               )}
 
-              {/* Bar Chart - Revenue */}
               {timeSeriesData.length > 1 && (
-                <div className="bg-card border rounded-2xl p-6">
+                <div className="glass-card rounded-2xl p-6 transition-all duration-300 hover:shadow-lg">
                   <h4 className="text-sm font-bold mb-4">Receita por Dia (R$)</h4>
                   <ChartContainer config={chartConfig} className="h-[250px] w-full">
                     <BarChart data={timeSeriesData}>
@@ -354,9 +445,8 @@ export default function AdminDashboard(props: AdminDashboardProps) {
                 </div>
               )}
 
-              {/* Pie Chart - Payment Methods */}
               {paymentDistribution.length > 0 && (
-                <div className="bg-card border rounded-2xl p-6">
+                <div className="glass-card rounded-2xl p-6 transition-all duration-300 hover:shadow-lg">
                   <h4 className="text-sm font-bold mb-4">Distribuição por Método de Pagamento</h4>
                   <div className="h-[250px] flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
@@ -380,9 +470,8 @@ export default function AdminDashboard(props: AdminDashboardProps) {
                 </div>
               )}
 
-              {/* No data fallback */}
               {timeSeriesData.length <= 1 && paymentDistribution.length === 0 && (
-                <div className="bg-card border rounded-2xl p-8 flex items-center justify-center col-span-2">
+                <div className="glass-card rounded-2xl p-8 flex items-center justify-center col-span-2">
                   <p className="text-muted-foreground text-sm">Dados insuficientes para gerar gráficos</p>
                 </div>
               )}
@@ -396,7 +485,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" /> Alertas do Sistema
           {alerts.filter(a => a.type === "critical").length > 0 && (
-            <span className="bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
               {alerts.filter(a => a.type === "critical").length}
             </span>
           )}
@@ -405,17 +494,17 @@ export default function AdminDashboard(props: AdminDashboardProps) {
           {alerts.map((alert) => (
             <div
               key={alert.id}
-              className={`flex items-start gap-3 border rounded-2xl p-4 transition-all hover:scale-[1.005] ${
+              className={`flex items-start gap-3 rounded-2xl p-4 transition-all duration-300 hover:scale-[1.005] hover:shadow-md backdrop-blur-sm border ${
                 alert.type === "critical"
-                  ? "bg-destructive/5 border-destructive/30"
+                  ? "bg-red-500/5 border-red-500/20"
                   : alert.type === "warning"
-                  ? "bg-amber-500/5 border-amber-500/30"
-                  : "bg-emerald-500/5 border-emerald-500/30"
+                  ? "bg-amber-500/5 border-amber-500/20"
+                  : "bg-emerald-500/5 border-emerald-500/20"
               }`}
             >
               <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                 alert.type === "critical"
-                  ? "bg-destructive/10 text-destructive"
+                  ? "bg-red-500/10 text-red-500"
                   : alert.type === "warning"
                   ? "bg-amber-500/10 text-amber-500"
                   : "bg-emerald-500/10 text-emerald-500"
@@ -424,7 +513,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
               </div>
               <div>
                 <p className={`text-sm font-bold ${
-                  alert.type === "critical" ? "text-destructive" : alert.type === "warning" ? "text-amber-600" : "text-emerald-600"
+                  alert.type === "critical" ? "text-red-500" : alert.type === "warning" ? "text-amber-600" : "text-emerald-600"
                 }`}>{alert.title}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{alert.description}</p>
               </div>
@@ -432,13 +521,12 @@ export default function AdminDashboard(props: AdminDashboardProps) {
           ))}
         </div>
 
-        {/* Checklist */}
-        <details className="mt-4 bg-card border rounded-2xl overflow-hidden">
-          <summary className="px-5 py-4 cursor-pointer flex items-center justify-between text-sm font-bold select-none hover:bg-muted/50 transition-colors">
+        <details className="mt-4 glass-card rounded-2xl overflow-hidden">
+          <summary className="px-5 py-4 cursor-pointer flex items-center justify-between text-sm font-bold select-none hover:bg-muted/30 transition-colors">
             <span>Monitoramento em tempo real</span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [details[open]>&]:rotate-180" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-300 [details[open]>&]:rotate-180" />
           </summary>
-          <div className="px-5 pb-5 pt-2 space-y-2.5 border-t">
+          <div className="px-5 pb-5 pt-2 space-y-2.5 border-t border-border/50">
             {[
               { label: "Pagamentos recusados > 5 na última hora", ok: !alerts.find(a => a.id === "declined") },
               { label: "Taxa de conversão dentro do esperado", ok: !alerts.find(a => a.id === "conversion") },
@@ -446,11 +534,11 @@ export default function AdminDashboard(props: AdminDashboardProps) {
               { label: "Nenhum erro JavaScript no site (24h)", ok: !alerts.find(a => a.id === "jserror") },
               { label: "Pixel TikTok disparando eventos (1h)", ok: !alerts.find(a => a.id === "pixel") },
             ].map((item) => (
-              <div key={item.label} className="flex items-center gap-3">
-                <div className={`h-6 w-6 rounded-lg flex items-center justify-center flex-shrink-0 ${item.ok ? "bg-emerald-500/10" : "bg-destructive/10"}`}>
+              <div key={item.label} className="flex items-center gap-3 group/check">
+                <div className={`h-6 w-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover/check:scale-110 ${item.ok ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
                   {item.ok
                     ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                    : <XCircle className="h-3.5 w-3.5 text-destructive" />}
+                    : <XCircle className="h-3.5 w-3.5 text-red-500" />}
                 </div>
                 <span className={`text-xs ${item.ok ? "text-muted-foreground" : "text-foreground font-semibold"}`}>{item.label}</span>
               </div>
@@ -462,14 +550,14 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       {/* ═══ RECENT SUMMARY ═══ */}
       <section>
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Resumo Recente</h3>
-        <div className="bg-card border rounded-2xl p-5 space-y-3">
+        <div className="glass-card rounded-2xl p-5 space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Pendentes</span>
-            <span className="font-bold text-amber-600">{pendingCount}</span>
+            <span className="font-bold text-amber-500">{pendingCount}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Pagos</span>
-            <span className="font-bold text-emerald-600">{paidCount}</span>
+            <span className="font-bold text-emerald-500">{paidCount}</span>
           </div>
         </div>
       </section>
