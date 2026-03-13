@@ -106,6 +106,7 @@ const Checkout = () => {
   const [cpfError, setCpfError] = useState("");
   const productSectionRef = useRef<HTMLDivElement>(null);
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
+  const [showSummary, setShowSummary] = useState(true);
   
   const [cardForm, setCardForm] = useState({
     number: "", holder: "", expiry: "", cvv: "", installments: 1,
