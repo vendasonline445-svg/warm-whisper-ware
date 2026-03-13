@@ -134,6 +134,9 @@ const Index = () => {
   const [reviewZoomOpen, setReviewZoomOpen] = useState(false);
   const [reviewZoomPhotos, setReviewZoomPhotos] = useState<string[]>([]);
   const [reviewZoomIndex, setReviewZoomIndex] = useState(0);
+  const [videoZoomOpen, setVideoZoomOpen] = useState(false);
+  const [videoZoomSrc, setVideoZoomSrc] = useState("");
+  const videoScrollRef = useRef<HTMLDivElement>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareClosing, setShareClosing] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
