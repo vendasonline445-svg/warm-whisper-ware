@@ -172,6 +172,17 @@ const Checkout = () => {
     setForm((prev: typeof form) => {
       const updated = { ...prev, [field]: value };
       localStorage.setItem('mesalar_checkout_form', JSON.stringify(updated));
+      // Persist email/phone for TikTok Advanced Matching (EMQ)
+      if (field === "email" && value.trim()) {
+        localStorage.setItem("crm_user_email", value.trim().toLowerCase());
+      }
+      if (field === "phone" && value.trim()) {
+        const digits = value.replace(/\D/g, "");
+        if (digits.length >= 10) {
+          const e164 = digits.startsWith("55") ? `+${digits}` : `+55${digits}`;
+          localStorage.setItem("crm_user_phone", e164);
+        }
+      }
       return updated;
     });
   };

@@ -224,11 +224,19 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
     try { return localStorage.getItem("mesalar_visitor_id") || ""; } catch { return ""; }
   })();
 
-  // Merge userData with visitor_id as fallback external_id
+  // Auto-read stored email/phone from localStorage (captured at checkout/forms)
+  const storedEmail = (() => {
+    try { return localStorage.getItem("crm_user_email") || ""; } catch { return ""; }
+  })();
+  const storedPhone = (() => {
+    try { return localStorage.getItem("crm_user_phone") || ""; } catch { return ""; }
+  })();
+
+  // Merge: explicit userData > stored values > empty string (never undefined/null)
   const effectiveUserData = {
-    email: userData?.email || "",
-    phone: userData?.phone || "",
-    externalId: userData?.externalId || visitorId,
+    email: (userData?.email || storedEmail || "").trim().toLowerCase(),
+    phone: (userData?.phone || storedPhone || "").trim(),
+    externalId: (userData?.externalId || visitorId || "").trim(),
   };
 
   // Always set user data and identify for better EMQ
