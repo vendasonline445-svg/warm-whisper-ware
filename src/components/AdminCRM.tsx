@@ -338,6 +338,151 @@ export default function AdminCRM() {
     return alerts;
   }, [funnelData]);
 
+  // ── Traffic Quality Analysis ──
+  const trafficAnalysis = useMemo(() => {
+    // Group events by visitor/session
+    const visitorMap = new Map<string, { events: UserEvent[]; firstSeen: number; lastSeen: number }>();
+    
+    events.forEach(e => {
+      const key = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
+      const time = new Date(e.created_at).getTime();
+      const existing = visitorMap.get(key);
+      if (existing) {
+        existing.events.push(e);
+        existing.firstSeen = Math.min(existing.firstSeen, time);
+        existing.lastSeen = Math.max(existing.lastSeen, time);
+      } else {
+        visitorMap.set(key, { events: [e], firstSeen: time, lastSeen: time });
+      }
+    });
+
+    // Score each visitor
+    type ScoredVisitor = {
+      id: string;
+      score: number;
+      quality: TrafficQuality;
+      timeOnPage: number;
+      maxScroll: number;
+      clicks: number;
+      origin: string;
+      device: string;
+      isBot: boolean;
+    };
+
+    const scored: ScoredVisitor[] = [];
+
+    visitorMap.forEach((data, key) => {
+      let score = 5; // entered page
+      let maxScroll = 0;
+      let clicks = 0;
+      let origin = "Direto";
+      let device = "—";
+
+      data.events.forEach(e => {
+        if (e.event_type === "scroll_depth") {
+          const pct = Number(e.event_data?.percent || 0);
+          maxScroll = Math.max(maxScroll, pct);
+          if (pct > 30) score += 10;
+        }
+        if (e.event_type === "click_product_image") { score += 10; clicks++; }
+        if (e.event_type === "click_buy_button") { score += 20; clicks++; }
+        if (e.event_type === "checkout_initiated") score += 40;
+        if (e.event_type === "pix_generated") score += 60;
+        if (e.event_type === "card_submitted") score += 50;
+        if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") score += 100;
+        
+        if (e.event_data?.utm_source) origin = String(e.event_data.utm_source);
+        if (e.event_data?.device) device = String(e.event_data.device);
+      });
+
+      const timeOnPage = (data.lastSeen - data.firstSeen) / 1000;
+      const isBot = timeOnPage < 2 && maxScroll < 5 && clicks === 0 && data.events.length > 3;
+
+      let quality: TrafficQuality = "quente";
+      if (score <= 10) quality = "ruim";
+      else if (score <= 30) quality = "frio";
+      else if (score <= 60) quality = "morno";
+
+      // Override for very short sessions
+      if (timeOnPage < 3 && maxScroll < 10 && clicks === 0) quality = "ruim";
+      if (clicks === 0 && maxScroll < 20 && score <= 15) quality = "frio";
+
+      scored.push({
+        id: typeof key === "string" ? key.slice(0, 8) : String(key).slice(0, 8),
+        score, quality, timeOnPage, maxScroll, clicks, origin, device, isBot,
+      });
+    });
+
+    // Distribution
+    const total = scored.length || 1;
+    const dist = {
+      ruim: scored.filter(v => v.quality === "ruim").length,
+      frio: scored.filter(v => v.quality === "frio").length,
+      morno: scored.filter(v => v.quality === "morno").length,
+      quente: scored.filter(v => v.quality === "quente").length,
+    };
+    const distPct = {
+      ruim: Math.round((dist.ruim / total) * 100),
+      frio: Math.round((dist.frio / total) * 100),
+      morno: Math.round((dist.morno / total) * 100),
+      quente: Math.round((dist.quente / total) * 100),
+    };
+
+    // By source
+    const sourceMap = new Map<string, { visitors: number; checkouts: number; paid: number; totalScore: number }>();
+    scored.forEach(v => {
+      const src = v.origin || "Direto";
+      const existing = sourceMap.get(src) || { visitors: 0, checkouts: 0, paid: 0, totalScore: 0 };
+      existing.visitors++;
+      existing.totalScore += v.score;
+      if (v.score >= 40) existing.checkouts++;
+      if (v.score >= 100) existing.paid++;
+      sourceMap.set(src, existing);
+    });
+
+    // Also count from enrichedLeads by origin
+    const leadsByOrigin = new Map<string, { checkouts: number; paid: number }>();
+    enrichedLeads.forEach(l => {
+      const src = l.origin;
+      const existing = leadsByOrigin.get(src) || { checkouts: 0, paid: 0 };
+      existing.checkouts++;
+      if (l.stage === "pago") existing.paid++;
+      leadsByOrigin.set(src, existing);
+    });
+
+    const sources = Array.from(sourceMap.entries()).map(([name, data]) => {
+      const leadData = leadsByOrigin.get(name);
+      return {
+        name,
+        visitors: data.visitors,
+        checkouts: leadData?.checkouts || data.checkouts,
+        paid: leadData?.paid || data.paid,
+        convRate: data.visitors > 0 ? ((leadData?.paid || data.paid) / data.visitors * 100) : 0,
+        avgQuality: data.visitors > 0 ? Math.round(data.totalScore / data.visitors) : 0,
+      };
+    }).sort((a, b) => b.visitors - a.visitors);
+
+    // Traffic alerts
+    const trafficAlerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
+    const botCount = scored.filter(v => v.isBot).length;
+    if (botCount > 5) {
+      trafficAlerts.push({ type: "critical", title: "Possível tráfego automatizado detectado", desc: `${botCount} visitantes com comportamento de bot (sessão < 2s, sem interação, múltiplos eventos).` });
+    }
+    if (dist.ruim > total * 0.4) {
+      trafficAlerts.push({ type: "warning", title: "Alta taxa de tráfego ruim", desc: `${distPct.ruim}% dos visitantes saem sem interagir. Verifique a qualidade do tráfego ou a landing page.` });
+    }
+    if (dist.frio > total * 0.5) {
+      trafficAlerts.push({ type: "warning", title: "Grande volume de visitantes frios", desc: `${distPct.frio}% dos visitantes tem baixa interação. A oferta pode não estar atraindo o público certo.` });
+    }
+    sources.forEach(s => {
+      if (s.visitors > 10 && s.convRate < 1 && s.avgQuality < 20) {
+        trafficAlerts.push({ type: "warning", title: `Campanha "${s.name}" com tráfego de baixa qualidade`, desc: `${s.visitors} visitantes, ${s.paid} pagamentos (${s.convRate.toFixed(1)}%). Score médio: ${s.avgQuality}.` });
+      }
+    });
+
+    return { scored, dist, distPct, sources, trafficAlerts, botCount, total: scored.length };
+  }, [events, enrichedLeads]);
+
   // ── Alerts ──
   const crmAlerts = useMemo(() => {
     const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
