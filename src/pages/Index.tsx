@@ -371,6 +371,7 @@ const Index = () => {
   };
 
   const handleBuyNow = () => {
+    trackEvent("click_buy_button");
     if (cartItems.length > 0) {
       nav(getUrlWithUtm(`/checkout`));
     } else {
