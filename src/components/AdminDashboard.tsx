@@ -279,7 +279,7 @@ function HeatmapCell({ label, value, benchmark }: { label: string; value: number
   );
 }
 
-const PIE_COLORS = ["hsl(262, 80%, 55%)", "hsl(24, 100%, 50%)", "hsl(160, 82%, 34%)", "hsl(200, 80%, 50%)", "hsl(340, 70%, 55%)"];
+const PIE_COLORS = ["hsl(224, 100%, 65%)", "hsl(256, 100%, 65%)", "hsl(142, 71%, 45%)", "hsl(38, 92%, 50%)", "hsl(0, 84%, 60%)"];
 
 export default function AdminDashboard(props: AdminDashboardProps) {
   const {
