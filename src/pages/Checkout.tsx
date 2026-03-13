@@ -565,27 +565,61 @@ const Checkout = () => {
 
         {/* Order Summary */}
         <div className="mt-2 border-t pt-4">
-          <p className="font-semibold text-sm mb-3">Resumo do pedido</p>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground flex items-center gap-1">Subtotal do produto ({quantity}x) <ChevronDown className="h-3 w-3" /></span>
-              <span>R$ {subtotalRaw.toFixed(2).replace(".", ",")}</span>
-            </div>
-            {hasCoupon && (
-              <div className="flex justify-between">
-                <span className="font-medium" style={{ color: '#fe2b54' }}>Cupom {couponLabel}</span>
-                <span className="font-medium" style={{ color: '#fe2b54' }}>- R$ {couponAmount.toFixed(2).replace(".", ",")}</span>
+          <button 
+            onClick={() => setShowSummary(!showSummary)}
+            className="w-full flex items-center justify-between mb-3"
+          >
+            <p className="font-semibold text-sm">Resumo do pedido</p>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${showSummary ? 'rotate-180' : ''}`} />
+          </button>
+          
+          <div 
+            className="overflow-hidden transition-all duration-300 ease-in-out"
+            style={{ 
+              maxHeight: showSummary ? '300px' : '0',
+              opacity: showSummary ? 1 : 0
+            }}
+          >
+            <div className="space-y-3 text-sm pb-3">
+              {/* Subtotal */}
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                  Subtotal ({quantity} {quantity === 1 ? 'item' : 'itens'})
+                </span>
+                <span>R$ {subtotalRaw.toFixed(2).replace(".", ",")}</span>
               </div>
-            )}
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Taxa de envio</span>
-              <span className={shipping === "padrao" ? "text-success font-medium" : ""}>
-                {shipping === "padrao" ? "Grátis" : `R$ ${shippingCost.toFixed(2).replace(".", ",")}`}
-              </span>
+
+              {/* Coupon */}
+              {hasCoupon && (
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 font-medium" style={{ color: '#fe2b54' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fe2b54" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    Cupom {couponLabel}
+                  </span>
+                  <span className="font-medium" style={{ color: '#fe2b54' }}>- R$ {couponAmount.toFixed(2).replace(".", ",")}</span>
+                </div>
+              )}
+
+              {/* Shipping */}
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                  Taxa de envio
+                </span>
+                <span className={shipping === "padrao" ? "text-success font-medium" : ""}>
+                  {shipping === "padrao" ? "Grátis" : `R$ ${shippingCost.toFixed(2).replace(".", ",")}`}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="flex justify-between items-end mt-3 pt-3 border-t">
-            <span className="font-bold text-sm">Total</span>
+
+          {/* Total - always visible */}
+          <div className="flex justify-between items-center pt-3 border-t">
+            <span className="font-bold text-sm flex items-center gap-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              Total
+            </span>
             <div className="text-right">
               <span className="font-bold text-base">R$ {total.toFixed(2).replace(".", ",")}</span>
               <p className="text-[10px] text-muted-foreground">Impostos inclusos</p>
