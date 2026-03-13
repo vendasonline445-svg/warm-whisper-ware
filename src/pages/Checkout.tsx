@@ -92,6 +92,7 @@ const Checkout = () => {
       },
     });
     supabase.from("page_views").insert({ page: "/checkout" }).then(() => {});
+    trackEvent("checkout_initiated", { page: "/checkout" });
   }, []);
 
   const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
