@@ -349,10 +349,15 @@ export default function AdminCRM() {
     return "unknown";
   };
 
+  // Domains to ignore as traffic sources (platform/spam)
+  const IGNORED_ORIGINS = ["lovable.dev", "healthkart.com", "kango-roo.com"];
+
   const getEventOrigin = (e: UserEvent): string => {
     const src = String(e.event_data?.utm_source || "");
     if (!src) return "Direto";
     const s = src.toLowerCase();
+    // Ignore platform/spam domains
+    if (IGNORED_ORIGINS.some(d => s.includes(d))) return "";
     // Normalize TikTok SCK codes (TT-timestamp-random)
     if (/^tt-\d+/i.test(s) || s.includes("tiktok") || s === "tt") return "TikTok";
     if (s.includes("facebook") || s.includes("fb") || s.includes("instagram")) return "Ads";
