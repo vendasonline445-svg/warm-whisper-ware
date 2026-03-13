@@ -1200,7 +1200,24 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Review Photo Zoom Modal */}
+      {/* Video Zoom Modal */}
+      <Dialog open={videoZoomOpen} onOpenChange={(open) => { setVideoZoomOpen(open); if (!open) setVideoZoomSrc(""); }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 border-0 bg-black shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
+          <DialogDescription className="sr-only">Vídeo do produto ampliado</DialogDescription>
+          <DialogTitle className="sr-only">Vídeo do produto</DialogTitle>
+          {videoZoomSrc && (
+            <video
+              src={videoZoomSrc}
+              className="w-full h-auto max-h-[85vh] rounded-lg"
+              controls
+              autoPlay
+              playsInline
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={reviewZoomOpen} onOpenChange={setReviewZoomOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
           <DialogDescription className="sr-only">Foto da avaliação ampliada</DialogDescription>
