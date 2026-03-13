@@ -1006,7 +1006,7 @@ const Index = () => {
                 </div>
                 <div className="px-5 pb-6 pt-2">
                   <button
-                    onClick={() => { setReportStep('done'); setReportDescription(''); }}
+                    onClick={() => { setReportStep('done'); setReportDescription(''); localStorage.setItem('mesalar_coupon', 'DESCULPA80'); }}
                     className="w-full py-3.5 rounded-xl bg-cta text-white font-bold text-sm hover:bg-cta-hover transition-colors"
                   >
                     Reportar
