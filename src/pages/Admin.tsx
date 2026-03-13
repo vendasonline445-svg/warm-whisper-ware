@@ -351,9 +351,9 @@ export default function Admin() {
     <div className="min-h-screen bg-background">
       {/* Top Nav */}
       <header className="border-b bg-card px-4 py-3">
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-lg font-bold">Painel Admin</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setTab("dashboard")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "dashboard" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
@@ -382,6 +382,16 @@ export default function Admin() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "logs" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
             >
               <Bug className="h-4 w-4" /> Logs
+            </button>
+            <span className="w-px bg-border mx-1 self-stretch" />
+            <button onClick={() => navigate("/admin/tiktok")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+              <Megaphone className="h-4 w-4" /> TikTok
+            </button>
+            <button onClick={() => navigate("/admin/rastreios")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+              <Package className="h-4 w-4" /> Rastreios
+            </button>
+            <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+              <Download className="h-4 w-4" /> CSV
             </button>
           </div>
         </div>
