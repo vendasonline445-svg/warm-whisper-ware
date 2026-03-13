@@ -904,8 +904,9 @@ const Index = () => {
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
