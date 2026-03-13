@@ -126,7 +126,12 @@ const Index = () => {
   ]);
   const [chatTyping, setChatTyping] = useState(false);
 
-  const closeChat = () => {
+  const closeStore = () => {
+    setStoreClosing(true);
+    setTimeout(() => { setStoreOpen(false); setStoreClosing(false); }, 300);
+  };
+
+
     setChatClosing(true);
     setTimeout(() => { setChatOpen(false); setChatClosing(false); }, 300);
   };
