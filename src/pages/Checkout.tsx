@@ -760,8 +760,8 @@ const Checkout = () => {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
         <div className="mx-auto max-w-[480px]">
           {/* Savings banner - full width, no rounding */}
-          <div className="w-full py-2.5 px-4" style={{ backgroundColor: '#fff0f3', borderTop: '1px solid #ffe0e6' }}>
-            <p className="text-[13px] flex items-center gap-2" style={{ color: '#fe2b54' }}>
+          <div className="w-full py-1.5 px-4" style={{ backgroundColor: '#fff0f3', borderTop: '1px solid #ffe0e6' }}>
+            <p className="text-[11px] flex items-center gap-1.5" style={{ color: '#fe2b54' }}>
               <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#ffe0e6' }}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fe2b54" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
               </span>
