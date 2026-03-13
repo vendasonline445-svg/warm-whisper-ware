@@ -254,6 +254,16 @@ const Index = () => {
     sendChatMessage(faq.q);
   };
   const countdown = useCountdown();
+  const [belowFoldReady, setBelowFoldReady] = useState(false);
+
+  // Defer below-fold content to speed up first paint
+  useEffect(() => {
+    const timer = requestIdleCallback ? requestIdleCallback(() => setBelowFoldReady(true)) : setTimeout(() => setBelowFoldReady(true), 100);
+    return () => {
+      if (typeof cancelIdleCallback !== 'undefined') cancelIdleCallback(timer as number);
+      else clearTimeout(timer as number);
+    };
+  }, []);
 
   // ViewContent event on mount
   useEffect(() => {
@@ -609,6 +619,8 @@ const Index = () => {
         {/* Gray Divider */}
         <div className="mt-4 h-2 bg-muted/60" />
 
+        {belowFoldReady ? (<>
+
         {/* Video Carousel Section */}
         <div className="px-4 mt-4">
           <h2 className="text-base font-bold mb-3">Vídeos do Produto</h2>
@@ -628,7 +640,7 @@ const Index = () => {
                   className="w-full h-full object-cover"
                   muted
                   playsInline
-                  preload="auto"
+                  preload="metadata"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                   <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
@@ -661,7 +673,7 @@ const Index = () => {
               {reviews.map((r, idx) => (
                 <div key={idx} className="py-5 first:pt-0">
                   <div className="flex items-center gap-3 mb-2">
-                    <img src={r.avatar} alt={r.name} className="h-10 w-10 rounded-full object-cover" />
+                    <img src={r.avatar} alt={r.name} className="h-10 w-10 rounded-full object-cover" loading="lazy" />
                     <span className="font-semibold text-sm">{r.name}</span>
                   </div>
                   <div className="flex gap-0.5 mb-2">
@@ -678,6 +690,7 @@ const Index = () => {
                           src={p}
                           alt={`Foto ${i + 1}`}
                           className="h-16 w-16 rounded-lg object-cover flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
+                          loading="lazy"
                           onClick={() => { setReviewZoomPhotos(r.photos); setReviewZoomIndex(i); setReviewZoomOpen(true); }}
                         />
                       ))}
@@ -826,6 +839,7 @@ const Index = () => {
             </div>
           </footer>
         </div>
+        </>) : <div className="mt-8 flex justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-foreground" /></div>}
       </div>
 
       {/* Sticky Bottom Bar */}
