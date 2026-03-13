@@ -229,7 +229,11 @@ export default function Admin() {
       setAlerts(newAlerts);
       setLoading(false);
     });
-  }, [authenticated]);
+  }, [authenticated, period, customFrom, customTo]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const exportCSV = () => {
     if (!leads.length) return;
