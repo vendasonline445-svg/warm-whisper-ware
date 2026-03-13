@@ -120,6 +120,11 @@ const PixPayment = () => {
     }
   };
 
+  const nowDate = new Date();
+  const deadline = new Date(nowDate.getTime() + PIX_TIMEOUT_MINUTES * 60 * 1000);
+  const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const deadlineStr = `${String(deadline.getHours()).padStart(2, "0")}:${String(deadline.getMinutes()).padStart(2, "0")}, ${deadline.getDate()} de ${meses[deadline.getMonth()]} ${deadline.getFullYear()}`;
+
   const qrImageUrl = qrCode
     ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`
     : "";
