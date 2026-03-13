@@ -76,7 +76,7 @@ const PixPayment = () => {
         const returnTo = sessionStorage.getItem("pixReturnTo");
         if (returnTo === "/taxa-alfandega") {
           sessionStorage.removeItem("pixReturnTo");
-          setTimeout(() => navigate("/obrigado-upsell"), 2000);
+          setTimeout(() => navigate(getUrlWithUtm("/obrigado-upsell")), 2000);
         } else {
           setTimeout(() => navigate("/obrigado"), 2000);
         }
