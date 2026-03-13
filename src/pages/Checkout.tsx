@@ -45,10 +45,11 @@ const Checkout = () => {
   }, []);
   const selectedColor = searchParams.get("color") || searchParams.get("cor") || "branca";
   const selectedSize = searchParams.get("size") || searchParams.get("tamanho") || "180x60cm";
-  const savedCoupon = localStorage.getItem('mesalar_coupon') || '';
+  const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
+  const savedCoupon = couponUsed ? '' : (localStorage.getItem('mesalar_coupon') || '');
   const couponParam = searchParams.get("cupom") || searchParams.get("coupon") || savedCoupon;
   const couponUpper = couponParam.toUpperCase();
-  const hasCoupon = couponUpper === "VOLTA25" || couponUpper === "DESCULPA80";
+  const hasCoupon = !couponUsed && (couponUpper === "VOLTA25" || couponUpper === "DESCULPA80");
   const couponDiscount = couponUpper === "DESCULPA80" ? 0.80 : couponUpper === "VOLTA25" ? 0.25 : 0;
   const couponLabel = couponUpper === "DESCULPA80" ? "DESCULPA80 (-80%)" : "VOLTA25 (-25%)";
   const timer = useCheckoutCountdown();
