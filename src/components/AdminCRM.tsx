@@ -2619,8 +2619,6 @@ export default function AdminCRM() {
               </div>
             </div>
           )}
-        </>
-      )}
 
       {/* ═══ LEAD DETAIL SIDE PANEL ═══ */}
       {selectedLead && (
@@ -2729,7 +2727,9 @@ export default function AdminCRM() {
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        </div>
+      )}
           {/* ═══ CAMPANHAS - Campaign Performance ═══ */}
           {subTab === "campanhas" && (() => {
             // Build campaign data from events + leads

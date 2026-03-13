@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { CheckCircle, Package, Truck, Mail } from "lucide-react";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
+import { trackPageViewOnce } from "@/utils/track-event";
 
 const Obrigado = () => {
   const orderDataStr = sessionStorage.getItem("orderData");
@@ -12,10 +13,7 @@ const Obrigado = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-
-    // Purchase event with deduplication (same event_id as server-side)
-    const orderId = pixData?.id || pixData?.transactionId || `order-${Date.now()}`;
-    const purchaseValue = orderData?.product?.total || pixData?.amount / 100 || 87.60;
+    trackPageViewOnce("/obrigado");
 
     // Purchase already fired in PixPayment — skip duplicate here
     console.log("[TikTok] Obrigado page loaded — Purchase already sent from PixPayment");
