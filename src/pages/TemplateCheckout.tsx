@@ -40,6 +40,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getUrlWithUtm } from "@/utils/utm";
 import { toast } from "@/hooks/use-toast";
 import {
   ArrowLeft, MapPin, Star, Truck, Shield, Minus, Plus, ChevronRight, Copy, Check, ChevronDown, CreditCard
