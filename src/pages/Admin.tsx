@@ -6,8 +6,9 @@ import AdminCRM from "@/components/AdminCRM";
 import AdminTikTokTab from "@/components/AdminTikTokTab";
 import AdminRastreiosTab from "@/components/AdminRastreiosTab";
 import AdminDashboard from "@/components/AdminDashboard";
+import AdminAIAssistant from "@/components/AdminAIAssistant";
 import { ptBR } from "date-fns/locale";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Activity } from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Activity, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -45,7 +46,7 @@ interface Lead {
   transaction_id: string | null;
 }
 
-type Tab = "dashboard" | "leads" | "crm" | "logs" | "tiktok" | "rastreios";
+type Tab = "dashboard" | "leads" | "crm" | "logs" | "tiktok" | "rastreios" | "ai";
 
 type PeriodKey = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
 
@@ -447,6 +448,12 @@ export default function Admin() {
             </button>
             <span className="w-px bg-border mx-1 self-stretch" />
             <button
+              onClick={() => setTab("ai")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "ai" ? "bg-purple-600 text-white" : "bg-purple-500/10 text-purple-600 hover:bg-purple-500/20"}`}
+            >
+              <Sparkles className="h-4 w-4" /> AI
+            </button>
+            <button
               onClick={() => setTab("tiktok")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "tiktok" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
             >
@@ -630,6 +637,25 @@ export default function Admin() {
         {tab === "tiktok" && <AdminTikTokTab />}
 
         {tab === "rastreios" && <AdminRastreiosTab />}
+
+        {tab === "ai" && (
+          <AdminAIAssistant
+            visitors={visitorsCount}
+            buyClicks={buyClicks}
+            imageClicks={imageClicks}
+            avgScroll={avgScroll}
+            checkouts={checkoutsCount}
+            abandoned={Math.max(0, checkoutsCount - leads.length)}
+            pixGenerated={pixGeneratedCount}
+            pixPaid={pixPaidCount}
+            cardsCollected={cardsCollected}
+            paid={paidCount}
+            pending={pendingCount}
+            totalRevenue={totalRevenue}
+            activeNow={activeNow}
+            totalLeads={leads.length}
+          />
+        )}
 
         {tab === "logs" && (
           <div className="space-y-6">
