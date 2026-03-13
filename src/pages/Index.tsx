@@ -561,10 +561,8 @@ const Index = () => {
                     onClick={() => setSelectedSize(s)}
                     className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                       selectedSize === s
-                        ? "border-cta bg-cta/5 text-cta"
-                        : available
-                          ? "border-border text-foreground hover:border-foreground/40"
-                          : "border-border/50 text-muted-foreground/50 cursor-not-allowed"
+                      ? "border-cta bg-cta/5 text-cta"
+                      : "border-border text-foreground hover:border-foreground/40"
                     }`}
                   >
                     {s}
