@@ -219,7 +219,7 @@ const Index = () => {
       <div className="mx-auto max-w-[480px]">
         {/* Product Gallery */}
         <section className="bg-card">
-          <div className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card">
+          <div className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-pointer" onClick={openColorModal}>
             <img
               src={productImages[currentImage]}
               alt="Mesa dobrável"
@@ -286,7 +286,10 @@ const Index = () => {
           </div>
 
           {/* Title */}
-          <h1 className="mt-4 text-base font-bold leading-snug text-foreground">
+          <h1
+            className="mt-4 text-base font-bold leading-snug text-foreground cursor-pointer active:opacity-70"
+            onClick={() => document.getElementById("buy-bar")?.scrollIntoView({ behavior: "smooth" })}
+          >
             Mesa Dobrável Tipo Maleta Prática e Durável 180x60cm — Portátil, Resistente, Fácil de Montar e Guardar
           </h1>
 
@@ -604,7 +607,7 @@ const Index = () => {
       </div>
 
       {/* Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)] px-2 py-2 flex items-center gap-1.5">
+      <div id="buy-bar" className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)] px-2 py-2 flex items-center gap-1.5">
         <div className="flex items-center gap-3 flex-shrink-0">
           <button className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[32px]">
             <Store className="h-5 w-5" />
