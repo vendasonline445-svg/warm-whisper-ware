@@ -13,7 +13,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // 🔧 ALTERE A SENHA AQUI
-const ADMIN_PASSWORD = "12345678";
+const ADMIN_PASSWORD = "12345";
 
 interface Lead {
   id: string;

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
-const ADMIN_PASSWORD = "12345678";
+const ADMIN_PASSWORD = "12345";
 
 interface Lead {
   id: string;
@@ -34,6 +35,7 @@ interface Lead {
 }
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -122,11 +124,16 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-[1400px] mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <h1 className="text-2xl font-bold">Leads ({leads.length})</h1>
-          <button onClick={exportCSV} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold">
-            Exportar CSV
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => navigate("/admin/tiktok")} className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg text-sm font-semibold">
+              TikTok Pixels
+            </button>
+            <button onClick={exportCSV} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold">
+              Exportar CSV
+            </button>
+          </div>
         </div>
 
         {loading ? (
