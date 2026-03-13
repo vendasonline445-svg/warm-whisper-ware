@@ -483,7 +483,7 @@ const Checkout = () => {
                       Oferta Relâmpago
                       <span className="absolute -right-1.5 -top-1 text-sm drop-shadow-sm">⚡</span>
                     </span>
-                    <span className="text-xs font-mono font-semibold text-foreground">{timer.display}</span>
+                    <span className="text-xs font-mono font-semibold" style={{ color: '#fe2b54' }}>{timer.display}</span>
                   </div>
                   {/* Free return - subtle */}
                   <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">
