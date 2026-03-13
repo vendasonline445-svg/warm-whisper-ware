@@ -58,6 +58,7 @@ export default function Admin() {
   const [buyClicks, setBuyClicks] = useState(0);
   const [imageClicks, setImageClicks] = useState(0);
   const [avgScroll, setAvgScroll] = useState(0);
+  const [alerts, setAlerts] = useState<SystemAlert[]>([]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
