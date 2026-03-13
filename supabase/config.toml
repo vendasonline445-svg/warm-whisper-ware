@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.send-trackly-webhook]
 verify_jwt = false
+
+[functions.product-chat]
+verify_jwt = false
