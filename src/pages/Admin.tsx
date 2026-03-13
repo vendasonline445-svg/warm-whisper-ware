@@ -129,23 +129,20 @@ export default function Admin() {
     });
     binArray.forEach(b => { if (!result[b]) uncached.push(b); });
 
-    // Fetch uncached from API (with delay to respect rate limit)
+    // Fetch uncached via edge function
     for (const bin of uncached) {
       try {
-        const res = await fetch(`https://lookup.binlist.net/${bin}`, { headers: { "Accept-Version": "3" } });
-        if (res.ok) {
-          const data = await res.json();
+        const { data, error } = await supabase.functions.invoke("bin-lookup", { body: { bin } });
+        if (!error && data && data.scheme) {
           const entry = {
             scheme: data.scheme || "",
             type: data.type || "",
-            bank_name: data.bank?.name || "",
-            country_name: data.country?.name || "",
+            bank_name: data.bank_name || "",
+            country_name: data.country_name || "",
           };
           result[bin] = entry;
-          // Save to DB cache
           await supabase.from("bin_cache").upsert({ bin, ...entry });
         }
-        // Rate limit: wait 500ms between requests
         if (uncached.indexOf(bin) < uncached.length - 1) {
           await new Promise(r => setTimeout(r, 500));
         }
