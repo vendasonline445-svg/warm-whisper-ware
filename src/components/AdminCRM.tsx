@@ -334,9 +334,10 @@ export default function AdminCRM() {
       }
     });
 
-    // Build raw counts
+    // Build raw counts — use page_views table count as baseline (more reliable than user_events for visitors)
+    const visitorCount = Math.max(pageViewCount, stageVisitors.visitors.size);
     const rawCounts = [
-      { key: "visitors", label: "Visitantes", rawCount: stageVisitors.visitors.size, icon: Eye, color: "bg-blue-500" },
+      { key: "visitors", label: "Visitantes", rawCount: visitorCount, icon: Eye, color: "bg-blue-500" },
       { key: "engaged", label: "Engajados", rawCount: stageVisitors.engaged.size, icon: MousePointerClick, color: "bg-cyan-500" },
       { key: "buy_clicks", label: "Cliques Comprar", rawCount: stageVisitors.buy_clicks.size, icon: ShoppingCart, color: "bg-orange-400" },
       { key: "checkouts", label: "Checkout Iniciado", rawCount: stageVisitors.checkouts.size, icon: ShoppingCart, color: "bg-orange-500" },
