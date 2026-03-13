@@ -1036,17 +1036,18 @@ const Index = () => {
             </div>
 
             {/* Input */}
-            <div className="border-t px-4 py-3 flex items-center gap-2">
+            <form onSubmit={(e) => { e.preventDefault(); sendChatMessage(chatInput); }} className="border-t px-4 py-3 flex items-center gap-2">
               <input
                 type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Digite sua pergunta..."
                 className="flex-1 rounded-full border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-cta"
-                readOnly
               />
-              <button className="bg-cta text-white rounded-full p-2.5">
+              <button type="submit" disabled={chatTyping || !chatInput.trim()} className="bg-cta text-white rounded-full p-2.5 disabled:opacity-50">
                 <ChevronRight className="h-4 w-4" />
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
