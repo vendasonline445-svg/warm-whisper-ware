@@ -119,13 +119,24 @@ const Index = () => {
   const [zoomOpen, setZoomOpen] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
   const [storeClosing, setStoreClosing] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatClosing, setChatClosing] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{role: 'bot' | 'user', text: string}[]>([
+    { role: 'bot', text: 'Olá! Como posso te ajudar com informações sobre a Mesa Dobrável Mesalar?' }
+  ]);
 
   const closeStore = () => {
     setStoreClosing(true);
-    setTimeout(() => {
-      setStoreOpen(false);
-      setStoreClosing(false);
-    }, 300);
+    setTimeout(() => { setStoreOpen(false); setStoreClosing(false); }, 300);
+  };
+
+  const closeChat = () => {
+    setChatClosing(true);
+    setTimeout(() => { setChatOpen(false); setChatClosing(false); }, 300);
+  };
+
+  const handleQuickQuestion = (faq: { q: string; a: string }) => {
+    setChatMessages(prev => [...prev, { role: 'user', text: faq.q }, { role: 'bot', text: faq.a }]);
   };
   const countdown = useCountdown();
 
