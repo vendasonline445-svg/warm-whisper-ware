@@ -9,7 +9,7 @@ import AdminDashboard from "@/components/AdminDashboard";
 import AdminAIAssistant from "@/components/AdminAIAssistant";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
 import { ptBR } from "date-fns/locale";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Activity, Sparkles } from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Activity, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -481,6 +481,13 @@ export default function Admin() {
               title={darkMode ? "Modo Claro" : "Modo Escuro"}
             >
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={() => { sessionStorage.removeItem("admin_auth"); setAuthenticated(false); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+              title="Sair"
+            >
+              <LogOut className="h-4 w-4" /> Sair
             </button>
           </div>
         </div>
