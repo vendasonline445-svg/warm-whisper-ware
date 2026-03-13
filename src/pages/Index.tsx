@@ -356,7 +356,7 @@ const Index = () => {
       // Save as single-item cart for checkout
       saveCart([{ color: selectedColor, size: selectedSize, quantity: modalQty }]);
       const params = new URLSearchParams(window.location.search);
-      nav(`/checkout?${params.toString()}`);
+      nav(getUrlWithUtm(`/checkout?${params.toString()}`));
     } else {
       addToCart(selectedColor, selectedSize, modalQty);
       closeColorModal();
