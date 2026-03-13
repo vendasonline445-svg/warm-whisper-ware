@@ -101,6 +101,9 @@ export default function Admin() {
   const [buyClicks, setBuyClicks] = useState(0);
   const [imageClicks, setImageClicks] = useState(0);
   const [avgScroll, setAvgScroll] = useState(0);
+  const [pixGeneratedFromEvents, setPixGeneratedFromEvents] = useState(0);
+  const [paidFromEvents, setPaidFromEvents] = useState(0);
+  const [activeNow, setActiveNow] = useState(0);
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
   const [period, setPeriod] = useState<PeriodKey>("30days");
   const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
