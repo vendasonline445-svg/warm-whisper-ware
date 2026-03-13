@@ -192,21 +192,58 @@ export default function AdminCRM() {
   });
   const [showFilters, setShowFilters] = useState(false);
 
+  // Helper for new tables not yet in generated types
+  const db = supabase as any;
+
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     const daysMap: Record<string, number> = { today: 0, "7days": 7, "30days": 30, "90days": 90 };
     const days = daysMap[filters.period] ?? 30;
     const since = new Date(Date.now() - days * 86400000).toISOString();
 
-    const [leadsRes, eventsRes, pageViewsRes] = await Promise.all([
+    const [leadsRes, eventsRes, pageViewsRes, funnelRes, newEventsRes] = await Promise.all([
       supabase.from("checkout_leads").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
       supabase.from("user_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(2000),
       supabase.from("page_views").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(2000),
+      db.from("funnel_state").select("*"),
+      db.from("events").select("visitor_id, event_name, value, created_at").gte("created_at", since).order("created_at", { ascending: false }).limit(3000),
     ]);
 
     setLeads((leadsRes.data as Lead[]) || []);
     setEvents((eventsRes.data as UserEvent[]) || []);
     setPageViewCount((pageViewsRes.data || []).length);
+
+    // Store funnel state and new events for metrics
+    const funnelData = (funnelRes.data || []) as { visitor_id: string; stage: string; updated_at: string }[];
+    const newEvents = (newEventsRes.data || []) as { visitor_id: string; event_name: string; value: number; created_at: string }[];
+
+    // Compute event-driven metrics from new events table
+    const visitorSet = new Set<string>();
+    const checkoutSet = new Set<string>();
+    const pixSet = new Set<string>();
+    const purchaseSet = new Set<string>();
+    let revenueFromEvents = 0;
+
+    newEvents.forEach(e => {
+      visitorSet.add(e.visitor_id);
+      if (e.event_name === "checkout_initiated") checkoutSet.add(e.visitor_id);
+      if (e.event_name === "pix_generated") pixSet.add(e.visitor_id);
+      if (e.event_name === "payment_confirmed" || e.event_name === "pix_paid") {
+        purchaseSet.add(e.visitor_id);
+        revenueFromEvents += e.value || 0;
+      }
+    });
+
+    // Store these for consistency validation
+    setEventDrivenMetrics({
+      visitors: visitorSet.size,
+      checkouts: checkoutSet.size,
+      pixGenerated: pixSet.size,
+      purchases: purchaseSet.size,
+      revenue: revenueFromEvents,
+      funnelStages: funnelData,
+    });
+
     if (!silent) setLoading(false);
   }, [filters.period]);
 
