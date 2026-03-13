@@ -68,8 +68,8 @@ export default function AdminRastreios() {
   const navigate = useNavigate();
 
   const sendTracklyTest = async () => {
-    if (!manualName || !manualEmail || !manualCep || !manualEndereco || !manualProduto) {
-      toast.error("Preencha todos os campos");
+    if (!manualName || !manualEmail || !manualCep || !manualProduto) {
+      toast.error("Preencha os campos obrigatórios");
       return;
     }
     setSendingManual(true);
@@ -77,11 +77,20 @@ export default function AdminRastreios() {
     try {
       const { data: result, error } = await supabase.functions.invoke("send-trackly-webhook", {
         body: {
+          order_id: manualOrderId,
           nome: manualName,
           email: manualEmail,
+          telefone: manualPhone,
+          rua: manualRua,
+          numero: manualNumero,
+          complemento: manualComplemento,
+          bairro: manualBairro,
           cep: manualCep,
-          endereco: manualEndereco,
+          cidade: manualCidade,
+          estado: manualEstado,
           produto: manualProduto,
+          quantidade: manualQuantidade,
+          preco_centavos: manualPreco,
           webhook_url: webhookUrl,
         },
       });
