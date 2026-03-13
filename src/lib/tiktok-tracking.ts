@@ -1,20 +1,65 @@
 /**
- * TikTok Tracking Module
- * Handles Pixel + Events API with deduplication, SHA256 hashing, UTM capture
+ * TikTok Multi-Pixel Tracking Module
+ * Loads active pixels from DB, fires Browser (ttq) + Server (Events API) for each.
+ * Deduplication via shared event_id. SHA256 hashing for server-side identifiers.
  */
 
-const PIXEL_ID = "D6GM4RBC77UAAN00B800";
-const DEBUG_PREFIX = "[TikTok]";
+import { supabase } from "@/integrations/supabase/client";
+
+const DEBUG = "[TikTok Tracking]";
+
+// ── Pixel store ───────────────────────────────────────────────────────
+
+interface TikTokPixel {
+  id: string;
+  name: string;
+  pixel_id: string;
+  api_token: string;
+  status: string;
+}
+
+let _pixels: TikTokPixel[] = [];
+let _pixelsLoaded = false;
+let _loadPromise: Promise<void> | null = null;
+
+export async function loadPixels(): Promise<TikTokPixel[]> {
+  if (_pixelsLoaded) return _pixels;
+  if (_loadPromise) {
+    await _loadPromise;
+    return _pixels;
+  }
+  _loadPromise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tiktok_pixels")
+        .select("*")
+        .eq("status", "active");
+      if (error) {
+        console.warn(`${DEBUG} Error loading pixels:`, error.message);
+        _pixels = [];
+      } else {
+        _pixels = (data || []) as TikTokPixel[];
+        console.log(`${DEBUG} Loaded ${_pixels.length} active pixel(s)`);
+      }
+    } catch (e) {
+      console.warn(`${DEBUG} Failed to load pixels:`, e);
+      _pixels = [];
+    }
+    _pixelsLoaded = true;
+  })();
+  await _loadPromise;
+  return _pixels;
+}
+
+export function reloadPixels() {
+  _pixelsLoaded = false;
+  _loadPromise = null;
+}
 
 // ── UTM / ttclid capture ──────────────────────────────────────────────
 
 const TRACKED_PARAMS = [
-  "ttclid",
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_content",
-  "utm_term",
+  "ttclid", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
 ];
 
 export function captureTrackingParams() {
@@ -24,11 +69,11 @@ export function captureTrackingParams() {
       const value = params.get(key);
       if (value) {
         localStorage.setItem(`tt_${key}`, value);
-        console.log(`${DEBUG_PREFIX} Captured ${key}:`, value);
+        console.log(`${DEBUG} Captured ${key}:`, value);
       }
     });
   } catch (e) {
-    console.warn(`${DEBUG_PREFIX} Error capturing params:`, e);
+    console.warn(`${DEBUG} Error capturing params:`, e);
   }
 }
 
@@ -38,14 +83,6 @@ export function getStoredParam(key: string): string | null {
   } catch {
     return null;
   }
-}
-
-export function getAllTrackingParams(): Record<string, string | null> {
-  const result: Record<string, string | null> = {};
-  TRACKED_PARAMS.forEach((key) => {
-    result[key] = getStoredParam(key);
-  });
-  return result;
 }
 
 // ── SHA256 hashing ────────────────────────────────────────────────────
@@ -68,16 +105,15 @@ export function generateEventId(): string {
     : `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 }
 
-// ── Identify user ─────────────────────────────────────────────────────
+// ── Phone normalization ───────────────────────────────────────────────
 
-/**
- * Normalize phone to E.164 format for Brazil: +55XXXXXXXXXXX
- */
 export function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.startsWith("55")) return "+" + digits;
   return "+55" + digits;
 }
+
+// ── Identify user (browser-side, called per pixel) ────────────────────
 
 export async function identifyTikTokUser(data: {
   email?: string;
@@ -85,26 +121,25 @@ export async function identifyTikTokUser(data: {
   externalId?: string;
 }) {
   const ttq = (window as any).ttq;
-  if (!ttq) {
-    console.warn(`${DEBUG_PREFIX} ttq not loaded`);
-    return;
-  }
+  if (!ttq) return;
 
-  // ttq.identify() expects RAW (unhashed) values — the Pixel SDK hashes internally
   const identifyData: Record<string, string> = {};
+  if (data.email) identifyData.email = data.email.trim().toLowerCase();
+  if (data.phone) identifyData.phone_number = normalizePhone(data.phone);
+  if (data.externalId) identifyData.external_id = data.externalId.replace(/\D/g, "");
 
-  if (data.email) {
-    identifyData.email = data.email.trim().toLowerCase();
-  }
-  if (data.phone) {
-    identifyData.phone_number = normalizePhone(data.phone);
-  }
-  if (data.externalId) {
-    identifyData.external_id = data.externalId.replace(/\D/g, "");
-  }
-
-  console.log(`${DEBUG_PREFIX} identify() RAW (Pixel hashes internally)`, identifyData);
-  ttq.identify(identifyData);
+  const pixels = await loadPixels();
+  pixels.forEach((px) => {
+    try {
+      const instance = ttq.instance(px.pixel_id);
+      if (instance) {
+        instance.identify(identifyData);
+        console.log(`${DEBUG} identify() on pixel ${px.pixel_id}`);
+      }
+    } catch (e) {
+      console.warn(`${DEBUG} identify error for ${px.pixel_id}:`, e);
+    }
+  });
 }
 
 // ── Store user data for server-side events ────────────────────────────
@@ -122,7 +157,6 @@ export async function setUserData(data: {
 }) {
   if (data.email) _userData.email_hash = await sha256(data.email);
   if (data.phone) {
-    // Hash normalized E.164 digits (without +) for server-side
     const normalized = normalizePhone(data.phone).replace("+", "");
     _userData.phone_hash = await sha256(normalized);
   }
@@ -133,7 +167,30 @@ export function getUserData() {
   return _userData;
 }
 
-// ── Track event (Pixel + Events API) ──────────────────────────────────
+// ── Initialize all pixels (browser-side ttq.load) ─────────────────────
+
+async function initializePixels() {
+  const pixels = await loadPixels();
+  const ttq = (window as any).ttq;
+  if (!ttq) {
+    console.warn(`${DEBUG} ttq SDK not loaded`);
+    return;
+  }
+
+  pixels.forEach((px) => {
+    try {
+      // Only load if not already loaded
+      if (!ttq._i || !ttq._i[px.pixel_id]) {
+        ttq.load(px.pixel_id, { enableCookie: true });
+        console.log(`${DEBUG} Loaded pixel: ${px.pixel_id} (${px.name})`);
+      }
+    } catch (e) {
+      console.warn(`${DEBUG} Error loading pixel ${px.pixel_id}:`, e);
+    }
+  });
+}
+
+// ── Track event (all pixels: Browser + Server) ────────────────────────
 
 interface TrackEventOptions {
   event: string;
@@ -151,46 +208,54 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
   const timestamp = new Date().toISOString();
   const ttclid = getStoredParam("ttclid");
 
-  // If user data passed, hash and store it
   if (userData) {
     await setUserData(userData);
     await identifyTikTokUser(userData);
   }
 
-  // 1. Browser-side Pixel event
-  const ttq = (window as any).ttq;
-  if (ttq) {
-    try {
-      ttq.track(event, properties, { event_id: eventId });
-      console.log(`${DEBUG_PREFIX} ${event} fired`, { eventId, properties });
-    } catch (e) {
-      console.warn(`${DEBUG_PREFIX} Pixel error:`, e);
-    }
-  } else {
-    console.warn(`${DEBUG_PREFIX} ttq not available for "${event}"`);
+  const pixels = await loadPixels();
+  if (pixels.length === 0) {
+    console.warn(`${DEBUG} No active pixels — skipping ${event}`);
+    return;
   }
 
-  // 2. Server-side Events API
+  const ttq = (window as any).ttq;
+
+  // Browser-side: fire on each pixel instance
+  pixels.forEach((px) => {
+    if (ttq) {
+      try {
+        const instance = ttq.instance(px.pixel_id);
+        if (instance) {
+          instance.track(event, properties, { event_id: eventId });
+          console.log(`${DEBUG} ${event} fired (browser) — pixel ${px.pixel_id}`);
+        }
+      } catch (e) {
+        console.warn(`${DEBUG} Pixel error for ${px.pixel_id}:`, e);
+      }
+    }
+  });
+
+  // Server-side: send to each pixel via edge function
   const storedUser = getUserData();
-  const serverPayload = {
-    event,
-    event_id: eventId,
-    timestamp,
-    pixel_code: PIXEL_ID,
-    user: {
-      email: storedUser.email_hash || "",
-      phone_number: storedUser.phone_hash || "",
-      external_id: storedUser.external_id_hash || "",
-      ttclid: ttclid || "",
-      user_agent: navigator.userAgent,
-      page_url: window.location.href,
-    },
-    properties,
-  };
+  pixels.forEach((px) => {
+    const serverPayload = {
+      event,
+      event_id: eventId,
+      timestamp,
+      pixel_code: px.pixel_id,
+      api_token: px.api_token,
+      user: {
+        email: storedUser.email_hash || "",
+        phone_number: storedUser.phone_hash || "",
+        external_id: storedUser.external_id_hash || "",
+        ttclid: ttclid || "",
+        user_agent: navigator.userAgent,
+        page_url: window.location.href,
+      },
+      properties,
+    };
 
-  console.log(`${DEBUG_PREFIX} Server event payload:`, serverPayload);
-
-  try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -204,26 +269,35 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
       body: JSON.stringify(serverPayload),
     })
       .then((res) => res.json())
-      .then((data) => console.log(`${DEBUG_PREFIX} Server response:`, data))
-      .catch((err) => console.warn(`${DEBUG_PREFIX} Server error:`, err));
-  } catch (e) {
-    console.warn(`${DEBUG_PREFIX} Server send error:`, e);
-  }
+      .then((data) => console.log(`${DEBUG} ${event} server response (${px.pixel_id}):`, data))
+      .catch((err) => console.warn(`${DEBUG} ${event} server error (${px.pixel_id}):`, err));
+  });
 }
 
 // ── Page view for SPA ─────────────────────────────────────────────────
 
-export function trackPageView() {
+export async function trackPageView() {
+  const pixels = await loadPixels();
   const ttq = (window as any).ttq;
-  if (ttq) {
-    ttq.page();
-    console.log(`${DEBUG_PREFIX} page() fired`);
-  }
+  if (!ttq) return;
+
+  pixels.forEach((px) => {
+    try {
+      const instance = ttq.instance(px.pixel_id);
+      if (instance) {
+        instance.page();
+      }
+    } catch (e) {
+      console.warn(`${DEBUG} page() error for ${px.pixel_id}:`, e);
+    }
+  });
+  console.log(`${DEBUG} page() fired on ${pixels.length} pixel(s)`);
 }
 
 // ── Init (call on app mount) ──────────────────────────────────────────
 
-export function initTikTokTracking() {
+export async function initTikTokTracking() {
   captureTrackingParams();
-  console.log(`${DEBUG_PREFIX} Tracking initialized. Params:`, getAllTrackingParams());
+  await initializePixels();
+  console.log(`${DEBUG} Tracking initialized`);
 }
