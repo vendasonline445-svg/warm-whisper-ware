@@ -126,7 +126,9 @@ const Index = () => {
   const [modalQty, setModalQty] = useState(1);
   const [flyingDot, setFlyingDot] = useState(false);
   const [exitModalOpen, setExitModalOpen] = useState(false);
+  const [exit2Open, setExit2Open] = useState(false);
   const [exitShown, setExitShown] = useState(false);
+  const [exit2Shown, setExit2Shown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -1156,7 +1158,7 @@ const Index = () => {
 
       {/* Exit Intent Modal - VOLTA25 (Bottom Sheet matching product modal) */}
       {exitModalOpen && (
-        <div className="fixed inset-0 z-[60]" onClick={() => setExitModalOpen(false)}>
+        <div className="fixed inset-0 z-[60]" onClick={() => { setExitModalOpen(false); if (!exit2Shown) { setExit2Open(true); setExit2Shown(true); } }}>
           <div className="absolute inset-0 bg-black/60 animate-in fade-in-0" />
           <div
             className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl transition-transform duration-300 mx-auto sm:max-w-md animate-in slide-in-from-bottom max-h-[90vh] overflow-y-auto"
@@ -1168,7 +1170,7 @@ const Index = () => {
             </div>
             {/* Close button */}
             <button
-              onClick={() => setExitModalOpen(false)}
+              onClick={() => { setExitModalOpen(false); if (!exit2Shown) { setExit2Open(true); setExit2Shown(true); } }}
               className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="h-3.5 w-3.5" />
@@ -1279,7 +1281,130 @@ const Index = () => {
         </div>
       )}
 
-      {/* Store Info Modal - Bottom Sheet */}
+      {/* Second Exit Modal - 50% OFF (Last chance) */}
+      {exit2Open && (
+        <div className="fixed inset-0 z-[60]" onClick={() => setExit2Open(false)}>
+          <div className="absolute inset-0 bg-black/60 animate-in fade-in-0" />
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl transition-transform duration-300 mx-auto sm:max-w-md animate-in slide-in-from-bottom max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+            <button
+              onClick={() => setExit2Open(false)}
+              className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+
+            <div className="px-5 pt-2 pb-3">
+              <p className="text-base font-bold">Última chance! 🔥</p>
+            </div>
+
+            {/* 50% OFF Coupon Box */}
+            <div className="mx-5 rounded-lg border-2 border-dashed border-destructive bg-destructive/5 p-3 mb-4">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Oferta Final Exclusiva</p>
+              <p className="text-2xl font-black tracking-wider text-destructive mb-0.5">ULTIMA50</p>
+              <p className="text-xs"><strong>50% OFF</strong> — só agora!</p>
+              <p className="text-xs mt-1.5">⏳ Expira em <strong className="text-destructive">{fmt(countdown.m)}:{fmt(countdown.s)}</strong></p>
+              <div className="mt-1.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full bg-destructive" style={{ width: `${Math.max(5, ((countdown.m * 60 + countdown.s) / 300) * 100)}%` }} />
+              </div>
+            </div>
+
+            {/* Product header with 50% price */}
+            <div className="flex items-center gap-3 px-5 pb-4">
+              <img
+                src={selectedColor === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
+                alt="Mesa Dobrável"
+                className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1"
+              />
+              <div>
+                <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.oldPrice ?? 159.90) * 0.5).toFixed(2).replace('.', ',')}</p>
+                <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.oldPrice ?? 159.90).toFixed(2).replace('.', ',')}</p>
+                <span className="inline-block mt-0.5 rounded bg-destructive/10 text-destructive text-[10px] font-bold px-1.5 py-0.5">Economize 50%</span>
+              </div>
+            </div>
+
+            {/* Color selection */}
+            <div className="px-5 pb-4">
+              <p className="text-sm font-semibold mb-2">Cor: {selectedColor === 'preta' ? 'Preta' : selectedColor === 'branca' ? 'Branca' : 'Selecione'}</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { id: "branca", name: "Branca", img: "/images/mesa-branca-popup.webp" },
+                  { id: "preta", name: "Preta", img: "/images/mesa-preta-popup.webp" },
+                ].map((color) => (
+                  <button
+                    key={color.id}
+                    onClick={() => setSelectedColor(color.id)}
+                    className={`rounded-2xl border-2 overflow-hidden transition-all relative ${
+                      selectedColor === color.id
+                        ? "border-cta bg-cta/5 shadow-lg"
+                        : "border-border hover:border-cta/50"
+                    }`}
+                  >
+                    {selectedColor === color.id && (
+                      <div className="absolute top-2 right-2 bg-cta rounded-full p-0.5">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                    <div className="aspect-[4/3] bg-muted/30 p-3">
+                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
+                    </div>
+                    <p className="py-2 text-center text-sm font-medium">{color.name}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Size selection */}
+            <div className="px-5 pb-4">
+              <p className="text-sm font-semibold mb-2">Tamanho:</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.keys(SIZE_PRICES).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSelectedSize(s)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                      selectedSize === s
+                        ? "border-cta bg-cta/5 text-cta"
+                        : "border-border text-foreground hover:border-foreground/40"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Confirm button */}
+            <div className="px-5 pb-6">
+              <button
+                onClick={() => {
+                  if (selectedColor && selectedSize) {
+                    setExit2Open(false);
+                    nav(`/checkout?cor=${selectedColor}&tamanho=${selectedSize}&cupom=ULTIMA50`);
+                  }
+                }}
+                disabled={!selectedColor}
+                className={`w-full font-bold text-base py-4 rounded-2xl transition-all ${
+                  selectedColor
+                    ? 'bg-destructive text-white hover:bg-destructive/90'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
+                }`}
+              >
+                Garantir com 50% OFF 🔥 - R$ {((SIZE_PRICES[selectedSize]?.oldPrice ?? 159.90) * 0.5).toFixed(2).replace('.', ',')}
+              </button>
+              <p className="text-[10px] text-muted-foreground mt-2 text-center">Última oferta. Após fechar, o desconto será perdido!</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {storeOpen && (
         <div className="fixed inset-0 z-[60]" onClick={closeStore}>
           <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${storeClosing ? 'opacity-0' : 'opacity-100 animate-in fade-in-0'}`} />
