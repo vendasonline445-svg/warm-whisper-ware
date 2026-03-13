@@ -710,9 +710,12 @@ const Checkout = () => {
                       className="w-full h-12 rounded-lg border border-border bg-muted/40 px-3 text-sm"
                     >
                       <option value={1}>1x de R$ {total.toFixed(2).replace(".", ",")} (sem juros)</option>
-                      {[2,3].map(n => {
-                        const installmentValue = (total / n).toFixed(2).replace(".", ",");
-                        return <option key={n} value={n}>{n}x de R$ {installmentValue} (sem juros)</option>;
+                      {[2,3,4,5,6,7,8,9,10,11,12].map(n => {
+                        const juros = n <= 3;
+                        const installmentValue = juros
+                          ? (total / n).toFixed(2).replace(".", ",")
+                          : ((total * (1 + 0.0199 * (n - 3))) / n).toFixed(2).replace(".", ",");
+                        return <option key={n} value={n}>{n}x de R$ {installmentValue} {juros ? "(sem juros)" : "(com juros)"}</option>;
                       })}
                     </select>
                   </div>
