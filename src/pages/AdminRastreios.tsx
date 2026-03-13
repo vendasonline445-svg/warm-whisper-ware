@@ -89,7 +89,7 @@ export default function AdminRastreios() {
     try {
       const payload = {
         status: "approved",
-        customer: { name: "Cliente Teste", email: "teste@email.com" },
+        customer: { name: "Cliente Teste", email: "teste@cliente.com" },
         address: { zip_code: "01001000" },
         products: [{ title: "Produto Teste" }],
       };
@@ -101,6 +101,7 @@ export default function AdminRastreios() {
       });
 
       const text = await res.text();
+      console.log("[Trackly] test webhook sent");
 
       // Log the test
       await supabase.from("tracking_webhook_logs" as any).insert({
@@ -109,10 +110,15 @@ export default function AdminRastreios() {
         response: text.slice(0, 500),
       } as any);
 
-      toast.success(`Teste enviado! Status: ${res.status}`);
+      if (res.ok) {
+        toast.success("Webhook enviado com sucesso");
+      } else {
+        toast.error("Erro ao enviar webhook");
+      }
       fetchLogs();
     } catch (err: any) {
-      toast.error("Erro ao testar: " + err.message);
+      console.error("[Trackly] test webhook error:", err);
+      toast.error("Erro ao enviar webhook");
     }
     setTestingWebhook(false);
   };
@@ -203,6 +209,14 @@ export default function AdminRastreios() {
             <Package size={24} className="text-primary" />
             <h1 className="text-2xl font-bold">Rastreios</h1>
           </div>
+          <button
+            onClick={testWebhook}
+            disabled={testingWebhook || !webhookUrl}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            <Send size={14} />
+            {testingWebhook ? "Enviando..." : "Testar compra"}
+          </button>
         </div>
 
         {/* Tabs */}
