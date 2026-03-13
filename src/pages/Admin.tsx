@@ -116,7 +116,7 @@ export default function Admin() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [logFilter, setLogFilter] = useState<Set<string>>(() => new Set(["system", "integration"]));
   const [binCache, setBinCache] = useState<Record<string, { scheme: string; type: string; bank_name: string; country_name: string }>>({});
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("admin_theme") === "dark");
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("admin_theme") !== "light");
 
   // Apply dark mode
   useEffect(() => {
