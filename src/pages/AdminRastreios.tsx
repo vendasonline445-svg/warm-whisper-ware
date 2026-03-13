@@ -276,6 +276,32 @@ export default function AdminRastreios() {
     return map[s] || "bg-gray-100 text-gray-800";
   };
 
+  const exportPaidOrdersCSV = async () => {
+    const { data, error } = await supabase
+      .from("checkout_leads")
+      .select("*")
+      .eq("status", "paid");
+    if (error || !data?.length) {
+      toast.error(error ? "Erro ao buscar pedidos" : "Nenhum pedido pago encontrado");
+      return;
+    }
+    const headers = "order_id,customer_name,customer_email,customer_phone,street,number,complement,neighborhood,zipcode,city,state,product_name,quantity,price_in_cents,created_at";
+    const rows = data.map((l) =>
+      [l.id, l.name, l.email, l.phone || "", l.endereco || "", l.numero || "", l.complemento || "", l.bairro || "", l.cep || "", l.cidade || "", l.uf || "", "Mesa Portátil Dobrável", l.quantity ?? 1, l.total_amount ?? 0, l.created_at]
+        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .join(",")
+    );
+    const csv = [headers, ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pedidos_pagos.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${data.length} pedidos exportados`);
+  };
+
   if (!authenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
@@ -300,14 +326,23 @@ export default function AdminRastreios() {
             <Package size={24} className="text-primary" />
             <h1 className="text-2xl font-bold">Rastreios</h1>
           </div>
-          <button
-            onClick={testWebhook}
-            disabled={testingWebhook || !webhookUrl}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 disabled:opacity-50"
-          >
-            <Send size={14} />
-            {testingWebhook ? "Enviando..." : "Testar compra"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={exportPaidOrdersCSV}
+              className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2"
+            >
+              <Download size={14} />
+              Exportar pedidos pagos (CSV)
+            </button>
+            <button
+              onClick={testWebhook}
+              disabled={testingWebhook || !webhookUrl}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 disabled:opacity-50"
+            >
+              <Send size={14} />
+              {testingWebhook ? "Enviando..." : "Testar compra"}
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
