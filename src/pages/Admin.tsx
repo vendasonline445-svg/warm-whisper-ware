@@ -42,7 +42,7 @@ interface Lead {
   transaction_id: string | null;
 }
 
-type Tab = "dashboard" | "leads" | "logs";
+type Tab = "dashboard" | "leads" | "crm" | "logs";
 
 type PeriodKey = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
 
