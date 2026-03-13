@@ -5,7 +5,7 @@ import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
   Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera, MapPin,
-  CreditCard, Tag, ShieldCheck, Ticket, Flag, ImageIcon,
+  CreditCard, Tag, ShieldCheck, Ticket, Flag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
