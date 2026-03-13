@@ -3,7 +3,7 @@ import {
   Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, TrendingDown,
   MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet,
   AlertTriangle, CreditCard, Activity, ChevronDown, BarChart3,
-  DollarSign, Users, Maximize2, Minimize2,
+  DollarSign, Users, Maximize2, Minimize2, Info,
 } from "lucide-react";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -12,6 +12,9 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer,
 } from "recharts";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // ─── Animated Counter Hook ───
 function useAnimatedNumber(target: number, duration = 900) {
