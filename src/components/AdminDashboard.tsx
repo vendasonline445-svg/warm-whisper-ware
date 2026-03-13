@@ -320,11 +320,11 @@ export default function AdminDashboard(props: AdminDashboardProps) {
 
   const funnelSteps = useMemo(() => {
     const steps = [
-      { label: "Visitantes", value: visitorsCount, color: "bg-blue-500" },
-      { label: "Cliques em Comprar", value: buyClicks, color: "bg-indigo-500" },
-      { label: "Checkouts", value: checkoutsCount, color: "bg-orange-500" },
-      { label: "Pix Gerados", value: pixGeneratedCount, color: "bg-purple-500" },
-      { label: "Pagamentos Aprovados", value: paidCount, color: "bg-emerald-500" },
+      { label: "Visitantes", value: visitorsCount, color: "bg-primary" },
+      { label: "Cliques em Comprar", value: buyClicks, color: "bg-accent" },
+      { label: "Checkouts", value: checkoutsCount, color: "bg-amber-500" },
+      { label: "Pix Gerados", value: pixGeneratedCount, color: "bg-primary" },
+      { label: "Pagamentos Aprovados", value: paidCount, color: "bg-success" },
     ];
     const maxVal = Math.max(...steps.map(s => s.value), 1);
     return steps.map((s, i) => {
