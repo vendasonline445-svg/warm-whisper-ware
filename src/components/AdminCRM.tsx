@@ -483,6 +483,148 @@ export default function AdminCRM() {
     return { scored, dist, distPct, sources, trafficAlerts, botCount, total: scored.length };
   }, [events, enrichedLeads]);
 
+  // ── Creative Analysis ──
+  const creativeAnalysis = useMemo(() => {
+    type CreativeData = {
+      id: string;
+      platform: string;
+      campaign: string;
+      adGroup: string;
+      visitors: number;
+      totalTimeOnPage: number;
+      totalScroll: number;
+      buyClicks: number;
+      checkouts: number;
+      pixGenerated: number;
+      paid: number;
+      events: UserEvent[];
+    };
+
+    const creativeMap = new Map<string, CreativeData>();
+
+    // Group events by creative (utm_content)
+    events.forEach(e => {
+      const ed = e.event_data || {};
+      const creativeId = ed.utm_content || ed.creative_id || ed.ad_id || "";
+      if (!creativeId) return;
+
+      const key = String(creativeId);
+      const existing = creativeMap.get(key) || {
+        id: key,
+        platform: String(ed.utm_source || "Desconhecido"),
+        campaign: String(ed.utm_campaign || "—"),
+        adGroup: String(ed.utm_term || ed.ad_group || "—"),
+        visitors: 0,
+        totalTimeOnPage: 0,
+        totalScroll: 0,
+        buyClicks: 0,
+        checkouts: 0,
+        pixGenerated: 0,
+        paid: 0,
+        events: [],
+      };
+
+      existing.events.push(e);
+
+      if (e.event_type === "page_view") existing.visitors++;
+      if (e.event_type === "scroll_depth") {
+        existing.totalScroll += Number(ed.percent || 0);
+      }
+      if (e.event_type === "click_buy_button") existing.buyClicks++;
+      if (e.event_type === "checkout_initiated") existing.checkouts++;
+      if (e.event_type === "pix_generated") existing.pixGenerated++;
+      if (e.event_type === "card_submitted") existing.checkouts = Math.max(existing.checkouts, existing.checkouts);
+      if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") existing.paid++;
+
+      creativeMap.set(key, existing);
+    });
+
+    // Also count from enrichedLeads
+    enrichedLeads.forEach(l => {
+      const meta = l.metadata || {};
+      const creativeId = meta.utm_content || meta.creative_id || "";
+      if (!creativeId) return;
+      const key = String(creativeId);
+      const existing = creativeMap.get(key);
+      if (!existing) return;
+      // Count checkouts and payments from actual leads
+      existing.checkouts = Math.max(existing.checkouts, 1);
+      if (l.stage === "pago") existing.paid++;
+      if (l.payment_method === "pix" && l.transaction_id) existing.pixGenerated++;
+    });
+
+    type ScoredCreative = CreativeData & {
+      avgTimeOnPage: number;
+      avgScroll: number;
+      convRate: number;
+      score: number;
+      scoreLabel: string;
+      scoreColor: string;
+      alerts: { type: "critical" | "warning"; msg: string }[];
+    };
+
+    const scored: ScoredCreative[] = Array.from(creativeMap.values())
+      .filter(c => c.visitors >= 1 || c.buyClicks >= 1 || c.checkouts >= 1)
+      .map(c => {
+        const v = Math.max(c.visitors, 1);
+        const avgTimeOnPage = c.totalTimeOnPage / v;
+        const scrollEvents = c.events.filter(e => e.event_type === "scroll_depth").length;
+        const avgScroll = scrollEvents > 0 ? c.totalScroll / scrollEvents : 0;
+        const buyRate = c.buyClicks / v;
+        const checkoutRate = v > 0 ? c.checkouts / v : 0;
+        const payRate = v > 0 ? c.paid / v : 0;
+        const convRate = v > 0 ? (c.paid / v) * 100 : 0;
+
+        // Score 0-100
+        let score = 0;
+        score += Math.min(buyRate * 100, 25); // max 25 for buy click rate
+        score += Math.min(checkoutRate * 100, 25); // max 25 for checkout rate
+        score += Math.min(payRate * 200, 30); // max 30 for payment rate
+        score += Math.min(avgScroll / 5, 10); // max 10 for scroll
+        score += Math.min(avgTimeOnPage / 3, 10); // max 10 for time
+        score = Math.round(Math.min(100, score));
+
+        const scoreLabel = score >= 90 ? "Excelente" : score >= 70 ? "Bom" : score >= 50 ? "Fraco" : "Ruim";
+        const scoreColor = score >= 90 ? "text-emerald-500 bg-emerald-500/10" : score >= 70 ? "text-blue-500 bg-blue-500/10" : score >= 50 ? "text-amber-500 bg-amber-500/10" : "text-red-500 bg-red-500/10";
+
+        // Alerts
+        const alerts: { type: "critical" | "warning"; msg: string }[] = [];
+        if (v >= 50 && buyRate < 0.01) {
+          alerts.push({ type: "critical", msg: "Possível criativo com baixa intenção de compra." });
+        }
+        if (v >= 20 && avgTimeOnPage < 3) {
+          alerts.push({ type: "warning", msg: "Usuários estão saindo rapidamente. Possível clique acidental ou promessa errada no anúncio." });
+        }
+        if (c.buyClicks >= 10 && c.checkouts < c.buyClicks * 0.1) {
+          alerts.push({ type: "warning", msg: "Criativo gera curiosidade mas não intenção de compra." });
+        }
+        if (c.checkouts >= 5 && c.paid < c.checkouts * 0.1) {
+          alerts.push({ type: "warning", msg: "Criativo pode estar prometendo algo diferente da oferta." });
+        }
+
+        return { ...c, avgTimeOnPage, avgScroll, convRate, score, scoreLabel, scoreColor, alerts };
+      })
+      .sort((a, b) => b.visitors - a.visitors);
+
+    // Global alerts
+    const globalAlerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
+    scored.forEach(c => {
+      c.alerts.forEach(a => {
+        globalAlerts.push({ type: a.type, title: `Criativo "${c.id.slice(0, 20)}"`, desc: a.msg });
+      });
+    });
+
+    return { creatives: scored, alerts: globalAlerts };
+  }, [events, enrichedLeads]);
+
+  // ── Selected creative for drill-down ──
+  const [selectedCreative, setSelectedCreative] = useState<string | null>(null);
+
+  const selectedCreativeData = useMemo(() => {
+    if (!selectedCreative) return null;
+    return creativeAnalysis.creatives.find(c => c.id === selectedCreative) || null;
+  }, [selectedCreative, creativeAnalysis]);
+
   // ── Alerts ──
   const crmAlerts = useMemo(() => {
     const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
