@@ -617,7 +617,7 @@ const Index = () => {
             className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
           >
-            {["/videos/video-1.mp4", "/videos/video-2.mp4", "/videos/video-3.mp4"].map((src, i) => (
+            {["/videos/video-0.mp4", "/videos/video-1.mp4", "/videos/video-2.mp4", "/videos/video-3.mp4"].map((src, i) => (
               <div
                 key={i}
                 className="flex-shrink-0 w-[45vw] max-w-[200px] snap-start cursor-pointer relative rounded-xl overflow-hidden bg-muted aspect-[9/16] active:scale-95 transition-transform"
