@@ -165,3 +165,76 @@
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
+
+/* ─── Admin Background Gradient ─── */
+.admin-bg {
+  position: relative;
+}
+
+.admin-bg::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 10% 0%, hsl(var(--primary) / 0.06), transparent),
+    radial-gradient(ellipse 40% 40% at 90% 20%, hsl(262 80% 55% / 0.04), transparent),
+    radial-gradient(ellipse 50% 30% at 50% 100%, hsl(160 82% 34% / 0.03), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.admin-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Section Divider ─── */
+.section-divider {
+  border-top: 1px solid hsl(var(--border) / 0.5);
+  margin: 2rem 0;
+}
+
+.dark .section-divider {
+  border-color: hsl(var(--border) / 0.3);
+}
+
+/* ─── Highlight Card ─── */
+.glass-card-highlight {
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--primary) / 0.2);
+  box-shadow: 0 0 20px -8px hsl(var(--primary) / 0.15), 0 1px 3px hsl(var(--foreground) / 0.04);
+}
+
+.dark .glass-card-highlight {
+  background: hsl(var(--card) / 0.5);
+  border-color: hsl(var(--primary) / 0.25);
+  box-shadow: 0 0 24px -8px hsl(var(--primary) / 0.2), 0 1px 3px hsl(0 0% 0% / 0.2);
+}
+
+/* ─── Staggered Entry Animation ─── */
+@keyframes admin-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.admin-animate-in {
+  animation: admin-fade-up 0.5s ease-out both;
+}
+
+/* ─── Table Row Hover ─── */
+.admin-table-row {
+  transition: background-color 0.15s ease;
+}
+
+.admin-table-row:hover {
+  background-color: hsl(var(--muted) / 0.5);
+}
+
+.dark .admin-table-row:hover {
+  background-color: hsl(var(--muted) / 0.3);
+}
