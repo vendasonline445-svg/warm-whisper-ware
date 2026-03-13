@@ -28,6 +28,7 @@ const PixPayment = () => {
   const [copied, setCopied] = useState(false);
   const [paid, setPaid] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [showCheckBtn, setShowCheckBtn] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const pixData = JSON.parse(sessionStorage.getItem("pixData") || "{}");
