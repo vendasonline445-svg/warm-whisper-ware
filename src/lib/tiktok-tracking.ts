@@ -124,9 +124,15 @@ export async function identifyTikTokUser(data: {
   if (!ttq) return;
 
   const identifyData: Record<string, string> = {};
-  if (data.email) identifyData.email = data.email.trim().toLowerCase();
-  if (data.phone) identifyData.phone_number = normalizePhone(data.phone);
-  if (data.externalId) identifyData.external_id = data.externalId.replace(/\D/g, "");
+  if (data.email && data.email.trim()) identifyData.email = data.email.trim().toLowerCase();
+  if (data.phone && data.phone.trim()) identifyData.phone_number = normalizePhone(data.phone);
+  if (data.externalId && data.externalId.trim()) {
+    // If it's a CPF (only digits), strip non-digits. Otherwise keep as-is (visitor_id)
+    const cleaned = /^\d[\d.\-/]*$/.test(data.externalId.trim()) 
+      ? data.externalId.replace(/\D/g, "") 
+      : data.externalId.trim();
+    identifyData.external_id = cleaned;
+  }
 
   const pixels = await loadPixels();
   pixels.forEach((px) => {
@@ -155,12 +161,17 @@ export async function setUserData(data: {
   phone?: string;
   externalId?: string;
 }) {
-  if (data.email) _userData.email_hash = await sha256(data.email);
-  if (data.phone) {
+  if (data.email && data.email.trim()) _userData.email_hash = await sha256(data.email);
+  if (data.phone && data.phone.trim()) {
     const normalized = normalizePhone(data.phone).replace("+", "");
     _userData.phone_hash = await sha256(normalized);
   }
-  if (data.externalId) _userData.external_id_hash = await sha256(data.externalId.replace(/\D/g, ""));
+  if (data.externalId && data.externalId.trim()) {
+    const cleaned = /^\d[\d.\-/]*$/.test(data.externalId.trim())
+      ? data.externalId.replace(/\D/g, "")
+      : data.externalId.trim();
+    _userData.external_id_hash = await sha256(cleaned);
+  }
 }
 
 export function getUserData() {
@@ -208,9 +219,22 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
   const timestamp = new Date().toISOString();
   const ttclid = getStoredParam("ttclid");
 
-  if (userData) {
-    await setUserData(userData);
-    await identifyTikTokUser(userData);
+  // Always use visitor_id as external_id for EMQ
+  const visitorId = (() => {
+    try { return localStorage.getItem("mesalar_visitor_id") || ""; } catch { return ""; }
+  })();
+
+  // Merge userData with visitor_id as fallback external_id
+  const effectiveUserData = {
+    email: userData?.email || "",
+    phone: userData?.phone || "",
+    externalId: userData?.externalId || visitorId,
+  };
+
+  // Always set user data and identify for better EMQ
+  if (effectiveUserData.externalId || effectiveUserData.email || effectiveUserData.phone) {
+    await setUserData(effectiveUserData);
+    await identifyTikTokUser(effectiveUserData);
   }
 
   const pixels = await loadPixels();
@@ -228,7 +252,7 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
         const instance = ttq.instance(px.pixel_id);
         if (instance) {
           instance.track(event, properties, { event_id: eventId });
-          console.log(`${DEBUG} ${event} fired (browser) — pixel ${px.pixel_id}`);
+          console.log(`${DEBUG} ${event} fired (browser) — pixel ${px.pixel_id}, event_id: ${eventId}`);
         }
       } catch (e) {
         console.warn(`${DEBUG} Pixel error for ${px.pixel_id}:`, e);
