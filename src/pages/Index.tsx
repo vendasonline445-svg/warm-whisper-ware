@@ -120,6 +120,18 @@ const Index = () => {
   const [zoomOpen, setZoomOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartClosing, setCartClosing] = useState(false);
+  const [cartItem, setCartItem] = useState<{color: string; size: string; quantity: number} | null>(() => {
+    try {
+      const saved = localStorage.getItem('mesalar_cart');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  const updateCart = (item: {color: string; size: string; quantity: number} | null) => {
+    setCartItem(item);
+    if (item) localStorage.setItem('mesalar_cart', JSON.stringify(item));
+    else localStorage.removeItem('mesalar_cart');
+  };
 
   const closeCart = () => {
     setCartClosing(true);
