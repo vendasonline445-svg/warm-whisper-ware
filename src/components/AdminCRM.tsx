@@ -1154,6 +1154,54 @@ export default function AdminCRM() {
                 <Zap className="h-4 w-4" /> Mapa do Funil de Conversão
               </h3>
 
+              {/* Funnel Filters */}
+              <div className="bg-card border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dispositivo</label>
+                  <select value={funnelDevice} onChange={e => setFunnelDevice(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                    <option value="all">Todos</option>
+                    <option value="mobile">📱 Mobile</option>
+                    <option value="desktop">💻 Desktop</option>
+                    <option value="tablet">📟 Tablet</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Origem</label>
+                  <select value={funnelOrigin} onChange={e => setFunnelOrigin(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                    <option value="all">Todas</option>
+                    {uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Criativo</label>
+                  <select value={funnelCreative} onChange={e => setFunnelCreative(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                    <option value="all">Todos</option>
+                    {uniqueCreatives.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Tempo Real</label>
+                  <select value={funnelRealtime} onChange={e => setFunnelRealtime(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                    <option value="all">Todo período</option>
+                    <option value="5m">Últimos 5 min</option>
+                    <option value="30m">Últimos 30 min</option>
+                    <option value="1h">Última 1 hora</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Active filter tags */}
+              {(funnelDevice !== "all" || funnelOrigin !== "all" || funnelCreative !== "all" || funnelRealtime !== "all") && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-muted-foreground">Filtros ativos:</span>
+                  {funnelDevice !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-semibold">{funnelDevice}</span>}
+                  {funnelOrigin !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 font-semibold">{funnelOrigin}</span>}
+                  {funnelCreative !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 font-semibold">{funnelCreative}</span>}
+                  {funnelRealtime !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-semibold">⏱ {funnelRealtime}</span>}
+                  <button onClick={() => { setFunnelDevice("all"); setFunnelOrigin("all"); setFunnelCreative("all"); setFunnelRealtime("all"); }} className="text-[10px] text-destructive hover:underline">Limpar</button>
+                </div>
+              )}
+
               {/* Visual Funnel */}
               <div className="space-y-0">
                 {funnelData.map((step, i) => {
@@ -1208,6 +1256,42 @@ export default function AdminCRM() {
                   );
                 })}
               </div>
+
+              {/* Device Comparison */}
+              {deviceComparison.length > 1 && funnelDevice === "all" && (
+                <div className="bg-card border rounded-xl p-4">
+                  <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                    <Smartphone className="h-3.5 w-3.5" /> Comparação por Dispositivo
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {deviceComparison.map(d => {
+                      const icon = d.device === "mobile" ? "📱" : d.device === "desktop" ? "💻" : "📟";
+                      const isLow = d.convRate < 1 && d.visitors > 20;
+                      return (
+                        <div
+                          key={d.device}
+                          onClick={() => setFunnelDevice(d.device)}
+                          className={`rounded-xl p-4 border cursor-pointer hover:bg-muted/50 transition-colors ${isLow ? "border-red-500/30 bg-red-500/5" : "bg-muted/30"}`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-bold capitalize">{icon} {d.device}</span>
+                            <span className={`text-xs font-bold ${d.convRate >= 3 ? "text-emerald-500" : d.convRate >= 1 ? "text-amber-500" : "text-red-500"}`}>
+                              {d.convRate.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>{d.visitors} visitantes</span>
+                            <span>{d.paid} pagos</span>
+                          </div>
+                          {isLow && (
+                            <p className="text-[10px] text-red-500 mt-2 font-medium">⚠ Possível tráfego de baixa qualidade</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Conversion Summary */}
               <div className="bg-card border rounded-xl p-4">
