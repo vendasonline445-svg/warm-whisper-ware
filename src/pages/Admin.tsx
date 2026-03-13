@@ -47,6 +47,9 @@ export default function Admin() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [visitorsCount, setVisitorsCount] = useState(0);
   const [checkoutsCount, setCheckoutsCount] = useState(0);
+  const [buyClicks, setBuyClicks] = useState(0);
+  const [imageClicks, setImageClicks] = useState(0);
+  const [avgScroll, setAvgScroll] = useState(0);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
