@@ -56,9 +56,9 @@ const Checkout = () => {
   const savedCoupon = couponUsed ? '' : (localStorage.getItem('mesalar_coupon') || '');
   const couponParam = searchParams.get("cupom") || searchParams.get("coupon") || savedCoupon;
   const couponUpper = couponParam.toUpperCase();
-  const hasCoupon = !couponUsed && (couponUpper === "VOLTA25" || couponUpper === "DESCULPA80");
-  const couponDiscount = couponUpper === "DESCULPA80" ? 0.80 : couponUpper === "VOLTA25" ? 0.25 : 0;
-  const couponLabel = couponUpper === "DESCULPA80" ? "DESCULPA80 (-80%)" : "VOLTA25 (-25%)";
+  const hasCoupon = !couponUsed && (couponUpper === "VOLTA25" || couponUpper === "ULTIMA50" || couponUpper === "DESCULPA80");
+  const couponDiscount = couponUpper === "DESCULPA80" ? 0.80 : couponUpper === "ULTIMA50" ? 0.50 : couponUpper === "VOLTA25" ? 0.25 : 0;
+  const couponLabel = couponUpper === "DESCULPA80" ? "DESCULPA80 (-80%)" : couponUpper === "ULTIMA50" ? "ULTIMA50 (-50%)" : "VOLTA25 (-25%)";
   const timer = useCheckoutCountdown();
 
   const [quantity, setQuantity] = useState(1);
