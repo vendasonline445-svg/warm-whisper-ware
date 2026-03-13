@@ -3108,13 +3108,19 @@ export default function AdminCRM() {
             }>();
 
             // Process events for visitor/session counts
+            // Helper: normalize source to avoid per-click unique entries
+            const normalizeSource = (raw: string): string => {
+              if (!raw || raw === "direct") return "direct";
+              // TikTok SCK codes (TT-timestamp-random) → "tiktok"
+              if (/^TT-\d+/i.test(raw)) return "tiktok";
+              // Long click IDs or encoded tokens
+              if (raw.length > 50 || raw.startsWith("E.C.P.") || raw.startsWith("fb.") || /^[A-Za-z0-9_-]{40,}$/.test(raw)) return "direct";
+              return raw;
+            };
+
             events.forEach(ev => {
               const d = ev.event_data || {};
-              let source = String(d.utm_source || d.referrer || "direct");
-              // Filter out click IDs mistakenly stored as source
-              if (source.length > 50 || source.startsWith("E.C.P.") || source.startsWith("fb.") || source.match(/^[A-Za-z0-9_-]{40,}$/)) {
-                source = "direct";
-              }
+              const source = normalizeSource(String(d.utm_source || d.referrer || "direct"));
               const campaign = String(d.utm_campaign || "(sem campanha)");
               const content = String(d.utm_content || "(sem criativo)");
               const vid = d.visitor_id || d.session_id || "";
