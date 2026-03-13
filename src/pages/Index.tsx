@@ -265,7 +265,7 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // ViewContent event on mount + track page view
+  // ViewContent event on mount + track page view + scroll depth
   useEffect(() => {
     trackTikTokEvent({
       event: "ViewContent",
@@ -279,6 +279,21 @@ const Index = () => {
       },
     });
     supabase.from("page_views").insert({ page: "/" }).then(() => {});
+
+    let maxScroll = 0;
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight > 0) {
+        const pct = Math.round((scrollTop / docHeight) * 100);
+        if (pct > maxScroll) maxScroll = pct;
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (maxScroll > 0) trackEvent("scroll_depth", { percent: maxScroll });
+    };
   }, []);
 
   // Lock body scroll when modals are open
