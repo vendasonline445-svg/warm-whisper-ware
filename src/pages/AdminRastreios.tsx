@@ -50,6 +50,12 @@ export default function AdminRastreios() {
   const [manualEndereco, setManualEndereco] = useState("");
   const [manualProduto, setManualProduto] = useState("");
   const [sendingManual, setSendingManual] = useState(false);
+  const [debugResult, setDebugResult] = useState<{
+    status_http: number;
+    response_text: string;
+    payload_enviado: string;
+    webhook_url: string;
+  } | null>(null);
   const navigate = useNavigate();
 
   const sendTracklyTest = async () => {
@@ -58,6 +64,7 @@ export default function AdminRastreios() {
       return;
     }
     setSendingManual(true);
+    setDebugResult(null);
     try {
       const params = new URLSearchParams({
         status: "approved",
@@ -76,21 +83,34 @@ export default function AdminRastreios() {
       const text = await res.text();
       console.log("[Trackly] test webhook sent");
 
+      const debug = {
+        status_http: res.status,
+        response_text: text,
+        payload_enviado: params.toString(),
+        webhook_url: webhookUrl,
+      };
+      setDebugResult(debug);
+
       await supabase.from("tracking_webhook_logs" as any).insert({
         webhook_url: webhookUrl,
         status: res.ok ? "test_success" : "test_error",
-        response: text.slice(0, 500),
+        response: JSON.stringify(debug).slice(0, 1000),
       } as any);
 
       if (res.ok) {
         toast.success("Webhook enviado com sucesso");
-        setManualName(""); setManualEmail(""); setManualCep(""); setManualEndereco(""); setManualProduto("");
       } else {
         toast.error("Erro ao enviar webhook");
       }
       fetchLogs();
     } catch (err: any) {
       console.error("[Trackly] manual test error:", err);
+      setDebugResult({
+        status_http: 0,
+        response_text: err.message,
+        payload_enviado: "",
+        webhook_url: webhookUrl,
+      });
       toast.error("Erro ao enviar webhook");
     }
     setSendingManual(false);
@@ -373,6 +393,26 @@ export default function AdminRastreios() {
                 {sendingManual ? "Enviando..." : "Enviar teste"}
               </button>
             </div>
+
+            {/* Debug Result Panel */}
+            {debugResult && (
+              <div className="border-t pt-6 mt-6">
+                <h3 className="text-md font-bold mb-3">Resultado do Webhook</h3>
+                <div className="bg-muted rounded-lg p-4 space-y-2 font-mono text-xs">
+                  <div><span className="font-semibold text-foreground">URL:</span> <span className="break-all">{debugResult.webhook_url}</span></div>
+                  <div>
+                    <span className="font-semibold text-foreground">HTTP Status:</span>{" "}
+                    <span className={debugResult.status_http >= 200 && debugResult.status_http < 300 ? "text-green-600" : "text-red-600"}>
+                      {debugResult.status_http || "Erro de conexão"}
+                    </span>
+                  </div>
+                  <div><span className="font-semibold text-foreground">Payload enviado:</span></div>
+                  <pre className="bg-background border rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">{decodeURIComponent(debugResult.payload_enviado)}</pre>
+                  <div><span className="font-semibold text-foreground">Resposta da API:</span></div>
+                  <pre className="bg-background border rounded p-2 overflow-x-auto whitespace-pre-wrap break-all max-h-40">{debugResult.response_text || "(vazio)"}</pre>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
