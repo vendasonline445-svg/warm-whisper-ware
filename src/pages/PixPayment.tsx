@@ -28,6 +28,7 @@ const PixPayment = () => {
   const [copied, setCopied] = useState(false);
   const [paid, setPaid] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [showCheckBtn, setShowCheckBtn] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const pixData = JSON.parse(sessionStorage.getItem("pixData") || "{}");
@@ -115,6 +116,7 @@ const PixPayment = () => {
     if (pixCode) {
       navigator.clipboard.writeText(pixCode);
       setCopied(true);
+      setTimeout(() => setShowCheckBtn(true), 5000);
     }
   };
 
@@ -244,7 +246,7 @@ const PixPayment = () => {
             </div>
 
             {/* Check payment button - only after copying */}
-            {copied && (
+            {showCheckBtn && (
             <div className="mt-5 text-center">
               <button
                 onClick={async () => {
