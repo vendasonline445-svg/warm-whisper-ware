@@ -123,10 +123,16 @@ const Checkout = () => {
     cardForm.expiry.replace(/\D/g, "").length === 4 &&
     cardForm.cvv.length >= 3;
 
-  const [form, setForm] = useState({
-    name: "", phone: "", email: "", cep: "",
-    uf: "", cidade: "", bairro: "", endereco: "",
-    numero: "", complemento: "", cpf: "",
+  const [form, setForm] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mesalar_checkout_form');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      name: "", phone: "", email: "", cep: "",
+      uf: "", cidade: "", bairro: "", endereco: "",
+      numero: "", complemento: "", cpf: "",
+    };
   });
 
   // Derived totals from all cart items
@@ -152,7 +158,11 @@ const Checkout = () => {
   const quantity = totalQty;
 
   const updateField = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev: typeof form) => {
+      const updated = { ...prev, [field]: value };
+      localStorage.setItem('mesalar_checkout_form', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const formatCPF = (val: string) => {
@@ -202,13 +212,17 @@ const Checkout = () => {
       const res = await fetch(`https://viacep.com.br/ws/${nums}/json/`);
       const data = await res.json();
       if (!data.erro) {
-        setForm((prev) => ({
-          ...prev,
-          endereco: data.logradouro || "",
-          bairro: data.bairro || "",
-          cidade: data.localidade || "",
-          uf: data.uf || "",
-        }));
+        setForm((prev: typeof form) => {
+          const updated = {
+            ...prev,
+            endereco: data.logradouro || "",
+            bairro: data.bairro || "",
+            cidade: data.localidade || "",
+            uf: data.uf || "",
+          };
+          localStorage.setItem('mesalar_checkout_form', JSON.stringify(updated));
+          return updated;
+        });
       }
     } catch (e) {
       console.error("Erro ao buscar CEP", e);
