@@ -137,18 +137,44 @@ const Index = () => {
   const [reportReason, setReportReason] = useState('');
   const [reportDescription, setReportDescription] = useState('');
   const [cartClosing, setCartClosing] = useState(false);
-  const [cartItem, setCartItem] = useState<{color: string; size: string; quantity: number} | null>(() => {
+  const [cartItems, setCartItems] = useState<{color: string; size: string; quantity: number}[]>(() => {
     try {
       const saved = localStorage.getItem('mesalar_cart');
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : parsed ? [parsed] : [];
+    } catch { return []; }
   });
 
-  const updateCart = (item: {color: string; size: string; quantity: number} | null) => {
-    setCartItem(item);
-    if (item) localStorage.setItem('mesalar_cart', JSON.stringify(item));
+  const saveCart = (items: {color: string; size: string; quantity: number}[]) => {
+    setCartItems(items);
+    if (items.length) localStorage.setItem('mesalar_cart', JSON.stringify(items));
     else localStorage.removeItem('mesalar_cart');
   };
+
+  const addToCart = (color: string, size: string, qty: number) => {
+    const existing = cartItems.findIndex(i => i.color === color && i.size === size);
+    if (existing >= 0) {
+      const updated = [...cartItems];
+      updated[existing] = { ...updated[existing], quantity: updated[existing].quantity + qty };
+      saveCart(updated);
+    } else {
+      saveCart([...cartItems, { color, size, quantity: qty }]);
+    }
+  };
+
+  const updateCartItem = (index: number, qty: number) => {
+    if (qty <= 0) {
+      saveCart(cartItems.filter((_, i) => i !== index));
+    } else {
+      const updated = [...cartItems];
+      updated[index] = { ...updated[index], quantity: qty };
+      saveCart(updated);
+    }
+  };
+
+  const cartTotalQty = cartItems.reduce((sum, i) => sum + i.quantity, 0);
+  const cartTotal = cartItems.reduce((sum, i) => sum + (SIZE_PRICES[i.size]?.price || PRICE) * i.quantity, 0);
 
   const closeCart = () => {
     setCartClosing(true);
@@ -303,15 +329,14 @@ const Index = () => {
     if (!selectedColor) return;
 
     if (colorModalMode === 'buy') {
-      updateCart({ color: selectedColor, size: selectedSize, quantity: modalQty });
+      addToCart(selectedColor, selectedSize, modalQty);
       const params = new URLSearchParams(window.location.search);
       params.set("color", selectedColor);
       params.set("size", selectedSize);
       params.set("qty", modalQty.toString());
       nav(`/checkout?${params.toString()}`);
     } else {
-      // Add to cart mode - animate dot to cart icon
-      updateCart({ color: selectedColor, size: selectedSize, quantity: (cartItem?.quantity || 0) + modalQty });
+      addToCart(selectedColor, selectedSize, modalQty);
       closeColorModal();
       setTimeout(() => {
         setFlyingDot(true);
@@ -321,10 +346,11 @@ const Index = () => {
   };
 
   const handleBuyNow = () => {
-    if (cartItem) {
+    if (cartItems.length > 0) {
+      const first = cartItems[0];
       const params = new URLSearchParams(window.location.search);
-      params.set("color", cartItem.color);
-      params.set("size", cartItem.size);
+      params.set("color", first.color);
+      params.set("size", first.size);
       nav(`/checkout?${params.toString()}`);
     } else {
       openColorModal('buy');
@@ -332,10 +358,11 @@ const Index = () => {
   };
 
   const handleCartCheckout = () => {
-    if (!cartItem) return;
+    if (cartItems.length === 0) return;
+    const first = cartItems[0];
     const params = new URLSearchParams(window.location.search);
-    params.set("color", cartItem.color);
-    params.set("size", cartItem.size);
+    params.set("color", first.color);
+    params.set("size", first.size);
     nav(`/checkout?${params.toString()}`);
   };
 
@@ -375,8 +402,8 @@ const Index = () => {
             <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => setShareOpen(true)} />
             <div className="relative cursor-pointer" onClick={() => setCartOpen(true)}>
               <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-              {cartItem && (
-                <span className="absolute -top-1.5 -right-1.5 bg-cta text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">{cartItem.quantity}</span>
+              {cartTotalQty > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-cta text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">{cartTotalQty}</span>
               )}
             </div>
             <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setReportStep('menu'); setReportMenuOpen(true); }} />
@@ -1398,10 +1425,10 @@ const Index = () => {
             </button>
 
             <div className="px-5 pt-2 pb-3 border-b">
-              <p className="text-base font-bold text-center">Carrinho de compras ({cartItem ? cartItem.quantity : 0})</p>
+              <p className="text-base font-bold text-center">Carrinho de compras ({cartTotalQty})</p>
             </div>
 
-            {!cartItem ? (
+            {cartItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-6">
                 <ShoppingCart className="h-16 w-16 text-muted-foreground/30 mb-4" />
                 <p className="text-lg font-bold text-foreground mb-1">Seu carrinho está vazio</p>
@@ -1412,42 +1439,40 @@ const Index = () => {
               </div>
             ) : (
               <div className="px-5 py-4">
-                {/* Product in cart */}
-                <div className="flex gap-3 pb-4 border-b">
-                  <img
-                    src={cartItem.color === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
-                    alt="Mesa Dobrável"
-                    className="h-20 w-20 rounded-lg object-contain border bg-muted/30 p-1 flex-shrink-0"
-                  />
-                  <div className="flex-1">
-                    <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
-                    <p className="text-xs text-muted-foreground">Cor: {cartItem.color === 'preta' ? 'Preta' : 'Branca'} · {cartItem.size}</p>
-                    <p className="text-cta font-extrabold text-base mt-1">R$ {((SIZE_PRICES[cartItem.size]?.price || PRICE) * cartItem.quantity).toFixed(2).replace('.', ',')}</p>
-                    <div className="flex items-center gap-3 mt-2">
-                      <button
-                        onClick={() => {
-                          if (cartItem.quantity <= 1) { updateCart(null); }
-                          else updateCart({ ...cartItem, quantity: cartItem.quantity - 1 });
-                        }}
-                        className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
-                      >
-                        <span className="text-sm font-bold">−</span>
-                      </button>
-                      <span className="text-sm font-bold w-5 text-center">{cartItem.quantity}</span>
-                      <button
-                        onClick={() => updateCart({ ...cartItem, quantity: cartItem.quantity + 1 })}
-                        className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
-                      >
-                        <span className="text-sm font-bold">+</span>
-                      </button>
+                {cartItems.map((item, idx) => (
+                  <div key={`${item.color}-${item.size}`} className="flex gap-3 pb-4 border-b mb-4 last:mb-0">
+                    <img
+                      src={item.color === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
+                      alt="Mesa Dobrável"
+                      className="h-20 w-20 rounded-lg object-contain border bg-muted/30 p-1 flex-shrink-0"
+                    />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                      <p className="text-xs text-muted-foreground">Cor: {item.color === 'preta' ? 'Preta' : 'Branca'} · {item.size}</p>
+                      <p className="text-cta font-extrabold text-base mt-1">R$ {((SIZE_PRICES[item.size]?.price || PRICE) * item.quantity).toFixed(2).replace('.', ',')}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <button
+                          onClick={() => updateCartItem(idx, item.quantity - 1)}
+                          className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
+                        >
+                          <span className="text-sm font-bold">−</span>
+                        </button>
+                        <span className="text-sm font-bold w-5 text-center">{item.quantity}</span>
+                        <button
+                          onClick={() => updateCartItem(idx, item.quantity + 1)}
+                          className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
+                        >
+                          <span className="text-sm font-bold">+</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
 
                 {/* Total */}
                 <div className="flex justify-between items-center py-3 border-b">
                   <span className="text-sm font-semibold">Total</span>
-                  <span className="text-lg font-extrabold text-cta">R$ {((SIZE_PRICES[cartItem.size]?.price || PRICE) * cartItem.quantity).toFixed(2).replace('.', ',')}</span>
+                  <span className="text-lg font-extrabold text-cta">R$ {cartTotal.toFixed(2).replace('.', ',')}</span>
                 </div>
 
                 {/* Checkout button */}
