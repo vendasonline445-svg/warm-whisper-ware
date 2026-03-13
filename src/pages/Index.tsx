@@ -1000,12 +1000,6 @@ const Index = () => {
                     placeholder="Compartilhe mais detalhes sobre o problema"
                     className="w-full h-24 border border-border rounded-lg p-3 text-sm resize-none bg-background focus:outline-none focus:ring-1 focus:ring-cta placeholder:text-muted-foreground"
                   />
-                  <div className="mt-4 flex items-center gap-2">
-                    <div className="h-16 w-16 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground">
-                      <ImageIcon className="h-5 w-5" />
-                      <span className="text-[10px] mt-0.5">0/4</span>
-                    </div>
-                  </div>
                   <p className="text-xs text-muted-foreground mt-4">
                     Se você sabe que alguém está em perigo imediato, entre em contato com as autoridades locais imediatamente.
                   </p>
