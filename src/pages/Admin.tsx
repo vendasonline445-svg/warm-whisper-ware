@@ -285,7 +285,7 @@ export default function Admin() {
       setAlerts(newAlerts);
       setLoading(false);
     });
-  }, [authenticated, period, customFrom, customTo]);
+  }, [authenticated, period, customFrom, customTo, lookupBins]);
 
   useEffect(() => {
     fetchData();
