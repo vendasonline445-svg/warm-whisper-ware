@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getUrlWithUtm } from "@/utils/utm";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -133,7 +134,7 @@ const Upsell1 = () => {
 
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("pixReturnTo", "/taxa-alfandega");
-      navigate("/pix");
+      navigate(getUrlWithUtm("/pix"));
     } catch (err) {
       console.error("Upsell PIX error:", err);
       toast({ title: "Erro inesperado", description: "Tente novamente.", variant: "destructive" });

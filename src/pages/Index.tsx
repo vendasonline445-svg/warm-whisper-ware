@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
+import { getUrlWithUtm } from "@/utils/utm";
 import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
@@ -355,7 +356,7 @@ const Index = () => {
       // Save as single-item cart for checkout
       saveCart([{ color: selectedColor, size: selectedSize, quantity: modalQty }]);
       const params = new URLSearchParams(window.location.search);
-      nav(`/checkout?${params.toString()}`);
+      nav(getUrlWithUtm(`/checkout?${params.toString()}`));
     } else {
       addToCart(selectedColor, selectedSize, modalQty);
       closeColorModal();
@@ -368,7 +369,7 @@ const Index = () => {
 
   const handleBuyNow = () => {
     if (cartItems.length > 0) {
-      nav(`/checkout`);
+      nav(getUrlWithUtm(`/checkout`));
     } else {
       openColorModal('buy');
     }
@@ -376,7 +377,7 @@ const Index = () => {
 
   const handleCartCheckout = () => {
     if (cartItems.length === 0) return;
-    nav(`/checkout`);
+    nav(getUrlWithUtm(`/checkout`));
   };
 
   const copyCoupon = () => {
@@ -1400,7 +1401,7 @@ const Index = () => {
                   if (selectedColor && selectedSize) {
                     saveCart([{ color: selectedColor, size: selectedSize, quantity: 1 }]);
                     setExitModalOpen(false);
-                    nav(`/checkout?cupom=VOLTA25`);
+                    nav(getUrlWithUtm(`/checkout?cupom=VOLTA25`));
                   }
                 }}
                 disabled={!selectedColor}
@@ -1525,7 +1526,7 @@ const Index = () => {
                   if (selectedColor && selectedSize) {
                     saveCart([{ color: selectedColor, size: selectedSize, quantity: 1 }]);
                     setExit2Open(false);
-                    nav(`/checkout?cupom=ULTIMA50`);
+                    nav(getUrlWithUtm(`/checkout?cupom=ULTIMA50`));
                   }
                 }}
                 disabled={!selectedColor}

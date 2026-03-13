@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, AlertTriangle, Check, RefreshCw, Clock } from "lucide-react";
+import { getUrlWithUtm } from "@/utils/utm";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
@@ -75,9 +76,9 @@ const PixPayment = () => {
         const returnTo = sessionStorage.getItem("pixReturnTo");
         if (returnTo === "/taxa-alfandega") {
           sessionStorage.removeItem("pixReturnTo");
-          setTimeout(() => navigate("/obrigado-upsell"), 2000);
+          setTimeout(() => navigate(getUrlWithUtm("/obrigado-upsell")), 2000);
         } else {
-          setTimeout(() => navigate("/obrigado"), 2000);
+          setTimeout(() => navigate(getUrlWithUtm("/obrigado")), 2000);
         }
       }
     } catch (err) {
@@ -154,7 +155,7 @@ const PixPayment = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-border/40 px-4 py-3.5">
         <div className="mx-auto max-w-[480px] flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="text-foreground hover:opacity-70 transition-opacity">
+          <button onClick={() => navigate(getUrlWithUtm("/"))} className="text-foreground hover:opacity-70 transition-opacity">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1 text-center">
@@ -221,7 +222,7 @@ const PixPayment = () => {
               O código PIX não é mais válido. Gere um novo código para concluir sua compra.
             </p>
             <Button
-              onClick={() => navigate("/checkout" + (orderData?.product?.color ? `?color=${orderData.product.color}&size=${orderData.product.size || "180x60cm"}` : ""))}
+              onClick={() => navigate(getUrlWithUtm("/checkout" + (orderData?.product?.color ? `?color=${orderData.product.color}&size=${orderData.product.size || "180x60cm"}` : "")))}
               className="w-full font-bold text-[15px] py-4 h-auto rounded-2xl shadow-md text-white"
               style={{ background: "linear-gradient(135deg, #e8687a 0%, #d4556a 100%)" }}
             >

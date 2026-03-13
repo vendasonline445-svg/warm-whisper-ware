@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getUrlWithUtm } from "@/utils/utm";
 import { toast } from "@/hooks/use-toast";
 import { trackTikTokEvent, identifyTikTokUser, setUserData } from "@/lib/tiktok-tracking";
 import {
@@ -63,7 +64,7 @@ const Checkout = () => {
       if (updated.length === 0) {
         // Last item — navigate back
         localStorage.removeItem('mesalar_cart');
-        navigate('/');
+        navigate(getUrlWithUtm('/'));
         return;
       }
       setCartItems(updated);
@@ -389,7 +390,7 @@ const Checkout = () => {
         localStorage.removeItem('mesalar_coupon');
       }
 
-      navigate("/pix");
+      navigate(getUrlWithUtm("/pix"));
     } catch (err) {
       console.error("Submit error:", err);
       toast({ title: "Erro inesperado", description: "Tente novamente.", variant: "destructive" });
