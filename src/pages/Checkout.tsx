@@ -664,7 +664,7 @@ const Checkout = () => {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
         <div className="mx-auto max-w-[480px] px-4">
           <div className="flex items-center justify-between py-2">
-            <span className="font-bold text-sm">Total (1 item)</span>
+            <span className="font-bold text-sm">Total ({totalQty} {totalQty === 1 ? 'item' : 'itens'})</span>
             <span className="font-bold text-lg text-cta">R$ {total.toFixed(2).replace(".", ",")}</span>
           </div>
           <Button
