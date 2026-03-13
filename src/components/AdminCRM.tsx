@@ -728,6 +728,126 @@ export default function AdminCRM() {
             </div>
           )}
 
+          {/* ═══ FUNNEL MAP ═══ */}
+          {subTab === "funnel" && (
+            <div className="space-y-6">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Zap className="h-4 w-4" /> Mapa do Funil de Conversão
+              </h3>
+
+              {/* Visual Funnel */}
+              <div className="space-y-0">
+                {funnelData.map((step, i) => {
+                  const Icon = step.icon;
+                  const maxCount = funnelData[0].count || 1;
+                  const widthPct = Math.max(25, (step.count / maxCount) * 100);
+                  const dropColor = step.dropSeverity === "green" ? "text-emerald-500" : step.dropSeverity === "yellow" ? "text-amber-500" : "text-red-500";
+                  const dropBg = step.dropSeverity === "green" ? "bg-emerald-500" : step.dropSeverity === "yellow" ? "bg-amber-500" : "bg-red-500";
+
+                  return (
+                    <div key={step.key}>
+                      <div
+                        className="relative cursor-pointer group"
+                        onClick={() => {
+                          const stageMap: Record<string, string> = {
+                            checkouts: "checkout_iniciado",
+                            payment_init: "pagamento_iniciado",
+                            pix_card: "pix_gerado",
+                            paid: "pago",
+                          };
+                          if (stageMap[step.key]) {
+                            setFilters(f => ({ ...f, stage: stageMap[step.key] }));
+                            setSubTab("pipeline");
+                          }
+                        }}
+                      >
+                        <div
+                          className={`${step.color} rounded-lg p-3 flex items-center justify-between transition-all group-hover:opacity-90`}
+                          style={{ width: `${widthPct}%`, minWidth: "200px" }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4 text-white" />
+                            <span className="text-white text-xs font-semibold">{step.label}</span>
+                          </div>
+                          <span className="text-white text-sm font-bold">{step.count.toLocaleString("pt-BR")}</span>
+                        </div>
+                      </div>
+
+                      {i < funnelData.length - 1 && (
+                        <div className="flex items-center gap-2 py-1.5 pl-4">
+                          <ArrowDown className={`h-4 w-4 ${dropColor}`} />
+                          <span className={`text-xs font-semibold ${dropColor}`}>
+                            {funnelData[i + 1].convRate.toFixed(1)}% conversão
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({step.count - funnelData[i + 1].count} abandonaram · {funnelData[i + 1].dropRate.toFixed(0)}% queda)
+                          </span>
+                          <div className={`h-1.5 w-1.5 rounded-full ${dropBg}`} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Conversion Summary */}
+              <div className="bg-card border rounded-xl p-4">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Taxas de Conversão por Etapa</h4>
+                <div className="space-y-2">
+                  {funnelData.slice(1).map((step, i) => {
+                    const prev = funnelData[i];
+                    const dropColor = step.dropSeverity === "green" ? "text-emerald-500 bg-emerald-500/10" : step.dropSeverity === "yellow" ? "text-amber-500 bg-amber-500/10" : "text-red-500 bg-red-500/10";
+                    return (
+                      <div key={step.key} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{prev.label} → {step.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${dropColor}`}>
+                            {step.convRate.toFixed(1)}%
+                          </span>
+                          <span className="text-muted-foreground text-[10px]">({prev.count} → {step.count})</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bottleneck Detector */}
+              <div>
+                <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Detector de Gargalos
+                </h4>
+                {bottleneckAlerts.length === 0 ? (
+                  <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    <span className="text-sm font-medium">Nenhum gargalo detectado — funil fluindo bem</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {bottleneckAlerts.map((a, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-start gap-3 border rounded-xl p-4 ${
+                          a.type === "critical" ? "bg-destructive/5 border-destructive/30" : "bg-amber-500/5 border-amber-500/30"
+                        }`}
+                      >
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          a.type === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
+                        }`}>
+                          <AlertTriangle className={`h-4 w-4 ${a.type === "critical" ? "text-destructive" : "text-amber-500"}`} />
+                        </div>
+                        <div>
+                          <p className={`text-sm font-semibold ${a.type === "critical" ? "text-destructive" : "text-amber-600"}`}>{a.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ═══ RECOVERY ═══ */}
           {subTab === "recovery" && (
             <div className="space-y-2">
