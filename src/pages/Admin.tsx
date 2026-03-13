@@ -520,7 +520,16 @@ export default function Admin() {
             {/* Funnel Metrics */}
             <div>
               <h2 className="text-lg font-bold mb-3">Funil de Vendas</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-green-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Ativos (1h)</p>
+                  <p className="text-2xl font-bold mt-1">{activeNow}</p>
+                </div>
                 <div className="bg-card border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
