@@ -118,6 +118,15 @@ const Index = () => {
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
+  const [storeClosing, setStoreClosing] = useState(false);
+
+  const closeStore = () => {
+    setStoreClosing(true);
+    setTimeout(() => {
+      setStoreOpen(false);
+      setStoreClosing(false);
+    }, 300);
+  };
   const countdown = useCountdown();
 
   // ViewContent event on mount
