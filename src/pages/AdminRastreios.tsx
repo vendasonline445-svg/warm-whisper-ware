@@ -44,7 +44,54 @@ export default function AdminRastreios() {
   const [testingWebhook, setTestingWebhook] = useState(false);
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [activeTab, setActiveTab] = useState<"rastreios" | "config" | "logs">("rastreios");
+  const [manualName, setManualName] = useState("");
+  const [manualEmail, setManualEmail] = useState("");
+  const [manualCep, setManualCep] = useState("");
+  const [manualEndereco, setManualEndereco] = useState("");
+  const [manualProduto, setManualProduto] = useState("");
+  const [sendingManual, setSendingManual] = useState(false);
   const navigate = useNavigate();
+
+  const sendTracklyTest = async () => {
+    if (!manualName || !manualEmail || !manualCep || !manualEndereco || !manualProduto) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    setSendingManual(true);
+    try {
+      const payload = {
+        status: "approved",
+        customer: { name: manualName, email: manualEmail },
+        address: { zip_code: manualCep },
+        products: [{ title: manualProduto }],
+      };
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const text = await res.text();
+      console.log("[Trackly] test webhook sent");
+
+      await supabase.from("tracking_webhook_logs" as any).insert({
+        webhook_url: webhookUrl,
+        status: res.ok ? "test_success" : "test_error",
+        response: text.slice(0, 500),
+      } as any);
+
+      if (res.ok) {
+        toast.success("Webhook enviado com sucesso");
+        setManualName(""); setManualEmail(""); setManualCep(""); setManualEndereco(""); setManualProduto("");
+      } else {
+        toast.error("Erro ao enviar webhook");
+      }
+      fetchLogs();
+    } catch (err: any) {
+      console.error("[Trackly] manual test error:", err);
+      toast.error("Erro ao enviar webhook");
+    }
+    setSendingManual(false);
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
