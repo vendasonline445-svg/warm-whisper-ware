@@ -282,7 +282,8 @@ export default function AdminCRM() {
   const [funnelDevice, setFunnelDevice] = useState("mobile");
   const [funnelOrigin, setFunnelOrigin] = useState("all");
   const [funnelCreative, setFunnelCreative] = useState("all");
-  const [funnelRealtime, setFunnelRealtime] = useState("all"); // all, 5m, 30m, 1h
+  const [funnelRealtime, setFunnelRealtime] = useState("all");
+  const [funnelBotFilter, setFunnelBotFilter] = useState("all"); // all, valid, exclude_bots
 
   // Helper: build funnel from filtered events/leads
   const buildFunnel = useCallback((filteredEvents: UserEvent[], filteredLeads: EnrichedLead[], pvCount: number) => {
