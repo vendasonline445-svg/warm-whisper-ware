@@ -471,20 +471,20 @@ export default function AdminDashboard(props: AdminDashboardProps) {
                     <AreaChart data={timeSeriesData}>
                       <defs>
                         <linearGradient id="gradCheckout" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(24, 100%, 50%)" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="hsl(24, 100%, 50%)" stopOpacity={0} />
+                          <stop offset="5%" stopColor="hsl(224, 100%, 65%)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(224, 100%, 65%)" stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="gradPaid" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(160, 82%, 34%)" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="hsl(160, 82%, 34%)" stopOpacity={0} />
+                          <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="day" className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <YAxis className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Area type="monotone" dataKey="checkouts" stroke="hsl(24, 100%, 50%)" fill="url(#gradCheckout)" strokeWidth={2} animationDuration={1200} animationEasing="ease-out" />
-                      <Area type="monotone" dataKey="paid" stroke="hsl(160, 82%, 34%)" fill="url(#gradPaid)" strokeWidth={2} animationDuration={1400} animationEasing="ease-out" />
+                      <Area type="monotone" dataKey="checkouts" stroke="hsl(224, 100%, 65%)" fill="url(#gradCheckout)" strokeWidth={2} animationDuration={1200} animationEasing="ease-out" />
+                      <Area type="monotone" dataKey="paid" stroke="hsl(142, 71%, 45%)" fill="url(#gradPaid)" strokeWidth={2} animationDuration={1400} animationEasing="ease-out" />
                     </AreaChart>
                   </ChartContainer>
                 </div>
