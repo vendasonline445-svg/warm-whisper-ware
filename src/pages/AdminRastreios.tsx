@@ -44,11 +44,20 @@ export default function AdminRastreios() {
   const [testingWebhook, setTestingWebhook] = useState(false);
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [activeTab, setActiveTab] = useState<"rastreios" | "config" | "logs">("rastreios");
+  const [manualOrderId, setManualOrderId] = useState("");
   const [manualName, setManualName] = useState("");
   const [manualEmail, setManualEmail] = useState("");
+  const [manualPhone, setManualPhone] = useState("");
+  const [manualRua, setManualRua] = useState("");
+  const [manualNumero, setManualNumero] = useState("");
+  const [manualComplemento, setManualComplemento] = useState("");
+  const [manualBairro, setManualBairro] = useState("");
   const [manualCep, setManualCep] = useState("");
-  const [manualEndereco, setManualEndereco] = useState("");
+  const [manualCidade, setManualCidade] = useState("");
+  const [manualEstado, setManualEstado] = useState("");
   const [manualProduto, setManualProduto] = useState("");
+  const [manualQuantidade, setManualQuantidade] = useState("1");
+  const [manualPreco, setManualPreco] = useState("");
   const [sendingManual, setSendingManual] = useState(false);
   const [debugResult, setDebugResult] = useState<{
     status_http: number;
