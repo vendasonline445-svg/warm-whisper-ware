@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet } from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook } from "lucide-react";
 
 const ADMIN_PASSWORD = "12345";
 
@@ -37,6 +37,14 @@ interface Lead {
 
 type Tab = "dashboard" | "leads";
 
+interface SystemAlert {
+  id: string;
+  type: "critical" | "warning" | "info";
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
 export default function Admin() {
   const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem("admin_auth") === "true");
@@ -50,6 +58,7 @@ export default function Admin() {
   const [buyClicks, setBuyClicks] = useState(0);
   const [imageClicks, setImageClicks] = useState(0);
   const [avgScroll, setAvgScroll] = useState(0);
+  const [alerts, setAlerts] = useState<SystemAlert[]>([]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +75,10 @@ export default function Admin() {
     if (!authenticated) return;
     setLoading(true);
 
-    // Fetch leads + page views + events in parallel
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    // Fetch leads + page views + events + alert data in parallel
     Promise.all([
       supabase.from("checkout_leads").select("*").order("created_at", { ascending: false }),
       supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/"),
@@ -74,7 +86,12 @@ export default function Admin() {
       supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_buy_button"),
       supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_product_image"),
       supabase.from("user_events").select("event_data").eq("event_type", "scroll_depth"),
-    ]).then(([leadsRes, visitorsRes, checkoutsRes, buyRes, imgRes, scrollRes]) => {
+      // Alert queries
+      supabase.from("checkout_leads").select("id", { count: "exact", head: true }).neq("status", "paid").gte("created_at", oneHourAgo),
+      supabase.from("tracking_webhook_logs").select("id", { count: "exact", head: true }).neq("status", "sent").gte("created_at", oneDayAgo),
+      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "js_error").gte("created_at", oneDayAgo),
+      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "tiktok_event").gte("created_at", oneHourAgo),
+    ]).then(([leadsRes, visitorsRes, checkoutsRes, buyRes, imgRes, scrollRes, declinedRes, webhookErrRes, jsErrRes, pixelEventsRes]) => {
       if (leadsRes.error) {
         console.error(leadsRes.error);
         setError("Erro ao carregar dados");
@@ -93,6 +110,79 @@ export default function Admin() {
         }, 0);
         setAvgScroll(Math.round(total / scrollRes.data.length));
       }
+
+      // Build alerts
+      const newAlerts: SystemAlert[] = [];
+      const declinedCount = declinedRes.count || 0;
+      if (declinedCount > 5) {
+        newAlerts.push({
+          id: "declined",
+          type: "critical",
+          icon: <CreditCard className="h-4 w-4" />,
+          title: `${declinedCount} pagamentos recusados na última hora`,
+          description: "Verifique o gateway de pagamento ou possível fraude.",
+        });
+      }
+
+      // Conversion drop: compare last 24h leads vs visitors
+      const allLeads = (leadsRes.data as Lead[]) || [];
+      const recentPaid = allLeads.filter(l => l.status === "paid" && new Date(l.created_at) >= new Date(oneDayAgo)).length;
+      const totalVisitors = visitorsRes.count || 0;
+      const currentConv = totalVisitors > 0 ? (recentPaid / totalVisitors) * 100 : 0;
+      if (totalVisitors > 20 && currentConv < 1) {
+        newAlerts.push({
+          id: "conversion",
+          type: "warning",
+          icon: <TrendingUp className="h-4 w-4" />,
+          title: `Conversão muito baixa: ${currentConv.toFixed(1)}%`,
+          description: "A taxa de conversão caiu significativamente. Analise o funil.",
+        });
+      }
+
+      const webhookErrors = webhookErrRes.count || 0;
+      if (webhookErrors > 0) {
+        newAlerts.push({
+          id: "webhook",
+          type: "critical",
+          icon: <Webhook className="h-4 w-4" />,
+          title: `${webhookErrors} erro(s) no webhook Trackly (24h)`,
+          description: "Verifique a URL do webhook e os logs de resposta.",
+        });
+      }
+
+      const jsErrors = jsErrRes.count || 0;
+      if (jsErrors > 0) {
+        newAlerts.push({
+          id: "jserror",
+          type: "warning",
+          icon: <Bug className="h-4 w-4" />,
+          title: `${jsErrors} erro(s) JavaScript detectados (24h)`,
+          description: "Erros no site podem impactar a experiência do usuário.",
+        });
+      }
+
+      const pixelEvents = pixelEventsRes.count || 0;
+      if (totalVisitors > 10 && pixelEvents === 0) {
+        newAlerts.push({
+          id: "pixel",
+          type: "warning",
+          icon: <Radio className="h-4 w-4" />,
+          title: "Pixel sem disparar eventos na última hora",
+          description: "O pixel do TikTok pode estar com problemas. Verifique a integração.",
+        });
+      }
+
+      if (newAlerts.length === 0) {
+        newAlerts.push({
+          id: "ok",
+          type: "info",
+          icon: <CheckCircle2 className="h-4 w-4" />,
+          title: "Tudo funcionando normalmente",
+          description: "Nenhum alerta detectado no momento.",
+        });
+      }
+
+      setAlerts(newAlerts);
       setLoading(false);
     });
   }, [authenticated]);
@@ -360,6 +450,48 @@ export default function Admin() {
                     <p className="text-xs text-muted-foreground">Todos os leads</p>
                   </div>
                 </button>
+              </div>
+            </div>
+
+            {/* Alertas do Sistema */}
+            <div>
+              <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" /> Alertas do Sistema
+                {alerts.filter(a => a.type === "critical").length > 0 && (
+                  <span className="bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {alerts.filter(a => a.type === "critical").length}
+                  </span>
+                )}
+              </h2>
+              <div className="space-y-2">
+                {alerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className={`flex items-start gap-3 border rounded-xl p-4 ${
+                      alert.type === "critical"
+                        ? "bg-destructive/5 border-destructive/30"
+                        : alert.type === "warning"
+                        ? "bg-amber-500/5 border-amber-500/30"
+                        : "bg-emerald-500/5 border-emerald-500/30"
+                    }`}
+                  >
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      alert.type === "critical"
+                        ? "bg-destructive/10 text-destructive"
+                        : alert.type === "warning"
+                        ? "bg-amber-500/10 text-amber-500"
+                        : "bg-emerald-500/10 text-emerald-500"
+                    }`}>
+                      {alert.icon}
+                    </div>
+                    <div>
+                      <p className={`text-sm font-semibold ${
+                        alert.type === "critical" ? "text-destructive" : alert.type === "warning" ? "text-amber-600" : "text-emerald-600"
+                      }`}>{alert.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{alert.description}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
