@@ -1530,6 +1530,7 @@ export default function AdminCRM() {
               <div className="flex items-center gap-2">
                 {([
                   { key: "funnel" as const, label: "📊 Funil", },
+                  { key: "radar" as const, label: "🎯 Radar de Conversão" },
                   { key: "replay" as const, label: "🎬 Replays de Sessão" },
                   { key: "heatmap" as const, label: "🔥 Heatmap" },
                 ] as const).map(v => (
