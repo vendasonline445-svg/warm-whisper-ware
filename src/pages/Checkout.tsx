@@ -611,7 +611,6 @@ const Checkout = () => {
                 </div>
                 <div className="text-left">
                   <span className="text-sm font-semibold">Cartão de crédito</span>
-                  {cardDisabled && <p className="text-[10px] text-destructive">Indisponível — use PIX</p>}
                 </div>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
