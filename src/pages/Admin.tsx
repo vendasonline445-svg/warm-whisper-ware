@@ -46,7 +46,7 @@ interface Lead {
   transaction_id: string | null;
 }
 
-type Tab = "dashboard" | "leads" | "crm" | "logs" | "tiktok" | "rastreios";
+type Tab = "dashboard" | "leads" | "crm" | "logs" | "tiktok" | "rastreios" | "ai";
 
 type PeriodKey = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
 
