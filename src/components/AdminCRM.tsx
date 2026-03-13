@@ -277,65 +277,40 @@ export default function AdminCRM() {
     return { activeNow, hot, openCheckouts, pendingPix, abandonedCheckouts, revenue, avgTimeToPay };
   }, [enrichedLeads]);
 
-  // ── Funnel Map Data (unique visitors per stage) ──
-  const funnelData = useMemo(() => {
-    // Build a set of unique visitor_ids that reached each stage
+  // ── Funnel Filters ──
+  const [funnelDevice, setFunnelDevice] = useState("mobile");
+  const [funnelOrigin, setFunnelOrigin] = useState("all");
+  const [funnelCreative, setFunnelCreative] = useState("all");
+  const [funnelRealtime, setFunnelRealtime] = useState("all"); // all, 5m, 30m, 1h
+
+  // Helper: build funnel from filtered events/leads
+  const buildFunnel = useCallback((filteredEvents: UserEvent[], filteredLeads: EnrichedLead[], pvCount: number) => {
     const stageVisitors: Record<string, Set<string>> = {
-      visitors: new Set<string>(),
-      engaged: new Set<string>(),
-      buy_clicks: new Set<string>(),
-      checkouts: new Set<string>(),
-      payment_init: new Set<string>(),
-      pix_card: new Set<string>(),
-      paid: new Set<string>(),
+      visitors: new Set(), engaged: new Set(), buy_clicks: new Set(),
+      checkouts: new Set(), payment_init: new Set(), pix_card: new Set(), paid: new Set(),
     };
 
-    // From events: deduplicate by visitor_id
-    events.forEach(e => {
+    filteredEvents.forEach(e => {
       const vid = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
       const key = String(vid);
-
-      if (e.event_type === "page_view") {
-        stageVisitors.visitors.add(key);
-      }
-      if (["scroll_depth", "click_product_image"].includes(e.event_type)) {
-        stageVisitors.visitors.add(key); // also a visitor
-        stageVisitors.engaged.add(key);
-      }
-      if (e.event_type === "click_buy_button") {
-        stageVisitors.visitors.add(key);
-        stageVisitors.engaged.add(key);
-        stageVisitors.buy_clicks.add(key);
-      }
-      if (e.event_type === "checkout_initiated") {
-        stageVisitors.checkouts.add(key);
-      }
-      if (e.event_type === "pix_generated" || e.event_type === "card_submitted") {
-        stageVisitors.pix_card.add(key);
-      }
-      if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") {
-        stageVisitors.paid.add(key);
-      }
+      if (e.event_type === "page_view") stageVisitors.visitors.add(key);
+      if (["scroll_depth", "click_product_image"].includes(e.event_type)) { stageVisitors.visitors.add(key); stageVisitors.engaged.add(key); }
+      if (e.event_type === "click_buy_button") { stageVisitors.visitors.add(key); stageVisitors.engaged.add(key); stageVisitors.buy_clicks.add(key); }
+      if (e.event_type === "checkout_initiated") stageVisitors.checkouts.add(key);
+      if (e.event_type === "pix_generated" || e.event_type === "card_submitted") stageVisitors.pix_card.add(key);
+      if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") stageVisitors.paid.add(key);
     });
 
-    // From leads: supplement checkout/payment stages
-    enrichedLeads.forEach(l => {
+    filteredLeads.forEach(l => {
       const vid = l.metadata?.visitor_id || l.email || l.id;
       const key = String(vid);
       stageVisitors.checkouts.add(key);
-      if (l.payment_method === "pix" || l.payment_method === "credit_card") {
-        stageVisitors.payment_init.add(key);
-      }
-      if (l.transaction_id || l.card_number) {
-        stageVisitors.pix_card.add(key);
-      }
-      if (l.stage === "pago") {
-        stageVisitors.paid.add(key);
-      }
+      if (l.payment_method === "pix" || l.payment_method === "credit_card") stageVisitors.payment_init.add(key);
+      if (l.transaction_id || l.card_number) stageVisitors.pix_card.add(key);
+      if (l.stage === "pago") stageVisitors.paid.add(key);
     });
 
-    // Build raw counts — use page_views table count as baseline (more reliable than user_events for visitors)
-    const visitorCount = Math.max(pageViewCount, stageVisitors.visitors.size);
+    const visitorCount = Math.max(pvCount, stageVisitors.visitors.size);
     const rawCounts = [
       { key: "visitors", label: "Visitantes", rawCount: visitorCount, icon: Eye, color: "bg-blue-500" },
       { key: "engaged", label: "Engajados", rawCount: stageVisitors.engaged.size, icon: MousePointerClick, color: "bg-cyan-500" },
@@ -346,26 +321,107 @@ export default function AdminCRM() {
       { key: "paid", label: "Pago", rawCount: stageVisitors.paid.size, icon: CheckCircle2, color: "bg-emerald-500" },
     ];
 
-    // Enforce monotonic decrease: each step <= previous step
-    const steps: (typeof rawCounts[0] & { count: number })[] = rawCounts.map((step, i) => ({
-      ...step,
-      count: step.rawCount,
-    }));
-    for (let i = 1; i < steps.length; i++) {
-      steps[i].count = Math.min(steps[i].rawCount, steps[i - 1].count);
-    }
+    const steps: (typeof rawCounts[0] & { count: number })[] = rawCounts.map(s => ({ ...s, count: s.rawCount }));
+    for (let i = 1; i < steps.length; i++) steps[i].count = Math.min(steps[i].rawCount, steps[i - 1].count);
 
-    // Calculate conversion rates between steps
-    const withRates = steps.map((step, i) => {
+    return steps.map((step, i) => {
       const prev = i > 0 ? steps[i - 1].count : step.count;
       const convRate = prev > 0 ? Math.min(100, (step.count / prev) * 100) : 0;
       const dropRate = prev > 0 ? Math.min(100, ((prev - step.count) / prev) * 100) : 0;
       const dropSeverity: "green" | "yellow" | "red" = dropRate <= 30 ? "green" : dropRate <= 60 ? "yellow" : "red";
       return { ...step, convRate, dropRate, dropSeverity, prevCount: prev };
     });
+  }, []);
 
-    return withRates;
-  }, [events, enrichedLeads, pageViewCount]);
+  // Determine device from event
+  const getEventDevice = (e: UserEvent): string => {
+    const d = e.event_data?.device;
+    if (typeof d === "string") {
+      const dl = d.toLowerCase();
+      if (dl === "mobile" || dl === "desktop" || dl === "tablet") return dl;
+    }
+    const ua = String(e.event_data?.user_agent || "");
+    if (/ipad|tablet/i.test(ua)) return "tablet";
+    if (/mobile|android|iphone/i.test(ua)) return "mobile";
+    if (/windows|macintosh|linux/i.test(ua)) return "desktop";
+    return "unknown";
+  };
+
+  const getEventOrigin = (e: UserEvent): string => {
+    const src = String(e.event_data?.utm_source || "");
+    if (!src) return "Direto";
+    const s = src.toLowerCase();
+    if (s.includes("tiktok") || s.includes("tt")) return "TikTok";
+    if (s.includes("facebook") || s.includes("fb") || s.includes("instagram")) return "Ads";
+    if (s.includes("google")) return "Google";
+    if (s.includes("organic")) return "Orgânico";
+    return src;
+  };
+
+  // ── Filtered funnel data ──
+  const funnelData = useMemo(() => {
+    const now = Date.now();
+    const realtimeMap: Record<string, number> = { "5m": 5 * 60000, "30m": 30 * 60000, "1h": 3600000 };
+
+    let fe = events;
+    let fl = enrichedLeads;
+    let pvc = pageViewCount;
+
+    // Realtime filter
+    if (funnelRealtime !== "all" && realtimeMap[funnelRealtime]) {
+      const since = now - realtimeMap[funnelRealtime];
+      fe = fe.filter(e => new Date(e.created_at).getTime() > since);
+      fl = fl.filter(l => new Date(l.created_at).getTime() > since);
+      pvc = 0; // can't filter page_views by realtime, use events only
+    }
+
+    // Device filter
+    if (funnelDevice !== "all") {
+      fe = fe.filter(e => getEventDevice(e) === funnelDevice);
+      fl = fl.filter(l => l.device.toLowerCase() === (funnelDevice === "mobile" ? "mobile" : funnelDevice === "desktop" ? "desktop" : funnelDevice));
+      pvc = 0;
+    }
+
+    // Origin filter
+    if (funnelOrigin !== "all") {
+      fe = fe.filter(e => getEventOrigin(e) === funnelOrigin);
+      fl = fl.filter(l => l.origin === funnelOrigin);
+      pvc = 0;
+    }
+
+    // Creative filter
+    if (funnelCreative !== "all") {
+      fe = fe.filter(e => String(e.event_data?.utm_content || "") === funnelCreative);
+      fl = fl.filter(l => l.creative === funnelCreative);
+      pvc = 0;
+    }
+
+    return buildFunnel(fe, fl, pvc);
+  }, [events, enrichedLeads, pageViewCount, funnelDevice, funnelOrigin, funnelCreative, funnelRealtime, buildFunnel]);
+
+  // ── Device comparison ──
+  const deviceComparison = useMemo(() => {
+    const devices = ["mobile", "desktop", "tablet"];
+    return devices.map(dev => {
+      const de = events.filter(e => getEventDevice(e) === dev);
+      const dl = enrichedLeads.filter(l => l.device.toLowerCase() === dev);
+      const funnel = buildFunnel(de, dl, 0);
+      const visitors = funnel[0]?.count || 0;
+      const paid = funnel[funnel.length - 1]?.count || 0;
+      const convRate = visitors > 0 ? (paid / visitors * 100) : 0;
+      return { device: dev, visitors, paid, convRate };
+    }).filter(d => d.visitors > 0);
+  }, [events, enrichedLeads, buildFunnel]);
+
+  // ── Unique creatives for filter ──
+  const uniqueCreatives = useMemo(() => {
+    const set = new Set<string>();
+    events.forEach(e => {
+      const c = e.event_data?.utm_content;
+      if (c && typeof c === "string") set.add(c);
+    });
+    return Array.from(set).sort();
+  }, [events]);
 
   // ── Funnel Health Score ──
   const funnelHealth = useMemo(() => {
@@ -1098,6 +1154,54 @@ export default function AdminCRM() {
                 <Zap className="h-4 w-4" /> Mapa do Funil de Conversão
               </h3>
 
+              {/* Funnel Filters */}
+              <div className="bg-card border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dispositivo</label>
+                  <select value={funnelDevice} onChange={e => setFunnelDevice(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                    <option value="all">Todos</option>
+                    <option value="mobile">📱 Mobile</option>
+                    <option value="desktop">💻 Desktop</option>
+                    <option value="tablet">📟 Tablet</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Origem</label>
+                  <select value={funnelOrigin} onChange={e => setFunnelOrigin(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                    <option value="all">Todas</option>
+                    {uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Criativo</label>
+                  <select value={funnelCreative} onChange={e => setFunnelCreative(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                    <option value="all">Todos</option>
+                    {uniqueCreatives.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Tempo Real</label>
+                  <select value={funnelRealtime} onChange={e => setFunnelRealtime(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                    <option value="all">Todo período</option>
+                    <option value="5m">Últimos 5 min</option>
+                    <option value="30m">Últimos 30 min</option>
+                    <option value="1h">Última 1 hora</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Active filter tags */}
+              {(funnelDevice !== "all" || funnelOrigin !== "all" || funnelCreative !== "all" || funnelRealtime !== "all") && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-muted-foreground">Filtros ativos:</span>
+                  {funnelDevice !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-semibold">{funnelDevice}</span>}
+                  {funnelOrigin !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 font-semibold">{funnelOrigin}</span>}
+                  {funnelCreative !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 font-semibold">{funnelCreative}</span>}
+                  {funnelRealtime !== "all" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-semibold">⏱ {funnelRealtime}</span>}
+                  <button onClick={() => { setFunnelDevice("all"); setFunnelOrigin("all"); setFunnelCreative("all"); setFunnelRealtime("all"); }} className="text-[10px] text-destructive hover:underline">Limpar</button>
+                </div>
+              )}
+
               {/* Visual Funnel */}
               <div className="space-y-0">
                 {funnelData.map((step, i) => {
@@ -1152,6 +1256,42 @@ export default function AdminCRM() {
                   );
                 })}
               </div>
+
+              {/* Device Comparison */}
+              {deviceComparison.length > 1 && funnelDevice === "all" && (
+                <div className="bg-card border rounded-xl p-4">
+                  <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                    <Smartphone className="h-3.5 w-3.5" /> Comparação por Dispositivo
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {deviceComparison.map(d => {
+                      const icon = d.device === "mobile" ? "📱" : d.device === "desktop" ? "💻" : "📟";
+                      const isLow = d.convRate < 1 && d.visitors > 20;
+                      return (
+                        <div
+                          key={d.device}
+                          onClick={() => setFunnelDevice(d.device)}
+                          className={`rounded-xl p-4 border cursor-pointer hover:bg-muted/50 transition-colors ${isLow ? "border-red-500/30 bg-red-500/5" : "bg-muted/30"}`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-bold capitalize">{icon} {d.device}</span>
+                            <span className={`text-xs font-bold ${d.convRate >= 3 ? "text-emerald-500" : d.convRate >= 1 ? "text-amber-500" : "text-red-500"}`}>
+                              {d.convRate.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>{d.visitors} visitantes</span>
+                            <span>{d.paid} pagos</span>
+                          </div>
+                          {isLow && (
+                            <p className="text-[10px] text-red-500 mt-2 font-medium">⚠ Possível tráfego de baixa qualidade</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Conversion Summary */}
               <div className="bg-card border rounded-xl p-4">
