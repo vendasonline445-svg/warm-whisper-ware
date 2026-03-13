@@ -314,7 +314,7 @@ function flush() {
   if (newEventsQueue.length > 0) {
     const batch = [...newEventsQueue];
     newEventsQueue = [];
-    supabase.from("events").insert(batch).then(() => {});
+    db.from("events").insert(batch).then(() => {});
   }
 }
 
