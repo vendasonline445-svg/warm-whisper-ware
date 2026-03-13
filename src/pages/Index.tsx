@@ -1179,8 +1179,8 @@ const Index = () => {
             </div>
 
             {/* Color Selection */}
-            <p className="text-xs font-bold mb-2">Escolha a cor e vá direto pro checkout:</p>
-            <div className="grid grid-cols-2 gap-2.5 w-full mb-4">
+            <p className="text-xs font-bold mb-2">Escolha a cor:</p>
+            <div className="grid grid-cols-2 gap-2.5 w-full mb-3">
               {[
                 { id: "branca", name: "Branca", img: "/images/mesa-branca-popup.webp" },
                 { id: "preta", name: "Preta", img: "/images/mesa-preta-popup.webp" },
@@ -1202,16 +1202,39 @@ const Index = () => {
               ))}
             </div>
 
+            {/* Size Selection */}
+            <p className="text-xs font-bold mb-2">Escolha o tamanho:</p>
+            <div className="grid grid-cols-2 gap-2 w-full mb-4">
+              {Object.entries(SIZE_PRICES).map(([size, data]) => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  className={`rounded-lg border-2 p-2 transition-all text-left ${
+                    selectedSize === size
+                      ? "border-foreground shadow-lg bg-accent"
+                      : "border-border hover:border-blue-500 hover:bg-blue-50"
+                  }`}
+                >
+                  <p className="text-xs font-bold">{size}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="text-sm font-black text-destructive">R$ {data.price.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-[10px] line-through text-muted-foreground">R$ {data.oldPrice.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-emerald-600">-{data.discount}%</span>
+                </button>
+              ))}
+            </div>
+
             <Button
               onClick={() => {
-                if (selectedColor) {
+                if (selectedColor && selectedSize) {
                   setExitModalOpen(false);
-                  nav(`/checkout?cor=${selectedColor}&tamanho=180x60cm&cupom=VOLTA25`);
+                  nav(`/checkout?cor=${selectedColor}&tamanho=${selectedSize}&cupom=VOLTA25`);
                 }
               }}
-              disabled={!selectedColor}
+              disabled={!selectedColor || !selectedSize}
               className="w-full bg-muted text-muted-foreground hover:bg-cta hover:text-cta-foreground font-bold text-sm py-3 h-auto rounded-xl disabled:opacity-50 transition-colors data-[active=true]:bg-cta data-[active=true]:text-cta-foreground"
-              data-active={!!selectedColor}
+              data-active={!!selectedColor && !!selectedSize}
             >
               Aproveitar desconto 🔥
             </Button>
