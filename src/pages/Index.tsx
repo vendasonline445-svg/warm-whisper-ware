@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 import { getUrlWithUtm } from "@/utils/utm";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
