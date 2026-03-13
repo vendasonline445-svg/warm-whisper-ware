@@ -155,7 +155,7 @@ const PixPayment = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-border/40 px-4 py-3.5">
         <div className="mx-auto max-w-[480px] flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="text-foreground hover:opacity-70 transition-opacity">
+          <button onClick={() => navigate(getUrlWithUtm("/"))} className="text-foreground hover:opacity-70 transition-opacity">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1 text-center">
