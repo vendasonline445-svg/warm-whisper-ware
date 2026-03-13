@@ -114,6 +114,8 @@ const Index = () => {
   const [colorModalOpen, setColorModalOpen] = useState(false);
   const [colorModalClosing, setColorModalClosing] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [colorModalMode, setColorModalMode] = useState<'cart' | 'buy'>('cart');
+  const [flyingDot, setFlyingDot] = useState(false);
   const [exitModalOpen, setExitModalOpen] = useState(false);
   const [exitShown, setExitShown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
@@ -257,8 +259,9 @@ const Index = () => {
     };
   }, [exitShown]);
 
-  const openColorModal = () => {
+  const openColorModal = (mode: 'cart' | 'buy') => {
     setSelectedColor(null);
+    setColorModalMode(mode);
     setColorModalOpen(true);
     trackTikTokEvent({
       event: "AddToCart",
@@ -280,13 +283,35 @@ const Index = () => {
 
   const nav = useNavigate();
 
-  const handleCheckout = () => {
+  const handleColorConfirm = () => {
     if (!selectedColor) return;
-    updateCart({ color: selectedColor, size: selectedSize, quantity: cartItem?.quantity || 1 });
-    const params = new URLSearchParams(window.location.search);
-    params.set("color", selectedColor);
-    params.set("size", selectedSize);
-    nav(`/checkout?${params.toString()}`);
+
+    if (colorModalMode === 'buy') {
+      updateCart({ color: selectedColor, size: selectedSize, quantity: cartItem?.quantity || 1 });
+      const params = new URLSearchParams(window.location.search);
+      params.set("color", selectedColor);
+      params.set("size", selectedSize);
+      nav(`/checkout?${params.toString()}`);
+    } else {
+      // Add to cart mode - animate dot to cart icon
+      updateCart({ color: selectedColor, size: selectedSize, quantity: (cartItem?.quantity || 0) + 1 });
+      closeColorModal();
+      setTimeout(() => {
+        setFlyingDot(true);
+        setTimeout(() => setFlyingDot(false), 800);
+      }, 350);
+    }
+  };
+
+  const handleBuyNow = () => {
+    if (cartItem) {
+      const params = new URLSearchParams(window.location.search);
+      params.set("color", cartItem.color);
+      params.set("size", cartItem.size);
+      nav(`/checkout?${params.toString()}`);
+    } else {
+      openColorModal('buy');
+    }
   };
 
   const handleCartCheckout = () => {
@@ -308,6 +333,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white pb-[72px]">
+      {/* Flying dot animation */}
+      {flyingDot && (
+        <div className="fixed z-[100] pointer-events-none" style={{
+          animation: 'flyToCart 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+          left: '50%',
+          bottom: '80px',
+        }}>
+          <div className="h-4 w-4 rounded-full bg-cta shadow-lg" />
+        </div>
+      )}
+      <style>{`
+        @keyframes flyToCart {
+          0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+          40% { transform: translate(20vw, -40vh) scale(1.3); opacity: 1; }
+          100% { transform: translate(35vw, -90vh) scale(0.3); opacity: 0; }
+        }
+      `}</style>
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b bg-card">
         <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 py-3">
@@ -750,11 +792,11 @@ const Index = () => {
             <span>Chat</span>
           </button>
         </div>
-        <button onClick={openColorModal} className="flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-bold text-cta whitespace-nowrap">
+        <button onClick={() => openColorModal('cart')} className="flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-bold text-cta whitespace-nowrap">
           <ShoppingCart className="h-3.5 w-3.5 flex-shrink-0 text-cta" />
           <span className="text-cta font-bold text-[11px]">Adicionar ao carrinho</span>
         </button>
-        <Button onClick={openColorModal} className="flex-shrink-0 bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-[11px] py-2.5 px-4 h-auto rounded-lg uppercase tracking-wide whitespace-nowrap">
+        <Button onClick={handleBuyNow} className="flex-shrink-0 bg-cta text-cta-foreground hover:bg-cta-hover font-bold text-[11px] py-2.5 px-4 h-auto rounded-lg uppercase tracking-wide whitespace-nowrap">
           COMPRAR AGORA
         </Button>
       </div>
@@ -828,7 +870,7 @@ const Index = () => {
             {/* Confirm button */}
             <div className="px-5 pb-6">
               <button
-                onClick={handleCheckout}
+                onClick={handleColorConfirm}
                 disabled={!selectedColor}
                 className={`w-full font-bold text-base py-4 rounded-2xl transition-all ${
                   selectedColor
@@ -836,7 +878,7 @@ const Index = () => {
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                Confirmar - R$ {PRICE.toFixed(2).replace('.', ',')}
+                {colorModalMode === 'buy' ? `Comprar agora - R$ ${PRICE.toFixed(2).replace('.', ',')}` : `Adicionar ao carrinho - R$ ${PRICE.toFixed(2).replace('.', ',')}`}
               </button>
             </div>
           </div>
