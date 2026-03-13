@@ -99,12 +99,13 @@ const PixPayment = () => {
     });
   }, []);
 
-  const pixInfo = pixData?.pix || pixData?.pixQrCode || {};
-  const qrCode = pixInfo?.qrcode || pixInfo?.qr_code || pixData?.pix_qr_code || "";
-  const pixCode = pixInfo?.qrcode || pixInfo?.qr_code || pixData?.pix_qr_code || "";
+  // Robust PIX data extraction — covers multiple API response formats
+  const pixInfo = pixData?.pix || pixData?.pixQrCode || pixData?.qr_code_data || {};
+  const qrCode = pixInfo?.qrcode || pixInfo?.qr_code || pixInfo?.emv || pixData?.pix_qr_code || pixData?.qrcode || pixData?.qr_code || pixData?.emv || "";
+  const pixCode = qrCode;
 
-  const total = orderData?.product?.total || pixData?.amount / 100 || 87.60;
-  const expiresAt = pixInfo?.expirationDate || pixInfo?.expiresAt || pixInfo?.expires_at || pixData?.date_expiration;
+  const total = orderData?.product?.total || (pixData?.amount ? pixData.amount / 100 : null) || (pixData?.value ? pixData.value / 100 : null) || 87.60;
+  const expiresAt = pixInfo?.expirationDate || pixInfo?.expiresAt || pixInfo?.expires_at || pixData?.date_expiration || pixData?.expiresAt || "";
 
   const timer = usePixCountdown(expiresAt);
 
