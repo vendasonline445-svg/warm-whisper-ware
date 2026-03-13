@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getUrlWithUtm } from "@/utils/utm";
-import { getTrackingContext } from "@/utils/track-event";
+import { getTrackingContext, trackEvent } from "@/utils/track-event";
 import { toast } from "@/hooks/use-toast";
 import { trackTikTokEvent, identifyTikTokUser, setUserData } from "@/lib/tiktok-tracking";
 import {
