@@ -633,7 +633,7 @@ const Checkout = () => {
             )}
 
             {/* Card Form */}
-            {paymentMethod === "credit_card" && !cardDisabled && (
+            {paymentMethod === "credit_card" && (
               <div className="border-t">
                 {/* Installments banner */}
                 <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: '#fff0f3' }}>
