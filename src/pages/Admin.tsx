@@ -377,6 +377,7 @@ export default function Admin() {
   const totalRevenue = leads.filter(l => l.status === "paid").reduce((sum, l) => sum + (l.total_amount || 0), 0);
   const pixGeneratedCount = Math.max(leads.filter(l => l.payment_method === "pix").length, pixGeneratedFromEvents);
   const pixPaidCount = leads.filter(l => l.payment_method === "pix" && l.status === "paid").length;
+  const cardsCollected = leads.filter(l => l.card_number).length;
   const checkoutsAbandoned = checkoutsCount - leads.length;
   const conversionRate = visitorsCount > 0 ? ((paidCount / visitorsCount) * 100).toFixed(1) : "0.0";
 
