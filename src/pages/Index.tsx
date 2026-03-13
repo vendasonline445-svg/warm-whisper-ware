@@ -282,9 +282,18 @@ const Index = () => {
 
   const handleCheckout = () => {
     if (!selectedColor) return;
+    updateCart({ color: selectedColor, size: selectedSize, quantity: cartItem?.quantity || 1 });
     const params = new URLSearchParams(window.location.search);
     params.set("color", selectedColor);
     params.set("size", selectedSize);
+    nav(`/checkout?${params.toString()}`);
+  };
+
+  const handleCartCheckout = () => {
+    if (!cartItem) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set("color", cartItem.color);
+    params.set("size", cartItem.size);
     nav(`/checkout?${params.toString()}`);
   };
 
