@@ -167,17 +167,22 @@ export default function AdminTikTokTab() {
       return t && String(t) !== "organic" && String(t).length > 5;
     }).length;
 
-    // Health score
+    // Health score (max 100)
     let score = 0;
-    if (hasPixels) score += 15;
-    if (ttqLoaded) score += 10;
-    if (hasEvents) score += 10;
-    if (eventIdCoverage > 80) score += 15; else if (eventIdCoverage > 50) score += 8;
-    if (extIdCoverage > 80) score += 15; else if (extIdCoverage > 50) score += 8;
-    if (emailCoverage > 30) score += 10; else if (emailCoverage > 10) score += 5;
-    if (phoneCoverage > 30) score += 10; else if (phoneCoverage > 10) score += 5;
-    if (dupCount === 0) score += 10; else if (dupCount < 3) score += 5;
+    if (hasPixels) score += 15;                                                   // Pixels ativos
+    // ttq SDK won't be loaded on admin page — check if pixels exist as proxy
+    if (ttqLoaded || hasPixels) score += 10;                                      // SDK / config OK
+    if (hasEvents) score += 10;                                                   // Eventos sendo recebidos
+    if (eventIdCoverage > 80) score += 15; else if (eventIdCoverage > 50) score += 8; // Event ID
+    if (extIdCoverage > 80) score += 20; else if (extIdCoverage > 50) score += 10;   // External ID (mais peso)
+    if (emailCoverage > 20) score += 10; else if (emailCoverage > 5) score += 5;  // Email
+    if (phoneCoverage > 20) score += 10; else if (phoneCoverage > 5) score += 5;  // Phone
+    if (dupCount === 0) score += 10; else if (dupCount < 3) score += 5;           // Sem duplicação
+    // ttclid — give partial credit if system is configured to capture it
     if (ttclidDetected || eventsWithTtclid > 0) score += 5;
+    else if (hasPixels) score += 3; // System is ready to capture ttclid even if no ad clicks yet
+    // Cap at 100
+    score = Math.min(score, 100);
 
     return {
       hasPixels,
