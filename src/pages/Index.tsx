@@ -1425,10 +1425,10 @@ const Index = () => {
             </button>
 
             <div className="px-5 pt-2 pb-3 border-b">
-              <p className="text-base font-bold text-center">Carrinho de compras ({cartItem ? cartItem.quantity : 0})</p>
+              <p className="text-base font-bold text-center">Carrinho de compras ({cartTotalQty})</p>
             </div>
 
-            {!cartItem ? (
+            {cartItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-6">
                 <ShoppingCart className="h-16 w-16 text-muted-foreground/30 mb-4" />
                 <p className="text-lg font-bold text-foreground mb-1">Seu carrinho está vazio</p>
@@ -1439,42 +1439,40 @@ const Index = () => {
               </div>
             ) : (
               <div className="px-5 py-4">
-                {/* Product in cart */}
-                <div className="flex gap-3 pb-4 border-b">
-                  <img
-                    src={cartItem.color === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
-                    alt="Mesa Dobrável"
-                    className="h-20 w-20 rounded-lg object-contain border bg-muted/30 p-1 flex-shrink-0"
-                  />
-                  <div className="flex-1">
-                    <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
-                    <p className="text-xs text-muted-foreground">Cor: {cartItem.color === 'preta' ? 'Preta' : 'Branca'} · {cartItem.size}</p>
-                    <p className="text-cta font-extrabold text-base mt-1">R$ {((SIZE_PRICES[cartItem.size]?.price || PRICE) * cartItem.quantity).toFixed(2).replace('.', ',')}</p>
-                    <div className="flex items-center gap-3 mt-2">
-                      <button
-                        onClick={() => {
-                          if (cartItem.quantity <= 1) { updateCart(null); }
-                          else updateCart({ ...cartItem, quantity: cartItem.quantity - 1 });
-                        }}
-                        className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
-                      >
-                        <span className="text-sm font-bold">−</span>
-                      </button>
-                      <span className="text-sm font-bold w-5 text-center">{cartItem.quantity}</span>
-                      <button
-                        onClick={() => updateCart({ ...cartItem, quantity: cartItem.quantity + 1 })}
-                        className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
-                      >
-                        <span className="text-sm font-bold">+</span>
-                      </button>
+                {cartItems.map((item, idx) => (
+                  <div key={`${item.color}-${item.size}`} className="flex gap-3 pb-4 border-b mb-4 last:mb-0">
+                    <img
+                      src={item.color === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
+                      alt="Mesa Dobrável"
+                      className="h-20 w-20 rounded-lg object-contain border bg-muted/30 p-1 flex-shrink-0"
+                    />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                      <p className="text-xs text-muted-foreground">Cor: {item.color === 'preta' ? 'Preta' : 'Branca'} · {item.size}</p>
+                      <p className="text-cta font-extrabold text-base mt-1">R$ {((SIZE_PRICES[item.size]?.price || PRICE) * item.quantity).toFixed(2).replace('.', ',')}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <button
+                          onClick={() => updateCartItem(idx, item.quantity - 1)}
+                          className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
+                        >
+                          <span className="text-sm font-bold">−</span>
+                        </button>
+                        <span className="text-sm font-bold w-5 text-center">{item.quantity}</span>
+                        <button
+                          onClick={() => updateCartItem(idx, item.quantity + 1)}
+                          className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
+                        >
+                          <span className="text-sm font-bold">+</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
 
                 {/* Total */}
                 <div className="flex justify-between items-center py-3 border-b">
                   <span className="text-sm font-semibold">Total</span>
-                  <span className="text-lg font-extrabold text-cta">R$ {((SIZE_PRICES[cartItem.size]?.price || PRICE) * cartItem.quantity).toFixed(2).replace('.', ',')}</span>
+                  <span className="text-lg font-extrabold text-cta">R$ {cartTotal.toFixed(2).replace('.', ',')}</span>
                 </div>
 
                 {/* Checkout button */}
