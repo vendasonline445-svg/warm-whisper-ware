@@ -4,9 +4,10 @@ import "./index.css";
 import { trackEvent } from "./utils/track-event";
 
 // ── Autocorrection Engine ──
-const EXTERNAL_DOMAINS = ["analytics.tiktok.com", "connect.facebook.net", "googletagmanager.com", "google-analytics.com", "cdn.jsdelivr.net", "www.googletagmanager.com", "mc.yandex.ru", "bat.bing.com", "snap.licdn.com"];
-const BOT_UA = /bot|crawler|spider|headless|phantom|selenium|puppeteer|scrapy|slurp|wget|curl/i;
+const EXTERNAL_DOMAINS = ["analytics.tiktok.com", "connect.facebook.net", "googletagmanager.com", "google-analytics.com", "cdn.jsdelivr.net", "www.googletagmanager.com", "mc.yandex.ru", "bat.bing.com", "snap.licdn.com", "flock.js", "~flock", "it.com/~"];
+const BOT_UA = /bot|crawler|spider|headless|phantom|selenium|puppeteer|scrapy|slurp|wget|curl|scraper/i;
 const BLOCKER_PATTERNS = ["err_blocked_by_client", "net::err_failed", "blocked by client", "adblock", "ublock", "failed to fetch"];
+const GENERIC_CROSS_ORIGIN = ["script error.", "script error"];
 
 // Track autocorrections in sessionStorage
 function logAutocorrection(action: string, detail: string) {
@@ -80,6 +81,15 @@ window.onerror = function (message, source, lineno, colno, error) {
   // Skip if bot
   if (isBotVisitor()) {
     logAutocorrection("bot_ignored", msg);
+    return true;
+  }
+
+  // Generic "Script error." = cross-origin external script
+  if (GENERIC_CROSS_ORIGIN.includes(msg.toLowerCase().trim())) {
+    logAutocorrection("cross_origin_ignored", msg);
+    if (!isDuplicate(dedupKey)) {
+      trackEvent("js_error", { message: "Script externo bloqueado", source: src || "cross-origin", autocorrected: "cross_origin" });
+    }
     return true;
   }
 

@@ -828,9 +828,11 @@ export default function Admin() {
               <>
                 {/* ── Log Classification Engine ── */}
                 {(() => {
-                  const EXTERNAL_DOMAINS = ["analytics.tiktok.com", "connect.facebook.net", "googletagmanager.com", "google-analytics.com", "cdn.jsdelivr.net", "www.googletagmanager.com", "mc.yandex.ru", "bat.bing.com", "snap.licdn.com"];
+                  const EXTERNAL_DOMAINS = ["analytics.tiktok.com", "connect.facebook.net", "googletagmanager.com", "google-analytics.com", "cdn.jsdelivr.net", "www.googletagmanager.com", "mc.yandex.ru", "bat.bing.com", "snap.licdn.com", "flock.js", "~flock", "it.com"];
                   const INTEGRATION_KEYWORDS = ["payment", "pagamento", "gateway", "webhook", "trackly", "hygros", "pix", "stripe", "mercadopago"];
-                  const BOT_UA_PATTERNS = /bot|crawler|spider|headless|phantom|selenium|puppeteer|scrapy|slurp|wget|curl/i;
+                  const BOT_UA_PATTERNS = /bot|crawler|spider|headless|phantom|selenium|puppeteer|scrapy|slurp|wget|curl|scraper/i;
+                  // Generic cross-origin errors that are always external
+                  const GENERIC_EXTERNAL_MESSAGES = ["script error.", "script error", "script externo bloqueado", "script bloqueado por extensão"];
 
                   type LogCategory = "system" | "integration" | "external" | "bot" | "unknown";
 
@@ -851,14 +853,25 @@ export default function Admin() {
                     const source = data?.source || "";
                     const line = data?.line;
                     const userAgent = data?.user_agent || "";
+                    const autocorrected = data?.autocorrected;
 
                     // Check bot
                     if (BOT_UA_PATTERNS.test(userAgent)) {
                       return { id: log.id, created_at: log.created_at, message, source, line, category: "bot", priority: "low", raw: log };
                     }
 
-                    // Check external script
-                    const isExternal = EXTERNAL_DOMAINS.some(d => source.includes(d)) || message.toLowerCase().includes("script load failed");
+                    // Already marked as autocorrected
+                    if (autocorrected) {
+                      return { id: log.id, created_at: log.created_at, message, source, line, category: "external", priority: "low", raw: log };
+                    }
+
+                    // Generic "Script error." = cross-origin, always external
+                    if (GENERIC_EXTERNAL_MESSAGES.includes(message.toLowerCase().trim())) {
+                      return { id: log.id, created_at: log.created_at, message, source, line, category: "external", priority: "low", raw: log };
+                    }
+
+                    // Check external script by domain or known patterns
+                    const isExternal = EXTERNAL_DOMAINS.some(d => source.toLowerCase().includes(d)) || message.toLowerCase().includes("script load failed");
                     if (isExternal) {
                       return { id: log.id, created_at: log.created_at, message, source, line, category: "external", priority: "low", raw: log };
                     }
@@ -869,11 +882,18 @@ export default function Admin() {
                       return { id: log.id, created_at: log.created_at, message, source, line, category: "integration", priority: "medium", raw: log };
                     }
 
-                    // Check system (internal source or no source)
-                    if (!source || source.includes(window.location.hostname) || source.startsWith("/") || source.includes("localhost")) {
+                    // System = only if source is clearly our own app code (src/ paths, main chunk)
+                    const isOwnCode = source && (
+                      source.includes("/src/") || 
+                      source.includes("/assets/") || 
+                      source.includes("main.") || 
+                      source.includes("index.")
+                    ) && !source.includes("~");
+                    if (isOwnCode) {
                       return { id: log.id, created_at: log.created_at, message, source, line, category: "system", priority: "high", raw: log };
                     }
 
+                    // No source and not generic = unknown (not system)
                     return { id: log.id, created_at: log.created_at, message, source, line, category: "unknown", priority: "medium", raw: log };
                   };
 
