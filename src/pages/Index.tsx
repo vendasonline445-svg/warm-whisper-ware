@@ -1017,7 +1017,7 @@ const Index = () => {
                   </div>
                 </div>
               )}
-            </div>
+              <div ref={chatEndRef} />
 
             {/* Quick questions */}
             <div className="border-t px-4 py-3 space-y-2">
