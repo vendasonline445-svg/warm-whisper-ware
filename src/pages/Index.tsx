@@ -124,6 +124,7 @@ const Index = () => {
   const [chatMessages, setChatMessages] = useState<{role: 'bot' | 'user', text: string}[]>([
     { role: 'bot', text: 'Olá! Como posso te ajudar com informações sobre a Mesa Dobrável Mesalar?' }
   ]);
+  const [chatTyping, setChatTyping] = useState(false);
 
   const closeStore = () => {
     setStoreClosing(true);
@@ -136,7 +137,13 @@ const Index = () => {
   };
 
   const handleQuickQuestion = (faq: { q: string; a: string }) => {
-    setChatMessages(prev => [...prev, { role: 'user', text: faq.q }, { role: 'bot', text: faq.a }]);
+    setChatMessages(prev => [...prev, { role: 'user', text: faq.q }]);
+    setChatTyping(true);
+    const delay = 1200 + Math.random() * 1800; // 1.2s - 3s
+    setTimeout(() => {
+      setChatTyping(false);
+      setChatMessages(prev => [...prev, { role: 'bot', text: faq.a }]);
+    }, delay);
   };
   const countdown = useCountdown();
 
@@ -952,7 +959,7 @@ const Index = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-[200px] max-h-[50vh]">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-[300px] max-h-[60vh]">
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
@@ -964,6 +971,15 @@ const Index = () => {
                   </div>
                 </div>
               ))}
+              {chatTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
+                    <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:0ms]" />
+                    <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:150ms]" />
+                    <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:300ms]" />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Quick questions */}
