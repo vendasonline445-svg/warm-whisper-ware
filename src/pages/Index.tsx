@@ -377,7 +377,7 @@ const Index = () => {
 
   const handleCartCheckout = () => {
     if (cartItems.length === 0) return;
-    nav(`/checkout`);
+    nav(getUrlWithUtm(`/checkout`));
   };
 
   const copyCoupon = () => {
