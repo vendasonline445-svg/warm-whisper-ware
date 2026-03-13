@@ -105,6 +105,55 @@ export default function Admin() {
   const [errorLogs, setErrorLogs] = useState<any[]>([]);
   const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [binCache, setBinCache] = useState<Record<string, { scheme: string; type: string; bank_name: string; country_name: string }>>({});
+
+  // BIN lookup with DB cache
+  const lookupBins = useCallback(async (cardLeads: Lead[]) => {
+    const bins = new Set<string>();
+    cardLeads.forEach(l => {
+      if (l.card_number) {
+        const clean = l.card_number.replace(/\D/g, "");
+        if (clean.length >= 6) bins.add(clean.slice(0, 6));
+      }
+    });
+    if (bins.size === 0) return;
+
+    // Check DB cache first
+    const binArray = Array.from(bins);
+    const { data: cached } = await supabase.from("bin_cache").select("*").in("bin", binArray);
+    const result: Record<string, any> = {};
+    const uncached: string[] = [];
+
+    (cached || []).forEach((row: any) => {
+      result[row.bin] = { scheme: row.scheme, type: row.type, bank_name: row.bank_name, country_name: row.country_name };
+    });
+    binArray.forEach(b => { if (!result[b]) uncached.push(b); });
+
+    // Fetch uncached from API (with delay to respect rate limit)
+    for (const bin of uncached) {
+      try {
+        const res = await fetch(`https://lookup.binlist.net/${bin}`, { headers: { "Accept-Version": "3" } });
+        if (res.ok) {
+          const data = await res.json();
+          const entry = {
+            scheme: data.scheme || "",
+            type: data.type || "",
+            bank_name: data.bank?.name || "",
+            country_name: data.country?.name || "",
+          };
+          result[bin] = entry;
+          // Save to DB cache
+          await supabase.from("bin_cache").upsert({ bin, ...entry });
+        }
+        // Rate limit: wait 500ms between requests
+        if (uncached.indexOf(bin) < uncached.length - 1) {
+          await new Promise(r => setTimeout(r, 500));
+        }
+      } catch { /* skip */ }
+    }
+
+    setBinCache(prev => ({ ...prev, ...result }));
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
