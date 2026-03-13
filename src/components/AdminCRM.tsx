@@ -613,9 +613,10 @@ export default function AdminCRM() {
         <div className="flex gap-2 flex-wrap">
           {([
             { key: "pipeline" as const, label: "Pipeline", icon: TrendingUp, badge: filteredLeads.length },
+            { key: "funnel" as const, label: "Funil", icon: Zap, badge: 0 },
             { key: "recovery" as const, label: "Recuperação", icon: Clock, badge: recoveryLeads.length },
             { key: "visitors" as const, label: "Online", icon: Activity, badge: recentVisitors.length },
-            { key: "alerts" as const, label: "Alertas", icon: AlertTriangle, badge: crmAlerts.length },
+            { key: "alerts" as const, label: "Alertas", icon: AlertTriangle, badge: crmAlerts.length + bottleneckAlerts.length },
           ]).map(t => (
             <button
               key={t.key}
