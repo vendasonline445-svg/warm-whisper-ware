@@ -618,20 +618,16 @@ const Checkout = () => {
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
 
-            {/* Installments badge + card brands */}
-            {!cardDisabled && (
+            {/* Show card brands preview only when NOT expanded */}
+            {paymentMethod !== "credit_card" && !cardDisabled && (
               <div className="px-3 pb-3">
                 <span className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: '#ffe3e8', color: '#fe2b54' }}>
                   Sem juros em até 3x <ChevronRight className="h-3 w-3 ml-0.5" />
                 </span>
                 <div className="flex items-center gap-2 mt-2">
-                  {/* Mastercard */}
                   <svg width="32" height="20" viewBox="0 0 32 20" fill="none"><circle cx="12" cy="10" r="8" fill="#EB001B"/><circle cx="20" cy="10" r="8" fill="#F79E1B"/><path d="M16 3.6a8 8 0 010 12.8 8 8 0 000-12.8z" fill="#FF5F00"/></svg>
-                  {/* Visa */}
                   <svg width="32" height="20" viewBox="0 0 32 20"><rect width="32" height="20" rx="2" fill="#fff" stroke="#ddd" strokeWidth="0.5"/><text x="16" y="13" textAnchor="middle" fontSize="9" fontWeight="bold" fontStyle="italic" fill="#1A1F71">VISA</text></svg>
-                  {/* Elo */}
                   <svg width="32" height="20" viewBox="0 0 32 20"><rect width="32" height="20" rx="2" fill="#fff" stroke="#ddd" strokeWidth="0.5"/><text x="16" y="14" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#000">elo</text></svg>
-                  {/* Amex */}
                   <svg width="32" height="20" viewBox="0 0 32 20"><rect width="32" height="20" rx="2" fill="#006FCF"/><text x="16" y="9" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#fff">AMERICAN</text><text x="16" y="15" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#fff">EXPRESS</text></svg>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1.5">Parcele em até 12x</p>
