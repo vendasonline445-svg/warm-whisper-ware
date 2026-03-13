@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
-let eventQueue: { event_type: string; event_data?: Record<string, unknown> }[] = [];
+let eventQueue: { event_type: string; event_data?: Json }[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
 function flush() {
@@ -10,8 +11,8 @@ function flush() {
   supabase.from("user_events").insert(batch).then(() => {});
 }
 
-export function trackEvent(event_type: string, event_data?: Record<string, unknown>) {
-  eventQueue.push({ event_type, event_data: event_data || {} });
+export function trackEvent(event_type: string, event_data?: Record<string, string | number | boolean>) {
+  eventQueue.push({ event_type, event_data: (event_data as Json) || {} });
   if (flushTimer) clearTimeout(flushTimer);
   flushTimer = setTimeout(flush, 2000);
 }
