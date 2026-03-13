@@ -422,8 +422,10 @@ export default function AdminDashboard(props: AdminDashboardProps) {
 
       {viewMode === "detailed" && (
         <>
+          <div className="section-divider" />
+
           {/* ═══ BEHAVIOR METRICS ═══ */}
-          <section>
+          <section className="admin-animate-in" style={{ animationDelay: '200ms' }}>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Comportamento</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               <GlassMetricCard icon={<MousePointerClick className="h-5 w-5 text-blue-500" />} label="Cliques Comprar" numericValue={buyClicks} color="blue-500" delay={0} />
@@ -434,8 +436,10 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             </div>
           </section>
 
+          <div className="section-divider" />
+
           {/* ═══ FUNNEL PROGRESS BARS ═══ */}
-          <section>
+          <section className="admin-animate-in" style={{ animationDelay: '300ms' }}>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Barras de Conversão</h3>
             <div className="glass-card rounded-2xl p-6 space-y-5">
               {funnelSteps.map((step, i) => (
@@ -444,16 +448,20 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             </div>
           </section>
 
+          <div className="section-divider" />
+
           {/* ═══ HEATMAP ═══ */}
-          <section>
+          <section className="admin-animate-in" style={{ animationDelay: '400ms' }}>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Heatmap de Conversão</h3>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {heatmapData.map(h => <HeatmapCell key={h.label} {...h} />)}
             </div>
           </section>
 
+          <div className="section-divider" />
+
           {/* ═══ CHARTS ═══ */}
-          <section>
+          <section className="admin-animate-in" style={{ animationDelay: '500ms' }}>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Performance</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {timeSeriesData.length > 1 && (
