@@ -48,6 +48,10 @@ const Checkout = () => {
   }, []);
   const selectedColor = searchParams.get("color") || searchParams.get("cor") || "branca";
   const selectedSize = searchParams.get("size") || searchParams.get("tamanho") || "180x60cm";
+  const sizeData = SIZE_PRICES[selectedSize] || SIZE_PRICES["180x60cm"];
+  const PRODUCT_PRICE = sizeData.price;
+  const OLD_PRICE = sizeData.oldPrice;
+  const BASE_DISCOUNT_VALUE = sizeData.oldPrice - sizeData.price;
   const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
   const savedCoupon = couponUsed ? '' : (localStorage.getItem('mesalar_coupon') || '');
   const couponParam = searchParams.get("cupom") || searchParams.get("coupon") || savedCoupon;
