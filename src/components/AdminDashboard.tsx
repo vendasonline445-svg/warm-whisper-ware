@@ -499,7 +499,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
                       <XAxis dataKey="day" className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <YAxis className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="revenue" fill="hsl(262, 80%, 55%)" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="revenue" fill="hsl(262, 80%, 55%)" radius={[6, 6, 0, 0]} animationDuration={1000} animationEasing="ease-out" />
                     </BarChart>
                   </ChartContainer>
                 </div>
