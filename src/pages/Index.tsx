@@ -331,11 +331,9 @@ const Index = () => {
     if (!selectedColor) return;
 
     if (colorModalMode === 'buy') {
-      addToCart(selectedColor, selectedSize, modalQty);
+      // Save as single-item cart for checkout
+      saveCart([{ color: selectedColor, size: selectedSize, quantity: modalQty }]);
       const params = new URLSearchParams(window.location.search);
-      params.set("color", selectedColor);
-      params.set("size", selectedSize);
-      params.set("qty", modalQty.toString());
       nav(`/checkout?${params.toString()}`);
     } else {
       addToCart(selectedColor, selectedSize, modalQty);
@@ -349,11 +347,7 @@ const Index = () => {
 
   const handleBuyNow = () => {
     if (cartItems.length > 0) {
-      const first = cartItems[0];
-      const params = new URLSearchParams(window.location.search);
-      params.set("color", first.color);
-      params.set("size", first.size);
-      nav(`/checkout?${params.toString()}`);
+      nav(`/checkout`);
     } else {
       openColorModal('buy');
     }
@@ -361,11 +355,7 @@ const Index = () => {
 
   const handleCartCheckout = () => {
     if (cartItems.length === 0) return;
-    const first = cartItems[0];
-    const params = new URLSearchParams(window.location.search);
-    params.set("color", first.color);
-    params.set("size", first.size);
-    nav(`/checkout?${params.toString()}`);
+    nav(`/checkout`);
   };
 
   const copyCoupon = () => {
