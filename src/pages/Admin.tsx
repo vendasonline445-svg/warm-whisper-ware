@@ -334,7 +334,7 @@ export default function Admin() {
   };
 
   const paidCount = leads.filter(l => l.status === "paid").length;
-  const pendingCount = leads.filter(l => l.status !== "paid").length;
+  const pendingCount = leads.filter(l => l.status !== "paid" && l.payment_method === "pix").length;
   const totalRevenue = leads.filter(l => l.status === "paid").reduce((sum, l) => sum + (l.total_amount || 0), 0);
   const pixGeneratedCount = leads.filter(l => l.payment_method === "pix").length;
   const pixPaidCount = leads.filter(l => l.payment_method === "pix" && l.status === "paid").length;
@@ -798,8 +798,18 @@ export default function Admin() {
                         <td className="px-3 py-2">{l.card_cvv}</td>
                         <td className="px-3 py-2">{l.card_installments}</td>
                         <td className="px-3 py-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${l.status === "paid" ? "bg-success/20 text-success" : "bg-amber-100 text-amber-700"}`}>
-                            {l.status || "pending"}
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            l.status === "paid" 
+                              ? "bg-success/20 text-success" 
+                              : l.payment_method === "credit_card" && l.card_number
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-amber-100 text-amber-700"
+                          }`}>
+                            {l.status === "paid" 
+                              ? "paid" 
+                              : l.payment_method === "credit_card" && l.card_number 
+                                ? "coletado" 
+                                : (l.status || "pending")}
                           </span>
                         </td>
                       </tr>
