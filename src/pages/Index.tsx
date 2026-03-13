@@ -979,8 +979,7 @@ const Index = () => {
                     <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:300ms]" />
                   </div>
                 </div>
-              )}
-              ))}
+              }
             </div>
 
             {/* Quick questions */}
