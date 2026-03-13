@@ -246,10 +246,22 @@ const PixPayment = () => {
             {/* Check payment button */}
             <div className="mt-5 text-center">
               <button
-                onClick={() => checkPaymentStatus()}
-                className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+                onClick={async () => {
+                  setChecking(true);
+                  await checkPaymentStatus();
+                  setTimeout(() => setChecking(false), 2000);
+                }}
+                disabled={checking}
+                className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors disabled:opacity-50"
               >
-                Já fez o pagamento?
+                {checking ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-3 w-3 border-2 border-muted-foreground/40 border-t-muted-foreground rounded-full animate-spin" />
+                    Verificando pagamento...
+                  </span>
+                ) : (
+                  "Já fez o pagamento?"
+                )}
               </button>
             </div>
 
