@@ -540,8 +540,10 @@ export default function AdminDashboard(props: AdminDashboardProps) {
         </>
       )}
 
+      <div className="section-divider" />
+
       {/* ═══ ALERTS ═══ */}
-      <section>
+      <section className="admin-animate-in" style={{ animationDelay: '600ms' }}>
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" /> Alertas do Sistema
           {alerts.filter(a => a.type === "critical").length > 0 && (
