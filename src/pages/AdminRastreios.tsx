@@ -139,7 +139,7 @@ export default function AdminRastreios() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(50);
-    if (data) setLogs(data as WebhookLog[]);
+    if (data) setLogs(data as unknown as WebhookLog[]);
   };
 
   useEffect(() => {
