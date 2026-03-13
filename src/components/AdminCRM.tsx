@@ -840,6 +840,67 @@ export default function AdminCRM() {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [funnelSubView, setFunnelSubView] = useState<"funnel" | "replay" | "heatmap">("funnel");
 
+  // ── Radar: Heatmap Insights (must be after heatmapData) ──
+  const radarHeatmapInsights = useMemo(() => {
+    const insights: { icon: string; text: string }[] = [];
+    if (heatmapData.sections.length > 0) {
+      const heroClicks = heatmapData.sections.find(s => s.section === "hero");
+      const buySection = heatmapData.sections.find(s => s.section === "detalhes" || s.section === "galeria");
+      if (heroClicks && heroClicks.pct < 10 && heatmapData.totalClicks > 20) {
+        insights.push({ icon: "👆", text: "Poucos cliques no topo da página. CTA pode não estar visível." });
+      }
+      if (!buySection || (buySection.pct < 5 && heatmapData.totalClicks > 20)) {
+        insights.push({ icon: "🛒", text: "CTA pouco visível ou pouco atrativo. Considere reposicionar." });
+      }
+    }
+    if (heatmapData.totalScrollEvents > 10) {
+      const below50 = heatmapData.scrollBuckets.filter(b => b.min >= 50).reduce((s, b) => s + b.count, 0);
+      const total = heatmapData.scrollBuckets.reduce((s, b) => s + b.count, 0) || 1;
+      if (below50 / total < 0.3) {
+        insights.push({ icon: "📜", text: "Maioria dos visitantes não chega ao meio da página. Conteúdo acima da dobra pode não estar gerando interesse." });
+      }
+    }
+    return insights;
+  }, [heatmapData]);
+
+  // ── Radar: Session Insights (must be after visitorSessions) ──
+  const radarSessionInsights = useMemo(() => {
+    const insights: { icon: string; text: string }[] = [];
+    if (visitorSessions.length > 5) {
+      const shortSessions = visitorSessions.filter(s => s.duration < 3).length;
+      const shortPct = (shortSessions / visitorSessions.length) * 100;
+      if (shortPct > 40) {
+        insights.push({ icon: "⚡", text: `${shortPct.toFixed(0)}% dos visitantes saem em menos de 3 segundos. Possível tráfego de baixa qualidade ou criativo enganoso.` });
+      }
+      const scrollersNoBuy = visitorSessions.filter(s => {
+        const hasScroll = s.events.some(e => e.event_type === "scroll_depth" || e.event_type === "scroll_milestone");
+        const hasBuy = s.events.some(e => e.event_type === "click_buy_button");
+        return hasScroll && !hasBuy;
+      }).length;
+      const scrollerPct = (scrollersNoBuy / visitorSessions.length) * 100;
+      if (scrollerPct > 60) {
+        insights.push({ icon: "👀", text: `${scrollerPct.toFixed(0)}% dos visitantes rolam a página mas não clicam em comprar. Oferta pode não estar convincente.` });
+      }
+    }
+    return insights;
+  }, [visitorSessions]);
+
+  // ── Radar: Device Insights (must be after deviceFunnelAnalysis) ──
+  const radarDeviceInsights = useMemo(() => {
+    const insights: { icon: string; text: string }[] = [];
+    if (deviceFunnelAnalysis.length >= 2) {
+      const mobile = deviceFunnelAnalysis.find(d => d.device === "mobile");
+      const desktop = deviceFunnelAnalysis.find(d => d.device === "desktop");
+      if (mobile && desktop && mobile.convRate > 2 && desktop.convRate < 0.5 && desktop.visitors > 20) {
+        insights.push({ icon: "💻", text: `Conversão muito baixa em desktop (${desktop.convRate.toFixed(1)}%) vs mobile (${mobile.convRate.toFixed(1)}%). Problema possível de layout ou responsividade.` });
+      }
+      if (desktop && desktop.visitors > 50 && desktop.paid === 0) {
+        insights.push({ icon: "🖥", text: "Zero vendas em desktop apesar de tráfego significativo. Verificar layout ou qualidade do tráfego." });
+      }
+    }
+    return insights;
+  }, [deviceFunnelAnalysis]);
+
   const bottleneckAlerts = useMemo(() => {
     const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
     const visitors = funnelData.find(s => s.key === "visitors")?.count || 0;
