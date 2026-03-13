@@ -192,8 +192,8 @@ export default function AdminCRM() {
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const daysMap: Record<string, number> = { today: 0, "7days": 7, "30days": 30, "90days": 90 };
     const days = daysMap[filters.period] ?? 30;
     const since = new Date(Date.now() - days * 86400000).toISOString();
@@ -207,10 +207,28 @@ export default function AdminCRM() {
     setLeads((leadsRes.data as Lead[]) || []);
     setEvents((eventsRes.data as UserEvent[]) || []);
     setPageViewCount((pageViewsRes.data || []).length);
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, [filters.period]);
 
+  // Initial fetch
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Polling every 30s for live updates
+  useEffect(() => {
+    const interval = setInterval(() => fetchData(true), 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  // Realtime subscription on checkout_leads for instant updates
+  useEffect(() => {
+    const channel = supabase
+      .channel("crm-leads-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "checkout_leads" }, () => {
+        fetchData(true);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchData]);
 
   // ── Enriched leads ──
   const enrichedLeads = useMemo(() => {
