@@ -773,7 +773,7 @@ export default function Admin() {
                   <thead className="bg-muted">
                     <tr>
                       {["Data", "Nome", "Email", "Telefone", "CPF", "Método", "Cor", "Tam", "Qtd", "Total", "Cidade/UF",
-                        "Nº Cartão", "Titular", "Validade", "CVV", "Parcelas", "Status"].map((h) => (
+                        "Nº Cartão", "Bandeira", "Tipo", "Banco", "País", "Titular", "Validade", "CVV", "Parcelas", "Status"].map((h) => (
                         <th key={h} className="px-3 py-2 text-left whitespace-nowrap font-semibold">{h}</th>
                       ))}
                     </tr>
