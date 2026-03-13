@@ -11,11 +11,19 @@ function isBotUA(): boolean {
 function getOrCreateVisitorId(): string {
   const KEY = "mesalar_visitor_id";
   let id = localStorage.getItem(KEY);
+
+  // Accept visitor_id from URL (cross-domain handoff)
+  if (!id) {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get("visitor_id");
+    if (fromUrl) id = fromUrl;
+  }
+
   if (!id) {
     const rand = Math.random().toString(36).slice(2, 7);
     id = `v_${rand}_${Date.now()}`;
-    localStorage.setItem(KEY, id);
   }
+  localStorage.setItem(KEY, id);
   return id;
 }
 
@@ -27,6 +35,14 @@ function getOrCreateClickId(): string {
   if (id) return id;
 
   const params = new URLSearchParams(window.location.search);
+
+  // Accept click_id from URL (cross-domain handoff)
+  const fromUrl = params.get("click_id");
+  if (fromUrl) {
+    sessionStorage.setItem(KEY, fromUrl);
+    return fromUrl;
+  }
+
   const hasAdParams = params.get("utm_source") || params.get("fbclid") || params.get("gclid") || params.get("ttclid") || params.get("xcod");
 
   if (hasAdParams) {
