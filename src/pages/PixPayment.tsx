@@ -206,8 +206,9 @@ const PixPayment = () => {
           <>
             {/* PIX Code Card */}
             <div className="mt-5 rounded-2xl bg-white border border-border/30 p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
-              <div className="flex items-center gap-2.5 mb-6">
-                <img src="/images/pix-logo.png" alt="Pix" className="h-8 object-contain" />
+              <div className="flex items-center gap-2 mb-6">
+                <img src="/images/pix-logo.png" alt="Pix" className="h-5 object-contain" />
+                <span className="font-bold text-sm tracking-tight">Pix</span>
               </div>
 
               <p className="text-lg font-semibold text-foreground break-all leading-relaxed mb-6">
