@@ -3,7 +3,7 @@
  * Handles Pixel + Events API with deduplication, SHA256 hashing, UTM capture
  */
 
-const PIXEL_ID = "222752121e344b0b8c080840e51c8b4938c1051d";
+const PIXEL_ID = "D6GM4RBC77UAAN00B800";
 const DEBUG_PREFIX = "[TikTok]";
 
 // ── UTM / ttclid capture ──────────────────────────────────────────────
