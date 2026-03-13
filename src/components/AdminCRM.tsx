@@ -572,11 +572,11 @@ export default function AdminCRM() {
     return { score: clamped, label: "Gargalo Crítico", color: "text-red-500", bg: "bg-red-500/10" };
   }, [funnelData]);
 
-  // ── Funnel Diagnostic ──
-  const funnelDiagnostic = useMemo(() => {
+  // ── Radar de Conversão (enhanced diagnostic) ──
+  const radarConversao = useMemo(() => {
     if (funnelData.length < 2 || funnelData[0].count === 0) return null;
 
-    // Find biggest bottleneck (highest drop rate after visitors)
+    // Find biggest bottleneck
     let worstIdx = 1;
     let worstDrop = 0;
     funnelData.slice(1).forEach((step, i) => {
@@ -590,103 +590,142 @@ export default function AdminCRM() {
     const prevStep = funnelData[worstIdx - 1];
     const overallConv = funnelData[0].count > 0 ? (funnelData[funnelData.length - 1].count / funnelData[0].count * 100) : 0;
 
-    type DiagItem = { title: string; desc: string; severity: "critical" | "warning" | "info" };
-    type Suggestion = { icon: string; text: string };
+    type DiagItem = { title: string; desc: string; cause: string; severity: "critical" | "warning" | "info" };
+    type Suggestion = { icon: string; text: string; priority: "alta" | "média" | "baixa" };
 
     const diagnostics: DiagItem[] = [];
     const suggestions: Suggestion[] = [];
 
-    // Main bottleneck
-    diagnostics.push({
-      title: `Gargalo detectado: ${prevStep.label} → ${bottleneckStep.label}`,
-      desc: `Apenas ${bottleneckStep.convRate.toFixed(1)}% dos usuários avançam nesta etapa. ${prevStep.count - bottleneckStep.count} visitantes abandonam aqui (${bottleneckStep.dropRate.toFixed(0)}% de queda).`,
-      severity: bottleneckStep.dropRate > 70 ? "critical" : "warning",
-    });
-
-    // Specific analysis per bottleneck type
     const visitors = funnelData[0]?.count || 0;
     const engaged = funnelData[1]?.count || 0;
     const buyClicks = funnelData[2]?.count || 0;
     const checkouts = funnelData[3]?.count || 0;
+    const paymentInit = funnelData[4]?.count || 0;
     const pixCard = funnelData[5]?.count || 0;
     const paid = funnelData[6]?.count || 0;
 
-    // Low engagement
+    // ── Case 1: Low engagement ──
     if (visitors > 20 && engaged / visitors < 0.3) {
       diagnostics.push({
         title: "Baixo engajamento na página",
-        desc: `Apenas ${((engaged / visitors) * 100).toFixed(1)}% dos visitantes interagem com a página. A maioria sai sem scrollar ou clicar.`,
+        desc: `Apenas ${((engaged / visitors) * 100).toFixed(1)}% dos visitantes interagem. A maioria sai sem scrollar ou clicar.`,
+        cause: "Conteúdo acima da dobra pode não estar gerando interesse, ou o carregamento está lento.",
         severity: "warning",
       });
       suggestions.push(
-        { icon: "🎯", text: "Melhorar headline e primeira dobra da página" },
-        { icon: "📱", text: "Verificar velocidade de carregamento no mobile" },
-        { icon: "🎨", text: "Adicionar elementos visuais que prendam atenção" },
+        { icon: "🎯", text: "Melhorar headline e primeira dobra da página", priority: "alta" },
+        { icon: "📱", text: "Verificar velocidade de carregamento no mobile", priority: "alta" },
+        { icon: "🎨", text: "Adicionar elementos visuais que prendam atenção", priority: "média" },
       );
     }
 
-    // Low buy click rate
+    // ── Case 2: Low buy click rate ──
     if (visitors > 20 && buyClicks / visitors < 0.05) {
       diagnostics.push({
         title: "Baixa taxa de clique em comprar",
-        desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam no botão de compra. Isso pode indicar problema na proposta de valor ou no preço.`,
+        desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam no botão de compra.`,
+        cause: "Possível problema na copy, proposta de valor ou destaque do botão. O CTA pode não estar visível o suficiente.",
         severity: buyClicks / visitors < 0.02 ? "critical" : "warning",
       });
       suggestions.push(
-        { icon: "💰", text: "Destacar preço e desconto mais claramente" },
-        { icon: "🛒", text: "Tornar o botão de compra mais visível e urgente" },
-        { icon: "⭐", text: "Adicionar mais prova social acima do botão" },
-        { icon: "🎁", text: "Testar oferta com bônus ou frete grátis" },
+        { icon: "💰", text: "Destacar preço e desconto mais claramente", priority: "alta" },
+        { icon: "🛒", text: "Tornar o botão de compra mais visível e urgente", priority: "alta" },
+        { icon: "⭐", text: "Adicionar mais prova social acima do botão", priority: "média" },
+        { icon: "🎁", text: "Testar oferta com bônus ou frete grátis", priority: "média" },
       );
     }
 
-    // High checkout abandonment
-    if (checkouts > 5 && pixCard / checkouts < 0.4) {
+    // ── Case 3: Interest but no checkout ──
+    if (buyClicks > 5 && checkouts / buyClicks < 0.3) {
       diagnostics.push({
-        title: "Alto abandono no checkout",
-        desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts resultam em tentativa de pagamento. Possível fricção no formulário.`,
-        severity: "critical",
-      });
-      suggestions.push(
-        { icon: "📋", text: "Simplificar formulário de checkout" },
-        { icon: "🔒", text: "Adicionar selos de segurança no checkout" },
-        { icon: "⏱", text: "Adicionar timer de urgência no checkout" },
-      );
-    }
-
-    // Low payment completion
-    if (pixCard > 3 && paid / pixCard < 0.3) {
-      diagnostics.push({
-        title: "Baixa taxa de conclusão de pagamento",
-        desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% das tentativas de pagamento são concluídas. Possível problema com Pix ou cartão.`,
+        title: "Interesse sem conversão em checkout",
+        desc: `Usuários clicam em comprar (${buyClicks}) mas poucos iniciam checkout (${checkouts}).`,
+        cause: "Usuários demonstram interesse mas não iniciam checkout. Possível problema no preço, frete ou no processo de seleção.",
         severity: "warning",
       });
       suggestions.push(
-        { icon: "📱", text: "Verificar se QR code Pix funciona corretamente" },
-        { icon: "💳", text: "Verificar integração de pagamento por cartão" },
-        { icon: "📩", text: "Implementar lembrete de pagamento Pix" },
+        { icon: "💵", text: "Revisar preço ou adicionar parcelas mais atrativas", priority: "alta" },
+        { icon: "🚚", text: "Oferecer frete grátis ou reduzido", priority: "média" },
       );
     }
 
-    // Traffic quality alert
-    if (visitors > 50 && engaged / visitors < 0.15) {
+    // ── Case 4: High checkout abandonment ──
+    if (checkouts > 5 && pixCard / checkouts < 0.4) {
       diagnostics.push({
-        title: "Possível tráfego de baixa qualidade",
-        desc: `Grande volume de visitantes (${visitors}) com baixíssima interação (${((engaged / visitors) * 100).toFixed(1)}%). Pode ser tráfego automatizado ou público errado.`,
+        title: "Alto abandono no checkout",
+        desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts resultam em tentativa de pagamento.`,
+        cause: "Alta taxa de abandono no checkout. Possível fricção no formulário ou falta de confiança.",
         severity: "critical",
       });
       suggestions.push(
-        { icon: "🎯", text: "Revisar segmentação de público nas campanhas" },
-        { icon: "🤖", text: "Verificar aba de Bots para tráfego suspeito" },
-        { icon: "📊", text: "Testar novos criativos com público diferente" },
+        { icon: "📋", text: "Simplificar formulário de checkout", priority: "alta" },
+        { icon: "🔒", text: "Adicionar selos de segurança no checkout", priority: "alta" },
+        { icon: "⏱", text: "Adicionar timer de urgência no checkout", priority: "média" },
       );
     }
 
-    // Remove duplicate suggestions
+    // ── Case 5: Payment not completing ──
+    if (pixCard > 3 && paid / pixCard < 0.3) {
+      diagnostics.push({
+        title: "Pagamento iniciado mas não concluído",
+        desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% das tentativas de pagamento são concluídas.`,
+        cause: "Usuários iniciam pagamento mas não concluem. Pode faltar urgência ou clareza nas instruções de Pix/Cartão.",
+        severity: "warning",
+      });
+      suggestions.push(
+        { icon: "📱", text: "Verificar se QR code Pix funciona corretamente", priority: "alta" },
+        { icon: "💳", text: "Verificar integração de pagamento por cartão", priority: "alta" },
+        { icon: "📩", text: "Implementar lembrete de pagamento Pix", priority: "média" },
+      );
+    }
+
+    // ── Case 6: Traffic quality ──
+    if (visitors > 50 && engaged / visitors < 0.15) {
+      diagnostics.push({
+        title: "Possível tráfego de baixa qualidade",
+        desc: `Grande volume de visitantes (${visitors}) com baixíssima interação (${((engaged / visitors) * 100).toFixed(1)}%).`,
+        cause: "Pode ser tráfego automatizado, público errado ou criativo enganoso que atrai público sem intenção de compra.",
+        severity: "critical",
+      });
+      suggestions.push(
+        { icon: "🎯", text: "Revisar segmentação de público nas campanhas", priority: "alta" },
+        { icon: "🤖", text: "Verificar aba de Bots para tráfego suspeito", priority: "alta" },
+        { icon: "📊", text: "Testar novos criativos com público diferente", priority: "média" },
+      );
+    }
+
+    // Remove duplicates
     const uniqueSuggestions = suggestions.filter((s, i, arr) => arr.findIndex(x => x.text === s.text) === i);
 
-    return { diagnostics, suggestions: uniqueSuggestions, overallConv, bottleneckStep: prevStep.label + " → " + bottleneckStep.label };
-  }, [funnelData]);
+    // Main bottleneck label
+    const bottleneckLabel = `${prevStep.label} → ${bottleneckStep.label}`;
+    const bottleneckRate = bottleneckStep.convRate;
+
+    // Smart summary
+    let summary = "";
+    if (diagnostics.length === 0) {
+      summary = "Seu funil está funcionando bem. Nenhum gargalo crítico detectado.";
+    } else {
+      const main = diagnostics[0];
+      summary = `Seu funil apresenta ${main.severity === "critical" ? "gargalo crítico" : "atenção"} na etapa de ${bottleneckLabel}. ${main.desc} ${main.cause}`;
+    }
+
+    return {
+      diagnostics,
+      suggestions: uniqueSuggestions,
+      overallConv,
+      bottleneckLabel,
+      bottleneckRate,
+      bottleneckDrop: worstDrop,
+      summary,
+      healthScore: funnelHealth.score,
+      healthLabel: funnelHealth.label,
+      healthColor: funnelHealth.color,
+      healthBg: funnelHealth.bg,
+    };
+  }, [funnelData, funnelHealth]);
+
+  // Note: radarHeatmapInsights, radarSessionInsights, radarDeviceInsights are defined after their dependencies below
 
   // ── Device Funnel Analysis ──
   const deviceFunnelAnalysis = useMemo(() => {
@@ -800,6 +839,67 @@ export default function AdminCRM() {
 
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [funnelSubView, setFunnelSubView] = useState<"funnel" | "replay" | "heatmap">("funnel");
+
+  // ── Radar: Heatmap Insights (must be after heatmapData) ──
+  const radarHeatmapInsights = useMemo(() => {
+    const insights: { icon: string; text: string }[] = [];
+    if (heatmapData.sections.length > 0) {
+      const heroClicks = heatmapData.sections.find(s => s.section === "hero");
+      const buySection = heatmapData.sections.find(s => s.section === "detalhes" || s.section === "galeria");
+      if (heroClicks && heroClicks.pct < 10 && heatmapData.totalClicks > 20) {
+        insights.push({ icon: "👆", text: "Poucos cliques no topo da página. CTA pode não estar visível." });
+      }
+      if (!buySection || (buySection.pct < 5 && heatmapData.totalClicks > 20)) {
+        insights.push({ icon: "🛒", text: "CTA pouco visível ou pouco atrativo. Considere reposicionar." });
+      }
+    }
+    if (heatmapData.totalScrollEvents > 10) {
+      const below50 = heatmapData.scrollBuckets.filter(b => b.min >= 50).reduce((s, b) => s + b.count, 0);
+      const total = heatmapData.scrollBuckets.reduce((s, b) => s + b.count, 0) || 1;
+      if (below50 / total < 0.3) {
+        insights.push({ icon: "📜", text: "Maioria dos visitantes não chega ao meio da página. Conteúdo acima da dobra pode não estar gerando interesse." });
+      }
+    }
+    return insights;
+  }, [heatmapData]);
+
+  // ── Radar: Session Insights (must be after visitorSessions) ──
+  const radarSessionInsights = useMemo(() => {
+    const insights: { icon: string; text: string }[] = [];
+    if (visitorSessions.length > 5) {
+      const shortSessions = visitorSessions.filter(s => s.duration < 3).length;
+      const shortPct = (shortSessions / visitorSessions.length) * 100;
+      if (shortPct > 40) {
+        insights.push({ icon: "⚡", text: `${shortPct.toFixed(0)}% dos visitantes saem em menos de 3 segundos. Possível tráfego de baixa qualidade ou criativo enganoso.` });
+      }
+      const scrollersNoBuy = visitorSessions.filter(s => {
+        const hasScroll = s.events.some(e => e.event_type === "scroll_depth" || e.event_type === "scroll_milestone");
+        const hasBuy = s.events.some(e => e.event_type === "click_buy_button");
+        return hasScroll && !hasBuy;
+      }).length;
+      const scrollerPct = (scrollersNoBuy / visitorSessions.length) * 100;
+      if (scrollerPct > 60) {
+        insights.push({ icon: "👀", text: `${scrollerPct.toFixed(0)}% dos visitantes rolam a página mas não clicam em comprar. Oferta pode não estar convincente.` });
+      }
+    }
+    return insights;
+  }, [visitorSessions]);
+
+  // ── Radar: Device Insights (must be after deviceFunnelAnalysis) ──
+  const radarDeviceInsights = useMemo(() => {
+    const insights: { icon: string; text: string }[] = [];
+    if (deviceFunnelAnalysis.length >= 2) {
+      const mobile = deviceFunnelAnalysis.find(d => d.device === "mobile");
+      const desktop = deviceFunnelAnalysis.find(d => d.device === "desktop");
+      if (mobile && desktop && mobile.convRate > 2 && desktop.convRate < 0.5 && desktop.visitors > 20) {
+        insights.push({ icon: "💻", text: `Conversão muito baixa em desktop (${desktop.convRate.toFixed(1)}%) vs mobile (${mobile.convRate.toFixed(1)}%). Problema possível de layout ou responsividade.` });
+      }
+      if (desktop && desktop.visitors > 50 && desktop.paid === 0) {
+        insights.push({ icon: "🖥", text: "Zero vendas em desktop apesar de tráfego significativo. Verificar layout ou qualidade do tráfego." });
+      }
+    }
+    return insights;
+  }, [deviceFunnelAnalysis]);
 
   const bottleneckAlerts = useMemo(() => {
     const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
@@ -1566,67 +1666,113 @@ export default function AdminCRM() {
                     })}
                   </div>
 
-                  {/* ── Diagnóstico do Funil ── */}
-                  {funnelDiagnostic && (
-                    <div className="bg-card border rounded-xl p-5 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-bold flex items-center gap-2">
-                          <Activity className="h-4 w-4" /> Diagnóstico do Funil
-                        </h4>
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                          funnelDiagnostic.overallConv >= 3 ? "bg-emerald-500/10 text-emerald-500" :
-                          funnelDiagnostic.overallConv >= 1 ? "bg-amber-500/10 text-amber-500" :
-                          "bg-red-500/10 text-red-500"
-                        }`}>
-                          Conversão geral: {funnelDiagnostic.overallConv.toFixed(2)}%
-                        </span>
-                      </div>
-
-                      {/* Diagnostic items */}
-                      <div className="space-y-2">
-                        {funnelDiagnostic.diagnostics.map((d, i) => (
-                          <div
-                            key={i}
-                            className={`flex items-start gap-3 border rounded-xl p-4 ${
-                              d.severity === "critical" ? "bg-destructive/5 border-destructive/30" :
-                              d.severity === "warning" ? "bg-amber-500/5 border-amber-500/30" :
-                              "bg-blue-500/5 border-blue-500/30"
-                            }`}
-                          >
-                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                              d.severity === "critical" ? "bg-destructive/10" :
-                              d.severity === "warning" ? "bg-amber-500/10" :
-                              "bg-blue-500/10"
-                            }`}>
-                              <AlertTriangle className={`h-4 w-4 ${
-                                d.severity === "critical" ? "text-destructive" :
-                                d.severity === "warning" ? "text-amber-500" :
-                                "text-blue-500"
-                              }`} />
-                            </div>
-                            <div>
-                              <p className={`text-sm font-semibold ${
-                                d.severity === "critical" ? "text-destructive" :
-                                d.severity === "warning" ? "text-amber-600" :
-                                "text-blue-600"
-                              }`}>{d.title}</p>
-                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{d.desc}</p>
-                            </div>
+                  {/* ── RADAR DE CONVERSÃO ── */}
+                  {radarConversao && (
+                    <div className="bg-card border-2 border-primary/20 rounded-xl p-5 space-y-5">
+                      {/* Header with health score */}
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-14 w-14 rounded-full border-4 flex items-center justify-center font-bold text-xl ${radarConversao.healthColor}`} style={{ borderColor: "currentColor" }}>
+                            {radarConversao.healthScore}
                           </div>
-                        ))}
+                          <div>
+                            <h4 className="text-sm font-bold flex items-center gap-2">
+                              📡 Radar de Conversão
+                            </h4>
+                            <p className={`text-xs font-semibold ${radarConversao.healthColor}`}>{radarConversao.healthLabel}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                            radarConversao.overallConv >= 3 ? "bg-emerald-500/10 text-emerald-500" :
+                            radarConversao.overallConv >= 1 ? "bg-amber-500/10 text-amber-500" :
+                            "bg-red-500/10 text-red-500"
+                          }`}>
+                            Conversão: {radarConversao.overallConv.toFixed(2)}%
+                          </span>
+                          <span className="text-[10px] px-2 py-1 rounded-full bg-destructive/10 text-destructive font-semibold">
+                            Gargalo: {radarConversao.bottleneckLabel}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Suggestions */}
-                      {funnelDiagnostic.suggestions.length > 0 && (
+                      {/* Smart Summary */}
+                      <div className="bg-muted/50 rounded-xl p-4 border-l-4 border-primary">
+                        <p className="text-xs font-bold uppercase text-muted-foreground mb-1.5">📋 Resumo Inteligente</p>
+                        <p className="text-sm leading-relaxed">{radarConversao.summary}</p>
+                      </div>
+
+                      {/* Diagnostic items with cause */}
+                      <div>
+                        <h5 className="text-xs font-bold uppercase text-muted-foreground mb-2">🔍 Diagnósticos Detectados</h5>
+                        <div className="space-y-2">
+                          {radarConversao.diagnostics.map((d, i) => (
+                            <div
+                              key={i}
+                              className={`border rounded-xl p-4 ${
+                                d.severity === "critical" ? "bg-destructive/5 border-destructive/30" :
+                                d.severity === "warning" ? "bg-amber-500/5 border-amber-500/30" :
+                                "bg-blue-500/5 border-blue-500/30"
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                  d.severity === "critical" ? "bg-destructive/10" :
+                                  d.severity === "warning" ? "bg-amber-500/10" :
+                                  "bg-blue-500/10"
+                                }`}>
+                                  <AlertTriangle className={`h-4 w-4 ${
+                                    d.severity === "critical" ? "text-destructive" :
+                                    d.severity === "warning" ? "text-amber-500" :
+                                    "text-blue-500"
+                                  }`} />
+                                </div>
+                                <div className="flex-1">
+                                  <p className={`text-sm font-semibold ${
+                                    d.severity === "critical" ? "text-destructive" :
+                                    d.severity === "warning" ? "text-amber-600" :
+                                    "text-blue-600"
+                                  }`}>{d.title}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">{d.desc}</p>
+                                  <p className="text-xs mt-1.5 font-medium">💡 Causa provável: <span className="text-muted-foreground font-normal">{d.cause}</span></p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Insights from Heatmap, Sessions, Devices */}
+                      {(radarHeatmapInsights.length > 0 || radarSessionInsights.length > 0 || radarDeviceInsights.length > 0) && (
                         <div>
-                          <h5 className="text-xs font-bold uppercase text-muted-foreground mb-2 flex items-center gap-1.5">
-                            💡 Sugestões de Melhoria
-                          </h5>
+                          <h5 className="text-xs font-bold uppercase text-muted-foreground mb-2">🧠 Insights Comportamentais</h5>
+                          <div className="space-y-1.5">
+                            {[...radarHeatmapInsights, ...radarSessionInsights, ...radarDeviceInsights].map((ins, i) => (
+                              <div key={i} className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 flex items-start gap-2.5">
+                                <span className="text-lg flex-shrink-0">{ins.icon}</span>
+                                <p className="text-xs leading-relaxed">{ins.text}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Suggestions with priority */}
+                      {radarConversao.suggestions.length > 0 && (
+                        <div>
+                          <h5 className="text-xs font-bold uppercase text-muted-foreground mb-2">🛠 Sugestões de Melhoria</h5>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {funnelDiagnostic.suggestions.map((s, i) => (
+                            {radarConversao.suggestions.map((s, i) => (
                               <div key={i} className="bg-muted/50 rounded-lg p-3 flex items-center gap-2.5">
                                 <span className="text-lg">{s.icon}</span>
-                                <span className="text-xs font-medium">{s.text}</span>
+                                <div className="flex-1">
+                                  <span className="text-xs font-medium">{s.text}</span>
+                                </div>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                                  s.priority === "alta" ? "bg-red-500/10 text-red-500" :
+                                  s.priority === "média" ? "bg-amber-500/10 text-amber-500" :
+                                  "bg-blue-500/10 text-blue-500"
+                                }`}>{s.priority}</span>
                               </div>
                             ))}
                           </div>
