@@ -853,7 +853,7 @@ const Index = () => {
             {/* Confirm button */}
             <div className="px-5 pb-6">
               <button
-                onClick={handleCheckout}
+                onClick={handleColorConfirm}
                 disabled={!selectedColor}
                 className={`w-full font-bold text-base py-4 rounded-2xl transition-all ${
                   selectedColor
@@ -861,7 +861,7 @@ const Index = () => {
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                Confirmar - R$ {PRICE.toFixed(2).replace('.', ',')}
+                {colorModalMode === 'buy' ? `Comprar agora - R$ ${PRICE.toFixed(2).replace('.', ',')}` : `Adicionar ao carrinho - R$ ${PRICE.toFixed(2).replace('.', ',')}`}
               </button>
             </div>
           </div>
