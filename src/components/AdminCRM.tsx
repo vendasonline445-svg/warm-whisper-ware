@@ -365,7 +365,7 @@ export default function AdminCRM() {
     });
 
     return withRates;
-  }, [events, enrichedLeads]);
+  }, [events, enrichedLeads, pageViewCount]);
 
   // ── Funnel Health Score ──
   const funnelHealth = useMemo(() => {
