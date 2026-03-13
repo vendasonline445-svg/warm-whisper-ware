@@ -1350,6 +1350,182 @@ export default function AdminCRM() {
               </div>
             </div>
           )}
+
+          {/* ═══ CRIATIVOS ═══ */}
+          {subTab === "criativos" && (
+            <div className="space-y-6">
+              {/* Creative Detail Drill-down */}
+              {selectedCreativeData ? (
+                <div className="space-y-4">
+                  <button onClick={() => setSelectedCreative(null)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                    ← Voltar para lista
+                  </button>
+                  <div className="bg-card border rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-bold flex items-center gap-2">
+                          <Image className="h-4 w-4" /> Criativo: {selectedCreativeData.id.slice(0, 30)}
+                        </h3>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {selectedCreativeData.platform} · {selectedCreativeData.campaign} · {selectedCreativeData.adGroup}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedCreativeData.scoreColor}`}>
+                        Score: {selectedCreativeData.score} — {selectedCreativeData.scoreLabel}
+                      </span>
+                    </div>
+
+                    {/* Mini Funnel */}
+                    <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Funil deste Criativo</h4>
+                    <div className="space-y-0">
+                      {[
+                        { label: "Visitantes", count: selectedCreativeData.visitors, color: "bg-blue-500" },
+                        { label: "Cliques Comprar", count: selectedCreativeData.buyClicks, color: "bg-orange-400" },
+                        { label: "Checkouts", count: selectedCreativeData.checkouts, color: "bg-orange-500" },
+                        { label: "Pix Gerados", count: selectedCreativeData.pixGenerated, color: "bg-purple-500" },
+                        { label: "Pagos", count: selectedCreativeData.paid, color: "bg-emerald-500" },
+                      ].map((step, i, arr) => {
+                        const maxC = arr[0].count || 1;
+                        const widthPct = Math.max(25, (step.count / maxC) * 100);
+                        const prev = i > 0 ? arr[i - 1].count : step.count;
+                        const conv = prev > 0 ? ((step.count / prev) * 100).toFixed(1) : "0.0";
+                        return (
+                          <div key={step.label}>
+                            <div className={`${step.color} rounded-lg p-2.5 flex items-center justify-between`} style={{ width: `${widthPct}%`, minWidth: "180px" }}>
+                              <span className="text-white text-xs font-semibold">{step.label}</span>
+                              <span className="text-white text-sm font-bold">{step.count}</span>
+                            </div>
+                            {i < arr.length - 1 && (
+                              <div className="flex items-center gap-2 py-1 pl-4">
+                                <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="text-[10px] text-muted-foreground">{conv}% conversão</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Metrics */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+                      {[
+                        { label: "Tempo Médio", value: `${selectedCreativeData.avgTimeOnPage.toFixed(1)}s` },
+                        { label: "Scroll Médio", value: `${selectedCreativeData.avgScroll.toFixed(0)}%` },
+                        { label: "Conversão", value: `${selectedCreativeData.convRate.toFixed(1)}%` },
+                        { label: "Score", value: String(selectedCreativeData.score) },
+                      ].map(m => (
+                        <div key={m.label} className="bg-muted/50 rounded-lg p-3 text-center">
+                          <p className="text-[10px] text-muted-foreground font-medium uppercase">{m.label}</p>
+                          <p className="text-lg font-bold">{m.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Alerts for this creative */}
+                    {selectedCreativeData.alerts.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <h4 className="text-xs font-bold uppercase text-muted-foreground">Alertas</h4>
+                        {selectedCreativeData.alerts.map((a, i) => (
+                          <div key={i} className={`text-xs p-3 rounded-lg border ${a.type === "critical" ? "bg-destructive/5 border-destructive/30 text-destructive" : "bg-amber-500/5 border-amber-500/30 text-amber-600"}`}>
+                            {a.msg}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Performance Table */}
+                  <div className="bg-card border rounded-xl overflow-hidden">
+                    <div className="p-4 border-b">
+                      <h3 className="text-sm font-bold flex items-center gap-2">
+                        <Megaphone className="h-4 w-4" /> Performance de Criativos
+                        <span className="text-xs text-muted-foreground font-normal">({creativeAnalysis.creatives.length})</span>
+                      </h3>
+                    </div>
+                    {creativeAnalysis.creatives.length === 0 ? (
+                      <div className="p-6 text-center text-muted-foreground text-sm">
+                        Nenhum criativo identificado. Certifique-se de usar <code className="bg-muted px-1 rounded">utm_content</code> nas campanhas.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b bg-muted/50">
+                              {["Criativo", "Plataforma", "Visitantes", "Cliques", "Checkout", "Pagos", "Conversão", "Score"].map(h => (
+                                <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {creativeAnalysis.creatives.map(c => (
+                              <tr
+                                key={c.id}
+                                onClick={() => setSelectedCreative(c.id)}
+                                className={`border-b cursor-pointer hover:bg-muted/30 transition-colors ${c.score < 50 ? "bg-red-500/5" : ""}`}
+                              >
+                                <td className="px-4 py-3 font-semibold max-w-[150px] truncate">{c.id.slice(0, 25)}</td>
+                                <td className="px-4 py-3">{c.platform}</td>
+                                <td className="px-4 py-3">{c.visitors}</td>
+                                <td className="px-4 py-3">{c.buyClicks}</td>
+                                <td className="px-4 py-3">{c.checkouts}</td>
+                                <td className="px-4 py-3">{c.paid}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`font-bold ${c.convRate < 2 ? "text-red-500" : c.convRate < 5 ? "text-amber-500" : "text-emerald-500"}`}>
+                                    {c.convRate.toFixed(1)}%
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.scoreColor}`}>
+                                    {c.score} — {c.scoreLabel}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Creative Diagnostics */}
+                  <div>
+                    <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                      <AlertTriangle className="h-4 w-4" /> Diagnóstico de Criativos
+                    </h4>
+                    {creativeAnalysis.alerts.length === 0 ? (
+                      <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                        <span className="text-sm font-medium">Nenhum criativo com problemas detectados</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {creativeAnalysis.alerts.map((a, i) => (
+                          <div
+                            key={i}
+                            className={`flex items-start gap-3 border rounded-xl p-4 ${
+                              a.type === "critical" ? "bg-destructive/5 border-destructive/30" : "bg-amber-500/5 border-amber-500/30"
+                            }`}
+                          >
+                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              a.type === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
+                            }`}>
+                              <Megaphone className={`h-4 w-4 ${a.type === "critical" ? "text-destructive" : "text-amber-500"}`} />
+                            </div>
+                            <div>
+                              <p className={`text-sm font-semibold ${a.type === "critical" ? "text-destructive" : "text-amber-600"}`}>{a.title}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </>
       )}
 
