@@ -353,10 +353,13 @@ export default function AdminCRM() {
     const src = String(e.event_data?.utm_source || "");
     if (!src) return "Direto";
     const s = src.toLowerCase();
-    if (s.includes("tiktok") || s.includes("tt")) return "TikTok";
+    // Normalize TikTok SCK codes (TT-timestamp-random)
+    if (/^tt-\d+/i.test(s) || s.includes("tiktok") || s === "tt") return "TikTok";
     if (s.includes("facebook") || s.includes("fb") || s.includes("instagram")) return "Ads";
     if (s.includes("google")) return "Google";
     if (s.includes("organic")) return "Orgânico";
+    // Filter long click IDs
+    if (src.length > 50 || /^[A-Za-z0-9_-]{40,}$/.test(src)) return "Direto";
     return src;
   };
 
@@ -3108,13 +3111,19 @@ export default function AdminCRM() {
             }>();
 
             // Process events for visitor/session counts
+            // Helper: normalize source to avoid per-click unique entries
+            const normalizeSource = (raw: string): string => {
+              if (!raw || raw === "direct") return "direct";
+              // TikTok SCK codes (TT-timestamp-random) → "tiktok"
+              if (/^TT-\d+/i.test(raw)) return "tiktok";
+              // Long click IDs or encoded tokens
+              if (raw.length > 50 || raw.startsWith("E.C.P.") || raw.startsWith("fb.") || /^[A-Za-z0-9_-]{40,}$/.test(raw)) return "direct";
+              return raw;
+            };
+
             events.forEach(ev => {
               const d = ev.event_data || {};
-              let source = String(d.utm_source || d.referrer || "direct");
-              // Filter out click IDs mistakenly stored as source
-              if (source.length > 50 || source.startsWith("E.C.P.") || source.startsWith("fb.") || source.match(/^[A-Za-z0-9_-]{40,}$/)) {
-                source = "direct";
-              }
+              const source = normalizeSource(String(d.utm_source || d.referrer || "direct"));
               const campaign = String(d.utm_campaign || "(sem campanha)");
               const content = String(d.utm_content || "(sem criativo)");
               const vid = d.visitor_id || d.session_id || "";
@@ -3137,10 +3146,7 @@ export default function AdminCRM() {
               try {
                 meta = typeof lead.metadata === "string" ? JSON.parse(lead.metadata) : lead.metadata || {};
               } catch {}
-              let source = String(meta.utm_source || meta.referrer || "direct");
-              if (source.length > 50 || source.startsWith("E.C.P.") || source.startsWith("fb.") || source.match(/^[A-Za-z0-9_-]{40,}$/)) {
-                source = "direct";
-              }
+              const source = normalizeSource(String(meta.utm_source || meta.referrer || "direct"));
               const campaign = String(meta.utm_campaign || "(sem campanha)");
               const content = String(meta.utm_content || "(sem criativo)");
               const key = `${source}::${campaign}::${content}`;
