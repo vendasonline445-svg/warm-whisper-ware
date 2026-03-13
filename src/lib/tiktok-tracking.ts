@@ -208,9 +208,22 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
   const timestamp = new Date().toISOString();
   const ttclid = getStoredParam("ttclid");
 
-  if (userData) {
-    await setUserData(userData);
-    await identifyTikTokUser(userData);
+  // Always use visitor_id as external_id for EMQ
+  const visitorId = (() => {
+    try { return localStorage.getItem("mesalar_visitor_id") || ""; } catch { return ""; }
+  })();
+
+  // Merge userData with visitor_id as fallback external_id
+  const effectiveUserData = {
+    email: userData?.email || "",
+    phone: userData?.phone || "",
+    externalId: userData?.externalId || visitorId,
+  };
+
+  // Always set user data and identify for better EMQ
+  if (effectiveUserData.externalId || effectiveUserData.email || effectiveUserData.phone) {
+    await setUserData(effectiveUserData);
+    await identifyTikTokUser(effectiveUserData);
   }
 
   const pixels = await loadPixels();
@@ -228,7 +241,7 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
         const instance = ttq.instance(px.pixel_id);
         if (instance) {
           instance.track(event, properties, { event_id: eventId });
-          console.log(`${DEBUG} ${event} fired (browser) — pixel ${px.pixel_id}`);
+          console.log(`${DEBUG} ${event} fired (browser) — pixel ${px.pixel_id}, event_id: ${eventId}`);
         }
       } catch (e) {
         console.warn(`${DEBUG} Pixel error for ${px.pixel_id}:`, e);
