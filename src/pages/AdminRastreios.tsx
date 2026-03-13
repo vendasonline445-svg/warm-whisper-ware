@@ -59,16 +59,19 @@ export default function AdminRastreios() {
     }
     setSendingManual(true);
     try {
-      const payload = {
+      const params = new URLSearchParams({
         status: "approved",
-        customer: { name: manualName, email: manualEmail },
-        address: { zip_code: manualCep },
-        products: [{ title: manualProduto }],
-      };
+        nome: manualName,
+        email: manualEmail,
+        cep: manualCep,
+        endereco: manualEndereco,
+        produto: manualProduto,
+        source: "vegacheckout",
+      });
       const res = await fetch(webhookUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params,
       });
       const text = await res.text();
       console.log("[Trackly] test webhook sent");
