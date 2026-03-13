@@ -4,7 +4,7 @@ import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
-  Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera,
+  Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera, MapPin,
   CreditCard, Tag, ShieldCheck, Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
