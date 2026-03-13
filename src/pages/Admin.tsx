@@ -7,6 +7,7 @@ import AdminTikTokTab from "@/components/AdminTikTokTab";
 import AdminRastreiosTab from "@/components/AdminRastreiosTab";
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminAIAssistant from "@/components/AdminAIAssistant";
+import FunnelIQLogo from "@/components/FunnelIQLogo";
 import { ptBR } from "date-fns/locale";
 import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Activity, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -385,18 +386,24 @@ export default function Admin() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4 bg-card p-6 rounded-xl border shadow">
-          <h1 className="text-xl font-bold text-center">FunnelIQ</h1>
+      <div className="min-h-screen flex items-center justify-center bg-background admin-bg p-4">
+        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-6 glass-card p-8 rounded-2xl">
+          <div className="flex flex-col items-center gap-3">
+            <FunnelIQLogo size={48} />
+            <div className="text-center">
+              <h1 className="text-2xl font-bold tracking-tight">FunnelIQ</h1>
+              <p className="text-xs text-muted-foreground mt-1">Inteligência para otimizar funis de conversão</p>
+            </div>
+          </div>
           <input
             type="password"
-            placeholder="Senha"
+            placeholder="Senha de acesso"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded-lg px-4 py-3 text-sm bg-background"
+            className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
           />
           {error && <p className="text-destructive text-sm text-center">{error}</p>}
-          <button type="submit" className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-semibold">
+          <button type="submit" className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-3 rounded-xl font-semibold transition-all hover:brightness-110 active:scale-[0.98]">
             Entrar
           </button>
         </form>
@@ -409,12 +416,7 @@ export default function Admin() {
       {/* Top Nav */}
       <header className="border-b border-border/50 bg-card/80 backdrop-blur-xl px-4 py-3 sticky top-0 z-50">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <LayoutDashboard className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <h1 className="text-lg font-bold tracking-tight">FunnelIQ</h1>
-          </div>
+          <FunnelIQLogo size={32} showText />
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setTab("dashboard")}
