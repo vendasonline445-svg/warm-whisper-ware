@@ -1018,6 +1018,7 @@ const Index = () => {
                 </div>
               )}
               <div ref={chatEndRef} />
+            </div>
 
             {/* Quick questions */}
             <div className="border-t px-4 py-3 space-y-2">
