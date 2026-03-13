@@ -398,8 +398,19 @@ export default function AdminCRM() {
       pvc = 0;
     }
 
+    // Bot filter
+    if (funnelBotFilter !== "all") {
+      fe = fe.filter(e => {
+        const vid = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
+        if (funnelBotFilter === "exclude_bots") return !botAnalysis.botVisitorIds.has(vid);
+        if (funnelBotFilter === "valid") return !botAnalysis.botVisitorIds.has(vid) && !botAnalysis.suspectVisitorIds.has(vid);
+        return true;
+      });
+      pvc = 0;
+    }
+
     return buildFunnel(fe, fl, pvc);
-  }, [events, enrichedLeads, pageViewCount, funnelDevice, funnelOrigin, funnelCreative, funnelRealtime, buildFunnel]);
+  }, [events, enrichedLeads, pageViewCount, funnelDevice, funnelOrigin, funnelCreative, funnelRealtime, funnelBotFilter, buildFunnel, botAnalysis]);
 
   // ── Device comparison ──
   const deviceComparison = useMemo(() => {
