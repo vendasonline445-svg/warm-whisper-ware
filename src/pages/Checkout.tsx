@@ -500,15 +500,91 @@ const Checkout = () => {
             <p className="font-semibold text-sm">Forma de pagamento</p>
             {hasCoupon && <span className="text-xs text-coupon font-medium">Cupom VOLTA25 (-25%) ativo ✓</span>}
           </div>
-          <div className="flex items-center justify-between p-3 rounded-lg border-2 border-cta bg-cta/5">
+
+          {/* Credit Card Option */}
+          <button
+            onClick={() => !cardDisabled && setPaymentMethod("credit_card")}
+            className={`w-full flex items-center justify-between p-3 rounded-lg border-2 mb-2 transition-colors ${
+              paymentMethod === "credit_card" ? "border-cta bg-cta/5" : "border-border"
+            } ${cardDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={cardDisabled}
+          >
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-muted-foreground" />
+              <div className="text-left">
+                <span className="text-sm font-medium">Cartão de Crédito</span>
+                {cardDisabled && <p className="text-[10px] text-destructive">Indisponível — use PIX</p>}
+              </div>
+            </div>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "credit_card" ? "border-cta" : "border-muted-foreground/40"}`}>
+              {paymentMethod === "credit_card" && <div className="w-2.5 h-2.5 rounded-full bg-cta" />}
+            </div>
+          </button>
+
+          {/* Card Form */}
+          {paymentMethod === "credit_card" && !cardDisabled && (
+            <div className="space-y-3 mb-3 p-3 rounded-lg bg-muted/30 border">
+              <Input
+                placeholder="Número do cartão"
+                inputMode="numeric"
+                value={cardForm.number}
+                onChange={(e) => updateCardField("number", formatCardNumber(e.target.value))}
+                className="rounded-lg border-border h-12 text-sm"
+              />
+              <Input
+                placeholder="Nome impresso no cartão"
+                value={cardForm.holder}
+                onChange={(e) => updateCardField("holder", e.target.value.toUpperCase())}
+                className="rounded-lg border-border h-12 text-sm"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  placeholder="MM/AA"
+                  inputMode="numeric"
+                  value={cardForm.expiry}
+                  onChange={(e) => updateCardField("expiry", formatExpiry(e.target.value))}
+                  className="rounded-lg border-border h-12 text-sm"
+                />
+                <Input
+                  placeholder="CVV"
+                  inputMode="numeric"
+                  value={cardForm.cvv}
+                  onChange={(e) => updateCardField("cvv", e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  className="rounded-lg border-border h-12 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Parcelas</label>
+                <select
+                  value={cardForm.installments}
+                  onChange={(e) => updateCardField("installments", e.target.value)}
+                  className="w-full h-12 rounded-lg border border-border bg-background px-3 text-sm"
+                >
+                  <option value={1}>1x de R$ {total.toFixed(2).replace(".", ",")} (sem juros)</option>
+                  {[2,3,4,5,6].map(n => {
+                    const installmentValue = (total / n).toFixed(2).replace(".", ",");
+                    return <option key={n} value={n}>{n}x de R$ {installmentValue} (sem juros)</option>;
+                  })}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* PIX Option */}
+          <button
+            onClick={() => setPaymentMethod("pix")}
+            className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-colors ${
+              paymentMethod === "pix" ? "border-cta bg-cta/5" : "border-border"
+            }`}
+          >
             <div className="flex items-center gap-2">
               <img src="/images/pix-icon.webp" alt="Pix" className="w-5 h-5" />
               <span className="text-sm font-medium">Pix</span>
             </div>
-            <div className="w-5 h-5 rounded-full border-2 border-cta flex items-center justify-center">
-              <div className="w-2.5 h-2.5 rounded-full bg-cta" />
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "pix" ? "border-cta" : "border-muted-foreground/40"}`}>
+              {paymentMethod === "pix" && <div className="w-2.5 h-2.5 rounded-full bg-cta" />}
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Terms */}
