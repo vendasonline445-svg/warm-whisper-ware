@@ -407,6 +407,13 @@ export default function Admin() {
             <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
               <Download className="h-4 w-4" /> CSV
             </button>
+            <button
+              onClick={() => setDarkMode(d => !d)}
+              className="flex items-center justify-center h-9 w-9 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+              title={darkMode ? "Modo Claro" : "Modo Escuro"}
+            >
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
           </div>
         </div>
       </header>
