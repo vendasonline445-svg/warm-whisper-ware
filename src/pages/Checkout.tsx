@@ -640,49 +640,89 @@ const Checkout = () => {
 
             {/* Card Form */}
             {paymentMethod === "credit_card" && !cardDisabled && (
-              <div className="space-y-3 p-3 border-t">
-                <Input
-                  placeholder="Número do cartão"
-                  inputMode="numeric"
-                  value={cardForm.number}
-                  onChange={(e) => updateCardField("number", formatCardNumber(e.target.value))}
-                  className="rounded-lg border-border h-12 text-sm"
-                />
-                <Input
-                  placeholder="Nome impresso no cartão"
-                  value={cardForm.holder}
-                  onChange={(e) => updateCardField("holder", e.target.value.toUpperCase())}
-                  className="rounded-lg border-border h-12 text-sm"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    placeholder="MM/AA"
-                    inputMode="numeric"
-                    value={cardForm.expiry}
-                    onChange={(e) => updateCardField("expiry", formatExpiry(e.target.value))}
-                    className="rounded-lg border-border h-12 text-sm"
-                  />
-                  <Input
-                    placeholder="CVV"
-                    inputMode="numeric"
-                    value={cardForm.cvv}
-                    onChange={(e) => updateCardField("cvv", e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    className="rounded-lg border-border h-12 text-sm"
-                  />
+              <div className="border-t">
+                {/* Installments banner */}
+                <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: '#fff0f3' }}>
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" style={{ color: '#fe2b54' }} />
+                    <span className="text-xs font-medium">Sem juros em até 3x</span>
+                  </div>
+                  <button className="text-xs font-medium flex items-center gap-0.5" style={{ color: '#fe2b54' }}>
+                    Ver todas ({Math.min(6, 6)}) <ChevronRight className="h-3 w-3" />
+                  </button>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Parcelas</label>
-                  <select
-                    value={cardForm.installments}
-                    onChange={(e) => updateCardField("installments", e.target.value)}
-                    className="w-full h-12 rounded-lg border border-border bg-background px-3 text-sm"
-                  >
-                    <option value={1}>1x de R$ {total.toFixed(2).replace(".", ",")} (sem juros)</option>
-                    {[2,3,4,5,6].map(n => {
-                      const installmentValue = (total / n).toFixed(2).replace(".", ",");
-                      return <option key={n} value={n}>{n}x de R$ {installmentValue} (sem juros)</option>;
-                    })}
-                  </select>
+
+                <div className="p-4 space-y-4">
+                  {/* Card number */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-sm font-medium text-foreground">Número do cartão</label>
+                      <div className="flex items-center gap-1.5">
+                        <svg width="28" height="18" viewBox="0 0 32 20" fill="none"><circle cx="12" cy="10" r="8" fill="#EB001B"/><circle cx="20" cy="10" r="8" fill="#F79E1B"/><path d="M16 3.6a8 8 0 010 12.8 8 8 0 000-12.8z" fill="#FF5F00"/></svg>
+                        <svg width="28" height="18" viewBox="0 0 32 20"><rect width="32" height="20" rx="2" fill="#fff" stroke="#ddd" strokeWidth="0.5"/><text x="16" y="13" textAnchor="middle" fontSize="9" fontWeight="bold" fontStyle="italic" fill="#1A1F71">VISA</text></svg>
+                        <svg width="28" height="18" viewBox="0 0 32 20"><rect width="32" height="20" rx="2" fill="#fff" stroke="#ddd" strokeWidth="0.5"/><text x="16" y="14" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#000">elo</text></svg>
+                        <svg width="28" height="18" viewBox="0 0 32 20"><rect width="32" height="20" rx="2" fill="#006FCF"/><text x="16" y="9" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#fff">AMERICAN</text><text x="16" y="15" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#fff">EXPRESS</text></svg>
+                      </div>
+                    </div>
+                    <Input
+                      placeholder="Digite o número do cartão"
+                      inputMode="numeric"
+                      value={cardForm.number}
+                      onChange={(e) => updateCardField("number", formatCardNumber(e.target.value))}
+                      className="rounded-lg border-border h-12 text-sm bg-muted/40"
+                    />
+                  </div>
+
+                  {/* Expiry + CVV */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">Data de validade</label>
+                      <Input
+                        placeholder="MM/AA"
+                        inputMode="numeric"
+                        value={cardForm.expiry}
+                        onChange={(e) => updateCardField("expiry", formatExpiry(e.target.value))}
+                        className="rounded-lg border-border h-12 text-sm bg-muted/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">Código de segurança</label>
+                      <Input
+                        placeholder="CVV/CVC"
+                        inputMode="numeric"
+                        value={cardForm.cvv}
+                        onChange={(e) => updateCardField("cvv", e.target.value.replace(/\D/g, "").slice(0, 4))}
+                        className="rounded-lg border-border h-12 text-sm bg-muted/40"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Cardholder name */}
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Nome do titular</label>
+                    <Input
+                      placeholder="Nome completo"
+                      value={cardForm.holder}
+                      onChange={(e) => updateCardField("holder", e.target.value.toUpperCase())}
+                      className="rounded-lg border-border h-12 text-sm bg-muted/40"
+                    />
+                  </div>
+
+                  {/* Installments */}
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Parcelas</label>
+                    <select
+                      value={cardForm.installments}
+                      onChange={(e) => updateCardField("installments", e.target.value)}
+                      className="w-full h-12 rounded-lg border border-border bg-muted/40 px-3 text-sm"
+                    >
+                      <option value={1}>1x de R$ {total.toFixed(2).replace(".", ",")} (sem juros)</option>
+                      {[2,3,4,5,6].map(n => {
+                        const installmentValue = (total / n).toFixed(2).replace(".", ",");
+                        return <option key={n} value={n}>{n}x de R$ {installmentValue} (sem juros)</option>;
+                      })}
+                    </select>
+                  </div>
                 </div>
               </div>
             )}
