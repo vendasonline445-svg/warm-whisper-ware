@@ -6,6 +6,7 @@ import AdminCRM from "@/components/AdminCRM";
 import AdminTikTokTab from "@/components/AdminTikTokTab";
 import AdminRastreiosTab from "@/components/AdminRastreiosTab";
 import AdminDashboard from "@/components/AdminDashboard";
+import AdminAIAssistant from "@/components/AdminAIAssistant";
 import { ptBR } from "date-fns/locale";
 import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
