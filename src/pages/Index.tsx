@@ -870,6 +870,23 @@ const Index = () => {
               </div>
             </div>
 
+            {/* Quantity selector */}
+            <div className="px-5 pb-4">
+              <p className="text-sm font-semibold mb-2">Quantidade:</p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setModalQty(q => Math.max(1, q - 1))}
+                  className="h-9 w-9 rounded-xl border-2 border-border flex items-center justify-center text-lg font-bold hover:border-cta/50 transition-colors"
+                >−</button>
+                <span className="text-base font-bold w-6 text-center">{modalQty}</span>
+                <button
+                  onClick={() => setModalQty(q => q + 1)}
+                  className="h-9 w-9 rounded-xl border-2 border-border flex items-center justify-center text-lg font-bold hover:border-cta/50 transition-colors"
+                >+</button>
+                <span className="ml-auto text-cta font-extrabold text-lg">R$ {(PRICE * modalQty).toFixed(2).replace('.', ',')}</span>
+              </div>
+            </div>
+
             {/* Confirm button */}
             <div className="px-5 pb-6">
               <button
@@ -881,7 +898,7 @@ const Index = () => {
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                {colorModalMode === 'buy' ? `Comprar agora - R$ ${PRICE.toFixed(2).replace('.', ',')}` : `Adicionar ao carrinho - R$ ${PRICE.toFixed(2).replace('.', ',')}`}
+                {colorModalMode === 'buy' ? `Comprar agora - R$ ${(PRICE * modalQty).toFixed(2).replace('.', ',')}` : `Adicionar ao carrinho - R$ ${(PRICE * modalQty).toFixed(2).replace('.', ',')}`}
               </button>
             </div>
           </div>
