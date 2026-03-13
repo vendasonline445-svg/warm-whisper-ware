@@ -1080,6 +1080,133 @@ export default function AdminCRM() {
               )}
             </div>
           )}
+
+          {/* ═══ TRAFFIC QUALITY ═══ */}
+          {subTab === "traffic" && (
+            <div className="space-y-6">
+              {/* Distribution Card */}
+              <div className="bg-card border rounded-xl p-5">
+                <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
+                  <Shield className="h-4 w-4" /> Qualidade do Tráfego
+                  <span className="text-xs text-muted-foreground font-normal">({trafficAnalysis.total} visitantes)</span>
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {([
+                    { key: "quente" as const, label: "Leads Quentes", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: Flame },
+                    { key: "morno" as const, label: "Leads Mornos", color: "text-amber-500", bg: "bg-amber-500/10", icon: Thermometer },
+                    { key: "frio" as const, label: "Tráfego Frio", color: "text-slate-400", bg: "bg-slate-400/10", icon: Snowflake },
+                    { key: "ruim" as const, label: "Tráfego Ruim", color: "text-red-500", bg: "bg-red-500/10", icon: XCircle },
+                  ]).map(q => {
+                    const Icon = q.icon;
+                    return (
+                      <div key={q.key} className={`rounded-xl p-3 ${q.bg}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon className={`h-4 w-4 ${q.color}`} />
+                          <span className={`text-lg font-bold ${q.color}`}>{trafficAnalysis.distPct[q.key]}%</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground font-medium">{q.label}</p>
+                        <p className="text-xs font-semibold">{trafficAnalysis.dist[q.key]}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Progress bar */}
+                <div className="flex h-3 rounded-full overflow-hidden mt-4">
+                  {trafficAnalysis.distPct.quente > 0 && <div className="bg-emerald-500" style={{ width: `${trafficAnalysis.distPct.quente}%` }} />}
+                  {trafficAnalysis.distPct.morno > 0 && <div className="bg-amber-500" style={{ width: `${trafficAnalysis.distPct.morno}%` }} />}
+                  {trafficAnalysis.distPct.frio > 0 && <div className="bg-slate-400" style={{ width: `${trafficAnalysis.distPct.frio}%` }} />}
+                  {trafficAnalysis.distPct.ruim > 0 && <div className="bg-red-500" style={{ width: `${trafficAnalysis.distPct.ruim}%` }} />}
+                </div>
+                {trafficAnalysis.botCount > 0 && (
+                  <div className="flex items-center gap-2 mt-3 text-xs text-destructive">
+                    <Bot className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{trafficAnalysis.botCount} possíveis bots detectados</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Campaign Quality Table */}
+              <div className="bg-card border rounded-xl overflow-hidden">
+                <div className="p-4 border-b">
+                  <h4 className="text-sm font-bold flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" /> Qualidade por Origem de Tráfego
+                  </h4>
+                </div>
+                {trafficAnalysis.sources.length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground text-sm">Sem dados de origem</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          {["Origem", "Visitantes", "Checkouts", "Pagamentos", "Conversão", "Score Médio", "Qualidade"].map(h => (
+                            <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {trafficAnalysis.sources.map(s => {
+                          const qualityLabel = s.avgQuality >= 61 ? "Quente" : s.avgQuality >= 31 ? "Morno" : s.avgQuality >= 11 ? "Frio" : "Ruim";
+                          const qualityColor = s.avgQuality >= 61 ? "text-emerald-500 bg-emerald-500/10" : s.avgQuality >= 31 ? "text-amber-500 bg-amber-500/10" : s.avgQuality >= 11 ? "text-slate-500 bg-slate-500/10" : "text-red-500 bg-red-500/10";
+                          return (
+                            <tr key={s.name} className="border-b hover:bg-muted/30 transition-colors">
+                              <td className="px-4 py-3 font-semibold">{s.name}</td>
+                              <td className="px-4 py-3">{s.visitors}</td>
+                              <td className="px-4 py-3">{s.checkouts}</td>
+                              <td className="px-4 py-3">{s.paid}</td>
+                              <td className="px-4 py-3">
+                                <span className={`font-bold ${s.convRate < 2 ? "text-red-500" : s.convRate < 5 ? "text-amber-500" : "text-emerald-500"}`}>
+                                  {s.convRate.toFixed(1)}%
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 font-bold">{s.avgQuality}</td>
+                              <td className="px-4 py-3">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${qualityColor}`}>{qualityLabel}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Traffic Diagnostics */}
+              <div>
+                <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                  <AlertTriangle className="h-4 w-4" /> Diagnóstico de Tráfego
+                </h4>
+                {trafficAnalysis.trafficAlerts.length === 0 ? (
+                  <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    <span className="text-sm font-medium">Tráfego saudável — nenhum alerta detectado</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {trafficAnalysis.trafficAlerts.map((a, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-start gap-3 border rounded-xl p-4 ${
+                          a.type === "critical" ? "bg-destructive/5 border-destructive/30" : "bg-amber-500/5 border-amber-500/30"
+                        }`}
+                      >
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          a.type === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
+                        }`}>
+                          {a.type === "critical" ? <Bot className="h-4 w-4 text-destructive" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                        </div>
+                        <div>
+                          <p className={`text-sm font-semibold ${a.type === "critical" ? "text-destructive" : "text-amber-600"}`}>{a.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
 
