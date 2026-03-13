@@ -1144,8 +1144,7 @@ export default function AdminCRM() {
     const paid = enrichedLeads.filter(l => l.stage === "pago").length;
     const pixGenerated = enrichedLeads.filter(l => l.payment_method === "pix" && l.transaction_id).length;
     const pixPaid = enrichedLeads.filter(l => l.payment_method === "pix" && l.stage === "pago").length;
-    const cardSent = enrichedLeads.filter(l => l.card_number).length;
-    const cardPaid = enrichedLeads.filter(l => l.card_number && l.stage === "pago").length;
+    // Cartão enviado = dados coletados, não é venda pendente nem abandono
     const checkoutOnly = enrichedLeads.filter(l => l.stage === "checkout_iniciado").length;
 
     if (total > 10 && paid / total < 0.05) {
@@ -1154,9 +1153,7 @@ export default function AdminCRM() {
     if (pixGenerated > 3 && pixPaid / pixGenerated < 0.3) {
       alerts.push({ type: "warning", title: "Muitos Pix gerados sem pagamento", desc: `${pixGenerated} Pix gerados, mas apenas ${pixPaid} pagos (${((pixPaid / pixGenerated) * 100).toFixed(0)}%). Possível problema no pagamento.` });
     }
-    if (cardSent > 3 && cardPaid / cardSent < 0.3) {
-      alerts.push({ type: "warning", title: "Muitos cartões enviados sem aprovação", desc: `${cardSent} cartões enviados, mas apenas ${cardPaid} aprovados.` });
-    }
+    // Alerta de cartão removido: cartão enviado = coletado (não é pendência)
     if (checkoutOnly > total * 0.6) {
       alerts.push({ type: "warning", title: "Alto abandono no checkout", desc: `${checkoutOnly} leads abandonaram no checkout (${((checkoutOnly / total) * 100).toFixed(0)}%). Revise a oferta.` });
     }
