@@ -154,32 +154,26 @@ export default function AdminRastreios() {
   const testWebhook = async () => {
     setTestingWebhook(true);
     try {
-      const params = new URLSearchParams({
-        status: "approved",
-        nome: "Cliente Teste",
-        email: "teste@cliente.com",
-        cep: "01001000",
-        produto: "Produto Teste",
-        source: "vegacheckout",
+      const { data: result, error } = await supabase.functions.invoke("send-trackly-webhook", {
+        body: {
+          nome: "Cliente Teste",
+          email: "teste@cliente.com",
+          cep: "01001000",
+          produto: "Produto Teste",
+          webhook_url: webhookUrl,
+        },
       });
 
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params,
-      });
-
-      const text = await res.text();
+      if (error) throw error;
       console.log("[Trackly] test webhook sent");
 
-      // Log the test
       await supabase.from("tracking_webhook_logs" as any).insert({
         webhook_url: webhookUrl,
-        status: res.ok ? "test_success" : "test_error",
-        response: text.slice(0, 500),
+        status: result.status_http >= 200 && result.status_http < 300 ? "test_success" : "test_error",
+        response: result.response_text?.slice(0, 500),
       } as any);
 
-      if (res.ok) {
+      if (result.status_http >= 200 && result.status_http < 300) {
         toast.success("Webhook enviado com sucesso");
       } else {
         toast.error("Erro ao enviar webhook");
