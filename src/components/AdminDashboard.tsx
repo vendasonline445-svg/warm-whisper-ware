@@ -380,6 +380,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
   }
 
   return (
+    <TooltipProvider delayDuration={200}>
     <div className={`space-y-8 transition-opacity duration-500 ${mounted ? "opacity-100" : "opacity-0"}`}>
       {/* Mode Toggle */}
       <div className="flex items-center justify-between">
