@@ -69,6 +69,9 @@ interface EnrichedLead extends Lead {
   isRecovery: boolean;
   origin: string;
   device: string;
+  campaign: string;
+  adset: string;
+  creative: string;
   events: UserEvent[];
 }
 
