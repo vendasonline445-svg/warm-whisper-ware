@@ -65,44 +65,45 @@
 
   .dark {
     --background: 228 25% 7%;
-    --foreground: 210 20% 98%;
+    --foreground: 0 0% 100%;
     --card: 226 22% 11%;
-    --card-foreground: 210 20% 98%;
+    --card-foreground: 0 0% 100%;
     --popover: 226 22% 11%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 24 100% 50%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 224 100% 65%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 256 100% 65%;
     --secondary: 226 18% 16%;
-    --secondary-foreground: 215 20% 80%;
+    --secondary-foreground: 215 15% 75%;
     --muted: 226 18% 14%;
     --muted-foreground: 215 15% 55%;
-    --accent: 24 100% 50%;
+    --accent: 256 100% 65%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     --border: 226 16% 18%;
     --input: 226 16% 18%;
-    --ring: 24 100% 50%;
+    --ring: 224 100% 65%;
     --cta: 352 72% 60%;
     --cta-foreground: 0 0% 100%;
     --cta-hover: 352 72% 53%;
-    --success: 160 82% 34%;
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     --price: 352 72% 60%;
     --price-old: 0 0% 55%;
-    --badge-green: 160 82% 34%;
+    --badge-green: 142 71% 45%;
     --badge-green-foreground: 0 0% 100%;
-    --coupon-bg: 160 40% 12%;
-    --coupon-border: 160 82% 34%;
-    --coupon-text: 160 82% 50%;
-    --sidebar-background: 228 22% 9%;
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 210 20% 90%;
-    --sidebar-primary-foreground: 228 22% 9%;
+    --coupon-bg: 142 40% 12%;
+    --coupon-border: 142 71% 45%;
+    --coupon-text: 142 71% 50%;
+    --sidebar-background: 228 25% 7%;
+    --sidebar-foreground: 215 15% 75%;
+    --sidebar-primary: 224 100% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 226 18% 14%;
-    --sidebar-accent-foreground: 210 20% 85%;
+    --sidebar-accent-foreground: 215 15% 75%;
     --sidebar-border: 226 16% 18%;
-    --sidebar-ring: 24 100% 50%;
+    --sidebar-ring: 224 100% 65%;
   }
 }
 
