@@ -137,17 +137,19 @@ export default function AdminRastreios() {
   const testWebhook = async () => {
     setTestingWebhook(true);
     try {
-      const payload = {
+      const params = new URLSearchParams({
         status: "approved",
-        customer: { name: "Cliente Teste", email: "teste@cliente.com" },
-        address: { zip_code: "01001000" },
-        products: [{ title: "Produto Teste" }],
-      };
+        nome: "Cliente Teste",
+        email: "teste@cliente.com",
+        cep: "01001000",
+        produto: "Produto Teste",
+        source: "vegacheckout",
+      });
 
       const res = await fetch(webhookUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params,
       });
 
       const text = await res.text();
