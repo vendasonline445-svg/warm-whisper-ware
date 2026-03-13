@@ -99,6 +99,9 @@ export default function Admin() {
   const [imageClicks, setImageClicks] = useState(0);
   const [avgScroll, setAvgScroll] = useState(0);
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
+  const [period, setPeriod] = useState<PeriodKey>("30days");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
