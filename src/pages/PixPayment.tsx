@@ -78,7 +78,7 @@ const PixPayment = () => {
           sessionStorage.removeItem("pixReturnTo");
           setTimeout(() => navigate(getUrlWithUtm("/obrigado-upsell")), 2000);
         } else {
-          setTimeout(() => navigate("/obrigado"), 2000);
+          setTimeout(() => navigate(getUrlWithUtm("/obrigado")), 2000);
         }
       }
     } catch (err) {
