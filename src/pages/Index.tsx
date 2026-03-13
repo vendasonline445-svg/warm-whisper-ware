@@ -275,26 +275,28 @@ const Index = () => {
         </section>
 
         {/* Price Banner */}
-        <section className="bg-gradient-to-r from-primary to-[hsl(25,80%,55%)] px-4 py-2.5 text-primary-foreground">
-          <div className="flex items-center gap-1 mb-1">
-            <Zap className="h-3.5 w-3.5 fill-primary-foreground" />
-            <span className="text-[10px] font-extrabold uppercase tracking-wider opacity-90">Oferta Relâmpago</span>
-          </div>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <span className="text-[10px] font-semibold opacity-80">Termina em:</span>
-            <div className="flex items-center gap-0.5">
-              {[countdown.h, countdown.m, countdown.s].map((v, i) => (
-                <span key={i} className="flex items-center">
-                  {i > 0 && <span className="mx-0.5 text-xs font-bold">:</span>}
-                  <span className="rounded bg-primary-foreground/20 px-1.5 py-0.5 text-xs font-mono font-bold">{fmt(v)}</span>
-                </span>
-              ))}
-            </div>
-          </div>
+        <section className="bg-gradient-to-r from-primary to-[hsl(25,80%,55%)] px-4 py-2.5 text-primary-foreground relative">
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-black leading-none">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
             <span className="text-xs line-through opacity-60">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
             <span className="rounded bg-primary-foreground/25 px-1.5 py-0.5 text-xs font-bold">-{DISCOUNT}%</span>
+          </div>
+          <div className="absolute bottom-2 right-4 text-right">
+            <div className="flex items-center gap-1 justify-end mb-0.5">
+              <Zap className="h-3 w-3 fill-primary-foreground" />
+              <span className="text-[10px] font-extrabold uppercase tracking-wider opacity-90">Oferta Relâmpago</span>
+            </div>
+            <div className="flex items-center gap-1 justify-end">
+              <span className="text-[10px] font-semibold opacity-80">Termina em:</span>
+              <div className="flex items-center gap-0.5">
+                {[countdown.h, countdown.m, countdown.s].map((v, i) => (
+                  <span key={i} className="flex items-center">
+                    {i > 0 && <span className="mx-0.5 text-[10px] font-bold">:</span>}
+                    <span className="rounded bg-primary-foreground/20 px-1 py-0.5 text-[10px] font-mono font-bold">{fmt(v)}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
