@@ -726,46 +726,89 @@ const Index = () => {
         </Button>
       </div>
 
-      {/* Color Selection Modal - Bottom Sheet Style */}
-      <Dialog open={colorModalOpen} onOpenChange={setColorModalOpen}>
-        <DialogContent className="fixed bottom-0 left-0 right-0 top-auto translate-x-0 translate-y-0 sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] max-w-full sm:max-w-md p-0 gap-0 rounded-t-2xl sm:rounded-2xl border-0 sm:border data-[state=open]:slide-in-from-bottom sm:data-[state=open]:slide-in-from-bottom-0 sm:data-[state=open]:slide-in-from-left-1/2">
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            <DialogTitle className="text-lg font-bold">Escolha a cor</DialogTitle>
-            <DialogDescription className="sr-only">Selecione a cor da mesa</DialogDescription>
-          </div>
-          <div className="grid grid-cols-2 gap-3 px-5">
-            {[
-              { id: "branca", name: "Branca", img: colorImages.branca },
-              { id: "preta", name: "Preta", img: colorImages.preta },
-            ].map((color) => (
+      {/* Color Selection Modal - Bottom Sheet */}
+      {colorModalOpen && (
+        <div className="fixed inset-0 z-[60]" onClick={closeColorModal}>
+          <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${colorModalClosing ? 'opacity-0' : 'opacity-100 animate-in fade-in-0'}`} />
+          <div
+            className={`absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl transition-transform duration-300 mx-auto sm:max-w-md ${colorModalClosing ? 'translate-y-full' : 'animate-in slide-in-from-bottom'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+            {/* Close button */}
+            <button
+              onClick={closeColorModal}
+              className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+
+            <div className="px-5 pt-2 pb-3">
+              <p className="text-base font-bold">Selecione as opções</p>
+            </div>
+
+            {/* Product header */}
+            <div className="flex items-center gap-3 px-5 pb-4">
+              <img src="/images/mesa-branca-popup.webp" alt="Mesa Dobrável" className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1" />
+              <div>
+                <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                <p className="text-cta font-extrabold text-lg">R$ {PRICE.toFixed(2).replace('.', ',')}</p>
+                <p className="text-xs text-muted-foreground line-through">R$ {OLD_PRICE.toFixed(2).replace('.', ',')}</p>
+                <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">Economize {DISCOUNT}%</span>
+              </div>
+            </div>
+
+            {/* Color selection */}
+            <div className="px-5 pb-4">
+              <p className="text-sm font-semibold mb-2">Cor: {selectedColor === 'preta' ? 'Preta' : selectedColor === 'branca' ? 'Branca' : 'Selecione'}</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { id: "branca", name: "Branca", img: colorImages.branca },
+                  { id: "preta", name: "Preta", img: colorImages.preta },
+                ].map((color) => (
+                  <button
+                    key={color.id}
+                    onClick={() => setSelectedColor(color.id)}
+                    className={`rounded-2xl border-2 overflow-hidden transition-all relative ${
+                      selectedColor === color.id
+                        ? "border-cta bg-cta/5 shadow-lg"
+                        : "border-border hover:border-cta/50"
+                    }`}
+                  >
+                    {selectedColor === color.id && (
+                      <div className="absolute top-2 right-2 bg-cta rounded-full p-0.5">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                    <div className="aspect-[4/3] bg-muted/30 p-3">
+                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
+                    </div>
+                    <p className="py-2 text-center text-sm font-medium">{color.name}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Confirm button */}
+            <div className="px-5 pb-6">
               <button
-                key={color.id}
-                onClick={() => setSelectedColor(color.id)}
-                className={`rounded-2xl border-2 overflow-hidden transition-all ${
-                  selectedColor === color.id
-                    ? "border-destructive bg-destructive/5 shadow-lg"
-                    : "border-border hover:border-blue-500 hover:bg-blue-50"
+                onClick={handleCheckout}
+                disabled={!selectedColor}
+                className={`w-full font-bold text-base py-4 rounded-2xl transition-all ${
+                  selectedColor
+                    ? 'bg-cta text-white hover:bg-cta-hover'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                <div className="aspect-[4/3] bg-muted/30 p-3">
-                  <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
-                </div>
-                <p className="py-2.5 text-center text-sm font-medium">{color.name}</p>
+                Confirmar - R$ {PRICE.toFixed(2).replace('.', ',')}
               </button>
-            ))}
+            </div>
           </div>
-          <div className="px-5 pt-4 pb-6">
-            <Button
-              onClick={handleCheckout}
-              disabled={!selectedColor}
-              className="w-full bg-muted text-muted-foreground hover:bg-destructive hover:text-destructive-foreground font-bold text-base py-4 h-auto rounded-2xl disabled:opacity-40 transition-colors data-[active=true]:bg-destructive data-[active=true]:text-destructive-foreground"
-              data-active={!!selectedColor}
-            >
-              Comprar agora
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* Image Zoom Modal */}
       <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
