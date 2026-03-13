@@ -105,6 +105,8 @@ function useCountdown() {
 const fmt = (n: number) => String(n).padStart(2, "0");
 
 const Index = () => {
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
   const [currentImage, setCurrentImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("180x60cm");
   const [colorModalOpen, setColorModalOpen] = useState(false);
