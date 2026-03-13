@@ -393,6 +393,26 @@ export default function AdminRastreios() {
                 {sendingManual ? "Enviando..." : "Enviar teste"}
               </button>
             </div>
+
+            {/* Debug Result Panel */}
+            {debugResult && (
+              <div className="border-t pt-6 mt-6">
+                <h3 className="text-md font-bold mb-3">Resultado do Webhook</h3>
+                <div className="bg-muted rounded-lg p-4 space-y-2 font-mono text-xs">
+                  <div><span className="font-semibold text-foreground">URL:</span> <span className="break-all">{debugResult.webhook_url}</span></div>
+                  <div>
+                    <span className="font-semibold text-foreground">HTTP Status:</span>{" "}
+                    <span className={debugResult.status_http >= 200 && debugResult.status_http < 300 ? "text-green-600" : "text-red-600"}>
+                      {debugResult.status_http || "Erro de conexão"}
+                    </span>
+                  </div>
+                  <div><span className="font-semibold text-foreground">Payload enviado:</span></div>
+                  <pre className="bg-background border rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">{decodeURIComponent(debugResult.payload_enviado)}</pre>
+                  <div><span className="font-semibold text-foreground">Resposta da API:</span></div>
+                  <pre className="bg-background border rounded p-2 overflow-x-auto whitespace-pre-wrap break-all max-h-40">{debugResult.response_text || "(vazio)"}</pre>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
