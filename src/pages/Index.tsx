@@ -124,11 +124,7 @@ const Index = () => {
   const [chatMessages, setChatMessages] = useState<{role: 'bot' | 'user', text: string}[]>([
     { role: 'bot', text: 'Olá! Como posso te ajudar com informações sobre a Mesa Dobrável Mesalar?' }
   ]);
-
-  const closeStore = () => {
-    setStoreClosing(true);
-    setTimeout(() => { setStoreOpen(false); setStoreClosing(false); }, 300);
-  };
+  const [chatTyping, setChatTyping] = useState(false);
 
   const closeChat = () => {
     setChatClosing(true);
@@ -136,7 +132,13 @@ const Index = () => {
   };
 
   const handleQuickQuestion = (faq: { q: string; a: string }) => {
-    setChatMessages(prev => [...prev, { role: 'user', text: faq.q }, { role: 'bot', text: faq.a }]);
+    setChatMessages(prev => [...prev, { role: 'user', text: faq.q }]);
+    setChatTyping(true);
+    const delay = 1200 + Math.random() * 1800; // 1.2s - 3s
+    setTimeout(() => {
+      setChatTyping(false);
+      setChatMessages(prev => [...prev, { role: 'bot', text: faq.a }]);
+    }, delay);
   };
   const countdown = useCountdown();
 
