@@ -205,6 +205,7 @@ export default function AdminCRM() {
 
     setLeads((leadsRes.data as Lead[]) || []);
     setEvents((eventsRes.data as UserEvent[]) || []);
+    setPageViewCount((pageViewsRes.data || []).length);
     setLoading(false);
   }, [filters.period]);
 
