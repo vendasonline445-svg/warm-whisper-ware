@@ -84,6 +84,15 @@ window.onerror = function (message, source, lineno, colno, error) {
     return true;
   }
 
+  // Generic "Script error." = cross-origin external script
+  if (GENERIC_CROSS_ORIGIN.includes(msg.toLowerCase().trim())) {
+    logAutocorrection("cross_origin_ignored", msg);
+    if (!isDuplicate(dedupKey)) {
+      trackEvent("js_error", { message: "Script externo bloqueado", source: src || "cross-origin", autocorrected: "cross_origin" });
+    }
+    return true;
+  }
+
   // Skip if blocker
   if (isBlockerError(msg)) {
     logAutocorrection("blocker_ignored", msg);
