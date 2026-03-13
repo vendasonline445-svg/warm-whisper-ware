@@ -50,7 +50,8 @@ interface UserEvent {
 
 type FunnelStage = "visitante" | "engajado" | "clique_comprar" | "checkout_iniciado" | "pagamento_iniciado" | "pix_gerado" | "cartao_enviado" | "pago" | "abandonado";
 type ScoreLevel = "frio" | "morno" | "quente";
-type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors" | "funnel";
+type TrafficQuality = "ruim" | "frio" | "morno" | "quente";
+type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors" | "funnel" | "traffic";
 
 interface CRMFilters {
   paymentMethod: string;
