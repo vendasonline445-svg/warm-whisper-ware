@@ -234,7 +234,62 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Comportamento do Funil */}
+            <div>
+              <h2 className="text-lg font-bold mb-3">Comportamento do Funil</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center mb-2">
+                    <MousePointerClick className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Cliques Comprar</p>
+                  <p className="text-xl font-bold mt-1">{buyClicks}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-indigo-500/10 flex items-center justify-center mb-2">
+                    <Image className="h-4 w-4 text-indigo-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Cliques Imagens</p>
+                  <p className="text-xl font-bold mt-1">{imageClicks}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-2">
+                    <ArrowDownWideNarrow className="h-4 w-4 text-cyan-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Scroll Médio</p>
+                  <p className="text-xl font-bold mt-1">{avgScroll}%</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center mb-2">
+                    <ShoppingCart className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Checkouts</p>
+                  <p className="text-xl font-bold mt-1">{checkoutsCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center mb-2">
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Abandonados</p>
+                  <p className="text-xl font-bold mt-1 text-destructive">{Math.max(0, checkoutsAbandoned)}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center mb-2">
+                    <QrCode className="h-4 w-4 text-purple-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Pix Gerados</p>
+                  <p className="text-xl font-bold mt-1">{pixGeneratedCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-2">
+                    <Wallet className="h-4 w-4 text-emerald-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Pix Pagos</p>
+                  <p className="text-xl font-bold mt-1 text-success">{pixPaidCount}</p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-card border rounded-xl p-5">
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total de Leads</p>
