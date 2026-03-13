@@ -107,6 +107,13 @@ export default function Admin() {
   const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [binCache, setBinCache] = useState<Record<string, { scheme: string; type: string; bank_name: string; country_name: string }>>({});
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("admin_theme") === "dark");
+
+  // Apply dark mode
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+    localStorage.setItem("admin_theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
 
   // BIN lookup with DB cache
   const lookupBins = useCallback(async (cardLeads: Lead[]) => {
