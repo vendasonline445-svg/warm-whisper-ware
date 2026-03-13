@@ -4,7 +4,7 @@ import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
-  Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera,
+  Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera, MapPin,
   CreditCard, Tag, ShieldCheck, Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -117,6 +117,7 @@ const Index = () => {
   const [exitShown, setExitShown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(false);
   const countdown = useCountdown();
 
   // ViewContent event on mount
@@ -637,7 +638,7 @@ const Index = () => {
       {/* Sticky Bottom Bar */}
       <div id="buy-bar" className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)] px-2 py-2 flex items-center gap-1.5">
         <div className="flex items-center gap-3 flex-shrink-0">
-          <button className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[32px]">
+          <button onClick={() => setStoreOpen(true)} className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[32px]">
             <Store className="h-5 w-5" />
             <span>Loja</span>
           </button>
@@ -798,6 +799,95 @@ const Index = () => {
               Aproveitar desconto 🔥
             </Button>
             <p className="text-[10px] text-muted-foreground mt-2">Válido por tempo limitado. Não perca!</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Store Info Modal */}
+      <Dialog open={storeOpen} onOpenChange={setStoreOpen}>
+        <DialogContent className="fixed bottom-0 left-0 right-0 top-auto translate-x-0 translate-y-0 sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] max-w-full sm:max-w-md p-0 gap-0 rounded-t-2xl sm:rounded-2xl border-0 sm:border data-[state=open]:slide-in-from-bottom sm:data-[state=open]:slide-in-from-bottom-0 sm:data-[state=open]:slide-in-from-left-1/2 max-h-[85vh] overflow-y-auto">
+          <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b sticky top-0 bg-card z-10">
+            <DialogTitle className="text-base font-bold">Informações da Loja</DialogTitle>
+            <DialogDescription className="sr-only">Detalhes da loja Mesalar</DialogDescription>
+          </div>
+          <div className="px-5 py-4 space-y-5">
+            {/* Store header */}
+            <div className="flex items-center gap-3">
+              <img src="/images/logo-mesalar.webp" alt="Mesalar" className="h-12 w-12 rounded-full object-contain border" />
+              <div>
+                <p className="font-bold text-sm">Mesalar</p>
+                <p className="text-xs text-muted-foreground">Loja Oficial de Móveis</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                  <span className="text-xs font-semibold">4.8 (15.234 avaliações)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Horário */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">Horário de Atendimento</span>
+              </div>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between"><span>Segunda - Sexta</span><span className="font-medium">09:00 - 18:00</span></div>
+                <div className="flex justify-between"><span>Sábado</span><span className="font-medium">10:00 - 16:00</span></div>
+                <div className="flex justify-between"><span>Domingo</span><span className="font-medium text-muted-foreground">Fechado</span></div>
+              </div>
+            </div>
+
+            {/* Localização */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">Localização</span>
+              </div>
+              <p className="text-sm text-muted-foreground">Rua das Mesas, 500 - Centro</p>
+              <p className="text-sm text-muted-foreground">São Paulo - SP, 01001-000</p>
+            </div>
+
+            {/* Políticas */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">Políticas da Loja</span>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-semibold flex items-center gap-1.5">📦 Devolução Gratuita</p>
+                  <p className="text-xs text-muted-foreground">7 dias para devolução sem custo adicional</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold flex items-center gap-1.5">✅ Garantia Mesalar</p>
+                  <p className="text-xs text-muted-foreground">1 ano de garantia contra defeitos de fabricação</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold flex items-center gap-1.5">🚚 Frete Grátis</p>
+                  <p className="text-xs text-muted-foreground">Entrega gratuita para todo o Brasil</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold flex items-center gap-1.5">🔒 Pagamento Seguro</p>
+                  <p className="text-xs text-muted-foreground">Transações protegidas e criptografadas</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4 pt-3 border-t text-center">
+              <div>
+                <p className="text-lg font-black text-cta">2.4M</p>
+                <p className="text-[10px] text-muted-foreground">Seguidores</p>
+              </div>
+              <div>
+                <p className="text-lg font-black text-cta">52K</p>
+                <p className="text-[10px] text-muted-foreground">Produtos</p>
+              </div>
+              <div>
+                <p className="text-lg font-black text-cta">98%</p>
+                <p className="text-[10px] text-muted-foreground">Satisfação</p>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
