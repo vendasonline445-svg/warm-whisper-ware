@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 
-const ADMIN_PASSWORD = "123456";
+const ADMIN_PASSWORD = "12345";
 
 interface Pixel {
   id: string;
