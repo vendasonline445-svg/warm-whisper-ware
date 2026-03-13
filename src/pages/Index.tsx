@@ -1273,7 +1273,7 @@ const Index = () => {
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                Aproveitar desconto 🔥 - R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}
+                Aproveitar desconto 🔥 - R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.75).toFixed(2).replace('.', ',')}
               </button>
               <p className="text-[10px] text-muted-foreground mt-2 text-center">Válido por tempo limitado. Não perca!</p>
             </div>
