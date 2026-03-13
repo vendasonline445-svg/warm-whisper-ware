@@ -286,7 +286,10 @@ const Index = () => {
           </div>
 
           {/* Title */}
-          <h1 className="mt-4 text-base font-bold leading-snug text-foreground">
+          <h1
+            className="mt-4 text-base font-bold leading-snug text-foreground cursor-pointer active:opacity-70"
+            onClick={() => document.getElementById("buy-bar")?.scrollIntoView({ behavior: "smooth" })}
+          >
             Mesa Dobrável Tipo Maleta Prática e Durável 180x60cm — Portátil, Resistente, Fácil de Montar e Guardar
           </h1>
 
