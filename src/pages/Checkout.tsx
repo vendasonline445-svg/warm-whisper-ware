@@ -494,7 +494,7 @@ const Checkout = () => {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-muted-foreground line-through">R$ {sp.oldPrice.toFixed(2).replace(".", ",")}</span>
-                    <span className="text-[10px] font-bold text-white px-1.5 py-0.5 rounded-md" style={{ backgroundColor: '#ffa5b6' }}>-{sp.discount}%</span>
+                    <span className="text-[10px] font-semibold px-1 py-px rounded" style={{ backgroundColor: '#ffa5b6', color: '#fe2b54' }}>-{sp.discount}%</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-0 border rounded-lg h-9 bg-muted/30">
