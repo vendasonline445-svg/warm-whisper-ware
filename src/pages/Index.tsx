@@ -15,10 +15,14 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const PRODUCT_ID = "mesa-dobravel-180x60";
-const PRICE = 87.60;
-const OLD_PRICE = 199.90;
-const DISCOUNT = 56;
+const PRODUCT_ID = "mesa-dobravel";
+
+const SIZE_PRICES: Record<string, { price: number; oldPrice: number; discount: number }> = {
+  "120x60cm": { price: 69.90, oldPrice: 159.90, discount: 56 },
+  "150x60cm": { price: 79.90, oldPrice: 179.90, discount: 55 },
+  "180x60cm": { price: 87.60, oldPrice: 199.90, discount: 56 },
+  "240x60cm": { price: 109.90, oldPrice: 249.90, discount: 56 },
+};
 
 const productImages = [
   "/images/mesa-branca-principal.webp",
