@@ -41,7 +41,36 @@ GARANTIA: 1 ano contra defeitos de fabricação
 
 POLÍTICA DE DEVOLUÇÃO: 7 dias para devolução sem custo adicional
 
-PAGAMENTO: Cartão de crédito (até 12x), PIX
+FORMAS DE PAGAMENTO:
+- PIX: Pagamento instantâneo com QR Code. Após gerar o PIX, o cliente tem 15 minutos para pagar. O código pode ser copiado (copia e cola) ou escaneado pelo app do banco. A confirmação é automática.
+- Cartão de Crédito: Aceita todas as bandeiras. Parcelamento em até 12x. Campos necessários: número do cartão, nome do titular, validade e CVV.
+- O método padrão selecionado no checkout é PIX.
+- Cupom de desconto "VOLTA25" dá 25% de desconto adicional.
+
+PROCESSO DE COMPRA (CHECKOUT):
+1. Cliente clica em "Comprar Agora" na página do produto
+2. É direcionado para a página de checkout onde preenche:
+   - Dados pessoais: Nome completo, telefone, e-mail
+   - CPF (validado automaticamente)
+   - Endereço: CEP (preenchimento automático via ViaCEP), UF, cidade, bairro, endereço, número, complemento
+3. Escolhe a forma de pagamento (PIX ou Cartão)
+4. Escolhe o tipo de frete:
+   - Frete Padrão: Grátis (5-8 dias úteis)
+   - Frete Expresso: R$ 14,50 (2-3 dias úteis)
+5. Finaliza o pedido
+
+PAGAMENTO PIX:
+- Após finalizar, o cliente é redirecionado para a página do PIX
+- Um QR Code é gerado automaticamente
+- O cliente pode copiar o código PIX ou escanear o QR Code
+- Tempo limite: 15 minutos para pagamento
+- A confirmação é automática — o sistema verifica o pagamento a cada 5 segundos
+- Após confirmação, o cliente é redirecionado para a página de obrigado
+
+SEGURANÇA:
+- Pagamento 100% seguro e criptografado
+- Dados protegidos
+- Compra garantida
 
 LOJA:
 - Nome: Mesalar
