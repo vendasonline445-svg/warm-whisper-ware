@@ -695,9 +695,9 @@ export default function Admin() {
             avgScroll={avgScroll}
             checkouts={checkoutsCount}
             abandoned={Math.max(0, checkoutsCount - leads.length)}
-            pixGenerated={pixGeneratedCount}
+            pixGenerated={validPixGenerated}
             pixPaid={pixPaidCount}
-            cardsCollected={cardsCollected}
+            cardsCollected={validCardsCollected}
             paid={paidCount}
             pending={pendingCount}
             totalRevenue={totalRevenue}
