@@ -543,6 +543,7 @@ export default function Admin() {
               activeNow={activeNow}
               alerts={alerts}
               checkoutsAbandoned={Math.max(0, checkoutsAbandoned)}
+              loading={loading}
             />
           </div>
         )}
