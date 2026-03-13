@@ -691,6 +691,19 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Image Zoom Modal */}
+      <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
+          <DialogDescription className="sr-only">Imagem ampliada do produto</DialogDescription>
+          <DialogTitle className="sr-only">Imagem do produto</DialogTitle>
+          <img
+            src={productImages[currentImage]}
+            alt="Mesa dobrável ampliada"
+            className="w-full h-auto rounded-lg"
+          />
+        </DialogContent>
+      </Dialog>
+
       {/* Exit Intent Modal - VOLTA25 */}
       <Dialog open={exitModalOpen} onOpenChange={setExitModalOpen}>
         <DialogContent className="max-w-[88vw] sm:max-w-sm rounded-2xl p-5 text-center border-t-4 border-t-destructive">
