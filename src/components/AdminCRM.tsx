@@ -1201,7 +1201,7 @@ export default function AdminCRM() {
               </h3>
 
               {/* Funnel Filters */}
-              <div className="bg-card border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-card border rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 <div>
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Dispositivo</label>
                   <select value={funnelDevice} onChange={e => setFunnelDevice(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
