@@ -177,6 +177,7 @@ const EVENT_LABELS: Record<string, { label: string; icon: any; color: string }> 
 export default function AdminCRM() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [events, setEvents] = useState<UserEvent[]>([]);
+  const [pageViewCount, setPageViewCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<EnrichedLead | null>(null);
   const [subTab, setSubTab] = useState<CRMSubTab>("pipeline");
