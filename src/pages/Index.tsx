@@ -111,6 +111,18 @@ function useCountdown() {
 
 const fmt = (n: number) => String(n).padStart(2, "0");
 
+function getSectionAtScroll(scrollTop: number): string {
+  const docHeight = document.documentElement.scrollHeight;
+  const pct = (scrollTop / docHeight) * 100;
+  if (pct < 10) return "hero";
+  if (pct < 25) return "galeria";
+  if (pct < 40) return "detalhes";
+  if (pct < 55) return "descricao";
+  if (pct < 70) return "avaliacoes";
+  if (pct < 85) return "faq";
+  return "rodape";
+}
+
 const Index = () => {
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
