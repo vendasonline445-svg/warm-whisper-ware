@@ -124,12 +124,22 @@ export async function identifyTikTokUser(data: {
   if (!ttq) return;
 
   const identifyData: Record<string, string> = {};
-  if (data.email && data.email.trim()) identifyData.email = data.email.trim().toLowerCase();
-  if (data.phone && data.phone.trim()) identifyData.phone_number = normalizePhone(data.phone);
+
+  // Hash email with SHA256 (TikTok SDK accepts pre-hashed values)
+  if (data.email && data.email.trim()) {
+    identifyData.email = await sha256(data.email.trim().toLowerCase());
+  }
+
+  // Hash phone with SHA256 (normalize to E.164 digits first)
+  if (data.phone && data.phone.trim()) {
+    const normalized = normalizePhone(data.phone).replace("+", "");
+    identifyData.phone_number = await sha256(normalized);
+  }
+
+  // external_id — NOT hashed (per spec)
   if (data.externalId && data.externalId.trim()) {
-    // If it's a CPF (only digits), strip non-digits. Otherwise keep as-is (visitor_id)
-    const cleaned = /^\d[\d.\-/]*$/.test(data.externalId.trim()) 
-      ? data.externalId.replace(/\D/g, "") 
+    const cleaned = /^\d[\d.\-/]*$/.test(data.externalId.trim())
+      ? data.externalId.replace(/\D/g, "")
       : data.externalId.trim();
     identifyData.external_id = cleaned;
   }
@@ -140,7 +150,7 @@ export async function identifyTikTokUser(data: {
       const instance = ttq.instance(px.pixel_id);
       if (instance) {
         instance.identify(identifyData);
-        console.log(`${DEBUG} identify() on pixel ${px.pixel_id}`);
+        console.log(`${DEBUG} identify() on pixel ${px.pixel_id} (hashed)`);
       }
     } catch (e) {
       console.warn(`${DEBUG} identify error for ${px.pixel_id}:`, e);
