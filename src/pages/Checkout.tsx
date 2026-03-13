@@ -549,7 +549,10 @@ const Checkout = () => {
         {/* Discount */}
         <div className="mt-4 flex items-center justify-between py-3 border-t">
           <span className="text-sm flex items-center gap-2">
-            <span className="text-base">🏷</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 7C2 5.9 2.9 5 4 5H20C21.1 5 22 5.9 22 7V9C20.9 9 20 9.9 20 11C20 12.1 20.9 13 22 13V15C22 16.1 21.1 17 20 17H4C2.9 17 2 16.1 2 15V13C3.1 13 4 12.1 4 11C4 9.9 3.1 9 2 9V7Z" stroke="#fe2b54" strokeWidth="1.5" fill="none"/>
+              <path d="M9 11.5L11 13.5L15 9.5" stroke="#fe2b54" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
             Desconto especial
           </span>
           <span className="flex items-center gap-1.5">
