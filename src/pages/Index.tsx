@@ -369,7 +369,7 @@ const Index = () => {
 
   const handleBuyNow = () => {
     if (cartItems.length > 0) {
-      nav(`/checkout`);
+      nav(getUrlWithUtm(`/checkout`));
     } else {
       openColorModal('buy');
     }
