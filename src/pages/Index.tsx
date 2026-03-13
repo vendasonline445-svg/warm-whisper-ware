@@ -1447,7 +1447,7 @@ const Index = () => {
                 {/* Total */}
                 <div className="flex justify-between items-center py-3 border-b">
                   <span className="text-sm font-semibold">Total</span>
-                  <span className="text-lg font-extrabold text-cta">R$ {(PRICE * cartItem.quantity).toFixed(2).replace('.', ',')}</span>
+                  <span className="text-lg font-extrabold text-cta">R$ {((SIZE_PRICES[cartItem.size]?.price || PRICE) * cartItem.quantity).toFixed(2).replace('.', ',')}</span>
                 </div>
 
                 {/* Checkout button */}
