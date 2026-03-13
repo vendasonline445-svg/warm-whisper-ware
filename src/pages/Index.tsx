@@ -219,7 +219,7 @@ const Index = () => {
       <div className="mx-auto max-w-[480px]">
         {/* Product Gallery */}
         <section className="bg-card">
-          <div className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card">
+          <div className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-pointer" onClick={openColorModal}>
             <img
               src={productImages[currentImage]}
               alt="Mesa dobrável"
