@@ -196,9 +196,10 @@ export default function AdminCRM() {
     const days = daysMap[filters.period] ?? 30;
     const since = new Date(Date.now() - days * 86400000).toISOString();
 
-    const [leadsRes, eventsRes] = await Promise.all([
+    const [leadsRes, eventsRes, pageViewsRes] = await Promise.all([
       supabase.from("checkout_leads").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
-      supabase.from("user_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(1000),
+      supabase.from("user_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(2000),
+      supabase.from("page_views").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(2000),
     ]);
 
     setLeads((leadsRes.data as Lead[]) || []);

@@ -279,6 +279,7 @@ const Index = () => {
       },
     });
     supabase.from("page_views").insert({ page: "/" }).then(() => {});
+    trackEvent("page_view", { page: "/" });
 
     let maxScroll = 0;
     const handleScroll = () => {
