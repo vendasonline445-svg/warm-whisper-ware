@@ -275,7 +275,7 @@ export default function Admin() {
       // Conversion drop: compare last 24h leads vs visitors
       const allLeads = (leadsRes.data as Lead[]) || [];
       const recentPaid = allLeads.filter(l => l.status === "paid" && new Date(l.created_at) >= new Date(oneDayAgo)).length;
-      const totalVisitors = visitorsRes.count || 0;
+      const totalVisitors = dedupedVisitors;
       const currentConv = totalVisitors > 0 ? (recentPaid / totalVisitors) * 100 : 0;
       if (totalVisitors > 20 && currentConv < 1) {
         newAlerts.push({
