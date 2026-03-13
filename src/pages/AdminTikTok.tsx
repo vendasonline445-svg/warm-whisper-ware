@@ -34,6 +34,7 @@ const AdminTikTok = () => {
 
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem("admin_auth", "true");
       setAuthed(true);
     } else {
       toast({ title: "Senha incorreta", variant: "destructive" });

@@ -134,6 +134,7 @@ export default function AdminRastreios() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem("admin_auth", "true");
       setAuthenticated(true);
     } else {
       alert("Senha incorreta");

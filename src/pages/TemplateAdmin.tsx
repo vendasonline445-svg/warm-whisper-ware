@@ -55,6 +55,7 @@ export default function TemplateAdmin() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem("admin_auth", "true");
       setAuthenticated(true);
       setError("");
     } else {
