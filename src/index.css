@@ -64,45 +64,45 @@
   }
 
   .dark {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 13%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 13%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13%;
+    --background: 222 20% 10%;
+    --foreground: 210 20% 90%;
+    --card: 222 18% 14%;
+    --card-foreground: 210 20% 90%;
+    --popover: 222 18% 14%;
+    --popover-foreground: 210 20% 90%;
     --primary: 24 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 13%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --secondary: 222 14% 20%;
+    --secondary-foreground: 210 20% 85%;
+    --muted: 222 14% 18%;
+    --muted-foreground: 215 15% 55%;
     --accent: 24 100% 50%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    --border: 222 14% 22%;
+    --input: 222 14% 22%;
     --ring: 24 100% 50%;
-    --cta: 0 72% 51%;
+    --cta: 352 72% 60%;
     --cta-foreground: 0 0% 100%;
-    --cta-hover: 0 72% 44%;
-    --success: 152 60% 40%;
+    --cta-hover: 352 72% 53%;
+    --success: 160 82% 34%;
     --success-foreground: 0 0% 100%;
-    --price: 0 72% 51%;
+    --price: 352 72% 60%;
     --price-old: 0 0% 55%;
-    --badge-green: 152 60% 40%;
+    --badge-green: 160 82% 34%;
     --badge-green-foreground: 0 0% 100%;
-    --coupon-bg: 0 60% 95%;
-    --coupon-border: 0 72% 65%;
-    --coupon-text: 0 72% 51%;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --coupon-bg: 160 40% 12%;
+    --coupon-border: 160 82% 34%;
+    --coupon-text: 160 82% 50%;
+    --sidebar-background: 222 18% 12%;
+    --sidebar-foreground: 210 20% 85%;
+    --sidebar-primary: 210 20% 90%;
+    --sidebar-primary-foreground: 222 18% 12%;
+    --sidebar-accent: 222 14% 18%;
+    --sidebar-accent-foreground: 210 20% 85%;
+    --sidebar-border: 222 14% 22%;
+    --sidebar-ring: 24 100% 50%;
   }
 }
 

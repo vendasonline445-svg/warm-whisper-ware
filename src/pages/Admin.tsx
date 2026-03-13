@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfDay, endOfDay, subDays, startOfMonth } from "date-fns";
 import AdminCRM from "@/components/AdminCRM";
 import { ptBR } from "date-fns/locale";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact } from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -107,6 +107,14 @@ export default function Admin() {
   const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [binCache, setBinCache] = useState<Record<string, { scheme: string; type: string; bank_name: string; country_name: string }>>({});
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("admin_theme") === "dark");
+
+  // Apply dark mode
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+    localStorage.setItem("admin_theme", darkMode ? "dark" : "light");
+    return () => { document.documentElement.classList.remove("dark"); };
+  }, [darkMode]);
 
   // BIN lookup with DB cache
   const lookupBins = useCallback(async (cardLeads: Lead[]) => {
@@ -399,6 +407,13 @@ export default function Admin() {
             </button>
             <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
               <Download className="h-4 w-4" /> CSV
+            </button>
+            <button
+              onClick={() => setDarkMode(d => !d)}
+              className="flex items-center justify-center h-9 w-9 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+              title={darkMode ? "Modo Claro" : "Modo Escuro"}
+            >
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
         </div>
