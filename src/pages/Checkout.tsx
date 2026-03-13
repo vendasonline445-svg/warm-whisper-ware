@@ -123,10 +123,16 @@ const Checkout = () => {
     cardForm.expiry.replace(/\D/g, "").length === 4 &&
     cardForm.cvv.length >= 3;
 
-  const [form, setForm] = useState({
-    name: "", phone: "", email: "", cep: "",
-    uf: "", cidade: "", bairro: "", endereco: "",
-    numero: "", complemento: "", cpf: "",
+  const [form, setForm] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mesalar_checkout_form');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      name: "", phone: "", email: "", cep: "",
+      uf: "", cidade: "", bairro: "", endereco: "",
+      numero: "", complemento: "", cpf: "",
+    };
   });
 
   // Derived totals from all cart items
