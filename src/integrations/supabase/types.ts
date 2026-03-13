@@ -157,6 +157,24 @@ export type Database = {
           },
         ]
       }
+      page_views: {
+        Row: {
+          created_at: string
+          id: string
+          page: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          page?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          page?: string
+        }
+        Relationships: []
+      }
       tiktok_pixels: {
         Row: {
           api_token: string

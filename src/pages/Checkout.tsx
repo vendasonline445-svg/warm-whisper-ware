@@ -77,7 +77,7 @@ const Checkout = () => {
     }
   };
 
-  // InitiateCheckout event on mount
+  // InitiateCheckout event on mount + track page view
   useEffect(() => {
     window.scrollTo({ top: 0 });
     trackTikTokEvent({
@@ -90,6 +90,7 @@ const Checkout = () => {
         contents: cartItems.map(i => ({ content_id: `mesa-dobravel-${i.color}-${i.size}`, quantity: i.quantity })),
       },
     });
+    supabase.from("page_views").insert({ page: "/checkout" }).then(() => {});
   }, []);
 
   const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
