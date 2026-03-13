@@ -191,6 +191,10 @@ export default function AdminCRM() {
     device: "all",
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [eventDrivenMetrics, setEventDrivenMetrics] = useState<{
+    visitors: number; checkouts: number; pixGenerated: number; purchases: number; revenue: number;
+    funnelStages: { visitor_id: string; stage: string; updated_at: string }[];
+  }>({ visitors: 0, checkouts: 0, pixGenerated: 0, purchases: 0, revenue: 0, funnelStages: [] });
 
   // Helper for new tables not yet in generated types
   const db = supabase as any;
