@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfDay, endOfDay, subDays, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon } from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -637,6 +637,33 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
+
+              {/* Checklist colapsável */}
+              <details className="mt-3 bg-card border rounded-xl overflow-hidden">
+                <summary className="px-4 py-3 cursor-pointer flex items-center justify-between text-sm font-semibold select-none hover:bg-muted/50 transition-colors">
+                  <span>Monitoramento em tempo real — O que está sendo analisado</span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [details[open]>&]:rotate-180" />
+                </summary>
+                <div className="px-4 pb-4 pt-1 space-y-2 border-t">
+                  {[
+                    { label: "Pagamentos recusados > 5 na última hora", ok: (alerts.find(a => a.id === "declined") === undefined) },
+                    { label: "Taxa de conversão dentro do esperado", ok: (alerts.find(a => a.id === "conversion") === undefined) },
+                    { label: "Webhook Trackly sem erros (24h)", ok: (alerts.find(a => a.id === "webhook") === undefined) },
+                    { label: "Nenhum erro JavaScript no site (24h)", ok: (alerts.find(a => a.id === "jserror") === undefined) },
+                    { label: "Pixel TikTok disparando eventos (1h)", ok: (alerts.find(a => a.id === "pixel") === undefined) },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-2.5">
+                      <div className={`h-5 w-5 rounded flex items-center justify-center flex-shrink-0 ${item.ok ? "bg-emerald-500/10" : "bg-destructive/10"}`}>
+                        {item.ok
+                          ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          : <XCircle className="h-3.5 w-3.5 text-destructive" />
+                        }
+                      </div>
+                      <span className={`text-xs ${item.ok ? "text-muted-foreground" : "text-foreground font-medium"}`}>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
             </div>
 
             {/* Recent summary */}
