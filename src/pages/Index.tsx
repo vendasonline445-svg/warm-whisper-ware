@@ -117,6 +117,7 @@ const Index = () => {
   const [exitShown, setExitShown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(false);
   const countdown = useCountdown();
 
   // ViewContent event on mount
