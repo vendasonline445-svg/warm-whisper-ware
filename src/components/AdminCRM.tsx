@@ -69,6 +69,9 @@ interface EnrichedLead extends Lead {
   isRecovery: boolean;
   origin: string;
   device: string;
+  campaign: string;
+  adset: string;
+  creative: string;
   events: UserEvent[];
 }
 
@@ -216,15 +219,22 @@ export default function AdminCRM() {
       const isRecovery = stage !== "pago" && !!hasPaymentAttempt;
       const origin = getOrigin(l);
       const device = getDevice(l);
+      const meta = l.metadata || {};
+      const campaign = String(meta.utm_campaign || meta.tracking?.utm_campaign || "—");
+      const adset = String(meta.utm_adset || meta.tracking?.utm_adset || "—");
+      const creative = String(meta.utm_content || meta.tracking?.utm_content || "—");
 
-      // Match events to this lead by email or time proximity
+      // Match events to this lead by email or visitor_id
       const leadEvents = events.filter(e => {
         const ed = e.event_data;
-        if (ed && typeof ed === "object" && "email" in ed && ed.email === l.email) return true;
+        if (ed && typeof ed === "object") {
+          if ("email" in ed && ed.email === l.email) return true;
+          if ("visitor_id" in ed && meta.visitor_id && ed.visitor_id === meta.visitor_id) return true;
+        }
         return false;
       });
 
-      return { ...l, stage, score, level, isRecovery, origin, device, events: leadEvents } as EnrichedLead;
+      return { ...l, stage, score, level, isRecovery, origin, device, campaign, adset, creative, events: leadEvents } as EnrichedLead;
     });
   }, [leads, events]);
 
@@ -840,6 +850,8 @@ export default function AdminCRM() {
             <span className="text-[9px] text-muted-foreground">{l.origin}</span>
             <span className="text-[9px] text-muted-foreground">· {l.device}</span>
             <span className="text-[9px] text-muted-foreground">· {l.payment_method === "pix" ? "Pix" : "Cartão"}</span>
+            {l.campaign !== "—" && <span className="text-[9px] text-blue-500">· {l.campaign}</span>}
+            {l.creative !== "—" && <span className="text-[9px] text-purple-500">· {l.creative}</span>}
           </div>
         </div>
       </div>
@@ -1565,6 +1577,9 @@ export default function AdminCRM() {
                   ["Qtd", String(selectedLead.quantity || 1)],
                   ["CPF", selectedLead.cpf || "—"],
                   ["Origem", selectedLead.origin],
+                  ["Campanha", selectedLead.campaign],
+                  ["Adset", selectedLead.adset],
+                  ["Criativo", selectedLead.creative],
                   ["Dispositivo", selectedLead.device],
                   ["Status", selectedLead.status || "pending"],
                   ["Transaction ID", selectedLead.transaction_id || "—"],
