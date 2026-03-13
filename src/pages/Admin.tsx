@@ -453,6 +453,48 @@ export default function Admin() {
               </div>
             </div>
 
+            {/* Alertas do Sistema */}
+            <div>
+              <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" /> Alertas do Sistema
+                {alerts.filter(a => a.type === "critical").length > 0 && (
+                  <span className="bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {alerts.filter(a => a.type === "critical").length}
+                  </span>
+                )}
+              </h2>
+              <div className="space-y-2">
+                {alerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className={`flex items-start gap-3 border rounded-xl p-4 ${
+                      alert.type === "critical"
+                        ? "bg-destructive/5 border-destructive/30"
+                        : alert.type === "warning"
+                        ? "bg-amber-500/5 border-amber-500/30"
+                        : "bg-emerald-500/5 border-emerald-500/30"
+                    }`}
+                  >
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      alert.type === "critical"
+                        ? "bg-destructive/10 text-destructive"
+                        : alert.type === "warning"
+                        ? "bg-amber-500/10 text-amber-500"
+                        : "bg-emerald-500/10 text-emerald-500"
+                    }`}>
+                      {alert.icon}
+                    </div>
+                    <div>
+                      <p className={`text-sm font-semibold ${
+                        alert.type === "critical" ? "text-destructive" : alert.type === "warning" ? "text-amber-600" : "text-emerald-600"
+                      }`}>{alert.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{alert.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Recent summary */}
             <div>
               <h2 className="text-lg font-bold mb-3">Resumo recente</h2>
