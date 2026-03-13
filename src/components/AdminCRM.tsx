@@ -748,45 +748,6 @@ export default function AdminCRM() {
     return insights;
   }, [heatmapData]);
 
-  // ── Radar: Session Insights ──
-  const radarSessionInsights = useMemo(() => {
-    const insights: { icon: string; text: string }[] = [];
-    if (visitorSessions.length > 5) {
-      const shortSessions = visitorSessions.filter(s => s.duration < 3).length;
-      const shortPct = (shortSessions / visitorSessions.length) * 100;
-      if (shortPct > 40) {
-        insights.push({ icon: "⚡", text: `${shortPct.toFixed(0)}% dos visitantes saem em menos de 3 segundos. Possível tráfego de baixa qualidade ou criativo enganoso.` });
-      }
-
-      // Users who scroll but don't click buy
-      const scrollersNoBuy = visitorSessions.filter(s => {
-        const hasScroll = s.events.some(e => e.event_type === "scroll_depth" || e.event_type === "scroll_milestone");
-        const hasBuy = s.events.some(e => e.event_type === "click_buy_button");
-        return hasScroll && !hasBuy;
-      }).length;
-      const scrollerPct = (scrollersNoBuy / visitorSessions.length) * 100;
-      if (scrollerPct > 60) {
-        insights.push({ icon: "👀", text: `${scrollerPct.toFixed(0)}% dos visitantes rolam a página mas não clicam em comprar. Oferta pode não estar convincente.` });
-      }
-    }
-    return insights;
-  }, [visitorSessions]);
-
-  // ── Radar: Device Insights ──
-  const radarDeviceInsights = useMemo(() => {
-    const insights: { icon: string; text: string }[] = [];
-    if (deviceFunnelAnalysis.length >= 2) {
-      const mobile = deviceFunnelAnalysis.find(d => d.device === "mobile");
-      const desktop = deviceFunnelAnalysis.find(d => d.device === "desktop");
-      if (mobile && desktop && mobile.convRate > 2 && desktop.convRate < 0.5 && desktop.visitors > 20) {
-        insights.push({ icon: "💻", text: `Conversão muito baixa em desktop (${desktop.convRate.toFixed(1)}%) vs mobile (${mobile.convRate.toFixed(1)}%). Problema possível de layout ou responsividade.` });
-      }
-      if (desktop && desktop.visitors > 50 && desktop.paid === 0) {
-        insights.push({ icon: "🖥", text: "Zero vendas em desktop apesar de tráfego significativo. Verificar layout ou qualidade do tráfego." });
-      }
-    }
-    return insights;
-  }, [deviceFunnelAnalysis]);
 
   // ── Device Funnel Analysis ──
   const deviceFunnelAnalysis = useMemo(() => {
