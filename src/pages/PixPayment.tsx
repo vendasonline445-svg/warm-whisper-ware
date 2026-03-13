@@ -204,28 +204,18 @@ const PixPayment = () => {
           </div>
         ) : (
           <>
-            {/* QR Code Card */}
+            {/* PIX Code Card */}
             <div className="mt-5 rounded-2xl bg-white border border-border/30 p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
-              <div className="flex items-center gap-2 mb-5">
-                <span className="text-lg">💠</span>
-                <span className="font-bold text-sm tracking-tight">PIX</span>
+              <div className="flex items-center gap-2.5 mb-6">
+                <img src="/images/pix-icon.webp" alt="Pix" className="h-7 w-7 object-contain" />
+                <span className="font-bold text-base tracking-tight">Pix</span>
               </div>
 
-              <div className="flex justify-center mb-5">
-                {qrImageUrl ? (
-                  <img src={qrImageUrl} alt="QR Code PIX" className="w-60 h-60 rounded-lg" />
-                ) : (
-                  <div className="w-60 h-60 flex items-center justify-center bg-muted/30 rounded-lg animate-pulse">
-                    <p className="text-sm text-muted-foreground">Gerando QR Code...</p>
-                  </div>
-                )}
-              </div>
-
-              {pixCode && (
-                <p className="text-[13px] font-mono text-foreground/80 leading-relaxed break-all mb-5 px-1">
-                  {pixCode.length > 50 ? pixCode.slice(0, 50) + "..." : pixCode}
-                </p>
-              )}
+              <p className="text-lg font-semibold text-foreground break-all leading-relaxed mb-6">
+                {pixCode
+                  ? pixCode.length > 40 ? pixCode.slice(0, 40) + "..." : pixCode
+                  : "Gerando código..."}
+              </p>
 
               <Button
                 onClick={handleCopy}
