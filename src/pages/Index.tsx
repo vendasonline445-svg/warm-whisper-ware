@@ -131,6 +131,9 @@ const Index = () => {
   const [exit2Shown, setExit2Shown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [reviewZoomOpen, setReviewZoomOpen] = useState(false);
+  const [reviewZoomPhotos, setReviewZoomPhotos] = useState<string[]>([]);
+  const [reviewZoomIndex, setReviewZoomIndex] = useState(0);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareClosing, setShareClosing] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
