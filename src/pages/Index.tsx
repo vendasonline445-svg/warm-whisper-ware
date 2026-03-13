@@ -125,6 +125,12 @@ const Index = () => {
     { role: 'bot', text: 'Olá! Como posso te ajudar com informações sobre a Mesa Dobrável Mesalar?' }
   ]);
   const [chatTyping, setChatTyping] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, chatTyping]);
 
   const closeStore = () => {
     setStoreClosing(true);
@@ -136,14 +142,45 @@ const Index = () => {
     setTimeout(() => { setChatOpen(false); setChatClosing(false); }, 300);
   };
 
-  const handleQuickQuestion = (faq: { q: string; a: string }) => {
-    setChatMessages(prev => [...prev, { role: 'user', text: faq.q }]);
+  const sendChatMessage = async (text: string) => {
+    if (!text.trim() || chatTyping) return;
+    const userMsg = text.trim();
+    setChatInput('');
+    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setChatTyping(true);
-    const delay = 1200 + Math.random() * 1800; // 1.2s - 3s
-    setTimeout(() => {
+
+    try {
+      const history = chatMessages.map(m => ({
+        role: m.role === 'bot' ? 'assistant' as const : 'user' as const,
+        content: m.text,
+      }));
+      history.push({ role: 'user', content: userMsg });
+
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: history }),
+      });
+
+      const data = await resp.json();
       setChatTyping(false);
-      setChatMessages(prev => [...prev, { role: 'bot', text: faq.a }]);
-    }, delay);
+
+      if (data.reply) {
+        setChatMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
+      } else {
+        setChatMessages(prev => [...prev, { role: 'bot', text: data.error || 'Desculpe, não consegui responder. Tente novamente!' }]);
+      }
+    } catch {
+      setChatTyping(false);
+      setChatMessages(prev => [...prev, { role: 'bot', text: 'Erro de conexão. Tente novamente!' }]);
+    }
+  };
+
+  const handleQuickQuestion = (faq: { q: string; a: string }) => {
+    sendChatMessage(faq.q);
   };
   const countdown = useCountdown();
 
@@ -980,6 +1017,7 @@ const Index = () => {
                   </div>
                 </div>
               )}
+              <div ref={chatEndRef} />
             </div>
 
             {/* Quick questions */}
@@ -999,17 +1037,18 @@ const Index = () => {
             </div>
 
             {/* Input */}
-            <div className="border-t px-4 py-3 flex items-center gap-2">
+            <form onSubmit={(e) => { e.preventDefault(); sendChatMessage(chatInput); }} className="border-t px-4 py-3 flex items-center gap-2">
               <input
                 type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Digite sua pergunta..."
                 className="flex-1 rounded-full border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-cta"
-                readOnly
               />
-              <button className="bg-cta text-white rounded-full p-2.5">
+              <button type="submit" disabled={chatTyping || !chatInput.trim()} className="bg-cta text-white rounded-full p-2.5 disabled:opacity-50">
                 <ChevronRight className="h-4 w-4" />
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
