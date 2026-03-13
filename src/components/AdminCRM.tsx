@@ -1794,6 +1794,167 @@ export default function AdminCRM() {
               )}
             </div>
           )}
+
+          {/* ═══ BOTS DETECTOR ═══ */}
+          {subTab === "bots" && (
+            <div className="space-y-6">
+              {/* Bot Distribution */}
+              <div className="bg-card border rounded-xl p-5">
+                <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
+                  <Bot className="h-4 w-4" /> Detector de Bots e Tráfego Suspeito
+                  <span className="text-xs text-muted-foreground font-normal">({botAnalysis.total} visitantes analisados)</span>
+                </h3>
+
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {([
+                    { key: "normal" as const, label: "Tráfego Normal", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle2, desc: "Score 0–30" },
+                    { key: "suspeito" as const, label: "Tráfego Suspeito", color: "text-amber-500", bg: "bg-amber-500/10", icon: ShieldAlert, desc: "Score 31–60" },
+                    { key: "bot" as const, label: "Provável Bot", color: "text-red-500", bg: "bg-red-500/10", icon: Bot, desc: "Score 61+" },
+                  ]).map(q => {
+                    const Icon = q.icon;
+                    return (
+                      <div key={q.key} className={`rounded-xl p-4 ${q.bg}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon className={`h-4 w-4 ${q.color}`} />
+                          <span className={`text-xl font-bold ${q.color}`}>{botAnalysis.distPct[q.key]}%</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground font-medium">{q.label}</p>
+                        <p className="text-xs font-semibold">{botAnalysis.dist[q.key]} visitantes</p>
+                        <p className="text-[9px] text-muted-foreground mt-1">{q.desc}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Progress bar */}
+                <div className="flex h-3 rounded-full overflow-hidden">
+                  {botAnalysis.distPct.normal > 0 && <div className="bg-emerald-500" style={{ width: `${botAnalysis.distPct.normal}%` }} />}
+                  {botAnalysis.distPct.suspeito > 0 && <div className="bg-amber-500" style={{ width: `${botAnalysis.distPct.suspeito}%` }} />}
+                  {botAnalysis.distPct.bot > 0 && <div className="bg-red-500" style={{ width: `${botAnalysis.distPct.bot}%` }} />}
+                </div>
+              </div>
+
+              {/* Bot Score Explanation */}
+              <div className="bg-card border rounded-xl p-5">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                  <Scan className="h-3.5 w-3.5" /> Sistema de Pontuação
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { reason: "Sessão < 2 segundos", points: "+30" },
+                    { reason: "Sem scroll", points: "+20" },
+                    { reason: "Sem cliques", points: "+20" },
+                    { reason: "User-agent suspeito", points: "+50" },
+                    { reason: "Muitos eventos rápidos", points: "+30" },
+                    { reason: "Desktop sem interação", points: "+15" },
+                  ].map(r => (
+                    <div key={r.reason} className="bg-muted/50 rounded-lg p-2.5 flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">{r.reason}</span>
+                      <span className="text-xs font-bold text-red-500">{r.points}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> 0–30: Normal</span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> 31–60: Suspeito</span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" /> 61+: Provável Bot</span>
+                </div>
+              </div>
+
+              {/* Suspicious Visitors Table */}
+              <div className="bg-card border rounded-xl overflow-hidden">
+                <div className="p-4 border-b">
+                  <h4 className="text-sm font-bold flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4" /> Visitantes Suspeitos e Bots
+                    <span className="text-xs text-muted-foreground font-normal">
+                      ({botAnalysis.scored.filter(v => v.botLevel !== "normal").length})
+                    </span>
+                  </h4>
+                </div>
+                {botAnalysis.scored.filter(v => v.botLevel !== "normal").length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground text-sm">Nenhum visitante suspeito detectado 🎉</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          {["ID", "Score Bot", "Classificação", "Tempo", "Scroll", "Cliques", "Dispositivo", "Razões"].map(h => (
+                            <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {botAnalysis.scored
+                          .filter(v => v.botLevel !== "normal")
+                          .sort((a, b) => b.botScore - a.botScore)
+                          .slice(0, 50)
+                          .map((v, i) => (
+                            <tr key={i} className={`border-b ${v.botLevel === "bot" ? "bg-red-500/5" : "bg-amber-500/5"}`}>
+                              <td className="px-4 py-3 font-mono font-semibold">{v.id}</td>
+                              <td className="px-4 py-3">
+                                <span className={`font-bold ${v.botScore >= 61 ? "text-red-500" : "text-amber-500"}`}>{v.botScore}</span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  v.botLevel === "bot" ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"
+                                }`}>
+                                  {v.botLevel === "bot" ? "🤖 BOT" : "⚠ SUSPEITO"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">{v.timeOnPage.toFixed(1)}s</td>
+                              <td className="px-4 py-3">{v.maxScroll}%</td>
+                              <td className="px-4 py-3">{v.clicks}</td>
+                              <td className="px-4 py-3">{v.device}</td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-wrap gap-1">
+                                  {v.reasons.map((r, ri) => (
+                                    <span key={ri} className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{r}</span>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Bot Alerts */}
+              <div>
+                <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                  <AlertTriangle className="h-4 w-4" /> Alertas de Tráfego Automatizado
+                </h4>
+                {botAnalysis.alerts.length === 0 ? (
+                  <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    <span className="text-sm font-medium">Nenhum padrão de bot detectado — tráfego limpo</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {botAnalysis.alerts.map((a, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-start gap-3 border rounded-xl p-4 ${
+                          a.type === "critical" ? "bg-destructive/5 border-destructive/30" : "bg-amber-500/5 border-amber-500/30"
+                        }`}
+                      >
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          a.type === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
+                        }`}>
+                          <Bot className={`h-4 w-4 ${a.type === "critical" ? "text-destructive" : "text-amber-500"}`} />
+                        </div>
+                        <div>
+                          <p className={`text-sm font-semibold ${a.type === "critical" ? "text-destructive" : "text-amber-600"}`}>{a.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
 
