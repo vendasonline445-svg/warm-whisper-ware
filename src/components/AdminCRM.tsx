@@ -1364,7 +1364,7 @@ export default function AdminCRM() {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-sm font-bold flex items-center gap-2">
-                          <Image className="h-4 w-4" /> Criativo: {selectedCreativeData.id.slice(0, 30)}
+                          <ImageIcon className="h-4 w-4" /> Criativo: {selectedCreativeData.id.slice(0, 30)}
                         </h3>
                         <p className="text-[10px] text-muted-foreground mt-1">
                           {selectedCreativeData.platform} · {selectedCreativeData.campaign} · {selectedCreativeData.adGroup}
