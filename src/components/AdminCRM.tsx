@@ -572,11 +572,11 @@ export default function AdminCRM() {
     return { score: clamped, label: "Gargalo Crítico", color: "text-red-500", bg: "bg-red-500/10" };
   }, [funnelData]);
 
-  // ── Funnel Diagnostic ──
-  const funnelDiagnostic = useMemo(() => {
+  // ── Radar de Conversão (enhanced diagnostic) ──
+  const radarConversao = useMemo(() => {
     if (funnelData.length < 2 || funnelData[0].count === 0) return null;
 
-    // Find biggest bottleneck (highest drop rate after visitors)
+    // Find biggest bottleneck
     let worstIdx = 1;
     let worstDrop = 0;
     funnelData.slice(1).forEach((step, i) => {
@@ -590,103 +590,203 @@ export default function AdminCRM() {
     const prevStep = funnelData[worstIdx - 1];
     const overallConv = funnelData[0].count > 0 ? (funnelData[funnelData.length - 1].count / funnelData[0].count * 100) : 0;
 
-    type DiagItem = { title: string; desc: string; severity: "critical" | "warning" | "info" };
-    type Suggestion = { icon: string; text: string };
+    type DiagItem = { title: string; desc: string; cause: string; severity: "critical" | "warning" | "info" };
+    type Suggestion = { icon: string; text: string; priority: "alta" | "média" | "baixa" };
 
     const diagnostics: DiagItem[] = [];
     const suggestions: Suggestion[] = [];
 
-    // Main bottleneck
-    diagnostics.push({
-      title: `Gargalo detectado: ${prevStep.label} → ${bottleneckStep.label}`,
-      desc: `Apenas ${bottleneckStep.convRate.toFixed(1)}% dos usuários avançam nesta etapa. ${prevStep.count - bottleneckStep.count} visitantes abandonam aqui (${bottleneckStep.dropRate.toFixed(0)}% de queda).`,
-      severity: bottleneckStep.dropRate > 70 ? "critical" : "warning",
-    });
-
-    // Specific analysis per bottleneck type
     const visitors = funnelData[0]?.count || 0;
     const engaged = funnelData[1]?.count || 0;
     const buyClicks = funnelData[2]?.count || 0;
     const checkouts = funnelData[3]?.count || 0;
+    const paymentInit = funnelData[4]?.count || 0;
     const pixCard = funnelData[5]?.count || 0;
     const paid = funnelData[6]?.count || 0;
 
-    // Low engagement
+    // ── Case 1: Low engagement ──
     if (visitors > 20 && engaged / visitors < 0.3) {
       diagnostics.push({
         title: "Baixo engajamento na página",
-        desc: `Apenas ${((engaged / visitors) * 100).toFixed(1)}% dos visitantes interagem com a página. A maioria sai sem scrollar ou clicar.`,
+        desc: `Apenas ${((engaged / visitors) * 100).toFixed(1)}% dos visitantes interagem. A maioria sai sem scrollar ou clicar.`,
+        cause: "Conteúdo acima da dobra pode não estar gerando interesse, ou o carregamento está lento.",
         severity: "warning",
       });
       suggestions.push(
-        { icon: "🎯", text: "Melhorar headline e primeira dobra da página" },
-        { icon: "📱", text: "Verificar velocidade de carregamento no mobile" },
-        { icon: "🎨", text: "Adicionar elementos visuais que prendam atenção" },
+        { icon: "🎯", text: "Melhorar headline e primeira dobra da página", priority: "alta" },
+        { icon: "📱", text: "Verificar velocidade de carregamento no mobile", priority: "alta" },
+        { icon: "🎨", text: "Adicionar elementos visuais que prendam atenção", priority: "média" },
       );
     }
 
-    // Low buy click rate
+    // ── Case 2: Low buy click rate ──
     if (visitors > 20 && buyClicks / visitors < 0.05) {
       diagnostics.push({
         title: "Baixa taxa de clique em comprar",
-        desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam no botão de compra. Isso pode indicar problema na proposta de valor ou no preço.`,
+        desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam no botão de compra.`,
+        cause: "Possível problema na copy, proposta de valor ou destaque do botão. O CTA pode não estar visível o suficiente.",
         severity: buyClicks / visitors < 0.02 ? "critical" : "warning",
       });
       suggestions.push(
-        { icon: "💰", text: "Destacar preço e desconto mais claramente" },
-        { icon: "🛒", text: "Tornar o botão de compra mais visível e urgente" },
-        { icon: "⭐", text: "Adicionar mais prova social acima do botão" },
-        { icon: "🎁", text: "Testar oferta com bônus ou frete grátis" },
+        { icon: "💰", text: "Destacar preço e desconto mais claramente", priority: "alta" },
+        { icon: "🛒", text: "Tornar o botão de compra mais visível e urgente", priority: "alta" },
+        { icon: "⭐", text: "Adicionar mais prova social acima do botão", priority: "média" },
+        { icon: "🎁", text: "Testar oferta com bônus ou frete grátis", priority: "média" },
       );
     }
 
-    // High checkout abandonment
-    if (checkouts > 5 && pixCard / checkouts < 0.4) {
+    // ── Case 3: Interest but no checkout ──
+    if (buyClicks > 5 && checkouts / buyClicks < 0.3) {
       diagnostics.push({
-        title: "Alto abandono no checkout",
-        desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts resultam em tentativa de pagamento. Possível fricção no formulário.`,
-        severity: "critical",
-      });
-      suggestions.push(
-        { icon: "📋", text: "Simplificar formulário de checkout" },
-        { icon: "🔒", text: "Adicionar selos de segurança no checkout" },
-        { icon: "⏱", text: "Adicionar timer de urgência no checkout" },
-      );
-    }
-
-    // Low payment completion
-    if (pixCard > 3 && paid / pixCard < 0.3) {
-      diagnostics.push({
-        title: "Baixa taxa de conclusão de pagamento",
-        desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% das tentativas de pagamento são concluídas. Possível problema com Pix ou cartão.`,
+        title: "Interesse sem conversão em checkout",
+        desc: `Usuários clicam em comprar (${buyClicks}) mas poucos iniciam checkout (${checkouts}).`,
+        cause: "Usuários demonstram interesse mas não iniciam checkout. Possível problema no preço, frete ou no processo de seleção.",
         severity: "warning",
       });
       suggestions.push(
-        { icon: "📱", text: "Verificar se QR code Pix funciona corretamente" },
-        { icon: "💳", text: "Verificar integração de pagamento por cartão" },
-        { icon: "📩", text: "Implementar lembrete de pagamento Pix" },
+        { icon: "💵", text: "Revisar preço ou adicionar parcelas mais atrativas", priority: "alta" },
+        { icon: "🚚", text: "Oferecer frete grátis ou reduzido", priority: "média" },
       );
     }
 
-    // Traffic quality alert
-    if (visitors > 50 && engaged / visitors < 0.15) {
+    // ── Case 4: High checkout abandonment ──
+    if (checkouts > 5 && pixCard / checkouts < 0.4) {
       diagnostics.push({
-        title: "Possível tráfego de baixa qualidade",
-        desc: `Grande volume de visitantes (${visitors}) com baixíssima interação (${((engaged / visitors) * 100).toFixed(1)}%). Pode ser tráfego automatizado ou público errado.`,
+        title: "Alto abandono no checkout",
+        desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts resultam em tentativa de pagamento.`,
+        cause: "Alta taxa de abandono no checkout. Possível fricção no formulário ou falta de confiança.",
         severity: "critical",
       });
       suggestions.push(
-        { icon: "🎯", text: "Revisar segmentação de público nas campanhas" },
-        { icon: "🤖", text: "Verificar aba de Bots para tráfego suspeito" },
-        { icon: "📊", text: "Testar novos criativos com público diferente" },
+        { icon: "📋", text: "Simplificar formulário de checkout", priority: "alta" },
+        { icon: "🔒", text: "Adicionar selos de segurança no checkout", priority: "alta" },
+        { icon: "⏱", text: "Adicionar timer de urgência no checkout", priority: "média" },
       );
     }
 
-    // Remove duplicate suggestions
+    // ── Case 5: Payment not completing ──
+    if (pixCard > 3 && paid / pixCard < 0.3) {
+      diagnostics.push({
+        title: "Pagamento iniciado mas não concluído",
+        desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% das tentativas de pagamento são concluídas.`,
+        cause: "Usuários iniciam pagamento mas não concluem. Pode faltar urgência ou clareza nas instruções de Pix/Cartão.",
+        severity: "warning",
+      });
+      suggestions.push(
+        { icon: "📱", text: "Verificar se QR code Pix funciona corretamente", priority: "alta" },
+        { icon: "💳", text: "Verificar integração de pagamento por cartão", priority: "alta" },
+        { icon: "📩", text: "Implementar lembrete de pagamento Pix", priority: "média" },
+      );
+    }
+
+    // ── Case 6: Traffic quality ──
+    if (visitors > 50 && engaged / visitors < 0.15) {
+      diagnostics.push({
+        title: "Possível tráfego de baixa qualidade",
+        desc: `Grande volume de visitantes (${visitors}) com baixíssima interação (${((engaged / visitors) * 100).toFixed(1)}%).`,
+        cause: "Pode ser tráfego automatizado, público errado ou criativo enganoso que atrai público sem intenção de compra.",
+        severity: "critical",
+      });
+      suggestions.push(
+        { icon: "🎯", text: "Revisar segmentação de público nas campanhas", priority: "alta" },
+        { icon: "🤖", text: "Verificar aba de Bots para tráfego suspeito", priority: "alta" },
+        { icon: "📊", text: "Testar novos criativos com público diferente", priority: "média" },
+      );
+    }
+
+    // Remove duplicates
     const uniqueSuggestions = suggestions.filter((s, i, arr) => arr.findIndex(x => x.text === s.text) === i);
 
-    return { diagnostics, suggestions: uniqueSuggestions, overallConv, bottleneckStep: prevStep.label + " → " + bottleneckStep.label };
-  }, [funnelData]);
+    // Main bottleneck label
+    const bottleneckLabel = `${prevStep.label} → ${bottleneckStep.label}`;
+    const bottleneckRate = bottleneckStep.convRate;
+
+    // Smart summary
+    let summary = "";
+    if (diagnostics.length === 0) {
+      summary = "Seu funil está funcionando bem. Nenhum gargalo crítico detectado.";
+    } else {
+      const main = diagnostics[0];
+      summary = `Seu funil apresenta ${main.severity === "critical" ? "gargalo crítico" : "atenção"} na etapa de ${bottleneckLabel}. ${main.desc} ${main.cause}`;
+    }
+
+    return {
+      diagnostics,
+      suggestions: uniqueSuggestions,
+      overallConv,
+      bottleneckLabel,
+      bottleneckRate,
+      bottleneckDrop: worstDrop,
+      summary,
+      healthScore: funnelHealth.score,
+      healthLabel: funnelHealth.label,
+      healthColor: funnelHealth.color,
+      healthBg: funnelHealth.bg,
+    };
+  }, [funnelData, funnelHealth]);
+
+  // ── Radar: Heatmap Insights ──
+  const radarHeatmapInsights = useMemo(() => {
+    const insights: { icon: string; text: string }[] = [];
+    if (heatmapData.sections.length > 0) {
+      const heroClicks = heatmapData.sections.find(s => s.section === "hero");
+      const buySection = heatmapData.sections.find(s => s.section === "detalhes" || s.section === "galeria");
+      if (heroClicks && heroClicks.pct < 10 && heatmapData.totalClicks > 20) {
+        insights.push({ icon: "👆", text: "Poucos cliques no topo da página. CTA pode não estar visível." });
+      }
+      if (!buySection || (buySection.pct < 5 && heatmapData.totalClicks > 20)) {
+        insights.push({ icon: "🛒", text: "CTA pouco visível ou pouco atrativo. Considere reposicionar." });
+      }
+    }
+    if (heatmapData.totalScrollEvents > 10) {
+      const below50 = heatmapData.scrollBuckets.filter(b => b.min >= 50).reduce((s, b) => s + b.count, 0);
+      const total = heatmapData.scrollBuckets.reduce((s, b) => s + b.count, 0) || 1;
+      if (below50 / total < 0.3) {
+        insights.push({ icon: "📜", text: "Maioria dos visitantes não chega ao meio da página. Conteúdo acima da dobra pode não estar gerando interesse." });
+      }
+    }
+    return insights;
+  }, [heatmapData]);
+
+  // ── Radar: Session Insights ──
+  const radarSessionInsights = useMemo(() => {
+    const insights: { icon: string; text: string }[] = [];
+    if (visitorSessions.length > 5) {
+      const shortSessions = visitorSessions.filter(s => s.duration < 3).length;
+      const shortPct = (shortSessions / visitorSessions.length) * 100;
+      if (shortPct > 40) {
+        insights.push({ icon: "⚡", text: `${shortPct.toFixed(0)}% dos visitantes saem em menos de 3 segundos. Possível tráfego de baixa qualidade ou criativo enganoso.` });
+      }
+
+      // Users who scroll but don't click buy
+      const scrollersNoBuy = visitorSessions.filter(s => {
+        const hasScroll = s.events.some(e => e.event_type === "scroll_depth" || e.event_type === "scroll_milestone");
+        const hasBuy = s.events.some(e => e.event_type === "click_buy_button");
+        return hasScroll && !hasBuy;
+      }).length;
+      const scrollerPct = (scrollersNoBuy / visitorSessions.length) * 100;
+      if (scrollerPct > 60) {
+        insights.push({ icon: "👀", text: `${scrollerPct.toFixed(0)}% dos visitantes rolam a página mas não clicam em comprar. Oferta pode não estar convincente.` });
+      }
+    }
+    return insights;
+  }, [visitorSessions]);
+
+  // ── Radar: Device Insights ──
+  const radarDeviceInsights = useMemo(() => {
+    const insights: { icon: string; text: string }[] = [];
+    if (deviceFunnelAnalysis.length >= 2) {
+      const mobile = deviceFunnelAnalysis.find(d => d.device === "mobile");
+      const desktop = deviceFunnelAnalysis.find(d => d.device === "desktop");
+      if (mobile && desktop && mobile.convRate > 2 && desktop.convRate < 0.5 && desktop.visitors > 20) {
+        insights.push({ icon: "💻", text: `Conversão muito baixa em desktop (${desktop.convRate.toFixed(1)}%) vs mobile (${mobile.convRate.toFixed(1)}%). Problema possível de layout ou responsividade.` });
+      }
+      if (desktop && desktop.visitors > 50 && desktop.paid === 0) {
+        insights.push({ icon: "🖥", text: "Zero vendas em desktop apesar de tráfego significativo. Verificar layout ou qualidade do tráfego." });
+      }
+    }
+    return insights;
+  }, [deviceFunnelAnalysis]);
 
   // ── Device Funnel Analysis ──
   const deviceFunnelAnalysis = useMemo(() => {
