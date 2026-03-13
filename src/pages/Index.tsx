@@ -131,6 +131,9 @@ const Index = () => {
   const [exit2Shown, setExit2Shown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [reviewZoomOpen, setReviewZoomOpen] = useState(false);
+  const [reviewZoomPhotos, setReviewZoomPhotos] = useState<string[]>([]);
+  const [reviewZoomIndex, setReviewZoomIndex] = useState(0);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareClosing, setShareClosing] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -633,7 +636,13 @@ const Index = () => {
                   {r.photos.length > 0 && (
                     <div className="mt-3 flex gap-2 overflow-x-auto">
                       {r.photos.map((p, i) => (
-                        <img key={i} src={p} alt={`Foto ${i + 1}`} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />
+                        <img
+                          key={i}
+                          src={p}
+                          alt={`Foto ${i + 1}`}
+                          className="h-16 w-16 rounded-lg object-cover flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
+                          onClick={() => { setReviewZoomPhotos(r.photos); setReviewZoomIndex(i); setReviewZoomOpen(true); }}
+                        />
                       ))}
                     </div>
                   )}
@@ -1154,7 +1163,50 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Exit Intent Modal - VOLTA25 (Bottom Sheet matching product modal) */}
+      {/* Review Photo Zoom Modal */}
+      <Dialog open={reviewZoomOpen} onOpenChange={setReviewZoomOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
+          <DialogDescription className="sr-only">Foto da avaliação ampliada</DialogDescription>
+          <DialogTitle className="sr-only">Foto da avaliação</DialogTitle>
+          <div
+            className="relative"
+            onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; swiping.current = false; }}
+            onTouchMove={(e) => {
+              const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+              const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+              if (dx > dy && dx > 10) { swiping.current = true; e.preventDefault(); }
+              touchEndX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={() => {
+              const diff = touchStartX.current - touchEndX.current;
+              if (swiping.current && Math.abs(diff) > 50) {
+                if (diff > 0) setReviewZoomIndex((prev) => Math.min(prev + 1, reviewZoomPhotos.length - 1));
+                else setReviewZoomIndex((prev) => Math.max(prev - 1, 0));
+              }
+            }}
+          >
+            <img
+              src={reviewZoomPhotos[reviewZoomIndex]}
+              alt="Foto da avaliação ampliada"
+              className="w-full h-auto rounded-lg"
+            />
+            {reviewZoomPhotos.length > 1 && (
+              <>
+                <button onClick={(e) => { e.stopPropagation(); setReviewZoomIndex((prev) => Math.max(prev - 1, 0)); }} disabled={reviewZoomIndex === 0} className="absolute left-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-foreground/30 backdrop-blur-sm flex items-center justify-center disabled:opacity-30">
+                  <ChevronLeft className="h-5 w-5 text-white" />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); setReviewZoomIndex((prev) => Math.min(prev + 1, reviewZoomPhotos.length - 1)); }} disabled={reviewZoomIndex === reviewZoomPhotos.length - 1} className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-foreground/30 backdrop-blur-sm flex items-center justify-center disabled:opacity-30">
+                  <ChevronRight className="h-5 w-5 text-white" />
+                </button>
+              </>
+            )}
+            <span className="absolute bottom-3 right-3 rounded-full bg-foreground/60 px-2.5 py-1 text-xs font-medium text-white">
+              {reviewZoomIndex + 1}/{reviewZoomPhotos.length}
+            </span>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {exitModalOpen && (
         <div className="fixed inset-0 z-[60]" onClick={() => { setExitModalOpen(false); if (!exit2Shown) { setExit2Open(true); setExit2Shown(true); } }}>
           <div className="absolute inset-0 bg-black/60 animate-in fade-in-0" />
