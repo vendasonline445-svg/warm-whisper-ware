@@ -2619,8 +2619,6 @@ export default function AdminCRM() {
               </div>
             </div>
           )}
-        </>
-      )}
 
       {/* ═══ LEAD DETAIL SIDE PANEL ═══ */}
       {selectedLead && (
