@@ -148,22 +148,25 @@ Deno.serve(async (req) => {
         if (lead && !lead.tracking_sent) {
           const productName = (data.items && data.items[0]?.title) || "Mesa Portátil Dobrável";
 
-          const params = new URLSearchParams({
+          const payload = {
             status: "approved",
-            nome: lead.name || data.customer?.name || "",
-            email: lead.email || data.customer?.email || "",
-            cep: lead.cep || "",
-            produto: productName,
-            source: "vegacheckout",
-          });
+            customer: {
+              name: lead.name || data.customer?.name || "",
+              email: lead.email || data.customer?.email || "",
+            },
+            address: {
+              zip_code: lead.cep || "",
+            },
+            products: [{ title: productName }],
+          };
 
           console.log("[Tracking] approved order detected");
-          console.log("[Trackly] Sending webhook:", params.toString());
+          console.log("[Trackly] Sending webhook:", JSON.stringify(payload));
 
           const tracklyRes = await fetch(webhookUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: params,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
           });
 
           const tracklyText = await tracklyRes.text();
