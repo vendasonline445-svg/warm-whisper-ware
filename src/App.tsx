@@ -17,6 +17,7 @@ import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import TermosDeUso from "./pages/TermosDeUso";
 import Upsell1 from "./pages/Upsell1";
 import Obrigado from "./pages/Obrigado";
+import AdminRastreios from "./pages/AdminRastreios";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/pix" element={<PixPayment />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/tiktok" element={<AdminTikTok />} />
+          <Route path="/admin/rastreios" element={<AdminRastreios />} />
           <Route path="/adm" element={<TemplateAdmin />} />
           <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
           <Route path="/termos-de-uso" element={<TermosDeUso />} />

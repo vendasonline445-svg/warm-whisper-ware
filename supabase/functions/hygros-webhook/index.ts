@@ -146,6 +146,7 @@ Deno.serve(async (req) => {
           ],
         };
 
+        console.log("[Tracking] approved order detected");
         console.log("[Trackly] Sending webhook:", JSON.stringify(tracklyPayload));
 
         const tracklyRes = await fetch(
@@ -159,6 +160,7 @@ Deno.serve(async (req) => {
 
         const tracklyText = await tracklyRes.text();
         console.log(`[Trackly] Response (${tracklyRes.status}):`, tracklyText);
+        console.log("[Tracking] webhook sent");
 
         // Mark as sent
         await fetch(
@@ -171,10 +173,35 @@ Deno.serve(async (req) => {
               "Content-Type": "application/json",
               Prefer: "return=minimal",
             },
-            body: JSON.stringify({ tracking_sent: true }),
+            body: JSON.stringify({ tracking_sent: true, status: "approved" }),
           }
         );
 
+        // Save to order_tracking table
+        const trackingRecord = {
+          order_id: lead.id,
+          customer_name: lead.name || data.customer?.name || "",
+          customer_email: lead.email || data.customer?.email || "",
+          product_name: productName,
+          zipcode: lead.cep || "",
+          status: "enviado",
+        };
+
+        const trackingSaveRes = await fetch(
+          `${supabaseUrl}/rest/v1/order_tracking`,
+          {
+            method: "POST",
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json",
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify(trackingRecord),
+          }
+        );
+        const trackingSaveText = await trackingSaveRes.text();
+        console.log(`[Tracking] tracking saved (${trackingSaveRes.status}):`, trackingSaveText);
         console.log("[Trackly] tracking webhook sent");
       } else if (lead?.tracking_sent) {
         console.log("[Trackly] Already sent for this order, skipping");

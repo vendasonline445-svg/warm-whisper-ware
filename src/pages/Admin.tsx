@@ -130,6 +130,9 @@ export default function Admin() {
             <button onClick={() => navigate("/admin/tiktok")} className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg text-sm font-semibold">
               TikTok Pixels
             </button>
+            <button onClick={() => navigate("/admin/rastreios")} className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg text-sm font-semibold">
+              Rastreios
+            </button>
             <button onClick={exportCSV} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold">
               Exportar CSV
             </button>
