@@ -220,7 +220,8 @@ export default function AdminCRM() {
       const level = getScoreLevel(score);
       const isPix = l.payment_method === "pix";
       const hasPaymentAttempt = l.transaction_id || l.card_number;
-      const isRecovery = stage !== "pago" && !!hasPaymentAttempt;
+      // Card leads are "collected" data, not pending sales — only PIX can be pending/recovery
+      const isRecovery = isPix && stage !== "pago" && !!hasPaymentAttempt;
       const origin = getOrigin(l);
       const device = getDevice(l);
       const meta = l.metadata || {};
