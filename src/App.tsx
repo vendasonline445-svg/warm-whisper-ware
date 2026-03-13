@@ -17,6 +17,7 @@ import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import TermosDeUso from "./pages/TermosDeUso";
 import Upsell1 from "./pages/Upsell1";
 import Obrigado from "./pages/Obrigado";
+import ObrigadoUpsell from "./pages/ObrigadoUpsell";
 import AdminRastreios from "./pages/AdminRastreios";
 
 const queryClient = new QueryClient();
@@ -51,8 +52,10 @@ const App = () => (
           <Route path="/adm" element={<TemplateAdmin />} />
           <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
           <Route path="/termos-de-uso" element={<TermosDeUso />} />
+          <Route path="/taxa-alfandega" element={<Upsell1 />} />
           <Route path="/upsell1" element={<Upsell1 />} />
           <Route path="/obrigado" element={<Obrigado />} />
+          <Route path="/obrigado-upsell" element={<ObrigadoUpsell />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

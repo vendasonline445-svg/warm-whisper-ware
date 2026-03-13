@@ -72,7 +72,13 @@ const PixPayment = () => {
             externalId: orderData.customer.cpf,
           } : undefined,
         });
-        setTimeout(() => navigate("/obrigado"), 2000);
+        const returnTo = sessionStorage.getItem("pixReturnTo");
+        if (returnTo === "/taxa-alfandega") {
+          sessionStorage.removeItem("pixReturnTo");
+          setTimeout(() => navigate("/obrigado-upsell"), 2000);
+        } else {
+          setTimeout(() => navigate("/obrigado"), 2000);
+        }
       }
     } catch (err) {
       console.error("Polling error:", err);
