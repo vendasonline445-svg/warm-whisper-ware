@@ -110,6 +110,53 @@ export type Database = {
         }
         Relationships: []
       }
+      order_tracking: {
+        Row: {
+          created_at: string
+          customer_email: string
+          customer_name: string
+          id: string
+          order_id: string
+          product_name: string
+          status: string
+          tracking_code: string | null
+          tracking_url: string | null
+          zipcode: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          id?: string
+          order_id: string
+          product_name?: string
+          status?: string
+          tracking_code?: string | null
+          tracking_url?: string | null
+          zipcode?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          id?: string
+          order_id?: string
+          product_name?: string
+          status?: string
+          tracking_code?: string | null
+          tracking_url?: string | null
+          zipcode?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "checkout_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tiktok_pixels: {
         Row: {
           api_token: string
