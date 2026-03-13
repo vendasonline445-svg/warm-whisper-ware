@@ -345,6 +345,25 @@ export default function Admin() {
     fetchData();
   }, [fetchData]);
 
+  // Polling every 30s for live dashboard updates
+  useEffect(() => {
+    if (!authenticated) return;
+    const interval = setInterval(() => fetchData(), 30000);
+    return () => clearInterval(interval);
+  }, [authenticated, fetchData]);
+
+  // Realtime subscription on checkout_leads
+  useEffect(() => {
+    if (!authenticated) return;
+    const channel = supabase
+      .channel("admin-leads-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "checkout_leads" }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [authenticated, fetchData]);
+
   const exportCSV = () => {
     if (!leads.length) return;
     const headers = [
