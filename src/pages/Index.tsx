@@ -115,6 +115,7 @@ const Index = () => {
   const [colorModalClosing, setColorModalClosing] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [colorModalMode, setColorModalMode] = useState<'cart' | 'buy'>('cart');
+  const [modalQty, setModalQty] = useState(1);
   const [flyingDot, setFlyingDot] = useState(false);
   const [exitModalOpen, setExitModalOpen] = useState(false);
   const [exitShown, setExitShown] = useState(false);
