@@ -131,7 +131,7 @@ const Index = () => {
     setTimeout(() => { setStoreOpen(false); setStoreClosing(false); }, 300);
   };
 
-
+  const closeChat = () => {
     setChatClosing(true);
     setTimeout(() => { setChatOpen(false); setChatClosing(false); }, 300);
   };
