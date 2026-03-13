@@ -251,11 +251,11 @@ async function updateFunnelState(eventName: string) {
 
   try {
     // Get current stage
-    const { data } = await supabase.from("funnel_state").select("stage").eq("visitor_id", vid).maybeSingle();
+    const { data } = await db.from("funnel_state").select("stage").eq("visitor_id", vid).maybeSingle();
     const currentPriority = data ? (FUNNEL_PRIORITY[data.stage] || 0) : 0;
 
     if (priority > currentPriority) {
-      await supabase.from("funnel_state").upsert(
+      await db.from("funnel_state").upsert(
         { visitor_id: vid, stage, updated_at: new Date().toISOString() },
         { onConflict: "visitor_id" }
       );
