@@ -242,11 +242,15 @@ const PixPayment = () => {
               </Button>
             </div>
 
-            {/* Instructions */}
-            <p className="mt-5 text-xs text-muted-foreground text-center leading-relaxed px-2">
-              Para acessar esta página no app, abra <strong className="text-foreground">Loja</strong> &gt; <strong className="text-foreground">Pedidos</strong> &gt; <strong className="text-foreground">Sem pagamento</strong> &gt;
-              <span className="text-[#e8687a] font-semibold"> Visualizar o código</span>
-            </p>
+            {/* Check payment button */}
+            <div className="mt-5 text-center">
+              <button
+                onClick={() => checkPaymentStatus()}
+                className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+              >
+                Já fez o pagamento?
+              </button>
+            </div>
 
             {/* How to pay */}
             <div className="mt-6 rounded-2xl bg-white border border-border/30 p-5 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
