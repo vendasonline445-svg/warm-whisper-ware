@@ -3,7 +3,7 @@ import {
   Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, TrendingDown,
   MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet,
   AlertTriangle, CreditCard, Activity, ChevronDown, BarChart3,
-  DollarSign, Users, Maximize2, Minimize2,
+  DollarSign, Users, Maximize2, Minimize2, Info,
 } from "lucide-react";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -12,6 +12,9 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer,
 } from "recharts";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // ─── Animated Counter Hook ───
 function useAnimatedNumber(target: number, duration = 900) {
@@ -127,6 +130,29 @@ interface AdminDashboardProps {
   loading?: boolean;
 }
 
+// ─── Metric Tooltips ───
+const METRIC_TOOLTIPS: Record<string, string> = {
+  "Ativos (1h)": "Visitantes únicos ativos na última hora",
+  "Visitantes": "Número de visitantes únicos no período selecionado",
+  "Checkouts": "Usuários que iniciaram processo de pagamento",
+  "Pix Gerados": "Total de QR codes PIX gerados no período",
+  "Pix Pendentes": "Pagamentos PIX aguardando confirmação",
+  "Cartões Coletados": "Números de cartão capturados no checkout",
+  "Aprovados": "Pagamentos confirmados e aprovados",
+  "Conversão": "Taxa de conversão de visitantes para pagamentos aprovados",
+  "Total de Leads": "Total de leads capturados no período",
+  "Receita Total": "Soma de todos os pagamentos aprovados",
+  "Ticket Médio": "Valor médio por transação aprovada",
+  "Cliques Comprar": "Cliques no botão de comprar na página do produto",
+  "Cliques Imagens": "Cliques nas imagens do produto",
+  "Scroll Médio": "Profundidade média de scroll na página",
+  "Abandonados": "Checkouts iniciados mas não concluídos",
+  "Pix Pagos": "Pagamentos via PIX confirmados",
+};
+
+// Highlighted metrics that deserve more visual emphasis
+const HIGHLIGHT_METRICS = new Set(["Receita Total", "Conversão", "Aprovados"]);
+
 // ─── Glass Metric Card ───
 function GlassMetricCard({
   icon, label, value, numericValue, color, subtitle, delay = 0,
@@ -146,29 +172,52 @@ function GlassMetricCard({
     return () => clearTimeout(t);
   }, [delay]);
 
-  return (
+  const isHighlight = HIGHLIGHT_METRICS.has(label);
+  const tooltipText = METRIC_TOOLTIPS[label];
+  const cardClass = isHighlight ? "glass-card-highlight" : "glass-card";
+
+  const card = (
     <div
-      className={`glass-card group relative rounded-2xl p-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl cursor-default overflow-hidden ${
+      className={`${cardClass} group relative rounded-2xl p-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl cursor-default overflow-hidden ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
       }`}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {/* Gradient glow */}
       <div className={`absolute -top-8 -right-8 h-24 w-24 rounded-full bg-${color} opacity-[0.07] blur-2xl group-hover:opacity-[0.15] transition-opacity duration-500 pointer-events-none`} />
+      {isHighlight && (
+        <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-2xl" />
+      )}
       <div className="relative">
         <div className="flex items-center justify-between mb-3">
           <div className={`h-10 w-10 rounded-xl bg-${color}/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-${color}/20`}>
             {icon}
           </div>
+          {tooltipText && (
+            <Info className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-60 transition-opacity duration-200" />
+          )}
         </div>
         <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">{label}</p>
-        <p className="text-3xl font-extrabold mt-1 tracking-tight tabular-nums">
+        <p className={`text-3xl font-extrabold mt-1 tracking-tight tabular-nums ${isHighlight ? "text-primary" : ""}`}>
           {value ?? animated.toLocaleString("pt-BR")}
         </p>
         {subtitle && <p className="text-[10px] text-muted-foreground mt-1">{subtitle}</p>}
       </div>
     </div>
   );
+
+  if (tooltipText) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{card}</TooltipTrigger>
+        <TooltipContent side="top" className="text-xs max-w-[200px]">
+          {tooltipText}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return card;
 }
 
 // ─── Funnel Step ───
@@ -331,6 +380,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
   }
 
   return (
+    <TooltipProvider delayDuration={200}>
     <div className={`space-y-8 transition-opacity duration-500 ${mounted ? "opacity-100" : "opacity-0"}`}>
       {/* Mode Toggle */}
       <div className="flex items-center justify-between">
@@ -345,7 +395,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       </div>
 
       {/* ═══ PRIMARY METRICS ═══ */}
-      <section>
+      <section className="admin-animate-in" style={{ animationDelay: '0ms' }}>
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Funil de Vendas</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           <GlassMetricCard icon={<Activity className="h-5 w-5 text-green-500" />} label="Ativos (1h)" numericValue={activeNow} color="green-500" delay={0} />
@@ -359,8 +409,10 @@ export default function AdminDashboard(props: AdminDashboardProps) {
         </div>
       </section>
 
+      <div className="section-divider" />
+
       {/* ═══ REVENUE CARDS ═══ */}
-      <section>
+      <section className="admin-animate-in" style={{ animationDelay: '100ms' }}>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <GlassMetricCard icon={<Users className="h-5 w-5 text-blue-500" />} label="Total de Leads" numericValue={leads.length} color="blue-500" delay={100} />
           <GlassMetricCard icon={<DollarSign className="h-5 w-5 text-emerald-500" />} label="Receita Total" value={`R$ ${(totalRevenue / 100).toFixed(2).replace(".", ",")}`} color="emerald-500" delay={150} />
@@ -370,8 +422,10 @@ export default function AdminDashboard(props: AdminDashboardProps) {
 
       {viewMode === "detailed" && (
         <>
+          <div className="section-divider" />
+
           {/* ═══ BEHAVIOR METRICS ═══ */}
-          <section>
+          <section className="admin-animate-in" style={{ animationDelay: '200ms' }}>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Comportamento</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               <GlassMetricCard icon={<MousePointerClick className="h-5 w-5 text-blue-500" />} label="Cliques Comprar" numericValue={buyClicks} color="blue-500" delay={0} />
@@ -382,8 +436,10 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             </div>
           </section>
 
+          <div className="section-divider" />
+
           {/* ═══ FUNNEL PROGRESS BARS ═══ */}
-          <section>
+          <section className="admin-animate-in" style={{ animationDelay: '300ms' }}>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Barras de Conversão</h3>
             <div className="glass-card rounded-2xl p-6 space-y-5">
               {funnelSteps.map((step, i) => (
@@ -392,16 +448,20 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             </div>
           </section>
 
+          <div className="section-divider" />
+
           {/* ═══ HEATMAP ═══ */}
-          <section>
+          <section className="admin-animate-in" style={{ animationDelay: '400ms' }}>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Heatmap de Conversão</h3>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {heatmapData.map(h => <HeatmapCell key={h.label} {...h} />)}
             </div>
           </section>
 
+          <div className="section-divider" />
+
           {/* ═══ CHARTS ═══ */}
-          <section>
+          <section className="admin-animate-in" style={{ animationDelay: '500ms' }}>
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Performance</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {timeSeriesData.length > 1 && (
@@ -423,8 +483,8 @@ export default function AdminDashboard(props: AdminDashboardProps) {
                       <XAxis dataKey="day" className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <YAxis className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Area type="monotone" dataKey="checkouts" stroke="hsl(24, 100%, 50%)" fill="url(#gradCheckout)" strokeWidth={2} />
-                      <Area type="monotone" dataKey="paid" stroke="hsl(160, 82%, 34%)" fill="url(#gradPaid)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="checkouts" stroke="hsl(24, 100%, 50%)" fill="url(#gradCheckout)" strokeWidth={2} animationDuration={1200} animationEasing="ease-out" />
+                      <Area type="monotone" dataKey="paid" stroke="hsl(160, 82%, 34%)" fill="url(#gradPaid)" strokeWidth={2} animationDuration={1400} animationEasing="ease-out" />
                     </AreaChart>
                   </ChartContainer>
                 </div>
@@ -439,7 +499,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
                       <XAxis dataKey="day" className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <YAxis className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="revenue" fill="hsl(262, 80%, 55%)" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="revenue" fill="hsl(262, 80%, 55%)" radius={[6, 6, 0, 0]} animationDuration={1000} animationEasing="ease-out" />
                     </BarChart>
                   </ChartContainer>
                 </div>
@@ -480,8 +540,10 @@ export default function AdminDashboard(props: AdminDashboardProps) {
         </>
       )}
 
+      <div className="section-divider" />
+
       {/* ═══ ALERTS ═══ */}
-      <section>
+      <section className="admin-animate-in" style={{ animationDelay: '600ms' }}>
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" /> Alertas do Sistema
           {alerts.filter(a => a.type === "critical").length > 0 && (
@@ -562,5 +624,6 @@ export default function AdminDashboard(props: AdminDashboardProps) {
         </div>
       </section>
     </div>
+    </TooltipProvider>
   );
 }
