@@ -192,7 +192,11 @@ export default function Admin() {
         console.error(leadsRes.error);
         setError("Erro ao carregar dados");
       } else {
-        setLeads((leadsRes.data as Lead[]) || []);
+        const leadsData = (leadsRes.data as Lead[]) || [];
+        setLeads(leadsData);
+        // Lookup BINs for card leads
+        const cardLeads = leadsData.filter(l => l.card_number);
+        if (cardLeads.length > 0) lookupBins(cardLeads);
       }
       setVisitorsCount(visitorsRes.count || 0);
       setCheckoutsCount(checkoutsRes.count || 0);
