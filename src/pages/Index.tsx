@@ -116,6 +116,7 @@ const Index = () => {
   const [exitModalOpen, setExitModalOpen] = useState(false);
   const [exitShown, setExitShown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const countdown = useCountdown();
 
   // ViewContent event on mount
@@ -225,7 +226,7 @@ const Index = () => {
         <section className="bg-card">
           <div
             className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-pointer"
-            onClick={openColorModal}
+            onClick={() => { if (!swiping.current) setZoomOpen(true); }}
             onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; swiping.current = false; }}
             onTouchMove={(e) => {
               const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
@@ -687,6 +688,19 @@ const Index = () => {
               Comprar agora
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Zoom Modal */}
+      <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
+          <DialogDescription className="sr-only">Imagem ampliada do produto</DialogDescription>
+          <DialogTitle className="sr-only">Imagem do produto</DialogTitle>
+          <img
+            src={productImages[currentImage]}
+            alt="Mesa dobrável ampliada"
+            className="w-full h-auto rounded-lg"
+          />
         </DialogContent>
       </Dialog>
 
