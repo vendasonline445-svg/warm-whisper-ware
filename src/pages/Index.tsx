@@ -118,6 +118,13 @@ const Index = () => {
   const [exitShown, setExitShown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [cartClosing, setCartClosing] = useState(false);
+
+  const closeCart = () => {
+    setCartClosing(true);
+    setTimeout(() => { setCartOpen(false); setCartClosing(false); }, 300);
+  };
   const [storeOpen, setStoreOpen] = useState(false);
   const [storeClosing, setStoreClosing] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
