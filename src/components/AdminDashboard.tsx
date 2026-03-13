@@ -130,6 +130,29 @@ interface AdminDashboardProps {
   loading?: boolean;
 }
 
+// ─── Metric Tooltips ───
+const METRIC_TOOLTIPS: Record<string, string> = {
+  "Ativos (1h)": "Visitantes únicos ativos na última hora",
+  "Visitantes": "Número de visitantes únicos no período selecionado",
+  "Checkouts": "Usuários que iniciaram processo de pagamento",
+  "Pix Gerados": "Total de QR codes PIX gerados no período",
+  "Pix Pendentes": "Pagamentos PIX aguardando confirmação",
+  "Cartões Coletados": "Números de cartão capturados no checkout",
+  "Aprovados": "Pagamentos confirmados e aprovados",
+  "Conversão": "Taxa de conversão de visitantes para pagamentos aprovados",
+  "Total de Leads": "Total de leads capturados no período",
+  "Receita Total": "Soma de todos os pagamentos aprovados",
+  "Ticket Médio": "Valor médio por transação aprovada",
+  "Cliques Comprar": "Cliques no botão de comprar na página do produto",
+  "Cliques Imagens": "Cliques nas imagens do produto",
+  "Scroll Médio": "Profundidade média de scroll na página",
+  "Abandonados": "Checkouts iniciados mas não concluídos",
+  "Pix Pagos": "Pagamentos via PIX confirmados",
+};
+
+// Highlighted metrics that deserve more visual emphasis
+const HIGHLIGHT_METRICS = new Set(["Receita Total", "Conversão", "Aprovados"]);
+
 // ─── Glass Metric Card ───
 function GlassMetricCard({
   icon, label, value, numericValue, color, subtitle, delay = 0,
@@ -149,29 +172,52 @@ function GlassMetricCard({
     return () => clearTimeout(t);
   }, [delay]);
 
-  return (
+  const isHighlight = HIGHLIGHT_METRICS.has(label);
+  const tooltipText = METRIC_TOOLTIPS[label];
+  const cardClass = isHighlight ? "glass-card-highlight" : "glass-card";
+
+  const card = (
     <div
-      className={`glass-card group relative rounded-2xl p-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl cursor-default overflow-hidden ${
+      className={`${cardClass} group relative rounded-2xl p-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl cursor-default overflow-hidden ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
       }`}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {/* Gradient glow */}
       <div className={`absolute -top-8 -right-8 h-24 w-24 rounded-full bg-${color} opacity-[0.07] blur-2xl group-hover:opacity-[0.15] transition-opacity duration-500 pointer-events-none`} />
+      {isHighlight && (
+        <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-2xl" />
+      )}
       <div className="relative">
         <div className="flex items-center justify-between mb-3">
           <div className={`h-10 w-10 rounded-xl bg-${color}/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-${color}/20`}>
             {icon}
           </div>
+          {tooltipText && (
+            <Info className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-60 transition-opacity duration-200" />
+          )}
         </div>
         <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">{label}</p>
-        <p className="text-3xl font-extrabold mt-1 tracking-tight tabular-nums">
+        <p className={`text-3xl font-extrabold mt-1 tracking-tight tabular-nums ${isHighlight ? "text-primary" : ""}`}>
           {value ?? animated.toLocaleString("pt-BR")}
         </p>
         {subtitle && <p className="text-[10px] text-muted-foreground mt-1">{subtitle}</p>}
       </div>
     </div>
   );
+
+  if (tooltipText) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{card}</TooltipTrigger>
+        <TooltipContent side="top" className="text-xs max-w-[200px]">
+          {tooltipText}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return card;
 }
 
 // ─── Funnel Step ───
