@@ -66,38 +66,35 @@ export default function AdminRastreios() {
     setSendingManual(true);
     setDebugResult(null);
     try {
-      const params = new URLSearchParams({
-        status: "approved",
-        nome: manualName,
-        email: manualEmail,
-        cep: manualCep,
-        endereco: manualEndereco,
-        produto: manualProduto,
-        source: "vegacheckout",
+      const { data: result, error } = await supabase.functions.invoke("send-trackly-webhook", {
+        body: {
+          nome: manualName,
+          email: manualEmail,
+          cep: manualCep,
+          endereco: manualEndereco,
+          produto: manualProduto,
+          webhook_url: webhookUrl,
+        },
       });
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params,
-      });
-      const text = await res.text();
+
+      if (error) throw error;
       console.log("[Trackly] test webhook sent");
 
       const debug = {
-        status_http: res.status,
-        response_text: text,
-        payload_enviado: params.toString(),
-        webhook_url: webhookUrl,
+        status_http: result.status_http,
+        response_text: result.response_text,
+        payload_enviado: result.payload_enviado,
+        webhook_url: result.webhook_url,
       };
       setDebugResult(debug);
 
       await supabase.from("tracking_webhook_logs" as any).insert({
         webhook_url: webhookUrl,
-        status: res.ok ? "test_success" : "test_error",
+        status: result.status_http >= 200 && result.status_http < 300 ? "test_success" : "test_error",
         response: JSON.stringify(debug).slice(0, 1000),
       } as any);
 
-      if (res.ok) {
+      if (result.status_http >= 200 && result.status_http < 300) {
         toast.success("Webhook enviado com sucesso");
       } else {
         toast.error("Erro ao enviar webhook");
@@ -157,32 +154,26 @@ export default function AdminRastreios() {
   const testWebhook = async () => {
     setTestingWebhook(true);
     try {
-      const params = new URLSearchParams({
-        status: "approved",
-        nome: "Cliente Teste",
-        email: "teste@cliente.com",
-        cep: "01001000",
-        produto: "Produto Teste",
-        source: "vegacheckout",
+      const { data: result, error } = await supabase.functions.invoke("send-trackly-webhook", {
+        body: {
+          nome: "Cliente Teste",
+          email: "teste@cliente.com",
+          cep: "01001000",
+          produto: "Produto Teste",
+          webhook_url: webhookUrl,
+        },
       });
 
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params,
-      });
-
-      const text = await res.text();
+      if (error) throw error;
       console.log("[Trackly] test webhook sent");
 
-      // Log the test
       await supabase.from("tracking_webhook_logs" as any).insert({
         webhook_url: webhookUrl,
-        status: res.ok ? "test_success" : "test_error",
-        response: text.slice(0, 500),
+        status: result.status_http >= 200 && result.status_http < 300 ? "test_success" : "test_error",
+        response: result.response_text?.slice(0, 500),
       } as any);
 
-      if (res.ok) {
+      if (result.status_http >= 200 && result.status_http < 300) {
         toast.success("Webhook enviado com sucesso");
       } else {
         toast.error("Erro ao enviar webhook");
