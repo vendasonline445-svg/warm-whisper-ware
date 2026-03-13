@@ -764,6 +764,104 @@ export default function Admin() {
             )}
           </div>
         )}
+
+        {tab === "logs" && (
+          <div className="space-y-6">
+            {logsLoading ? (
+              <p className="text-center text-muted-foreground py-8">Carregando logs...</p>
+            ) : (
+              <>
+                {/* JS Errors */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-bold flex items-center gap-2">
+                      <Bug className="h-5 w-5" /> Erros JavaScript ({errorLogs.length})
+                    </h2>
+                    {errorLogs.length > 0 && (
+                      <button
+                        onClick={() => {
+                          supabase.from("user_events").delete().eq("event_type", "js_error").then(() => {
+                            setErrorLogs([]);
+                          });
+                        }}
+                        className="text-xs text-destructive hover:underline"
+                      >
+                        Limpar todos
+                      </button>
+                    )}
+                  </div>
+                  {errorLogs.length === 0 ? (
+                    <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                      <span className="text-sm text-emerald-600 font-medium">Nenhum erro JavaScript registrado</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {errorLogs.map((log: any) => (
+                        <div key={log.id} className="bg-destructive/5 border border-destructive/20 rounded-xl p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-semibold text-destructive break-all">
+                              {typeof log.event_data === "object" ? (log.event_data as any)?.message : "Erro desconhecido"}
+                            </p>
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">
+                              {new Date(log.created_at).toLocaleString("pt-BR")}
+                            </span>
+                          </div>
+                          {typeof log.event_data === "object" && (log.event_data as any)?.source && (
+                            <p className="text-xs text-muted-foreground mt-1 font-mono break-all">
+                              {(log.event_data as any).source}
+                              {(log.event_data as any).line ? `:${(log.event_data as any).line}` : ""}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Webhook Logs */}
+                <div>
+                  <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                    <Webhook className="h-5 w-5" /> Webhook Trackly ({webhookLogs.length})
+                  </h2>
+                  {webhookLogs.length === 0 ? (
+                    <div className="bg-muted border rounded-xl p-4 flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">Nenhum log de webhook registrado</span>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border rounded-xl">
+                      <table className="w-full text-xs">
+                        <thead className="bg-muted">
+                          <tr>
+                            {["Data", "Pedido", "Status", "HTTP", "URL", "Resposta"].map((h) => (
+                              <th key={h} className="px-3 py-2 text-left whitespace-nowrap font-semibold">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {webhookLogs.map((log: any) => (
+                            <tr key={log.id} className="border-t hover:bg-muted/50">
+                              <td className="px-3 py-2 whitespace-nowrap">{new Date(log.created_at).toLocaleString("pt-BR")}</td>
+                              <td className="px-3 py-2 whitespace-nowrap font-mono text-[10px]">{log.order_id?.slice(0, 8) || "—"}</td>
+                              <td className="px-3 py-2">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${log.status === "sent" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}`}>
+                                  {log.status}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2">{log.http_status || "—"}</td>
+                              <td className="px-3 py-2 max-w-[200px] truncate font-mono text-[10px]">{log.webhook_url}</td>
+                              <td className="px-3 py-2 max-w-[200px] truncate font-mono text-[10px]">{log.response || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
