@@ -405,7 +405,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background admin-bg">
       {/* Top Nav */}
       <header className="border-b bg-card px-4 py-3">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between flex-wrap gap-2">

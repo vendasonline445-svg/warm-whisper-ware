@@ -409,8 +409,10 @@ export default function AdminDashboard(props: AdminDashboardProps) {
         </div>
       </section>
 
+      <div className="section-divider" />
+
       {/* ═══ REVENUE CARDS ═══ */}
-      <section>
+      <section className="admin-animate-in" style={{ animationDelay: '100ms' }}>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <GlassMetricCard icon={<Users className="h-5 w-5 text-blue-500" />} label="Total de Leads" numericValue={leads.length} color="blue-500" delay={100} />
           <GlassMetricCard icon={<DollarSign className="h-5 w-5 text-emerald-500" />} label="Receita Total" value={`R$ ${(totalRevenue / 100).toFixed(2).replace(".", ",")}`} color="emerald-500" delay={150} />
