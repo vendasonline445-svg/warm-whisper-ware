@@ -51,7 +51,7 @@ interface UserEvent {
 type FunnelStage = "visitante" | "engajado" | "clique_comprar" | "checkout_iniciado" | "pagamento_iniciado" | "pix_gerado" | "cartao_enviado" | "pago" | "abandonado";
 type ScoreLevel = "frio" | "morno" | "quente";
 type TrafficQuality = "ruim" | "frio" | "morno" | "quente";
-type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors" | "funnel" | "traffic" | "criativos" | "bots";
+type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors" | "funnel" | "traffic" | "criativos" | "bots" | "campanhas";
 type BotLevel = "normal" | "suspeito" | "bot";
 
 interface CRMFilters {
@@ -1411,6 +1411,7 @@ export default function AdminCRM() {
             { key: "traffic" as const, label: "Tráfego", icon: Shield, badge: trafficAnalysis.trafficAlerts.length },
             { key: "criativos" as const, label: "Criativos", icon: Megaphone, badge: creativeAnalysis.alerts.length },
             { key: "bots" as const, label: "Bots", icon: Bot, badge: botAnalysis.dist.bot + botAnalysis.dist.suspeito },
+            { key: "campanhas" as const, label: "Campanhas", icon: BarChart3, badge: 0 },
           ]).map(t => (
             <button
               key={t.key}
@@ -2728,8 +2729,207 @@ export default function AdminCRM() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          )}
+          {/* ═══ CAMPANHAS - Campaign Performance ═══ */}
+          {subTab === "campanhas" && (() => {
+            // Build campaign data from events + leads
+            const campaignMap = new Map<string, {
+              source: string;
+              campaign: string;
+              content: string;
+              visitors: Set<string>;
+              sessions: Set<string>;
+              clickBuys: number;
+              checkouts: number;
+              paidLeads: Lead[];
+              allLeads: Lead[];
+            }>();
+
+            // Process events for visitor/session counts
+            events.forEach(ev => {
+              const d = ev.event_data || {};
+              const source = d.utm_source || d.referrer || "direct";
+              const campaign = d.utm_campaign || "(sem campanha)";
+              const content = d.utm_content || "(sem criativo)";
+              const vid = d.visitor_id || d.session_id || "";
+              const sid = d.session_id || "";
+              const key = `${source}::${campaign}::${content}`;
+
+              if (!campaignMap.has(key)) {
+                campaignMap.set(key, { source, campaign, content, visitors: new Set(), sessions: new Set(), clickBuys: 0, checkouts: 0, paidLeads: [], allLeads: [] });
+              }
+              const entry = campaignMap.get(key)!;
+              if (vid) entry.visitors.add(vid);
+              if (sid) entry.sessions.add(sid);
+              if (ev.event_type === "click_buy_button") entry.clickBuys++;
+              if (ev.event_type === "checkout_initiated") entry.checkouts++;
+            });
+
+            // Process leads for sales attribution
+            leads.forEach(lead => {
+              let meta: any = {};
+              try {
+                meta = typeof lead.metadata === "string" ? JSON.parse(lead.metadata) : lead.metadata || {};
+              } catch {}
+              const source = meta.utm_source || meta.referrer || "direct";
+              const campaign = meta.utm_campaign || "(sem campanha)";
+              const content = meta.utm_content || "(sem criativo)";
+              const key = `${source}::${campaign}::${content}`;
+
+              if (!campaignMap.has(key)) {
+                campaignMap.set(key, { source, campaign, content, visitors: new Set(), sessions: new Set(), clickBuys: 0, checkouts: 0, paidLeads: [], allLeads: [] });
+              }
+              const entry = campaignMap.get(key)!;
+              entry.allLeads.push(lead);
+              if (lead.status === "paid") entry.paidLeads.push(lead);
+            });
+
+            const campaignRows = Array.from(campaignMap.values())
+              .map(c => ({
+                ...c,
+                visitorCount: c.visitors.size,
+                sessionCount: c.sessions.size,
+                salesCount: c.paidLeads.length,
+                leadsCount: c.allLeads.length,
+                revenue: c.paidLeads.reduce((s, l) => s + (l.total_amount || 0), 0),
+                convRate: c.visitors.size > 0 ? ((c.paidLeads.length / c.visitors.size) * 100) : 0,
+              }))
+              .sort((a, b) => b.revenue - a.revenue);
+
+            const totalRevenue = campaignRows.reduce((s, r) => s + r.revenue, 0);
+            const totalVisitors = campaignRows.reduce((s, r) => s + r.visitorCount, 0);
+            const totalSales = campaignRows.reduce((s, r) => s + r.salesCount, 0);
+
+            // Aggregate by source
+            const sourceMap = new Map<string, { visitors: number; sales: number; revenue: number }>();
+            campaignRows.forEach(r => {
+              const prev = sourceMap.get(r.source) || { visitors: 0, sales: 0, revenue: 0 };
+              sourceMap.set(r.source, {
+                visitors: prev.visitors + r.visitorCount,
+                sales: prev.sales + r.salesCount,
+                revenue: prev.revenue + r.revenue,
+              });
+            });
+            const sourceRows = Array.from(sourceMap.entries()).sort((a, b) => b[1].revenue - a[1].revenue);
+
+            return (
+              <div className="space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-card border rounded-xl p-4">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Campanhas Ativas</p>
+                    <p className="text-2xl font-bold mt-1">{campaignRows.filter(r => r.source !== "direct").length}</p>
+                  </div>
+                  <div className="bg-card border rounded-xl p-4">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Visitantes Rastreados</p>
+                    <p className="text-2xl font-bold mt-1">{totalVisitors}</p>
+                  </div>
+                  <div className="bg-card border rounded-xl p-4">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Vendas Atribuídas</p>
+                    <p className="text-2xl font-bold mt-1 text-emerald-600">{totalSales}</p>
+                  </div>
+                  <div className="bg-card border rounded-xl p-4">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Receita Total</p>
+                    <p className="text-2xl font-bold mt-1">R$ {(totalRevenue / 100).toFixed(2).replace(".", ",")}</p>
+                  </div>
+                </div>
+
+                {/* By Source */}
+                <div>
+                  <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                    <Globe className="h-4 w-4" /> Performance por Origem
+                  </h3>
+                  <div className="space-y-2">
+                    {sourceRows.map(([source, data]) => {
+                      const pct = totalRevenue > 0 ? (data.revenue / totalRevenue * 100) : 0;
+                      return (
+                        <div key={source} className="bg-card border rounded-xl p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-bold capitalize">{source}</span>
+                            <span className="text-sm font-bold">R$ {(data.revenue / 100).toFixed(2).replace(".", ",")}</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
+                            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${Math.max(pct, 2)}%` }} />
+                          </div>
+                          <div className="flex gap-4 text-xs text-muted-foreground">
+                            <span>{data.visitors} visitantes</span>
+                            <span>{data.sales} vendas</span>
+                            <span>{data.visitors > 0 ? ((data.sales / data.visitors) * 100).toFixed(1) : "0"}% conv.</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {sourceRows.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">Nenhuma origem rastreada</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Detailed Campaign Table */}
+                <div>
+                  <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" /> Detalhamento por Campanha & Criativo
+                  </h3>
+                  <div className="overflow-x-auto border rounded-xl">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted">
+                        <tr>
+                          {["Origem", "Campanha", "Criativo", "Visitantes", "Sessões", "Cliques", "Checkouts", "Leads", "Vendas", "Receita", "Conv."].map(h => (
+                            <th key={h} className="px-3 py-2 text-left whitespace-nowrap font-semibold">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {campaignRows.slice(0, 50).map((r, i) => (
+                          <tr key={i} className="border-t hover:bg-muted/50">
+                            <td className="px-3 py-2 whitespace-nowrap font-medium capitalize">{r.source}</td>
+                            <td className="px-3 py-2 whitespace-nowrap max-w-[150px] truncate">{r.campaign}</td>
+                            <td className="px-3 py-2 whitespace-nowrap max-w-[150px] truncate">{r.content}</td>
+                            <td className="px-3 py-2">{r.visitorCount}</td>
+                            <td className="px-3 py-2">{r.sessionCount}</td>
+                            <td className="px-3 py-2">{r.clickBuys}</td>
+                            <td className="px-3 py-2">{r.checkouts}</td>
+                            <td className="px-3 py-2">{r.leadsCount}</td>
+                            <td className="px-3 py-2">
+                              <span className={`font-bold ${r.salesCount > 0 ? "text-emerald-600" : ""}`}>{r.salesCount}</span>
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap font-mono">
+                              R$ {(r.revenue / 100).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                r.convRate >= 3 ? "bg-emerald-500/20 text-emerald-600" :
+                                r.convRate >= 1 ? "bg-amber-500/20 text-amber-600" :
+                                "bg-muted text-muted-foreground"
+                              }`}>
+                                {r.convRate.toFixed(1)}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {campaignRows.length === 0 && (
+                          <tr><td colSpan={11} className="text-center py-8 text-muted-foreground">Nenhuma campanha rastreada</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Attribution Info */}
+                <div className="bg-card border rounded-xl p-4">
+                  <h4 className="text-xs font-bold mb-2 flex items-center gap-2">
+                    <Shield className="h-3.5 w-3.5 text-emerald-500" /> Tracking First-Party Ativo
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Todos os dados são rastreados via sistema interno (first-party) independente de pixels externos.
+                    A atribuição é baseada no último clique válido (click_id + UTMs).
+                    Mesmo com bloqueadores de anúncio, as conversões continuam sendo registradas.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+        </>
       )}
     </div>
   );
