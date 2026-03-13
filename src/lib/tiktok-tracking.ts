@@ -124,9 +124,15 @@ export async function identifyTikTokUser(data: {
   if (!ttq) return;
 
   const identifyData: Record<string, string> = {};
-  if (data.email) identifyData.email = data.email.trim().toLowerCase();
-  if (data.phone) identifyData.phone_number = normalizePhone(data.phone);
-  if (data.externalId) identifyData.external_id = data.externalId.replace(/\D/g, "");
+  if (data.email && data.email.trim()) identifyData.email = data.email.trim().toLowerCase();
+  if (data.phone && data.phone.trim()) identifyData.phone_number = normalizePhone(data.phone);
+  if (data.externalId && data.externalId.trim()) {
+    // If it's a CPF (only digits), strip non-digits. Otherwise keep as-is (visitor_id)
+    const cleaned = /^\d[\d.\-/]*$/.test(data.externalId.trim()) 
+      ? data.externalId.replace(/\D/g, "") 
+      : data.externalId.trim();
+    identifyData.external_id = cleaned;
+  }
 
   const pixels = await loadPixels();
   pixels.forEach((px) => {
