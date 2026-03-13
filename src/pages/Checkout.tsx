@@ -845,6 +845,50 @@ const Checkout = () => {
             >
               {isSubmitting ? "Processando..." : "Fazer pedido"}
             </Button>
+
+            {/* TikTok Shop-style fullscreen loading overlay */}
+            {isSubmitting && (
+              <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm" style={{ animation: "fadeIn .3s ease" }}>
+                {/* Animated spinner rings */}
+                <div className="relative w-24 h-24 mb-8">
+                  <div className="absolute inset-0 rounded-full border-[3px] border-transparent" style={{
+                    borderTopColor: '#FE2C55',
+                    animation: 'spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+                  }} />
+                  <div className="absolute inset-[6px] rounded-full border-[3px] border-transparent" style={{
+                    borderTopColor: '#25F4EE',
+                    animation: 'spin 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite reverse',
+                  }} />
+                  <div className="absolute inset-[12px] rounded-full border-[3px] border-transparent" style={{
+                    borderTopColor: '#fff',
+                    animation: 'spin 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+                  }} />
+                  {/* Center dot */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-3 h-3 rounded-full bg-white" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  </div>
+                </div>
+
+                {/* Progress steps */}
+                <div className="text-center space-y-3">
+                  <p className="text-white text-lg font-bold tracking-wide" style={{ animation: 'fadeIn .5s ease' }}>
+                    Processando seu pedido
+                  </p>
+                  <div className="flex items-center gap-2 justify-center">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#FE2C55]" style={{ animation: 'pulse 1s ease infinite' }} />
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#FE2C55]" style={{ animation: 'pulse 1s ease .3s infinite' }} />
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#FE2C55]" style={{ animation: 'pulse 1s ease .6s infinite' }} />
+                  </div>
+                  <p className="text-white/50 text-xs mt-2">Aguarde, não feche a página</p>
+                </div>
+
+                <style>{`
+                  @keyframes spin { to { transform: rotate(360deg) } }
+                  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+                  @keyframes pulse { 0%,100% { opacity: .3; transform: scale(.8) } 50% { opacity: 1; transform: scale(1.2) } }
+                `}</style>
+              </div>
+            )}
           </div>
         </div>
       </div>
