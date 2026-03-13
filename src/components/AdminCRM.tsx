@@ -260,8 +260,8 @@ export default function AdminCRM() {
     const oneHourAgo = now - 3600000;
     const activeNow = enrichedLeads.filter(l => new Date(l.created_at).getTime() > oneHourAgo).length;
     const hot = enrichedLeads.filter(l => l.level === "quente").length;
-    const openCheckouts = enrichedLeads.filter(l => l.stage === "checkout_iniciado" || l.stage === "pagamento_iniciado").length;
-    const pendingPix = enrichedLeads.filter(l => l.stage === "pix_gerado").length;
+    const openCheckouts = enrichedLeads.filter(l => l.payment_method === "pix" && (l.stage === "checkout_iniciado" || l.stage === "pagamento_iniciado")).length;
+    const pendingPix = enrichedLeads.filter(l => l.payment_method === "pix" && l.stage === "pix_gerado").length;
     const abandonedCheckouts = enrichedLeads.filter(l => l.isRecovery).length;
     const paidLeads = enrichedLeads.filter(l => l.stage === "pago");
     const revenue = paidLeads.reduce((s, l) => s + (l.total_amount || 0), 0);
