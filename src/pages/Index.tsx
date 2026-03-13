@@ -5,7 +5,7 @@ import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
   Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera, MapPin,
-  CreditCard, Tag, ShieldCheck, Ticket,
+  CreditCard, Tag, ShieldCheck, Ticket, Flag, ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -122,6 +122,10 @@ const Index = () => {
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [reportMenuOpen, setReportMenuOpen] = useState(false);
+  const [reportStep, setReportStep] = useState<'menu' | 'reasons' | 'form' | 'done'>('menu');
+  const [reportReason, setReportReason] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
   const [cartClosing, setCartClosing] = useState(false);
   const [cartItem, setCartItem] = useState<{color: string; size: string; quantity: number} | null>(() => {
     try {
@@ -365,7 +369,7 @@ const Index = () => {
                 <span className="absolute -top-1.5 -right-1.5 bg-cta text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">{cartItem.quantity}</span>
               )}
             </div>
-            <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer" />
+            <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setReportStep('menu'); setReportMenuOpen(true); }} />
           </div>
         </div>
       </header>
@@ -901,6 +905,142 @@ const Index = () => {
                 {colorModalMode === 'buy' ? `Comprar agora - R$ ${(PRICE * modalQty).toFixed(2).replace('.', ',')}` : `Adicionar ao carrinho - R$ ${(PRICE * modalQty).toFixed(2).replace('.', ',')}`}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Modal */}
+      {reportMenuOpen && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setReportMenuOpen(false)} />
+          <div className="relative w-full max-w-lg bg-background rounded-t-2xl animate-in slide-in-from-bottom duration-300 max-h-[85vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              {(reportStep === 'form') && (
+                <button onClick={() => setReportStep('reasons')} className="p-1">
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              )}
+              {reportStep === 'reasons' && (
+                <button onClick={() => setReportStep('menu')} className="p-1">
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              )}
+              {(reportStep === 'menu' || reportStep === 'done') && <div className="w-7" />}
+              <h3 className="font-bold text-base flex-1 text-center">Report</h3>
+              <button onClick={() => setReportMenuOpen(false)} className="p-1">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Step: Menu */}
+            {reportStep === 'menu' && (
+              <div className="p-5">
+                <button
+                  onClick={() => setReportStep('reasons')}
+                  className="flex items-center gap-3 w-full py-3 text-left"
+                >
+                  <Flag className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm font-medium">Report</span>
+                </button>
+              </div>
+            )}
+
+            {/* Step: Reasons */}
+            {reportStep === 'reasons' && (
+              <div className="flex-1 overflow-y-auto">
+                <p className="px-5 pt-4 pb-2 text-xs text-muted-foreground font-medium">Selecione um motivo</p>
+                {[
+                  "Produto perigoso ou inseguro",
+                  "Itens tóxicos ou inflamáveis",
+                  "Conteúdo discriminatório ou ofensivo",
+                  "Produtos ilegais",
+                  "Produtos adultos",
+                  "Violação de propriedade intelectual",
+                  "Informações imprecisas do produto",
+                  "Golpe ou fraude",
+                  "Possível produto falsificado",
+                  "Segurança de menores",
+                  "Outro",
+                ].map((reason) => (
+                  <button
+                    key={reason}
+                    onClick={() => { setReportReason(reason); setReportStep('form'); }}
+                    className="flex items-center justify-between w-full px-5 py-3.5 border-b border-border/50 hover:bg-muted/30 transition-colors"
+                  >
+                    <span className="text-sm">{reason}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Step: Form */}
+            {reportStep === 'form' && (
+              <div className="flex-1 overflow-y-auto flex flex-col">
+                <div className="px-5 py-3 bg-muted/30 border-b border-border">
+                  <p className="text-xs text-muted-foreground">Motivo: {reportReason}</p>
+                </div>
+                <div className="px-5 py-4 flex items-center gap-3 border-b border-border">
+                  <img src="/images/mesa-branca-principal.webp" alt="Produto" className="h-14 w-14 rounded-lg object-contain border bg-muted/30 p-1" />
+                  <div>
+                    <p className="text-sm font-medium line-clamp-1">Mesa Dobrável Portátil Mesalar</p>
+                    <p className="text-xs text-muted-foreground">Mesalar-BR</p>
+                  </div>
+                </div>
+                <div className="px-5 py-4 flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">Descrição (Opcional):</p>
+                    <p className="text-xs text-muted-foreground">{reportDescription.length}/300</p>
+                  </div>
+                  <textarea
+                    maxLength={300}
+                    value={reportDescription}
+                    onChange={(e) => setReportDescription(e.target.value)}
+                    placeholder="Compartilhe mais detalhes sobre o problema"
+                    className="w-full h-24 border border-border rounded-lg p-3 text-sm resize-none bg-background focus:outline-none focus:ring-1 focus:ring-cta placeholder:text-muted-foreground"
+                  />
+                  <div className="mt-4 flex items-center gap-2">
+                    <div className="h-16 w-16 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground">
+                      <ImageIcon className="h-5 w-5" />
+                      <span className="text-[10px] mt-0.5">0/4</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Se você sabe que alguém está em perigo imediato, entre em contato com as autoridades locais imediatamente.
+                  </p>
+                </div>
+                <div className="px-5 pb-6 pt-2">
+                  <button
+                    onClick={() => { setReportStep('done'); setReportDescription(''); }}
+                    className="w-full py-3.5 rounded-xl bg-cta text-white font-bold text-sm hover:bg-cta-hover transition-colors"
+                  >
+                    Reportar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step: Done */}
+            {reportStep === 'done' && (
+              <div className="flex-1 flex flex-col items-center justify-center px-5 py-16">
+                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <Check className="h-8 w-8 text-cta" />
+                </div>
+                <h4 className="font-bold text-base mb-2">Obrigado por reportar</h4>
+                <p className="text-sm text-muted-foreground text-center max-w-xs">
+                  Analisaremos seu report e tomaremos as medidas necessárias caso haja uma violação das diretrizes.
+                </p>
+                <div className="w-full mt-auto pt-8 pb-2">
+                  <button
+                    onClick={() => setReportMenuOpen(false)}
+                    className="w-full py-3.5 rounded-xl bg-cta text-white font-bold text-sm hover:bg-cta-hover transition-colors"
+                  >
+                    Concluído
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
