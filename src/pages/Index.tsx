@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 import { getUrlWithUtm } from "@/utils/utm";
 import { supabase } from "@/integrations/supabase/client";
-import { trackEvent } from "@/utils/track-event";
+import { trackEvent, trackPageViewOnce } from "@/utils/track-event";
 import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
@@ -290,8 +290,7 @@ const Index = () => {
         contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
     });
-    supabase.from("page_views").insert({ page: "/" }).then(() => {});
-    trackEvent("page_view", { page: "/" });
+    trackPageViewOnce("/");
 
     let maxScroll = 0;
     let lastScrollMilestone = 0;
