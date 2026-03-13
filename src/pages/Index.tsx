@@ -814,10 +814,10 @@ const Index = () => {
 
       {/* Store Info Modal - Bottom Sheet */}
       {storeOpen && (
-        <div className="fixed inset-0 z-[60]" onClick={() => setStoreOpen(false)}>
-          <div className="absolute inset-0 bg-black/60 animate-in fade-in-0 duration-300" />
+        <div className="fixed inset-0 z-[60]" onClick={closeStore}>
+          <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${storeClosing ? 'opacity-0' : 'opacity-100 animate-in fade-in-0'}`} />
           <div
-            className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300 mx-auto sm:max-w-md"
+            className={`absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl max-h-[85vh] overflow-y-auto transition-transform duration-300 mx-auto sm:max-w-md ${storeClosing ? 'translate-y-full' : 'animate-in slide-in-from-bottom'}`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drag handle */}
@@ -826,7 +826,7 @@ const Index = () => {
             </div>
             {/* Close button */}
             <button
-              onClick={() => setStoreOpen(false)}
+              onClick={closeStore}
               className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="h-3.5 w-3.5" />
