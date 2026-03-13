@@ -1158,7 +1158,7 @@ const Index = () => {
 
       {/* Exit Intent Modal - VOLTA25 (Bottom Sheet matching product modal) */}
       {exitModalOpen && (
-        <div className="fixed inset-0 z-[60]" onClick={() => setExitModalOpen(false)}>
+        <div className="fixed inset-0 z-[60]" onClick={() => { setExitModalOpen(false); if (!exit2Shown) { setExit2Open(true); setExit2Shown(true); } }}>
           <div className="absolute inset-0 bg-black/60 animate-in fade-in-0" />
           <div
             className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl transition-transform duration-300 mx-auto sm:max-w-md animate-in slide-in-from-bottom max-h-[90vh] overflow-y-auto"
