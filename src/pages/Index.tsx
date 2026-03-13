@@ -112,6 +112,7 @@ const Index = () => {
   const [currentImage, setCurrentImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("180x60cm");
   const [colorModalOpen, setColorModalOpen] = useState(false);
+  const [colorModalClosing, setColorModalClosing] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [exitModalOpen, setExitModalOpen] = useState(false);
   const [exitShown, setExitShown] = useState(false);
