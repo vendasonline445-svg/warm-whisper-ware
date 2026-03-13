@@ -555,12 +555,10 @@ const Index = () => {
             </div>
             <div className="flex flex-wrap gap-2">
               {sizes.map((s) => {
-                const available = s === "180x60cm";
                 return (
                   <button
                     key={s}
-                    onClick={() => available && setSelectedSize(s)}
-                    disabled={!available}
+                    onClick={() => setSelectedSize(s)}
                     className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                       selectedSize === s
                         ? "border-cta bg-cta/5 text-cta"
