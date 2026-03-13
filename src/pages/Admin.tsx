@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet } from "lucide-react";
 
 const ADMIN_PASSWORD = "12345";
 
@@ -47,6 +47,9 @@ export default function Admin() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [visitorsCount, setVisitorsCount] = useState(0);
   const [checkoutsCount, setCheckoutsCount] = useState(0);
+  const [buyClicks, setBuyClicks] = useState(0);
+  const [imageClicks, setImageClicks] = useState(0);
+  const [avgScroll, setAvgScroll] = useState(0);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,12 +66,15 @@ export default function Admin() {
     if (!authenticated) return;
     setLoading(true);
 
-    // Fetch leads + page views in parallel
+    // Fetch leads + page views + events in parallel
     Promise.all([
       supabase.from("checkout_leads").select("*").order("created_at", { ascending: false }),
       supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/"),
       supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout"),
-    ]).then(([leadsRes, visitorsRes, checkoutsRes]) => {
+      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_buy_button"),
+      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_product_image"),
+      supabase.from("user_events").select("event_data").eq("event_type", "scroll_depth"),
+    ]).then(([leadsRes, visitorsRes, checkoutsRes, buyRes, imgRes, scrollRes]) => {
       if (leadsRes.error) {
         console.error(leadsRes.error);
         setError("Erro ao carregar dados");
@@ -77,6 +83,16 @@ export default function Admin() {
       }
       setVisitorsCount(visitorsRes.count || 0);
       setCheckoutsCount(checkoutsRes.count || 0);
+      setBuyClicks(buyRes.count || 0);
+      setImageClicks(imgRes.count || 0);
+      // Calculate avg scroll
+      if (scrollRes.data && scrollRes.data.length > 0) {
+        const total = scrollRes.data.reduce((sum: number, row: any) => {
+          const pct = typeof row.event_data === "object" && row.event_data !== null ? (row.event_data as any).percent || 0 : 0;
+          return sum + Number(pct);
+        }, 0);
+        setAvgScroll(Math.round(total / scrollRes.data.length));
+      }
       setLoading(false);
     });
   }, [authenticated]);
@@ -115,6 +131,8 @@ export default function Admin() {
   const pendingCount = leads.filter(l => l.status !== "paid").length;
   const totalRevenue = leads.filter(l => l.status === "paid").reduce((sum, l) => sum + (l.total_amount || 0), 0);
   const pixGeneratedCount = leads.filter(l => l.payment_method === "pix").length;
+  const pixPaidCount = leads.filter(l => l.payment_method === "pix" && l.status === "paid").length;
+  const checkoutsAbandoned = checkoutsCount - leads.length;
   const conversionRate = visitorsCount > 0 ? ((paidCount / visitorsCount) * 100).toFixed(1) : "0.0";
 
   if (!authenticated) {
@@ -216,7 +234,62 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Comportamento do Funil */}
+            <div>
+              <h2 className="text-lg font-bold mb-3">Comportamento do Funil</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center mb-2">
+                    <MousePointerClick className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Cliques Comprar</p>
+                  <p className="text-xl font-bold mt-1">{buyClicks}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-indigo-500/10 flex items-center justify-center mb-2">
+                    <Image className="h-4 w-4 text-indigo-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Cliques Imagens</p>
+                  <p className="text-xl font-bold mt-1">{imageClicks}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-2">
+                    <ArrowDownWideNarrow className="h-4 w-4 text-cyan-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Scroll Médio</p>
+                  <p className="text-xl font-bold mt-1">{avgScroll}%</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center mb-2">
+                    <ShoppingCart className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Checkouts</p>
+                  <p className="text-xl font-bold mt-1">{checkoutsCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center mb-2">
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Abandonados</p>
+                  <p className="text-xl font-bold mt-1 text-destructive">{Math.max(0, checkoutsAbandoned)}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center mb-2">
+                    <QrCode className="h-4 w-4 text-purple-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Pix Gerados</p>
+                  <p className="text-xl font-bold mt-1">{pixGeneratedCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-2">
+                    <Wallet className="h-4 w-4 text-emerald-500" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Pix Pagos</p>
+                  <p className="text-xl font-bold mt-1 text-success">{pixPaidCount}</p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-card border rounded-xl p-5">
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total de Leads</p>

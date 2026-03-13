@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { trackTikTokEvent } from "@/lib/tiktok-tracking";
 import { getUrlWithUtm } from "@/utils/utm";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/utils/track-event";
 import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
@@ -264,7 +265,7 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // ViewContent event on mount + track page view
+  // ViewContent event on mount + track page view + scroll depth
   useEffect(() => {
     trackTikTokEvent({
       event: "ViewContent",
@@ -278,6 +279,21 @@ const Index = () => {
       },
     });
     supabase.from("page_views").insert({ page: "/" }).then(() => {});
+
+    let maxScroll = 0;
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight > 0) {
+        const pct = Math.round((scrollTop / docHeight) * 100);
+        if (pct > maxScroll) maxScroll = pct;
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (maxScroll > 0) trackEvent("scroll_depth", { percent: maxScroll });
+    };
   }, []);
 
   // Lock body scroll when modals are open
@@ -370,6 +386,7 @@ const Index = () => {
   };
 
   const handleBuyNow = () => {
+    trackEvent("click_buy_button");
     if (cartItems.length > 0) {
       nav(getUrlWithUtm(`/checkout`));
     } else {
@@ -432,7 +449,7 @@ const Index = () => {
         <section className="bg-card">
           <div
             className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-pointer"
-            onClick={() => { if (!swiping.current) setZoomOpen(true); }}
+            onClick={() => { if (!swiping.current) { trackEvent("click_product_image"); setZoomOpen(true); } }}
             onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; swiping.current = false; }}
             onTouchMove={(e) => {
               const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
