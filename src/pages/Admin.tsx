@@ -6,7 +6,7 @@ import AdminCRM from "@/components/AdminCRM";
 import AdminTikTokTab from "@/components/AdminTikTokTab";
 import AdminRastreiosTab from "@/components/AdminRastreiosTab";
 import { ptBR } from "date-fns/locale";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -915,9 +915,93 @@ export default function Admin() {
                     });
                   };
 
+                  // Autocorrection stats from classified logs
+                  const autocorrectedCount = classified.filter(cl => {
+                    const data = cl.raw?.event_data;
+                    return data?.autocorrected;
+                  }).length;
+                  const blockedByExtension = classified.filter(cl => {
+                    const data = cl.raw?.event_data;
+                    return data?.autocorrected === "blocker";
+                  }).length;
+                  const retriedSuccess = classified.filter(cl => {
+                    const data = cl.raw?.event_data;
+                    return data?.autocorrected === "blocked_after_retry";
+                  }).length;
+
+                  // Get autocorrection history from sessionStorage
+                  let autocorrectionHistory: { action: string; detail: string; ts: number }[] = [];
+                  try {
+                    autocorrectionHistory = JSON.parse(sessionStorage.getItem("mesalar_autocorrections") || "[]");
+                  } catch {}
+
+                  const [showHistory, setShowHistory] = [false, (v: boolean) => {}]; // placeholder for state
+
                   return (
                     <>
-                      {/* Summary Cards */}
+                      {/* Autocorrection Summary */}
+                      <div className="bg-card border rounded-xl p-5 mb-2">
+                        <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                          <ShieldCheck className="h-5 w-5 text-emerald-500" /> Sistema de Autocorreção
+                        </h2>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3">
+                            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Erros Críticos</p>
+                            <p className="text-2xl font-bold text-destructive">{counts.system}</p>
+                          </div>
+                          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <RotateCcw className="h-3.5 w-3.5 text-emerald-500" />
+                              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Autocorrigidos</p>
+                            </div>
+                            <p className="text-2xl font-bold text-emerald-600">{autocorrectedCount + autocorrectionHistory.length}</p>
+                          </div>
+                          <div className="bg-muted border rounded-lg p-3">
+                            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Scripts Bloqueados</p>
+                            <p className="text-2xl font-bold text-muted-foreground">{counts.external + blockedByExtension}</p>
+                          </div>
+                          <div className="bg-muted border rounded-lg p-3">
+                            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Erros de Bot</p>
+                            <p className="text-2xl font-bold text-muted-foreground">{counts.bot}</p>
+                          </div>
+                        </div>
+
+                        {/* Autocorrection History */}
+                        {autocorrectionHistory.length > 0 && (
+                          <details className="mt-4">
+                            <summary className="cursor-pointer text-sm font-semibold flex items-center gap-2 hover:text-primary transition-colors select-none">
+                              <History className="h-4 w-4" /> Histórico de Autocorreções ({autocorrectionHistory.length})
+                            </summary>
+                            <div className="mt-2 max-h-[200px] overflow-y-auto space-y-1">
+                              {autocorrectionHistory.slice().reverse().slice(0, 30).map((entry, i) => {
+                                const actionLabels: Record<string, { label: string; color: string }> = {
+                                  script_retry_success: { label: "Script recarregado com sucesso", color: "text-emerald-600" },
+                                  script_blocked: { label: "Script bloqueado após retry", color: "text-muted-foreground" },
+                                  bot_ignored: { label: "Erro de bot ignorado", color: "text-muted-foreground" },
+                                  bot_script_ignored: { label: "Script de bot ignorado", color: "text-muted-foreground" },
+                                  bot_promise_ignored: { label: "Promise de bot ignorada", color: "text-muted-foreground" },
+                                  blocker_ignored: { label: "Bloqueador detectado", color: "text-amber-600" },
+                                  blocker_promise_ignored: { label: "Bloqueador (promise) detectado", color: "text-amber-600" },
+                                  external_ignored: { label: "Script externo ignorado", color: "text-muted-foreground" },
+                                };
+                                const info = actionLabels[entry.action] || { label: entry.action, color: "text-foreground" };
+                                return (
+                                  <div key={i} className="flex items-center gap-2 text-xs bg-muted/50 rounded px-3 py-1.5">
+                                    <RotateCcw className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                                    <span className={`font-medium ${info.color}`}>{info.label}</span>
+                                    <span className="text-muted-foreground truncate max-w-[300px] font-mono text-[10px]">{entry.detail}</span>
+                                    <span className="text-muted-foreground text-[10px] ml-auto flex-shrink-0">
+                                      {new Date(entry.ts).toLocaleTimeString("pt-BR")}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+
+                      {/* Category Filter Cards */}
                       <div>
                         <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
                           <Bug className="h-5 w-5" /> Logs Inteligentes
@@ -988,6 +1072,7 @@ export default function Admin() {
                           <div className="space-y-2">
                             {filtered.map((g, idx) => {
                               const cfg = CATEGORY_CONFIG[g.log.category];
+                              const wasAutocorrected = g.log.raw?.event_data?.autocorrected;
                               return (
                                 <div key={idx} className={`border rounded-xl p-4 ${cfg.bgColor} ${cfg.borderColor}`}>
                                   <div className="flex items-start justify-between gap-2">
@@ -1003,6 +1088,11 @@ export default function Admin() {
                                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${g.log.priority === "high" ? "bg-destructive/20 text-destructive" : g.log.priority === "medium" ? "bg-amber-500/20 text-amber-600" : "bg-muted text-muted-foreground"}`}>
                                             {g.log.priority === "high" ? "ALTA" : g.log.priority === "medium" ? "MÉDIA" : "BAIXA"}
                                           </span>
+                                          {wasAutocorrected && (
+                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 flex items-center gap-1">
+                                              <RotateCcw className="h-2.5 w-2.5" /> AUTOCORRIGIDO
+                                            </span>
+                                          )}
                                           {g.count > 1 && (
                                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
                                               {g.count}x ocorrências
