@@ -164,6 +164,58 @@ export default function Admin() {
       <div className="max-w-[1400px] mx-auto p-4">
         {tab === "dashboard" && (
           <div className="space-y-6">
+            {/* Funnel Metrics */}
+            <div>
+              <h2 className="text-lg font-bold mb-3">Funil de Vendas</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <Eye className="h-4 w-4 text-blue-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Visitantes</p>
+                  <p className="text-2xl font-bold mt-1">{visitorsCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                      <ShoppingCart className="h-4 w-4 text-orange-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Checkouts</p>
+                  <p className="text-2xl font-bold mt-1">{checkoutsCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                      <QrCode className="h-4 w-4 text-purple-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Pix Gerados</p>
+                  <p className="text-2xl font-bold mt-1">{pixGeneratedCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Aprovados</p>
+                  <p className="text-2xl font-bold mt-1 text-success">{paidCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 text-amber-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Conversão</p>
+                  <p className="text-2xl font-bold mt-1">{conversionRate}%</p>
+                </div>
+              </div>
+            </div>
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-card border rounded-xl p-5">
