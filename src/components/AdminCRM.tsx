@@ -3117,11 +3117,12 @@ export default function AdminCRM() {
 
             // Process events for visitor/session counts
             // Helper: normalize source to avoid per-click unique entries
+            const IGNORED_SOURCES = ["lovable.dev", "healthkart.com", "kango-roo.com"];
             const normalizeSource = (raw: string): string => {
               if (!raw || raw === "direct") return "direct";
-              // TikTok SCK codes (TT-timestamp-random) → "tiktok"
+              const rl = raw.toLowerCase();
+              if (IGNORED_SOURCES.some(d => rl.includes(d))) return "";
               if (/^TT-\d+/i.test(raw)) return "tiktok";
-              // Long click IDs or encoded tokens
               if (raw.length > 50 || raw.startsWith("E.C.P.") || raw.startsWith("fb.") || /^[A-Za-z0-9_-]{40,}$/.test(raw)) return "direct";
               return raw;
             };

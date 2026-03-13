@@ -103,7 +103,10 @@ function getUtmParams(): Record<string, string> {
   if (!utm.utm_source && document.referrer) {
     try {
       const host = new URL(document.referrer).hostname.toLowerCase();
-      if (host.includes("tiktok")) utm.utm_source = "tiktok";
+      const ignoredDomains = ["lovable.dev", "healthkart.com", "kango-roo.com"];
+      if (ignoredDomains.some(d => host.includes(d))) {
+        // Skip — don't set utm_source for ignored domains
+      } else if (host.includes("tiktok")) utm.utm_source = "tiktok";
       else if (host.includes("facebook") || host.includes("instagram")) utm.utm_source = "facebook";
       else if (host.includes("google")) utm.utm_source = "google";
       else utm.utm_source = host;
