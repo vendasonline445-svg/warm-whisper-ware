@@ -121,6 +121,7 @@ const Index = () => {
   const [exitShown, setExitShown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [reportMenuOpen, setReportMenuOpen] = useState(false);
   const [reportStep, setReportStep] = useState<'menu' | 'reasons' | 'form' | 'done'>('menu');
