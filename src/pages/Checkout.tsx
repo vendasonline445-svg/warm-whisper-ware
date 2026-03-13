@@ -398,7 +398,7 @@ const Checkout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-[140px]">
+    <div className="min-h-screen bg-background pb-[180px]">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-card px-4 py-3">
         <div className="mx-auto max-w-[480px] flex items-center gap-3">
