@@ -158,7 +158,11 @@ const Checkout = () => {
   const quantity = totalQty;
 
   const updateField = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev: typeof form) => {
+      const updated = { ...prev, [field]: value };
+      localStorage.setItem('mesalar_checkout_form', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const formatCPF = (val: string) => {
