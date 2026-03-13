@@ -118,6 +118,13 @@ const Index = () => {
   const [exitShown, setExitShown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [cartClosing, setCartClosing] = useState(false);
+
+  const closeCart = () => {
+    setCartClosing(true);
+    setTimeout(() => { setCartOpen(false); setCartClosing(false); }, 300);
+  };
   const [storeOpen, setStoreOpen] = useState(false);
   const [storeClosing, setStoreClosing] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -717,7 +724,7 @@ const Index = () => {
             <span>Chat</span>
           </button>
         </div>
-        <button onClick={openColorModal} className="flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-bold text-cta whitespace-nowrap">
+        <button onClick={() => setCartOpen(true)} className="flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-bold text-cta whitespace-nowrap">
           <ShoppingCart className="h-3.5 w-3.5 flex-shrink-0 text-cta" />
           <span className="text-cta font-bold text-[11px]">Adicionar ao carrinho</span>
         </button>
@@ -1098,6 +1105,45 @@ const Index = () => {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Cart Empty - Bottom Sheet */}
+      {cartOpen && (
+        <div className="fixed inset-0 z-[60]" onClick={closeCart}>
+          <div className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${cartClosing ? 'opacity-0' : 'opacity-100 animate-in fade-in-0'}`} />
+          <div
+            className={`absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl transition-transform duration-300 mx-auto sm:max-w-md ${cartClosing ? 'translate-y-full' : 'animate-in slide-in-from-bottom'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+            {/* Close button */}
+            <button
+              onClick={closeCart}
+              className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+
+            <div className="px-5 pt-2 pb-3 border-b">
+              <p className="text-base font-bold text-center">Carrinho de compras (0)</p>
+            </div>
+
+            <div className="flex flex-col items-center justify-center py-12 px-6">
+              <ShoppingCart className="h-16 w-16 text-muted-foreground/30 mb-4" />
+              <p className="text-lg font-bold text-foreground mb-1">Seu carrinho está vazio</p>
+              <p className="text-sm text-muted-foreground text-center mb-6">Vamos preenchê-lo com seus produtos favoritos e ótimas ofertas!</p>
+              <button
+                onClick={closeCart}
+                className="bg-cta text-white font-bold text-sm py-3 px-10 rounded-full hover:bg-cta-hover transition-colors"
+              >
+                Começar a comprar
+              </button>
+            </div>
           </div>
         </div>
       )}
