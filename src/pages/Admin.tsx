@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet } from "lucide-react";
 
 const ADMIN_PASSWORD = "12345";
 
