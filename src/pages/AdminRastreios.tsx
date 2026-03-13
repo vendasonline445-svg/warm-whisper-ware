@@ -44,7 +44,54 @@ export default function AdminRastreios() {
   const [testingWebhook, setTestingWebhook] = useState(false);
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [activeTab, setActiveTab] = useState<"rastreios" | "config" | "logs">("rastreios");
+  const [manualName, setManualName] = useState("");
+  const [manualEmail, setManualEmail] = useState("");
+  const [manualCep, setManualCep] = useState("");
+  const [manualEndereco, setManualEndereco] = useState("");
+  const [manualProduto, setManualProduto] = useState("");
+  const [sendingManual, setSendingManual] = useState(false);
   const navigate = useNavigate();
+
+  const sendTracklyTest = async () => {
+    if (!manualName || !manualEmail || !manualCep || !manualEndereco || !manualProduto) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    setSendingManual(true);
+    try {
+      const payload = {
+        status: "approved",
+        customer: { name: manualName, email: manualEmail },
+        address: { zip_code: manualCep },
+        products: [{ title: manualProduto }],
+      };
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const text = await res.text();
+      console.log("[Trackly] test webhook sent");
+
+      await supabase.from("tracking_webhook_logs" as any).insert({
+        webhook_url: webhookUrl,
+        status: res.ok ? "test_success" : "test_error",
+        response: text.slice(0, 500),
+      } as any);
+
+      if (res.ok) {
+        toast.success("Webhook enviado com sucesso");
+        setManualName(""); setManualEmail(""); setManualCep(""); setManualEndereco(""); setManualProduto("");
+      } else {
+        toast.error("Erro ao enviar webhook");
+      }
+      fetchLogs();
+    } catch (err: any) {
+      console.error("[Trackly] manual test error:", err);
+      toast.error("Erro ao enviar webhook");
+    }
+    setSendingManual(false);
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -285,6 +332,41 @@ export default function AdminRastreios() {
                   {testingWebhook ? "Enviando..." : "Testar webhook"}
                 </button>
               </div>
+            </div>
+
+            {/* Manual Test Section */}
+            <div className="border-t pt-6 mt-6">
+              <h3 className="text-md font-bold mb-4">Teste de envio manual</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nome *</label>
+                  <input type="text" value={manualName} onChange={(e) => setManualName(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do cliente" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email *</label>
+                  <input type="email" value={manualEmail} onChange={(e) => setManualEmail(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="email@exemplo.com" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">CEP *</label>
+                  <input type="text" value={manualCep} onChange={(e) => setManualCep(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="01001000" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Endereço *</label>
+                  <input type="text" value={manualEndereco} onChange={(e) => setManualEndereco(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Rua, número" required />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Produto *</label>
+                  <input type="text" value={manualProduto} onChange={(e) => setManualProduto(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do produto" required />
+                </div>
+              </div>
+              <button
+                onClick={sendTracklyTest}
+                disabled={sendingManual || !webhookUrl}
+                className="mt-4 bg-primary text-primary-foreground px-6 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 disabled:opacity-50"
+              >
+                <Send size={14} />
+                {sendingManual ? "Enviando..." : "Enviar teste"}
+              </button>
             </div>
           </div>
         )}
