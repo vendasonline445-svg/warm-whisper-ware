@@ -39,7 +39,7 @@ type Tab = "dashboard" | "leads";
 
 export default function Admin() {
   const navigate = useNavigate();
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem("admin_auth") === "true");
   const [password, setPassword] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
