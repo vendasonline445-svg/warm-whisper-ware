@@ -29,29 +29,54 @@ function useCheckoutCountdown() {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+type CartItem = { color: string; size: string; quantity: number };
+
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  // Load cart items: from localStorage cart OR from URL params (single item)
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mesalar_cart');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    // Fallback: single item from URL
+    const color = searchParams.get("color") || searchParams.get("cor") || "branca";
+    const size = searchParams.get("size") || searchParams.get("tamanho") || "180x60cm";
+    const qty = parseInt(searchParams.get("qty") || "1", 10);
+    return [{ color, size, quantity: qty }];
+  });
+
+  const updateCartItemQty = (index: number, qty: number) => {
+    if (qty <= 0) {
+      const updated = cartItems.filter((_, i) => i !== index);
+      setCartItems(updated.length ? updated : cartItems); // don't allow empty
+    } else {
+      const updated = [...cartItems];
+      updated[index] = { ...updated[index], quantity: qty };
+      setCartItems(updated);
+    }
+  };
+
   // InitiateCheckout event on mount
   useEffect(() => {
+    window.scrollTo({ top: 0 });
     trackTikTokEvent({
       event: "InitiateCheckout",
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
-        value: PRODUCT_PRICE,
+        value: subtotalRaw,
         currency: "BRL",
-        contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
+        contents: cartItems.map(i => ({ content_id: `mesa-dobravel-${i.color}-${i.size}`, quantity: i.quantity })),
       },
     });
   }, []);
-  const selectedColor = searchParams.get("color") || searchParams.get("cor") || "branca";
-  const selectedSize = searchParams.get("size") || searchParams.get("tamanho") || "180x60cm";
-  const sizeData = SIZE_PRICES[selectedSize] || SIZE_PRICES["180x60cm"];
-  const PRODUCT_PRICE = sizeData.price;
-  const OLD_PRICE = sizeData.oldPrice;
-  const BASE_DISCOUNT_VALUE = sizeData.oldPrice - sizeData.price;
+
   const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
   const savedCoupon = couponUsed ? '' : (localStorage.getItem('mesalar_coupon') || '');
   const couponParam = searchParams.get("cupom") || searchParams.get("coupon") || savedCoupon;
@@ -61,7 +86,6 @@ const Checkout = () => {
   const couponLabel = couponUpper === "DESCULPA80" ? "DESCULPA80 (-80%)" : couponUpper === "ULTIMA50" ? "ULTIMA50 (-50%)" : "VOLTA25 (-25%)";
   const timer = useCheckoutCountdown();
 
-  const [quantity, setQuantity] = useState(1);
   const [shipping, setShipping] = useState("padrao");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressOpen, setAddressOpen] = useState(true);
@@ -97,16 +121,27 @@ const Checkout = () => {
     numero: "", complemento: "", cpf: "",
   });
 
-  const colorLabel = selectedColor === "preta" ? "Preta" : "Branca";
-  const colorImage = selectedColor === "preta"
-    ? "/images/mesa-preta-popup.webp"
-    : "/images/mesa-branca-popup.webp";
+  // Derived totals from all cart items
+  const totalQty = cartItems.reduce((sum, i) => sum + i.quantity, 0);
+  const subtotalRaw = cartItems.reduce((sum, i) => {
+    const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
+    return sum + sp.price * i.quantity;
+  }, 0);
+  const totalOldPrice = cartItems.reduce((sum, i) => {
+    const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
+    return sum + sp.oldPrice * i.quantity;
+  }, 0);
+  const BASE_DISCOUNT_VALUE = totalOldPrice - subtotalRaw;
 
   const shippingCost = shipping === "express" ? 14.50 : 0;
-  const subtotal = PRODUCT_PRICE * quantity;
-  const couponAmount = hasCoupon ? Math.round(subtotal * couponDiscount * 100) / 100 : 0;
-  const total = subtotal - couponAmount + shippingCost;
+  const couponAmount = hasCoupon ? Math.round(subtotalRaw * couponDiscount * 100) / 100 : 0;
+  const total = subtotalRaw - couponAmount + shippingCost;
   const totalSavings = BASE_DISCOUNT_VALUE + couponAmount;
+
+  // For backward compat, use first item as "selected"
+  const selectedColor = cartItems[0]?.color || "branca";
+  const selectedSize = cartItems[0]?.size || "180x60cm";
+  const quantity = totalQty;
 
   const updateField = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -234,15 +269,17 @@ const Checkout = () => {
           phone: form.phone.replace(/\D/g, ""),
           cpf: form.cpf.replace(/\D/g, ""),
         },
-        items: [
-          {
-            id: "mesa-dobravel",
-            title: `Mesa Dobrável ${colorLabel} ${selectedSize}`,
-            unitPrice: Math.round((subtotal - couponAmount) * 100),
-            quantity,
-            tangible: true,
-          },
-        ],
+        items: cartItems.map((item) => {
+            const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
+            const cl = item.color === "preta" ? "Preta" : "Branca";
+            return {
+              id: `mesa-dobravel-${item.color}-${item.size}`,
+              title: `Mesa Dobrável ${cl} ${item.size}`,
+              unitPrice: Math.round(sp.price * (1 - couponDiscount) * 100),
+              quantity: item.quantity,
+              tangible: true,
+            };
+          }),
         shipping: {
           name: form.name,
           address: {
@@ -314,7 +351,7 @@ const Checkout = () => {
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,
-        product: { color: selectedColor, size: selectedSize, quantity, price: PRODUCT_PRICE, total, coupon: hasCoupon ? couponUpper : null, couponDiscount: couponAmount },
+        product: { items: cartItems, total, coupon: hasCoupon ? couponUpper : null, couponDiscount: couponAmount },
         shipping: { type: shipping, cost: shippingCost },
       }));
 
@@ -408,29 +445,36 @@ const Checkout = () => {
             <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> Muito bem avaliado! 4.8/5,0
           </p>
 
-          <div className="flex items-start gap-3 mt-3">
-            <img src={colorImage} alt="Mesa" className="w-20 h-20 object-contain rounded-md border" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta 180x60cm...</p>
-              <p className="text-xs text-muted-foreground">{colorLabel}, {selectedSize}</p>
-              <span className="text-xs flex items-center gap-1 mt-0.5 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
-                🔄 Devolução gratuita
-              </span>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-sm font-bold text-cta">R$ {PRODUCT_PRICE.toFixed(2).replace(".", ",")}</span>
-                <span className="text-[10px]">📦</span>
+          {cartItems.map((item, idx) => {
+            const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
+            const cl = item.color === "preta" ? "Preta" : "Branca";
+            const img = item.color === "preta" ? "/images/mesa-preta-popup.webp" : "/images/mesa-branca-popup.webp";
+            return (
+              <div key={`${item.color}-${item.size}`} className={`flex items-start gap-3 mt-3 ${idx > 0 ? "pt-3 border-t" : ""}`}>
+                <img src={img} alt="Mesa" className="w-20 h-20 object-contain rounded-md border" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta {item.size}</p>
+                  <p className="text-xs text-muted-foreground">{cl}, {item.size}</p>
+                  <span className="text-xs flex items-center gap-1 mt-0.5 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
+                    🔄 Devolução gratuita
+                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm font-bold text-cta">R$ {sp.price.toFixed(2).replace(".", ",")}</span>
+                    <span className="text-[10px]">📦</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground line-through">R$ {sp.oldPrice.toFixed(2).replace(".", ",")}</span>
+                    <span className="text-xs text-cta font-semibold">-{sp.discount}%</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-0 border rounded-lg h-9">
+                  <button onClick={() => updateCartItemQty(idx, item.quantity - 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Minus className="h-3.5 w-3.5" /></button>
+                  <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
+                  <button onClick={() => updateCartItemQty(idx, item.quantity + 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground line-through">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
-                <span className="text-xs text-cta font-semibold">-58%</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-0 border rounded-lg h-9">
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Minus className="h-3.5 w-3.5" /></button>
-              <span className="text-sm font-medium w-6 text-center">{quantity}</span>
-              <button onClick={() => setQuantity(quantity + 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         {/* Shipping Options */}
@@ -486,7 +530,7 @@ const Checkout = () => {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground flex items-center gap-1">Subtotal do produto ({quantity}x) <ChevronDown className="h-3 w-3" /></span>
-              <span>R$ {subtotal.toFixed(2).replace(".", ",")}</span>
+              <span>R$ {subtotalRaw.toFixed(2).replace(".", ",")}</span>
             </div>
             {hasCoupon && (
               <div className="flex justify-between">
@@ -620,7 +664,7 @@ const Checkout = () => {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
         <div className="mx-auto max-w-[480px] px-4">
           <div className="flex items-center justify-between py-2">
-            <span className="font-bold text-sm">Total (1 item)</span>
+            <span className="font-bold text-sm">Total ({totalQty} {totalQty === 1 ? 'item' : 'itens'})</span>
             <span className="font-bold text-lg text-cta">R$ {total.toFixed(2).replace(".", ",")}</span>
           </div>
           <Button
