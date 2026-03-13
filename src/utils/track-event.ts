@@ -190,8 +190,6 @@ async function ensureVisitor() {
   const vid = getOrCreateVisitorId();
   try {
     await db.from("visitors").upsert(
-  try {
-    await supabase.from("visitors").upsert(
       { visitor_id: vid, device: getDeviceType(), first_seen: new Date().toISOString() },
       { onConflict: "visitor_id", ignoreDuplicates: true }
     );
@@ -207,7 +205,7 @@ async function ensureSession() {
   const utm = getUtmParams();
   const params = new URLSearchParams(window.location.search);
   try {
-    await supabase.from("sessions").upsert(
+    await db.from("sessions").upsert(
       {
         session_id: sid,
         visitor_id: vid,
