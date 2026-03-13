@@ -54,11 +54,19 @@ const Checkout = () => {
   const updateCartItemQty = (index: number, qty: number) => {
     if (qty <= 0) {
       const updated = cartItems.filter((_, i) => i !== index);
-      setCartItems(updated.length ? updated : cartItems); // don't allow empty
+      if (updated.length === 0) {
+        // Last item — navigate back
+        localStorage.removeItem('mesalar_cart');
+        navigate('/');
+        return;
+      }
+      setCartItems(updated);
+      localStorage.setItem('mesalar_cart', JSON.stringify(updated));
     } else {
       const updated = [...cartItems];
       updated[index] = { ...updated[index], quantity: qty };
       setCartItems(updated);
+      localStorage.setItem('mesalar_cart', JSON.stringify(updated));
     }
   };
 
