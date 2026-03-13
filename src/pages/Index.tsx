@@ -282,17 +282,47 @@ const Index = () => {
     trackEvent("page_view", { page: "/" });
 
     let maxScroll = 0;
+    let lastScrollMilestone = 0;
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (docHeight > 0) {
         const pct = Math.round((scrollTop / docHeight) * 100);
         if (pct > maxScroll) maxScroll = pct;
+        // Track scroll milestones at 25%, 50%, 75%, 90%
+        const milestones = [25, 50, 75, 90];
+        for (const m of milestones) {
+          if (pct >= m && lastScrollMilestone < m) {
+            lastScrollMilestone = m;
+            trackEvent("scroll_milestone", { percent: m, section: getSectionAtScroll(scrollTop) });
+          }
+        }
       }
     };
+
+    // Track clicks with position and section for heatmap
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const section = target.closest("[data-section]")?.getAttribute("data-section") ||
+        getSectionAtScroll(window.scrollY);
+      const rect = document.documentElement;
+      const xPct = Math.round((e.clientX / rect.clientWidth) * 100);
+      const yPct = Math.round(((e.pageY) / rect.scrollHeight) * 100);
+      const elementTag = target.tagName.toLowerCase();
+      const elementText = (target.textContent || "").slice(0, 50).trim();
+      trackEvent("click_position", {
+        x: xPct, y: yPct,
+        section,
+        element: elementTag,
+        element_text: elementText,
+      });
+    };
+
     window.addEventListener("scroll", handleScroll, { passive: true });
+    document.addEventListener("click", handleClick);
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      document.removeEventListener("click", handleClick);
       if (maxScroll > 0) trackEvent("scroll_depth", { percent: maxScroll });
     };
   }, []);
