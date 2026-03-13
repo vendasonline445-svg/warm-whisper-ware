@@ -1,7 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook } from "lucide-react";
+import { format, startOfDay, endOfDay, subDays, startOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const ADMIN_PASSWORD = "12345";
 
@@ -37,6 +43,40 @@ interface Lead {
 
 type Tab = "dashboard" | "leads";
 
+type PeriodKey = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
+
+const PERIOD_LABELS: Record<PeriodKey, string> = {
+  today: "Hoje",
+  yesterday: "Ontem",
+  "7days": "Últimos 7 dias",
+  "30days": "Últimos 30 dias",
+  month: "Este mês",
+  custom: "Personalizado",
+};
+
+function getDateRange(period: PeriodKey, customFrom?: Date, customTo?: Date): { from: string; to: string } {
+  const now = new Date();
+  switch (period) {
+    case "today":
+      return { from: startOfDay(now).toISOString(), to: endOfDay(now).toISOString() };
+    case "yesterday": {
+      const y = subDays(now, 1);
+      return { from: startOfDay(y).toISOString(), to: endOfDay(y).toISOString() };
+    }
+    case "7days":
+      return { from: startOfDay(subDays(now, 7)).toISOString(), to: endOfDay(now).toISOString() };
+    case "30days":
+      return { from: startOfDay(subDays(now, 30)).toISOString(), to: endOfDay(now).toISOString() };
+    case "month":
+      return { from: startOfMonth(now).toISOString(), to: endOfDay(now).toISOString() };
+    case "custom":
+      return {
+        from: customFrom ? startOfDay(customFrom).toISOString() : startOfDay(subDays(now, 7)).toISOString(),
+        to: customTo ? endOfDay(customTo).toISOString() : endOfDay(now).toISOString(),
+      };
+  }
+}
+
 interface SystemAlert {
   id: string;
   type: "critical" | "warning" | "info";
@@ -59,6 +99,9 @@ export default function Admin() {
   const [imageClicks, setImageClicks] = useState(0);
   const [avgScroll, setAvgScroll] = useState(0);
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
+  const [period, setPeriod] = useState<PeriodKey>("30days");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,22 +114,23 @@ export default function Admin() {
     }
   };
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     if (!authenticated) return;
     setLoading(true);
 
+    const { from: rangeFrom, to: rangeTo } = getDateRange(period, customFrom, customTo);
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     // Fetch leads + page views + events + alert data in parallel
     Promise.all([
-      supabase.from("checkout_leads").select("*").order("created_at", { ascending: false }),
-      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/"),
-      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout"),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_buy_button"),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_product_image"),
-      supabase.from("user_events").select("event_data").eq("event_type", "scroll_depth"),
-      // Alert queries
+      supabase.from("checkout_leads").select("*").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }),
+      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_buy_button").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_product_image").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      supabase.from("user_events").select("event_data").eq("event_type", "scroll_depth").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      // Alert queries (always use fixed windows, not period)
       supabase.from("checkout_leads").select("id", { count: "exact", head: true }).neq("status", "paid").gte("created_at", oneHourAgo),
       supabase.from("tracking_webhook_logs").select("id", { count: "exact", head: true }).neq("status", "sent").gte("created_at", oneDayAgo),
       supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "js_error").gte("created_at", oneDayAgo),
@@ -185,7 +229,11 @@ export default function Admin() {
       setAlerts(newAlerts);
       setLoading(false);
     });
-  }, [authenticated]);
+  }, [authenticated, period, customFrom, customTo]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const exportCSV = () => {
     if (!leads.length) return;
@@ -272,6 +320,50 @@ export default function Admin() {
       <div className="max-w-[1400px] mx-auto p-4">
         {tab === "dashboard" && (
           <div className="space-y-6">
+            {/* Period Filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-muted-foreground mr-1">Período:</span>
+              {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setPeriod(key);
+                    if (key !== "custom") { setCustomFrom(undefined); setCustomTo(undefined); }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${period === key ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+                >
+                  {PERIOD_LABELS[key]}
+                </button>
+              ))}
+              {period === "custom" && (
+                <div className="flex items-center gap-2 ml-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("text-xs gap-1", !customFrom && "text-muted-foreground")}>
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        {customFrom ? format(customFrom, "dd/MM/yyyy", { locale: ptBR }) : "De"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                  <span className="text-xs text-muted-foreground">até</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("text-xs gap-1", !customTo && "text-muted-foreground")}>
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        {customTo ? format(customTo, "dd/MM/yyyy", { locale: ptBR }) : "Até"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={customTo} onSelect={setCustomTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+            </div>
+
             {/* Funnel Metrics */}
             <div>
               <h2 className="text-lg font-bold mb-3">Funil de Vendas</h2>
