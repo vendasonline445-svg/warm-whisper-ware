@@ -619,6 +619,8 @@ const Index = () => {
         {/* Gray Divider */}
         <div className="mt-4 h-2 bg-muted/60" />
 
+        {belowFoldReady ? (<>
+
         {/* Video Carousel Section */}
         <div className="px-4 mt-4">
           <h2 className="text-base font-bold mb-3">Vídeos do Produto</h2>
