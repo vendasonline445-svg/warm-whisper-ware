@@ -116,6 +116,7 @@ const PixPayment = () => {
     if (pixCode) {
       navigator.clipboard.writeText(pixCode);
       setCopied(true);
+      setTimeout(() => setShowCheckBtn(true), 5000);
     }
   };
 
