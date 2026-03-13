@@ -545,6 +545,58 @@ export default function Admin() {
               </div>
             </div>
 
+            {/* Diagnóstico do Funil */}
+            <div>
+              <h2 className="text-lg font-bold mb-3">Diagnóstico do Funil</h2>
+              <div className="bg-card border rounded-xl p-5">
+                {(() => {
+                  const steps = [
+                    { label: "Visitantes", value: visitorsCount, color: "bg-blue-500" },
+                    { label: "Cliques em Comprar", value: buyClicks, color: "bg-indigo-500" },
+                    { label: "Checkouts iniciados", value: checkoutsCount, color: "bg-orange-500" },
+                    { label: "Pix gerados", value: pixGeneratedCount, color: "bg-purple-500" },
+                    { label: "Pagamentos aprovados", value: paidCount, color: "bg-emerald-500" },
+                  ];
+                  const maxVal = Math.max(...steps.map(s => s.value), 1);
+                  return (
+                    <div className="space-y-1">
+                      {steps.map((step, i) => {
+                        const widthPct = Math.max((step.value / maxVal) * 100, 8);
+                        const prevValue = i > 0 ? steps[i - 1].value : null;
+                        const rate = prevValue && prevValue > 0 ? ((step.value / prevValue) * 100).toFixed(1) : null;
+                        return (
+                          <div key={step.label}>
+                            {i > 0 && (
+                              <div className="flex items-center gap-2 py-1.5 pl-4">
+                                <span className="text-muted-foreground text-xs">↓</span>
+                                <span className={`text-xs font-bold ${Number(rate) < 20 ? "text-destructive" : Number(rate) < 50 ? "text-amber-500" : "text-emerald-500"}`}>
+                                  {rate}%
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">de conversão</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-3">
+                              <div className="w-[140px] sm:w-[180px] flex-shrink-0 text-right">
+                                <span className="text-xs font-medium text-foreground">{step.label}</span>
+                              </div>
+                              <div className="flex-1 h-8 bg-muted rounded-lg overflow-hidden relative">
+                                <div
+                                  className={`h-full ${step.color} rounded-lg transition-all duration-500 flex items-center justify-end pr-2`}
+                                  style={{ width: `${widthPct}%` }}
+                                >
+                                  <span className="text-[11px] font-bold text-white drop-shadow-sm">{step.value.toLocaleString("pt-BR")}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
             {/* Alertas do Sistema */}
             <div>
               <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
