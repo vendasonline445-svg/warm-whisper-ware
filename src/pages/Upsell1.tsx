@@ -134,7 +134,7 @@ const Upsell1 = () => {
 
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("pixReturnTo", "/taxa-alfandega");
-      navigate("/pix");
+      navigate(getUrlWithUtm("/pix"));
     } catch (err) {
       console.error("Upsell PIX error:", err);
       toast({ title: "Erro inesperado", description: "Tente novamente.", variant: "destructive" });

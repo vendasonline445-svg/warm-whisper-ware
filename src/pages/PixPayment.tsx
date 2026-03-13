@@ -222,7 +222,7 @@ const PixPayment = () => {
               O código PIX não é mais válido. Gere um novo código para concluir sua compra.
             </p>
             <Button
-              onClick={() => navigate("/checkout" + (orderData?.product?.color ? `?color=${orderData.product.color}&size=${orderData.product.size || "180x60cm"}` : ""))}
+              onClick={() => navigate(getUrlWithUtm("/checkout" + (orderData?.product?.color ? `?color=${orderData.product.color}&size=${orderData.product.size || "180x60cm"}` : "")))}
               className="w-full font-bold text-[15px] py-4 h-auto rounded-2xl shadow-md text-white"
               style={{ background: "linear-gradient(135deg, #e8687a 0%, #d4556a 100%)" }}
             >

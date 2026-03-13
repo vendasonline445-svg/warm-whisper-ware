@@ -304,7 +304,7 @@ const TemplateCheckout = () => {
         shipping: { type: shipping, cost: shippingCost },
       }));
 
-      navigate("/pix");
+      navigate(getUrlWithUtm("/pix"));
     } catch (err) {
       console.error("Submit error:", err);
       toast({ title: "Erro inesperado", description: "Tente novamente.", variant: "destructive" });

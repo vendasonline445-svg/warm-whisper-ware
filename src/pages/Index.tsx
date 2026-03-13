@@ -1526,7 +1526,7 @@ const Index = () => {
                   if (selectedColor && selectedSize) {
                     saveCart([{ color: selectedColor, size: selectedSize, quantity: 1 }]);
                     setExit2Open(false);
-                    nav(`/checkout?cupom=ULTIMA50`);
+                    nav(getUrlWithUtm(`/checkout?cupom=ULTIMA50`));
                   }
                 }}
                 disabled={!selectedColor}

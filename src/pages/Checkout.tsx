@@ -390,7 +390,7 @@ const Checkout = () => {
         localStorage.removeItem('mesalar_coupon');
       }
 
-      navigate("/pix");
+      navigate(getUrlWithUtm("/pix"));
     } catch (err) {
       console.error("Submit error:", err);
       toast({ title: "Erro inesperado", description: "Tente novamente.", variant: "destructive" });
