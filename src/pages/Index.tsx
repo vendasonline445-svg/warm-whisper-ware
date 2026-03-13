@@ -1154,21 +1154,32 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Exit Intent Modal - VOLTA25 */}
-      <Dialog open={exitModalOpen} onOpenChange={setExitModalOpen}>
-        <DialogContent className="max-w-[88vw] sm:max-w-sm rounded-2xl p-5 text-center border-t-4 border-t-destructive">
-          <DialogDescription className="sr-only">Cupom de desconto exclusivo</DialogDescription>
-          <div className="flex flex-col items-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-3">
-              <Gift className="h-6 w-6 text-destructive" />
+      {/* Exit Intent Modal - VOLTA25 (Bottom Sheet matching product modal) */}
+      {exitModalOpen && (
+        <div className="fixed inset-0 z-[60]" onClick={() => setExitModalOpen(false)}>
+          <div className="absolute inset-0 bg-black/60 animate-in fade-in-0" />
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl transition-transform duration-300 mx-auto sm:max-w-md animate-in slide-in-from-bottom max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
             </div>
-            <DialogTitle className="text-lg font-bold mb-1">Ei, espera! 🎁</DialogTitle>
-            <p className="text-xs text-muted-foreground mb-3">
-              Preparamos um <strong className="text-destructive">desconto exclusivo</strong> pra você!
-            </p>
+            {/* Close button */}
+            <button
+              onClick={() => setExitModalOpen(false)}
+              className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+
+            <div className="px-5 pt-2 pb-3">
+              <p className="text-base font-bold">Ei, espera! 🎁</p>
+            </div>
 
             {/* Coupon Box */}
-            <div className="w-full rounded-lg border-2 border-dashed border-coupon-border bg-coupon-bg p-3 mb-4">
+            <div className="mx-5 rounded-lg border-2 border-dashed border-coupon-border bg-coupon-bg p-3 mb-4">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Cupom de Desconto</p>
               <p className="text-2xl font-black tracking-wider text-destructive mb-0.5">VOLTA25</p>
               <p className="text-xs"><strong>25% OFF</strong> na sua compra</p>
@@ -1178,70 +1189,95 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Color Selection */}
-            <p className="text-xs font-bold mb-2">Escolha a cor:</p>
-            <div className="grid grid-cols-2 gap-2.5 w-full mb-3">
-              {[
-                { id: "branca", name: "Branca", img: "/images/mesa-branca-popup.webp" },
-                { id: "preta", name: "Preta", img: "/images/mesa-preta-popup.webp" },
-              ].map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => setSelectedColor(color.id)}
-                  className={`rounded-lg border-2 overflow-hidden transition-all ${
-                    selectedColor === color.id
-                      ? "border-foreground shadow-lg"
-                      : "border-border hover:border-blue-500 hover:bg-blue-50"
-                  }`}
-                >
-                  <div className="aspect-[4/3] bg-background p-1.5">
-                    <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
-                  </div>
-                  <p className="py-1.5 text-center text-xs font-medium">{color.name}</p>
-                </button>
-              ))}
+            {/* Product header */}
+            <div className="flex items-center gap-3 px-5 pb-4">
+              <img
+                src={selectedColor === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
+                alt="Mesa Dobrável"
+                className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1"
+              />
+              <div>
+                <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                <p className="text-cta font-extrabold text-lg">R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}</p>
+                <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.oldPrice ?? 159.90).toFixed(2).replace('.', ',')}</p>
+                <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">Economize {SIZE_PRICES[selectedSize]?.discount ?? 56}%</span>
+              </div>
             </div>
 
-            {/* Size Selection */}
-            <p className="text-xs font-bold mb-2">Escolha o tamanho:</p>
-            <div className="grid grid-cols-2 gap-2 w-full mb-4">
-              {Object.entries(SIZE_PRICES).map(([size, data]) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`rounded-lg border-2 p-2 transition-all text-left ${
-                    selectedSize === size
-                      ? "border-foreground shadow-lg bg-accent"
-                      : "border-border hover:border-blue-500 hover:bg-blue-50"
-                  }`}
-                >
-                  <p className="text-xs font-bold">{size}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span className="text-sm font-black text-destructive">R$ {data.price.toFixed(2).replace('.', ',')}</span>
-                    <span className="text-[10px] line-through text-muted-foreground">R$ {data.oldPrice.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-emerald-600">-{data.discount}%</span>
-                </button>
-              ))}
+            {/* Color selection */}
+            <div className="px-5 pb-4">
+              <p className="text-sm font-semibold mb-2">Cor: {selectedColor === 'preta' ? 'Preta' : selectedColor === 'branca' ? 'Branca' : 'Selecione'}</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { id: "branca", name: "Branca", img: "/images/mesa-branca-popup.webp" },
+                  { id: "preta", name: "Preta", img: "/images/mesa-preta-popup.webp" },
+                ].map((color) => (
+                  <button
+                    key={color.id}
+                    onClick={() => setSelectedColor(color.id)}
+                    className={`rounded-2xl border-2 overflow-hidden transition-all relative ${
+                      selectedColor === color.id
+                        ? "border-cta bg-cta/5 shadow-lg"
+                        : "border-border hover:border-cta/50"
+                    }`}
+                  >
+                    {selectedColor === color.id && (
+                      <div className="absolute top-2 right-2 bg-cta rounded-full p-0.5">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                    <div className="aspect-[4/3] bg-muted/30 p-3">
+                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
+                    </div>
+                    <p className="py-2 text-center text-sm font-medium">{color.name}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <Button
-              onClick={() => {
-                if (selectedColor && selectedSize) {
-                  setExitModalOpen(false);
-                  nav(`/checkout?cor=${selectedColor}&tamanho=${selectedSize}&cupom=VOLTA25`);
-                }
-              }}
-              disabled={!selectedColor || !selectedSize}
-              className="w-full bg-muted text-muted-foreground hover:bg-cta hover:text-cta-foreground font-bold text-sm py-3 h-auto rounded-xl disabled:opacity-50 transition-colors data-[active=true]:bg-cta data-[active=true]:text-cta-foreground"
-              data-active={!!selectedColor && !!selectedSize}
-            >
-              Aproveitar desconto 🔥
-            </Button>
-            <p className="text-[10px] text-muted-foreground mt-2">Válido por tempo limitado. Não perca!</p>
+            {/* Size selection */}
+            <div className="px-5 pb-4">
+              <p className="text-sm font-semibold mb-2">Tamanho:</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.keys(SIZE_PRICES).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSelectedSize(s)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                      selectedSize === s
+                        ? "border-cta bg-cta/5 text-cta"
+                        : "border-border text-foreground hover:border-foreground/40"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Confirm button */}
+            <div className="px-5 pb-6">
+              <button
+                onClick={() => {
+                  if (selectedColor && selectedSize) {
+                    setExitModalOpen(false);
+                    nav(`/checkout?cor=${selectedColor}&tamanho=${selectedSize}&cupom=VOLTA25`);
+                  }
+                }}
+                disabled={!selectedColor}
+                className={`w-full font-bold text-base py-4 rounded-2xl transition-all ${
+                  selectedColor
+                    ? 'bg-cta text-white hover:bg-cta-hover'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
+                }`}
+              >
+                Aproveitar desconto 🔥 - R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}
+              </button>
+              <p className="text-[10px] text-muted-foreground mt-2 text-center">Válido por tempo limitado. Não perca!</p>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* Store Info Modal - Bottom Sheet */}
       {storeOpen && (
