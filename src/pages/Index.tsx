@@ -115,6 +115,10 @@ const Index = () => {
   const swiping = useRef(false);
   const [currentImage, setCurrentImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("180x60cm");
+  const currentSizeData = SIZE_PRICES[selectedSize] || SIZE_PRICES["180x60cm"];
+  const PRICE = currentSizeData.price;
+  const OLD_PRICE = currentSizeData.oldPrice;
+  const DISCOUNT = currentSizeData.discount;
   const [colorModalOpen, setColorModalOpen] = useState(false);
   const [colorModalClosing, setColorModalClosing] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
