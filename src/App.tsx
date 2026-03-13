@@ -12,6 +12,7 @@ import TemplateAdmin from "./pages/TemplateAdmin";
 import PixPayment from "./pages/PixPayment";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import AdminTikTok from "./pages/AdminTikTok";
 import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import TermosDeUso from "./pages/TermosDeUso";
 import Upsell1 from "./pages/Upsell1";
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/template-checkout" element={<TemplateCheckout />} />
           <Route path="/pix" element={<PixPayment />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/tiktok" element={<AdminTikTok />} />
           <Route path="/adm" element={<TemplateAdmin />} />
           <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
           <Route path="/termos-de-uso" element={<TermosDeUso />} />
