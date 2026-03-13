@@ -29,29 +29,54 @@ function useCheckoutCountdown() {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+type CartItem = { color: string; size: string; quantity: number };
+
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  // Load cart items: from localStorage cart OR from URL params (single item)
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mesalar_cart');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    // Fallback: single item from URL
+    const color = searchParams.get("color") || searchParams.get("cor") || "branca";
+    const size = searchParams.get("size") || searchParams.get("tamanho") || "180x60cm";
+    const qty = parseInt(searchParams.get("qty") || "1", 10);
+    return [{ color, size, quantity: qty }];
+  });
+
+  const updateCartItemQty = (index: number, qty: number) => {
+    if (qty <= 0) {
+      const updated = cartItems.filter((_, i) => i !== index);
+      setCartItems(updated.length ? updated : cartItems); // don't allow empty
+    } else {
+      const updated = [...cartItems];
+      updated[index] = { ...updated[index], quantity: qty };
+      setCartItems(updated);
+    }
+  };
+
   // InitiateCheckout event on mount
   useEffect(() => {
+    window.scrollTo({ top: 0 });
     trackTikTokEvent({
       event: "InitiateCheckout",
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
-        value: PRODUCT_PRICE,
+        value: subtotalRaw,
         currency: "BRL",
-        contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
+        contents: cartItems.map(i => ({ content_id: `mesa-dobravel-${i.color}-${i.size}`, quantity: i.quantity })),
       },
     });
   }, []);
-  const selectedColor = searchParams.get("color") || searchParams.get("cor") || "branca";
-  const selectedSize = searchParams.get("size") || searchParams.get("tamanho") || "180x60cm";
-  const sizeData = SIZE_PRICES[selectedSize] || SIZE_PRICES["180x60cm"];
-  const PRODUCT_PRICE = sizeData.price;
-  const OLD_PRICE = sizeData.oldPrice;
-  const BASE_DISCOUNT_VALUE = sizeData.oldPrice - sizeData.price;
+
   const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
   const savedCoupon = couponUsed ? '' : (localStorage.getItem('mesalar_coupon') || '');
   const couponParam = searchParams.get("cupom") || searchParams.get("coupon") || savedCoupon;
@@ -61,7 +86,6 @@ const Checkout = () => {
   const couponLabel = couponUpper === "DESCULPA80" ? "DESCULPA80 (-80%)" : couponUpper === "ULTIMA50" ? "ULTIMA50 (-50%)" : "VOLTA25 (-25%)";
   const timer = useCheckoutCountdown();
 
-  const [quantity, setQuantity] = useState(1);
   const [shipping, setShipping] = useState("padrao");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressOpen, setAddressOpen] = useState(true);
@@ -97,16 +121,27 @@ const Checkout = () => {
     numero: "", complemento: "", cpf: "",
   });
 
-  const colorLabel = selectedColor === "preta" ? "Preta" : "Branca";
-  const colorImage = selectedColor === "preta"
-    ? "/images/mesa-preta-popup.webp"
-    : "/images/mesa-branca-popup.webp";
+  // Derived totals from all cart items
+  const totalQty = cartItems.reduce((sum, i) => sum + i.quantity, 0);
+  const subtotalRaw = cartItems.reduce((sum, i) => {
+    const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
+    return sum + sp.price * i.quantity;
+  }, 0);
+  const totalOldPrice = cartItems.reduce((sum, i) => {
+    const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
+    return sum + sp.oldPrice * i.quantity;
+  }, 0);
+  const BASE_DISCOUNT_VALUE = totalOldPrice - subtotalRaw;
 
   const shippingCost = shipping === "express" ? 14.50 : 0;
-  const subtotal = PRODUCT_PRICE * quantity;
-  const couponAmount = hasCoupon ? Math.round(subtotal * couponDiscount * 100) / 100 : 0;
-  const total = subtotal - couponAmount + shippingCost;
+  const couponAmount = hasCoupon ? Math.round(subtotalRaw * couponDiscount * 100) / 100 : 0;
+  const total = subtotalRaw - couponAmount + shippingCost;
   const totalSavings = BASE_DISCOUNT_VALUE + couponAmount;
+
+  // For backward compat, use first item as "selected"
+  const selectedColor = cartItems[0]?.color || "branca";
+  const selectedSize = cartItems[0]?.size || "180x60cm";
+  const quantity = totalQty;
 
   const updateField = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
