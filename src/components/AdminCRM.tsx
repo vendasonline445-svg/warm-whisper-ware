@@ -572,6 +572,235 @@ export default function AdminCRM() {
     return { score: clamped, label: "Gargalo Crítico", color: "text-red-500", bg: "bg-red-500/10" };
   }, [funnelData]);
 
+  // ── Funnel Diagnostic ──
+  const funnelDiagnostic = useMemo(() => {
+    if (funnelData.length < 2 || funnelData[0].count === 0) return null;
+
+    // Find biggest bottleneck (highest drop rate after visitors)
+    let worstIdx = 1;
+    let worstDrop = 0;
+    funnelData.slice(1).forEach((step, i) => {
+      if (step.dropRate > worstDrop) {
+        worstDrop = step.dropRate;
+        worstIdx = i + 1;
+      }
+    });
+
+    const bottleneckStep = funnelData[worstIdx];
+    const prevStep = funnelData[worstIdx - 1];
+    const overallConv = funnelData[0].count > 0 ? (funnelData[funnelData.length - 1].count / funnelData[0].count * 100) : 0;
+
+    type DiagItem = { title: string; desc: string; severity: "critical" | "warning" | "info" };
+    type Suggestion = { icon: string; text: string };
+
+    const diagnostics: DiagItem[] = [];
+    const suggestions: Suggestion[] = [];
+
+    // Main bottleneck
+    diagnostics.push({
+      title: `Gargalo detectado: ${prevStep.label} → ${bottleneckStep.label}`,
+      desc: `Apenas ${bottleneckStep.convRate.toFixed(1)}% dos usuários avançam nesta etapa. ${prevStep.count - bottleneckStep.count} visitantes abandonam aqui (${bottleneckStep.dropRate.toFixed(0)}% de queda).`,
+      severity: bottleneckStep.dropRate > 70 ? "critical" : "warning",
+    });
+
+    // Specific analysis per bottleneck type
+    const visitors = funnelData[0]?.count || 0;
+    const engaged = funnelData[1]?.count || 0;
+    const buyClicks = funnelData[2]?.count || 0;
+    const checkouts = funnelData[3]?.count || 0;
+    const pixCard = funnelData[5]?.count || 0;
+    const paid = funnelData[6]?.count || 0;
+
+    // Low engagement
+    if (visitors > 20 && engaged / visitors < 0.3) {
+      diagnostics.push({
+        title: "Baixo engajamento na página",
+        desc: `Apenas ${((engaged / visitors) * 100).toFixed(1)}% dos visitantes interagem com a página. A maioria sai sem scrollar ou clicar.`,
+        severity: "warning",
+      });
+      suggestions.push(
+        { icon: "🎯", text: "Melhorar headline e primeira dobra da página" },
+        { icon: "📱", text: "Verificar velocidade de carregamento no mobile" },
+        { icon: "🎨", text: "Adicionar elementos visuais que prendam atenção" },
+      );
+    }
+
+    // Low buy click rate
+    if (visitors > 20 && buyClicks / visitors < 0.05) {
+      diagnostics.push({
+        title: "Baixa taxa de clique em comprar",
+        desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam no botão de compra. Isso pode indicar problema na proposta de valor ou no preço.`,
+        severity: buyClicks / visitors < 0.02 ? "critical" : "warning",
+      });
+      suggestions.push(
+        { icon: "💰", text: "Destacar preço e desconto mais claramente" },
+        { icon: "🛒", text: "Tornar o botão de compra mais visível e urgente" },
+        { icon: "⭐", text: "Adicionar mais prova social acima do botão" },
+        { icon: "🎁", text: "Testar oferta com bônus ou frete grátis" },
+      );
+    }
+
+    // High checkout abandonment
+    if (checkouts > 5 && pixCard / checkouts < 0.4) {
+      diagnostics.push({
+        title: "Alto abandono no checkout",
+        desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts resultam em tentativa de pagamento. Possível fricção no formulário.`,
+        severity: "critical",
+      });
+      suggestions.push(
+        { icon: "📋", text: "Simplificar formulário de checkout" },
+        { icon: "🔒", text: "Adicionar selos de segurança no checkout" },
+        { icon: "⏱", text: "Adicionar timer de urgência no checkout" },
+      );
+    }
+
+    // Low payment completion
+    if (pixCard > 3 && paid / pixCard < 0.3) {
+      diagnostics.push({
+        title: "Baixa taxa de conclusão de pagamento",
+        desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% das tentativas de pagamento são concluídas. Possível problema com Pix ou cartão.`,
+        severity: "warning",
+      });
+      suggestions.push(
+        { icon: "📱", text: "Verificar se QR code Pix funciona corretamente" },
+        { icon: "💳", text: "Verificar integração de pagamento por cartão" },
+        { icon: "📩", text: "Implementar lembrete de pagamento Pix" },
+      );
+    }
+
+    // Traffic quality alert
+    if (visitors > 50 && engaged / visitors < 0.15) {
+      diagnostics.push({
+        title: "Possível tráfego de baixa qualidade",
+        desc: `Grande volume de visitantes (${visitors}) com baixíssima interação (${((engaged / visitors) * 100).toFixed(1)}%). Pode ser tráfego automatizado ou público errado.`,
+        severity: "critical",
+      });
+      suggestions.push(
+        { icon: "🎯", text: "Revisar segmentação de público nas campanhas" },
+        { icon: "🤖", text: "Verificar aba de Bots para tráfego suspeito" },
+        { icon: "📊", text: "Testar novos criativos com público diferente" },
+      );
+    }
+
+    // Remove duplicate suggestions
+    const uniqueSuggestions = suggestions.filter((s, i, arr) => arr.findIndex(x => x.text === s.text) === i);
+
+    return { diagnostics, suggestions: uniqueSuggestions, overallConv, bottleneckStep: prevStep.label + " → " + bottleneckStep.label };
+  }, [funnelData]);
+
+  // ── Device Funnel Analysis ──
+  const deviceFunnelAnalysis = useMemo(() => {
+    const devices = ["mobile", "desktop", "tablet"];
+    const results: { device: string; visitors: number; paid: number; convRate: number; alerts: string[] }[] = [];
+
+    devices.forEach(dev => {
+      const de = events.filter(e => getEventDevice(e) === dev);
+      const dl = enrichedLeads.filter(l => l.device.toLowerCase() === dev);
+      const funnel = buildFunnel(de, dl, 0);
+      const visitors = funnel[0]?.count || 0;
+      const engaged = funnel[1]?.count || 0;
+      const paid = funnel[funnel.length - 1]?.count || 0;
+      const convRate = visitors > 0 ? (paid / visitors * 100) : 0;
+      const alerts: string[] = [];
+
+      if (visitors > 20 && convRate < 1) alerts.push("Conversão muito baixa. Verificar qualidade do tráfego.");
+      if (visitors > 20 && engaged / visitors < 0.1) alerts.push("Quase nenhuma interação. Possível tráfego automatizado.");
+      if (dev === "desktop" && visitors > 50 && paid === 0) alerts.push("Zero vendas em desktop. Verificar layout ou tráfego.");
+
+      if (visitors > 0) results.push({ device: dev, visitors, paid, convRate, alerts });
+    });
+
+    return results;
+  }, [events, enrichedLeads, buildFunnel]);
+
+  // ── Session Replay Data (visitor timelines) ──
+  const visitorSessions = useMemo(() => {
+    const visitorMap = new Map<string, { events: UserEvent[]; firstSeen: number; lastSeen: number; device: string; origin: string }>();
+    events.forEach(e => {
+      const vid = e.event_data?.visitor_id || e.event_data?.session_id;
+      if (!vid) return;
+      const key = String(vid);
+      // Skip bots
+      if (botAnalysis.botVisitorIds.has(key)) return;
+
+      const time = new Date(e.created_at).getTime();
+      const existing = visitorMap.get(key);
+      if (existing) {
+        existing.events.push(e);
+        existing.firstSeen = Math.min(existing.firstSeen, time);
+        existing.lastSeen = Math.max(existing.lastSeen, time);
+      } else {
+        visitorMap.set(key, {
+          events: [e],
+          firstSeen: time,
+          lastSeen: time,
+          device: String(e.event_data?.device || "—"),
+          origin: String(e.event_data?.utm_source || "Direto"),
+        });
+      }
+    });
+
+    return Array.from(visitorMap.entries())
+      .map(([id, data]) => ({
+        id: id.slice(0, 8),
+        fullId: id,
+        events: data.events.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+        duration: Math.round((data.lastSeen - data.firstSeen) / 1000),
+        device: data.device,
+        origin: data.origin,
+        eventCount: data.events.length,
+        firstSeen: data.firstSeen,
+      }))
+      .filter(s => s.eventCount >= 2)
+      .sort((a, b) => b.firstSeen - a.firstSeen)
+      .slice(0, 50);
+  }, [events, botAnalysis]);
+
+  // ── Heatmap Data ──
+  const heatmapData = useMemo(() => {
+    const clicksBySection = new Map<string, number>();
+    const scrollDepths: number[] = [];
+
+    events.forEach(e => {
+      if (botAnalysis.botVisitorIds.has(e.event_data?.visitor_id)) return;
+
+      if (e.event_type === "click_position") {
+        const section = String(e.event_data?.section || "unknown");
+        clicksBySection.set(section, (clicksBySection.get(section) || 0) + 1);
+      }
+      if (e.event_type === "scroll_depth" || e.event_type === "scroll_milestone") {
+        const pct = Number(e.event_data?.percent || 0);
+        if (pct > 0) scrollDepths.push(pct);
+      }
+    });
+
+    const totalClicks = Array.from(clicksBySection.values()).reduce((s, v) => s + v, 0) || 1;
+    const sections = Array.from(clicksBySection.entries())
+      .map(([section, clicks]) => ({ section, clicks, pct: Math.round((clicks / totalClicks) * 100) }))
+      .sort((a, b) => b.clicks - a.clicks);
+
+    // Scroll depth distribution
+    const scrollBuckets = [
+      { label: "0-25%", min: 0, max: 25, count: 0 },
+      { label: "25-50%", min: 25, max: 50, count: 0 },
+      { label: "50-75%", min: 50, max: 75, count: 0 },
+      { label: "75-90%", min: 75, max: 90, count: 0 },
+      { label: "90-100%", min: 90, max: 100, count: 0 },
+    ];
+    scrollDepths.forEach(d => {
+      for (const b of scrollBuckets) {
+        if (d >= b.min && d < b.max) { b.count++; break; }
+        if (d >= 90 && b.min === 90) { b.count++; break; }
+      }
+    });
+    const maxBucket = Math.max(...scrollBuckets.map(b => b.count), 1);
+
+    return { sections, scrollBuckets, maxBucket, totalClicks, totalScrollEvents: scrollDepths.length };
+  }, [events, botAnalysis]);
+
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [funnelSubView, setFunnelSubView] = useState<"funnel" | "replay" | "heatmap">("funnel");
+
   const bottleneckAlerts = useMemo(() => {
     const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
     const visitors = funnelData.find(s => s.key === "visitors")?.count || 0;
