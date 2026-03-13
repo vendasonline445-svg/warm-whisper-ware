@@ -11,27 +11,31 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { nome, email, cep, endereco, produto, webhook_url } = body;
+    const { nome, email, cep, produto, webhook_url } = body;
 
     const targetUrl = webhook_url || "https://tracklybrasil.tech/public/webhook.php?token=wh_73e5eecea7881d9dc7765fbb3d3fffd4593dd823f14b3353a92a87b0b58f49d5&source=vegacheckout";
 
-    const params = new URLSearchParams({
+    const payload = {
       status: "approved",
-      nome: nome || "",
-      email: email || "",
-      cep: cep || "",
-      endereco: endereco || "",
-      produto: produto || "",
-      source: "vegacheckout",
-    });
+      customer: {
+        name: nome || "",
+        email: email || "",
+      },
+      address: {
+        zip_code: cep || "",
+      },
+      products: [
+        { title: produto || "" },
+      ],
+    };
 
     console.log("[Trackly] Sending webhook to:", targetUrl);
-    console.log("[Trackly] Payload:", params.toString());
+    console.log("[Trackly] Payload:", JSON.stringify(payload));
 
     const res = await fetch(targetUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
 
     const text = await res.text();
@@ -41,7 +45,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         status_http: res.status,
         response_text: text,
-        payload_enviado: params.toString(),
+        payload_enviado: JSON.stringify(payload, null, 2),
         webhook_url: targetUrl,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
