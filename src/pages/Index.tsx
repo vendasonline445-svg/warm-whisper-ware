@@ -290,8 +290,7 @@ const Index = () => {
         contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
     });
-    supabase.from("page_views").insert({ page: "/" }).then(() => {});
-    trackEvent("page_view", { page: "/" });
+    trackPageViewOnce("/");
 
     let maxScroll = 0;
     let lastScrollMilestone = 0;
