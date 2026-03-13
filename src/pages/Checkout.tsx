@@ -530,7 +530,7 @@ const Checkout = () => {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground flex items-center gap-1">Subtotal do produto ({quantity}x) <ChevronDown className="h-3 w-3" /></span>
-              <span>R$ {subtotal.toFixed(2).replace(".", ",")}</span>
+              <span>R$ {subtotalRaw.toFixed(2).replace(".", ",")}</span>
             </div>
             {hasCoupon && (
               <div className="flex justify-between">
