@@ -1401,7 +1401,7 @@ const Index = () => {
                   if (selectedColor && selectedSize) {
                     saveCart([{ color: selectedColor, size: selectedSize, quantity: 1 }]);
                     setExitModalOpen(false);
-                    nav(`/checkout?cupom=VOLTA25`);
+                    nav(getUrlWithUtm(`/checkout?cupom=VOLTA25`));
                   }
                 }}
                 disabled={!selectedColor}
