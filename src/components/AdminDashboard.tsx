@@ -395,7 +395,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       </div>
 
       {/* ═══ PRIMARY METRICS ═══ */}
-      <section>
+      <section className="admin-animate-in" style={{ animationDelay: '0ms' }}>
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Funil de Vendas</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           <GlassMetricCard icon={<Activity className="h-5 w-5 text-green-500" />} label="Ativos (1h)" numericValue={activeNow} color="green-500" delay={0} />
