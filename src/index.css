@@ -118,5 +118,50 @@
 }
 
 #lovable-badge {
-display: none !important;
+  display: none !important;
+}
+
+/* ─── Glass Cards ─── */
+.glass-card {
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
+  box-shadow: 0 1px 3px hsl(var(--foreground) / 0.04), 0 4px 12px hsl(var(--foreground) / 0.02);
+}
+
+.dark .glass-card {
+  background: hsl(var(--card) / 0.5);
+  border-color: hsl(var(--border) / 0.4);
+  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.2), 0 8px 24px hsl(0 0% 0% / 0.15);
+}
+
+.glass-card-success {
+  background: hsl(160 82% 34% / 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(160 82% 34% / 0.2);
+}
+
+.glass-card-warning {
+  background: hsl(38 92% 50% / 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(38 92% 50% / 0.2);
+}
+
+.glass-card-danger {
+  background: hsl(0 72% 51% / 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(0 72% 51% / 0.2);
+}
+
+/* ─── Shimmer Skeleton ─── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-pulse > div {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted-foreground) / 0.08) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
