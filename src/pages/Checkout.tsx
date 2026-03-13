@@ -600,11 +600,10 @@ const Checkout = () => {
           {/* Credit Card Option */}
           <div className={`rounded-lg border-2 mb-3 transition-colors ${
             paymentMethod === "credit_card" ? "border-cta" : "border-border"
-          } ${cardDisabled ? "opacity-50" : ""}`}>
+          }`}>
             <button
-              onClick={() => !cardDisabled && setPaymentMethod("credit_card")}
+              onClick={() => setPaymentMethod("credit_card")}
               className="w-full flex items-center justify-between p-3"
-              disabled={cardDisabled}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
