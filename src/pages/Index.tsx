@@ -293,7 +293,7 @@ const Index = () => {
           <X className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setExitModalOpen(true); setExitShown(true); }} />
           <div className="flex items-center gap-5">
             <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" />
-            <ShoppingCart className="h-5 w-5 text-muted-foreground cursor-pointer" />
+            <ShoppingCart onClick={() => setCartOpen(true)} className="h-5 w-5 text-muted-foreground cursor-pointer" />
             <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer" />
           </div>
         </div>
@@ -724,7 +724,7 @@ const Index = () => {
             <span>Chat</span>
           </button>
         </div>
-        <button onClick={() => setCartOpen(true)} className="flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-bold text-cta whitespace-nowrap">
+        <button onClick={openColorModal} className="flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-bold text-cta whitespace-nowrap">
           <ShoppingCart className="h-3.5 w-3.5 flex-shrink-0 text-cta" />
           <span className="text-cta font-bold text-[11px]">Adicionar ao carrinho</span>
         </button>
