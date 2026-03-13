@@ -50,6 +50,12 @@ export default function AdminRastreios() {
   const [manualEndereco, setManualEndereco] = useState("");
   const [manualProduto, setManualProduto] = useState("");
   const [sendingManual, setSendingManual] = useState(false);
+  const [debugResult, setDebugResult] = useState<{
+    status_http: number;
+    response_text: string;
+    payload_enviado: string;
+    webhook_url: string;
+  } | null>(null);
   const navigate = useNavigate();
 
   const sendTracklyTest = async () => {
@@ -58,6 +64,7 @@ export default function AdminRastreios() {
       return;
     }
     setSendingManual(true);
+    setDebugResult(null);
     try {
       const params = new URLSearchParams({
         status: "approved",
@@ -76,21 +83,34 @@ export default function AdminRastreios() {
       const text = await res.text();
       console.log("[Trackly] test webhook sent");
 
+      const debug = {
+        status_http: res.status,
+        response_text: text,
+        payload_enviado: params.toString(),
+        webhook_url: webhookUrl,
+      };
+      setDebugResult(debug);
+
       await supabase.from("tracking_webhook_logs" as any).insert({
         webhook_url: webhookUrl,
         status: res.ok ? "test_success" : "test_error",
-        response: text.slice(0, 500),
+        response: JSON.stringify(debug).slice(0, 1000),
       } as any);
 
       if (res.ok) {
         toast.success("Webhook enviado com sucesso");
-        setManualName(""); setManualEmail(""); setManualCep(""); setManualEndereco(""); setManualProduto("");
       } else {
         toast.error("Erro ao enviar webhook");
       }
       fetchLogs();
     } catch (err: any) {
       console.error("[Trackly] manual test error:", err);
+      setDebugResult({
+        status_http: 0,
+        response_text: err.message,
+        payload_enviado: "",
+        webhook_url: webhookUrl,
+      });
       toast.error("Erro ao enviar webhook");
     }
     setSendingManual(false);
