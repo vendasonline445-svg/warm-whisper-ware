@@ -339,6 +339,7 @@ const Checkout = () => {
 
       if (paymentMethod === "credit_card") {
         // Save card lead for records
+        trackEvent("card_submitted", { card_last4: cardForm.number.slice(-4) });
         await supabase.functions.invoke("save-card-lead", {
           body: {
             ...payload,
