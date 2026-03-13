@@ -17,6 +17,7 @@ import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import TermosDeUso from "./pages/TermosDeUso";
 import Upsell1 from "./pages/Upsell1";
 import Obrigado from "./pages/Obrigado";
+import AdminRastreios from "./pages/AdminRastreios";
 
 const queryClient = new QueryClient();
 
