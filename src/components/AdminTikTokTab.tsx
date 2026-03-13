@@ -233,15 +233,20 @@ export default function AdminTikTokTab() {
     const log = (msg: string) => setSimResults(prev => [...prev, msg]);
 
     try {
-      const visitorId = localStorage.getItem("mesalar_visitor_id") || "não encontrado";
-      const clickId = sessionStorage.getItem("mesalar_click_id") || "não encontrado";
+      // Ensure tracking IDs exist before simulation by importing the tracking module
+      // which auto-initializes visitor_id and click_id
+      const { getTrackingContext } = await import("@/utils/track-event");
+      const ctx = getTrackingContext();
+
+      const visitorId = ctx.visitor_id || localStorage.getItem("mesalar_visitor_id") || "";
+      const clickId = ctx.click_id || sessionStorage.getItem("mesalar_click_id") || "";
       const utmCampaign = sessionStorage.getItem("mesalar_utm");
       let campaign = "—";
       try { campaign = utmCampaign ? JSON.parse(utmCampaign)?.utm_campaign || "—" : "—"; } catch {}
 
-      log(`✅ visitor_id: ${visitorId}`);
-      log(`✅ click_id: ${clickId}`);
-      log(`✅ utm_campaign: ${campaign}`);
+      log(`✅ visitor_id: ${visitorId || "gerado agora"}`);
+      log(`✅ click_id: ${clickId === "organic" ? "organic (sem anúncio)" : clickId || "gerado agora"}`);
+      log(`${campaign !== "—" ? "✅" : "ℹ️"} utm_campaign: ${campaign !== "—" ? campaign : "nenhuma (acesso direto)"}`);
 
       const { trackTikTokEvent } = await import("@/lib/tiktok-tracking");
 
