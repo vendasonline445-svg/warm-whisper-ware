@@ -368,7 +368,12 @@ export default function Admin() {
               <Users className="h-4 w-4" /> Leads
             </button>
             <button
-              onClick={() => {
+              onClick={() => setTab("crm")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "crm" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            >
+              <Contact className="h-4 w-4" /> CRM
+            </button>
+            <button
                 setTab("logs");
                 setLogsLoading(true);
                 Promise.all([
