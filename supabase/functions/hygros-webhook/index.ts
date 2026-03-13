@@ -231,11 +231,12 @@ Deno.serve(async (req) => {
         const trackingSaveText = await trackingSaveRes.text();
         console.log(`[Tracking] tracking saved (${trackingSaveRes.status}):`, trackingSaveText);
         console.log("[Trackly] tracking webhook sent");
-      } else if (lead?.tracking_sent) {
-        console.log("[Trackly] Already sent for this order, skipping");
-      } else {
-        console.log("[Trackly] No matching lead found for transaction:", transactionId);
-      }
+        } else if (lead?.tracking_sent) {
+          console.log("[Trackly] Already sent for this order, skipping");
+        } else {
+          console.log("[Trackly] No matching lead found for transaction:", transactionId);
+        }
+      } // end webhookEnabled
     } catch (tracklyErr) {
       console.error("[Trackly] Error sending webhook:", tracklyErr);
     }
