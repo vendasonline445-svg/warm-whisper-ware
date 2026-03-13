@@ -285,6 +285,33 @@ export default function AdminCRM() {
     const revenue = paidLeads.reduce((s, l) => s + (l.total_amount || 0), 0);
     const cardsCollected = enrichedLeads.filter(l => l.stage === "cartao_enviado").length;
 
+    // Event-based metrics for accuracy
+    const oneHourVisitorIds = new Set<string>();
+    const checkoutEventIds = new Set<string>();
+    const pixEventIds = new Set<string>();
+    const paidEventIds = new Set<string>();
+
+    events.forEach(e => {
+      const vid = e.event_data?.visitor_id || e.event_data?.session_id || "";
+      const key = String(vid);
+      const ts = new Date(e.created_at).getTime();
+      if (ts > oneHourAgo && key) oneHourVisitorIds.add(key);
+      if (e.event_type === "checkout_initiated" && key) checkoutEventIds.add(key);
+      if ((e.event_type === "pix_generated" || e.event_type === "payment_started") && key) pixEventIds.add(key);
+      if ((e.event_type === "payment_confirmed" || e.event_type === "pix_paid") && key) paidEventIds.add(key);
+    });
+
+    // Use max between lead-based and event-based counts
+    const activeNowFinal = Math.max(activeNow, oneHourVisitorIds.size);
+    const openCheckoutsFinal = Math.max(openCheckouts, checkoutEventIds.size - paidLeads.length);
+    const pendingPixFinal = Math.max(pendingPix, pixEventIds.size - paidEventIds.size);
+
+    // Consistency: ensure child stages never exceed parent stages
+    const totalCheckouts = Math.max(enrichedLeads.length, checkoutEventIds.size);
+    const validCardsCollected = Math.min(cardsCollected, totalCheckouts);
+    const validPendingPix = Math.min(Math.max(0, pendingPixFinal), totalCheckouts);
+    const validAbandoned = Math.min(abandonedCheckouts, totalCheckouts);
+
     // Avg time to payment
     let avgTimeToPay = 0;
     if (paidLeads.length > 0) {
@@ -294,8 +321,17 @@ export default function AdminCRM() {
       avgTimeToPay = Math.round(totalMinutes / paidLeads.length);
     }
 
-    return { activeNow, hot, openCheckouts, pendingPix, abandonedCheckouts, revenue, avgTimeToPay, cardsCollected };
-  }, [enrichedLeads]);
+    return {
+      activeNow: activeNowFinal,
+      hot,
+      openCheckouts: Math.max(0, openCheckoutsFinal),
+      pendingPix: Math.max(0, validPendingPix),
+      abandonedCheckouts: Math.max(0, validAbandoned),
+      revenue,
+      avgTimeToPay,
+      cardsCollected: validCardsCollected,
+    };
+  }, [enrichedLeads, events]);
 
   // ── Funnel Filters ──
   const [funnelDevice, setFunnelDevice] = useState("mobile");
