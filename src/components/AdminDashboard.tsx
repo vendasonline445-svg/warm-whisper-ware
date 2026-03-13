@@ -352,9 +352,9 @@ export default function AdminDashboard(props: AdminDashboardProps) {
   }, [visitorsCount, buyClicks, checkoutsCount, pixGeneratedCount, paidCount]);
 
   const chartConfig = {
-    checkouts: { label: "Checkouts", color: "hsl(24, 100%, 50%)" },
-    paid: { label: "Pagos", color: "hsl(160, 82%, 34%)" },
-    revenue: { label: "Receita (R$)", color: "hsl(262, 80%, 55%)" },
+    checkouts: { label: "Checkouts", color: "hsl(224, 100%, 65%)" },
+    paid: { label: "Pagos", color: "hsl(142, 71%, 45%)" },
+    revenue: { label: "Receita (R$)", color: "hsl(256, 100%, 65%)" },
   };
 
   // Skeleton state
