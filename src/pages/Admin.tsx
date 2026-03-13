@@ -409,7 +409,12 @@ export default function Admin() {
       {/* Top Nav */}
       <header className="border-b border-border/50 bg-card/80 backdrop-blur-xl px-4 py-3 sticky top-0 z-50">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between flex-wrap gap-2">
-          <h1 className="text-lg font-bold">Painel Admin</h1>
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <LayoutDashboard className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <h1 className="text-lg font-bold tracking-tight">FunnelIQ</h1>
+          </div>
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setTab("dashboard")}
