@@ -115,6 +115,7 @@ const Index = () => {
   const [colorModalClosing, setColorModalClosing] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [colorModalMode, setColorModalMode] = useState<'cart' | 'buy'>('cart');
+  const [modalQty, setModalQty] = useState(1);
   const [flyingDot, setFlyingDot] = useState(false);
   const [exitModalOpen, setExitModalOpen] = useState(false);
   const [exitShown, setExitShown] = useState(false);
@@ -261,6 +262,7 @@ const Index = () => {
 
   const openColorModal = (mode: 'cart' | 'buy') => {
     setSelectedColor(null);
+    setModalQty(1);
     setColorModalMode(mode);
     setColorModalOpen(true);
     trackTikTokEvent({
@@ -287,14 +289,15 @@ const Index = () => {
     if (!selectedColor) return;
 
     if (colorModalMode === 'buy') {
-      updateCart({ color: selectedColor, size: selectedSize, quantity: cartItem?.quantity || 1 });
+      updateCart({ color: selectedColor, size: selectedSize, quantity: modalQty });
       const params = new URLSearchParams(window.location.search);
       params.set("color", selectedColor);
       params.set("size", selectedSize);
+      params.set("qty", modalQty.toString());
       nav(`/checkout?${params.toString()}`);
     } else {
       // Add to cart mode - animate dot to cart icon
-      updateCart({ color: selectedColor, size: selectedSize, quantity: (cartItem?.quantity || 0) + 1 });
+      updateCart({ color: selectedColor, size: selectedSize, quantity: (cartItem?.quantity || 0) + modalQty });
       closeColorModal();
       setTimeout(() => {
         setFlyingDot(true);
@@ -867,6 +870,23 @@ const Index = () => {
               </div>
             </div>
 
+            {/* Quantity selector */}
+            <div className="px-5 pb-4">
+              <p className="text-sm font-semibold mb-2">Quantidade:</p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setModalQty(q => Math.max(1, q - 1))}
+                  className="h-9 w-9 rounded-xl border-2 border-border flex items-center justify-center text-lg font-bold hover:border-cta/50 transition-colors"
+                >−</button>
+                <span className="text-base font-bold w-6 text-center">{modalQty}</span>
+                <button
+                  onClick={() => setModalQty(q => q + 1)}
+                  className="h-9 w-9 rounded-xl border-2 border-border flex items-center justify-center text-lg font-bold hover:border-cta/50 transition-colors"
+                >+</button>
+                <span className="ml-auto text-cta font-extrabold text-lg">R$ {(PRICE * modalQty).toFixed(2).replace('.', ',')}</span>
+              </div>
+            </div>
+
             {/* Confirm button */}
             <div className="px-5 pb-6">
               <button
@@ -878,7 +898,7 @@ const Index = () => {
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                {colorModalMode === 'buy' ? `Comprar agora - R$ ${PRICE.toFixed(2).replace('.', ',')}` : `Adicionar ao carrinho - R$ ${PRICE.toFixed(2).replace('.', ',')}`}
+                {colorModalMode === 'buy' ? `Comprar agora - R$ ${(PRICE * modalQty).toFixed(2).replace('.', ',')}` : `Adicionar ao carrinho - R$ ${(PRICE * modalQty).toFixed(2).replace('.', ',')}`}
               </button>
             </div>
           </div>
