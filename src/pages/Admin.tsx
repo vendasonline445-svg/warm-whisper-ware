@@ -559,6 +559,15 @@ export default function Admin() {
                 </div>
                 <div className="bg-card border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <Wallet className="h-4 w-4 text-amber-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Pix Pendentes</p>
+                  <p className="text-2xl font-bold mt-1">{pendingCount}</p>
+                </div>
+                <div className="bg-card border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
                     <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     </div>
