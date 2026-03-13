@@ -51,6 +51,7 @@ const PixPayment = () => {
       });
       if (!error && data?.paid) {
         if (pollingRef.current) clearInterval(pollingRef.current);
+        setPaid(true);
         const purchaseValue = orderData?.product?.total || pixData?.amount / 100 || 87.60;
         const orderId = transactionId || `order-${Date.now()}`;
         trackTikTokEvent({
@@ -69,7 +70,7 @@ const PixPayment = () => {
             externalId: orderData.customer.cpf,
           } : undefined,
         });
-        navigate("/obrigado");
+        setTimeout(() => navigate("/obrigado"), 2000);
       }
     } catch (err) {
       console.error("Polling error:", err);
