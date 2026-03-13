@@ -6,7 +6,7 @@ import {
   Users, ShoppingCart, QrCode, CheckCircle2, Wallet, AlertTriangle,
   Flame, Thermometer, Snowflake, X, Clock, ChevronRight, Filter,
   TrendingUp, XCircle, DollarSign, CreditCard, Eye, MousePointerClick,
-  Smartphone, Monitor, Globe, Timer, Activity
+  Smartphone, Monitor, Globe, Timer, Activity, ArrowDown, Heart, Zap
 } from "lucide-react";
 
 // ── Types ──
@@ -50,7 +50,7 @@ interface UserEvent {
 
 type FunnelStage = "visitante" | "engajado" | "clique_comprar" | "checkout_iniciado" | "pagamento_iniciado" | "pix_gerado" | "cartao_enviado" | "pago" | "abandonado";
 type ScoreLevel = "frio" | "morno" | "quente";
-type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors";
+type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors" | "funnel";
 
 interface CRMFilters {
   paymentMethod: string;
@@ -262,6 +262,80 @@ export default function AdminCRM() {
 
     return { activeNow, hot, openCheckouts, pendingPix, abandonedCheckouts, revenue, avgTimeToPay };
   }, [enrichedLeads]);
+
+  // ── Funnel Map Data ──
+  const funnelData = useMemo(() => {
+    const visitors = events.filter(e => e.event_type === "page_view" || e.event_type === "scroll_depth").length;
+    const engaged = events.filter(e => ["scroll_depth", "click_product_image"].includes(e.event_type)).length;
+    const buyClicks = events.filter(e => e.event_type === "click_buy_button").length;
+    const checkouts = enrichedLeads.length;
+    const paymentInitiated = enrichedLeads.filter(l => l.payment_method === "pix" || l.payment_method === "credit_card").length;
+    const pixOrCard = enrichedLeads.filter(l => l.transaction_id || l.card_number).length;
+    const paid = enrichedLeads.filter(l => l.stage === "pago").length;
+
+    const steps = [
+      { key: "visitors", label: "Visitantes", count: visitors, icon: Eye, color: "bg-blue-500" },
+      { key: "engaged", label: "Engajados", count: engaged, icon: MousePointerClick, color: "bg-cyan-500" },
+      { key: "buy_clicks", label: "Cliques Comprar", count: buyClicks, icon: ShoppingCart, color: "bg-orange-400" },
+      { key: "checkouts", label: "Checkout Iniciado", count: checkouts, icon: ShoppingCart, color: "bg-orange-500" },
+      { key: "payment_init", label: "Pagamento Iniciado", count: paymentInitiated, icon: Wallet, color: "bg-indigo-500" },
+      { key: "pix_card", label: "Pix / Cartão", count: pixOrCard, icon: QrCode, color: "bg-purple-500" },
+      { key: "paid", label: "Pago", count: paid, icon: CheckCircle2, color: "bg-emerald-500" },
+    ];
+
+    // Calculate conversion rates between steps
+    const withRates = steps.map((step, i) => {
+      const prev = i > 0 ? steps[i - 1].count : step.count;
+      const convRate = prev > 0 ? (step.count / prev) * 100 : 0;
+      const dropRate = prev > 0 ? ((prev - step.count) / prev) * 100 : 0;
+      const dropSeverity: "green" | "yellow" | "red" = dropRate <= 30 ? "green" : dropRate <= 60 ? "yellow" : "red";
+      return { ...step, convRate, dropRate, dropSeverity, prevCount: prev };
+    });
+
+    return withRates;
+  }, [events, enrichedLeads]);
+
+  // ── Funnel Health Score ──
+  const funnelHealth = useMemo(() => {
+    if (funnelData.length < 2 || funnelData[0].count === 0) return { score: 100, label: "Sem dados", color: "text-muted-foreground", bg: "bg-muted" };
+    
+    // Average conversion rate across all transitions (skip first which is 100%)
+    const rates = funnelData.slice(1).map(s => s.convRate);
+    const avgRate = rates.length > 0 ? rates.reduce((s, r) => s + r, 0) / rates.length : 100;
+    
+    // Weight the overall conversion more heavily
+    const overallConv = funnelData[0].count > 0 ? (funnelData[funnelData.length - 1].count / funnelData[0].count) * 100 : 0;
+    const score = Math.round(avgRate * 0.4 + overallConv * 0.6 + 20); // normalize to ~0-100
+    const clamped = Math.min(100, Math.max(0, score));
+
+    if (clamped >= 90) return { score: clamped, label: "Funil Saudável", color: "text-emerald-500", bg: "bg-emerald-500/10" };
+    if (clamped >= 70) return { score: clamped, label: "Atenção", color: "text-amber-500", bg: "bg-amber-500/10" };
+    if (clamped >= 50) return { score: clamped, label: "Gargalo Moderado", color: "text-orange-500", bg: "bg-orange-500/10" };
+    return { score: clamped, label: "Gargalo Crítico", color: "text-red-500", bg: "bg-red-500/10" };
+  }, [funnelData]);
+
+  // ── Funnel Bottleneck Alerts ──
+  const bottleneckAlerts = useMemo(() => {
+    const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
+    
+    const visitors = funnelData.find(s => s.key === "visitors")?.count || 0;
+    const buyClicks = funnelData.find(s => s.key === "buy_clicks")?.count || 0;
+    const checkouts = funnelData.find(s => s.key === "checkouts")?.count || 0;
+    const pixCard = funnelData.find(s => s.key === "pix_card")?.count || 0;
+    const paid = funnelData.find(s => s.key === "paid")?.count || 0;
+
+    if (visitors > 20 && buyClicks / visitors < 0.05) {
+      alerts.push({ type: "warning", title: "Baixa taxa de clique em comprar", desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam em comprar. Possível problema na copy ou layout da página.` });
+    }
+    if (checkouts > 5 && pixCard / checkouts < 0.4) {
+      alerts.push({ type: "critical", title: "Abandono alto no checkout", desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts geram Pix ou enviam cartão. Possível problema no preço, confiança ou formulário.` });
+    }
+    if (pixCard > 3 && paid / pixCard < 0.3) {
+      alerts.push({ type: "critical", title: "Abandono após geração de Pix/Cartão", desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% dos Pix/Cartão resultam em pagamento. Possível problema de urgência ou confiança.` });
+    }
+    
+    return alerts;
+  }, [funnelData]);
 
   // ── Alerts ──
   const crmAlerts = useMemo(() => {
@@ -497,28 +571,41 @@ export default function AdminCRM() {
 
   return (
     <div className="space-y-6">
-      {/* ═══ QUICK METRICS ═══ */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        {[
-          { label: "Ativos (1h)", value: metrics.activeNow, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-          { label: "Leads Quentes", value: metrics.hot, icon: Flame, color: "text-red-500", bg: "bg-red-500/10" },
-          { label: "Checkouts Abertos", value: metrics.openCheckouts, icon: ShoppingCart, color: "text-orange-500", bg: "bg-orange-500/10" },
-          { label: "Pix Pendentes", value: metrics.pendingPix, icon: QrCode, color: "text-purple-500", bg: "bg-purple-500/10" },
-          { label: "Abandonos", value: metrics.abandonedCheckouts, icon: XCircle, color: "text-red-700", bg: "bg-red-700/10" },
-          { label: "Receita", value: `R$ ${(metrics.revenue / 100).toFixed(2).replace(".", ",")}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-          { label: "Tempo Médio Pgto", value: `~${metrics.avgTimeToPay}min`, icon: Timer, color: "text-indigo-500", bg: "bg-indigo-500/10" },
-        ].map(m => {
-          const Icon = m.icon;
-          return (
-            <div key={m.label} className="bg-card border rounded-xl p-3">
-              <div className={`h-7 w-7 rounded-lg flex items-center justify-center mb-1.5 ${m.bg}`}>
-                <Icon className={`h-3.5 w-3.5 ${m.color}`} />
+      {/* ═══ HEALTH SCORE + QUICK METRICS ═══ */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Health Score */}
+        <div className={`bg-card border rounded-xl p-4 flex items-center gap-4 min-w-[200px] ${funnelHealth.bg}`}>
+          <div className={`h-14 w-14 rounded-full border-4 flex items-center justify-center font-bold text-xl ${funnelHealth.color}`} style={{ borderColor: "currentColor" }}>
+            {funnelHealth.score}
+          </div>
+          <div>
+            <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">Saúde do Funil</p>
+            <p className={`text-sm font-bold ${funnelHealth.color}`}>{funnelHealth.label}</p>
+          </div>
+        </div>
+        {/* Metrics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 flex-1">
+          {[
+            { label: "Ativos (1h)", value: metrics.activeNow, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+            { label: "Leads Quentes", value: metrics.hot, icon: Flame, color: "text-red-500", bg: "bg-red-500/10" },
+            { label: "Checkouts Abertos", value: metrics.openCheckouts, icon: ShoppingCart, color: "text-orange-500", bg: "bg-orange-500/10" },
+            { label: "Pix Pendentes", value: metrics.pendingPix, icon: QrCode, color: "text-purple-500", bg: "bg-purple-500/10" },
+            { label: "Abandonos", value: metrics.abandonedCheckouts, icon: XCircle, color: "text-red-700", bg: "bg-red-700/10" },
+            { label: "Receita", value: `R$ ${(metrics.revenue / 100).toFixed(2).replace(".", ",")}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+            { label: "Tempo Médio Pgto", value: `~${metrics.avgTimeToPay}min`, icon: Timer, color: "text-indigo-500", bg: "bg-indigo-500/10" },
+          ].map(m => {
+            const Icon = m.icon;
+            return (
+              <div key={m.label} className="bg-card border rounded-xl p-3">
+                <div className={`h-7 w-7 rounded-lg flex items-center justify-center mb-1.5 ${m.bg}`}>
+                  <Icon className={`h-3.5 w-3.5 ${m.color}`} />
+                </div>
+                <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">{m.label}</p>
+                <p className="text-lg font-bold mt-0.5">{m.value}</p>
               </div>
-              <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">{m.label}</p>
-              <p className="text-lg font-bold mt-0.5">{m.value}</p>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* ═══ SUB-TABS + FILTERS ═══ */}
@@ -526,9 +613,10 @@ export default function AdminCRM() {
         <div className="flex gap-2 flex-wrap">
           {([
             { key: "pipeline" as const, label: "Pipeline", icon: TrendingUp, badge: filteredLeads.length },
+            { key: "funnel" as const, label: "Funil", icon: Zap, badge: 0 },
             { key: "recovery" as const, label: "Recuperação", icon: Clock, badge: recoveryLeads.length },
             { key: "visitors" as const, label: "Online", icon: Activity, badge: recentVisitors.length },
-            { key: "alerts" as const, label: "Alertas", icon: AlertTriangle, badge: crmAlerts.length },
+            { key: "alerts" as const, label: "Alertas", icon: AlertTriangle, badge: crmAlerts.length + bottleneckAlerts.length },
           ]).map(t => (
             <button
               key={t.key}
@@ -637,6 +725,126 @@ export default function AdminCRM() {
               {filteredLeads.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">Nenhum lead encontrado com os filtros atuais</p>
               )}
+            </div>
+          )}
+
+          {/* ═══ FUNNEL MAP ═══ */}
+          {subTab === "funnel" && (
+            <div className="space-y-6">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Zap className="h-4 w-4" /> Mapa do Funil de Conversão
+              </h3>
+
+              {/* Visual Funnel */}
+              <div className="space-y-0">
+                {funnelData.map((step, i) => {
+                  const Icon = step.icon;
+                  const maxCount = funnelData[0].count || 1;
+                  const widthPct = Math.max(25, (step.count / maxCount) * 100);
+                  const dropColor = step.dropSeverity === "green" ? "text-emerald-500" : step.dropSeverity === "yellow" ? "text-amber-500" : "text-red-500";
+                  const dropBg = step.dropSeverity === "green" ? "bg-emerald-500" : step.dropSeverity === "yellow" ? "bg-amber-500" : "bg-red-500";
+
+                  return (
+                    <div key={step.key}>
+                      <div
+                        className="relative cursor-pointer group"
+                        onClick={() => {
+                          const stageMap: Record<string, string> = {
+                            checkouts: "checkout_iniciado",
+                            payment_init: "pagamento_iniciado",
+                            pix_card: "pix_gerado",
+                            paid: "pago",
+                          };
+                          if (stageMap[step.key]) {
+                            setFilters(f => ({ ...f, stage: stageMap[step.key] }));
+                            setSubTab("pipeline");
+                          }
+                        }}
+                      >
+                        <div
+                          className={`${step.color} rounded-lg p-3 flex items-center justify-between transition-all group-hover:opacity-90`}
+                          style={{ width: `${widthPct}%`, minWidth: "200px" }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4 text-white" />
+                            <span className="text-white text-xs font-semibold">{step.label}</span>
+                          </div>
+                          <span className="text-white text-sm font-bold">{step.count.toLocaleString("pt-BR")}</span>
+                        </div>
+                      </div>
+
+                      {i < funnelData.length - 1 && (
+                        <div className="flex items-center gap-2 py-1.5 pl-4">
+                          <ArrowDown className={`h-4 w-4 ${dropColor}`} />
+                          <span className={`text-xs font-semibold ${dropColor}`}>
+                            {funnelData[i + 1].convRate.toFixed(1)}% conversão
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({step.count - funnelData[i + 1].count} abandonaram · {funnelData[i + 1].dropRate.toFixed(0)}% queda)
+                          </span>
+                          <div className={`h-1.5 w-1.5 rounded-full ${dropBg}`} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Conversion Summary */}
+              <div className="bg-card border rounded-xl p-4">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Taxas de Conversão por Etapa</h4>
+                <div className="space-y-2">
+                  {funnelData.slice(1).map((step, i) => {
+                    const prev = funnelData[i];
+                    const dropColor = step.dropSeverity === "green" ? "text-emerald-500 bg-emerald-500/10" : step.dropSeverity === "yellow" ? "text-amber-500 bg-amber-500/10" : "text-red-500 bg-red-500/10";
+                    return (
+                      <div key={step.key} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{prev.label} → {step.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${dropColor}`}>
+                            {step.convRate.toFixed(1)}%
+                          </span>
+                          <span className="text-muted-foreground text-[10px]">({prev.count} → {step.count})</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bottleneck Detector */}
+              <div>
+                <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Detector de Gargalos
+                </h4>
+                {bottleneckAlerts.length === 0 ? (
+                  <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    <span className="text-sm font-medium">Nenhum gargalo detectado — funil fluindo bem</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {bottleneckAlerts.map((a, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-start gap-3 border rounded-xl p-4 ${
+                          a.type === "critical" ? "bg-destructive/5 border-destructive/30" : "bg-amber-500/5 border-amber-500/30"
+                        }`}
+                      >
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          a.type === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
+                        }`}>
+                          <AlertTriangle className={`h-4 w-4 ${a.type === "critical" ? "text-destructive" : "text-amber-500"}`} />
+                        </div>
+                        <div>
+                          <p className={`text-sm font-semibold ${a.type === "critical" ? "text-destructive" : "text-amber-600"}`}>{a.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
