@@ -107,6 +107,85 @@ Deno.serve(async (req) => {
     const resText = await res.text();
     console.log(`UTMify response (${res.status}):`, resText);
 
+    // --- Trackly Webhook Integration ---
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+      // Find the order by transaction_id to check tracking_sent
+      const transactionId = String(data.id);
+      const findRes = await fetch(
+        `${supabaseUrl}/rest/v1/checkout_leads?transaction_id=eq.${transactionId}&select=id,name,email,cep,tracking_sent`,
+        {
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const leads = await findRes.json();
+      const lead = Array.isArray(leads) ? leads[0] : null;
+
+      if (lead && !lead.tracking_sent) {
+        const productName = (data.items && data.items[0]?.title) || "Mesa Portátil Dobrável";
+
+        const tracklyPayload = {
+          status: "approved",
+          customer: {
+            name: lead.name || data.customer?.name || "",
+            email: lead.email || data.customer?.email || "",
+          },
+          address: {
+            zip_code: lead.cep || "",
+          },
+          products: [
+            {
+              title: productName,
+            },
+          ],
+        };
+
+        console.log("[Trackly] Sending webhook:", JSON.stringify(tracklyPayload));
+
+        const tracklyRes = await fetch(
+          "https://tracklybrasil.tech/public/webhook.php?token=wh_73e5eecea7881d9dc7765fbb3d3fffd4593dd823f14b3353a92a87b0b58f49d5&source=vegacheckout",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(tracklyPayload),
+          }
+        );
+
+        const tracklyText = await tracklyRes.text();
+        console.log(`[Trackly] Response (${tracklyRes.status}):`, tracklyText);
+
+        // Mark as sent
+        await fetch(
+          `${supabaseUrl}/rest/v1/checkout_leads?id=eq.${lead.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json",
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify({ tracking_sent: true }),
+          }
+        );
+
+        console.log("[Trackly] tracking webhook sent");
+      } else if (lead?.tracking_sent) {
+        console.log("[Trackly] Already sent for this order, skipping");
+      } else {
+        console.log("[Trackly] No matching lead found for transaction:", transactionId);
+      }
+    } catch (tracklyErr) {
+      console.error("[Trackly] Error sending webhook:", tracklyErr);
+    }
+    // --- End Trackly ---
+
     return new Response(JSON.stringify({ success: true, utmifyStatus: res.status }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

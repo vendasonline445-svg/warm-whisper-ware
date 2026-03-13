@@ -1,0 +1,1 @@
+CREATE POLICY "Allow service role update" ON public.checkout_leads FOR UPDATE TO service_role USING (true) WITH CHECK (true);

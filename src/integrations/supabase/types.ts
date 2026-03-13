@@ -42,6 +42,7 @@ export type Database = {
           size: string | null
           status: string | null
           total_amount: number | null
+          tracking_sent: boolean
           transaction_id: string | null
           uf: string | null
         }
@@ -72,6 +73,7 @@ export type Database = {
           size?: string | null
           status?: string | null
           total_amount?: number | null
+          tracking_sent?: boolean
           transaction_id?: string | null
           uf?: string | null
         }
@@ -102,6 +104,7 @@ export type Database = {
           size?: string | null
           status?: string | null
           total_amount?: number | null
+          tracking_sent?: boolean
           transaction_id?: string | null
           uf?: string | null
         }
