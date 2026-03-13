@@ -17,16 +17,22 @@ const SIZE_PRICES: Record<string, { price: number; oldPrice: number; discount: n
 };
 
 function useCheckoutCountdown() {
-  const [seconds, setSeconds] = useState(299);
+  const [time, setTime] = useState({ h: 0, m: 5, s: 0 });
   useEffect(() => {
     const interval = setInterval(() => {
-      setSeconds((s) => (s <= 0 ? 0 : s - 1));
+      setTime((prev) => {
+        let { h, m, s } = prev;
+        s--;
+        if (s < 0) { s = 59; m--; }
+        if (m < 0) { m = 59; h--; }
+        if (h < 0) return { h: 2, m: 59, s: 59 };
+        return { h, m, s };
+      });
     }, 1000);
     return () => clearInterval(interval);
   }, []);
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  const fmt = (n: number) => String(n).padStart(2, "0");
+  return { time, display: `${fmt(time.h)}:${fmt(time.m)}:${fmt(time.s)}` };
 }
 
 type CartItem = { color: string; size: string; quantity: number };
@@ -462,11 +468,6 @@ const Checkout = () => {
 
         {/* Product Info */}
         <div className="mt-4">
-          <p className="text-sm font-semibold flex items-center gap-1">⚠️ Poucas unidades disponíveis</p>
-          <p className="text-xs text-success flex items-center gap-1 mt-0.5">
-            <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> Muito bem avaliado! 4.8/5,0
-          </p>
-
           {cartItems.map((item, idx) => {
             const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
             const cl = item.color === "preta" ? "Preta" : "Branca";
@@ -476,20 +477,26 @@ const Checkout = () => {
                 <img src={img} alt="Mesa" className="w-20 h-20 object-contain rounded-md border" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta {item.size}</p>
-                  <p className="text-xs text-muted-foreground">{cl}, {item.size}</p>
-                  <span className="text-xs flex items-center gap-1 mt-0.5 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
-                    🔄 Devolução gratuita
-                  </span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm font-bold text-cta">R$ {sp.price.toFixed(2).replace(".", ",")}</span>
-                    <span className="text-[10px]">📦</span>
+                  {/* Flash Sale badge + timer */}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="inline-flex items-center gap-0.5 bg-destructive text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                      Oferta Relâmpago <span className="text-xs">⚡</span>
+                    </span>
+                    <span className="text-xs font-mono font-semibold text-foreground">{timer.display}</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  {/* Free return - subtle */}
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">
+                    🔄 Devolução gratuita
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-base font-bold text-foreground">R$ {sp.price.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
                     <span className="text-xs text-muted-foreground line-through">R$ {sp.oldPrice.toFixed(2).replace(".", ",")}</span>
                     <span className="text-xs text-cta font-semibold">-{sp.discount}%</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-0 border rounded-lg h-9">
+                <div className="flex items-center gap-0 border rounded-lg h-9 bg-muted/30">
                   <button onClick={() => updateCartItemQty(idx, item.quantity - 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Minus className="h-3.5 w-3.5" /></button>
                   <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
                   <button onClick={() => updateCartItemQty(idx, item.quantity + 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
