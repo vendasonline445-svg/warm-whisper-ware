@@ -490,7 +490,7 @@ const Checkout = () => {
                     🔄 Devolução gratuita
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-base font-bold" style={{ color: '#fe2b54' }}>R$ {sp.price.toFixed(2).replace(".", ",")}</span>
+                    <span className="text-base font-bold" style={{ color: '#fe2b54' }}>R$ {(sp.price * item.quantity).toFixed(2).replace(".", ",")}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-muted-foreground line-through">R$ {sp.oldPrice.toFixed(2).replace(".", ",")}</span>
