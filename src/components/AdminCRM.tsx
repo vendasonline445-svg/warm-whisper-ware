@@ -6,7 +6,7 @@ import {
   Users, ShoppingCart, QrCode, CheckCircle2, Wallet, AlertTriangle,
   Flame, Thermometer, Snowflake, X, Clock, ChevronRight, Filter,
   TrendingUp, XCircle, DollarSign, CreditCard, Eye, MousePointerClick,
-  Smartphone, Monitor, Globe, Timer, Activity, ArrowDown, Heart, Zap, Shield, Bot, BarChart3
+  Smartphone, Monitor, Globe, Timer, Activity, ArrowDown, Heart, Zap, Shield, Bot, BarChart3, Megaphone, ImageIcon
 } from "lucide-react";
 
 // ── Types ──
