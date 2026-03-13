@@ -698,7 +698,7 @@ const Checkout = () => {
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-[#E0F7F5] flex items-center justify-center">
-                  <img src="/images/pix-icon.webp" alt="Pix" className="w-5 h-5" />
+                  <img src="/images/pix-icon-new.png" alt="Pix" className="w-6 h-6" />
                 </div>
                 <div className="text-left">
                   <span className="text-sm font-semibold">Pix</span>
