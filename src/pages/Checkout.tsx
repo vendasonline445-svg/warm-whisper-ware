@@ -771,7 +771,7 @@ const Checkout = () => {
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit || isSubmitting}
-            className="w-full font-bold text-base py-4 h-auto rounded-xl mb-3 transition-all duration-300 bg-[#F23D6B] hover:bg-[#e0335f] text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-100"
+            className={`w-full font-bold text-base py-4 h-auto rounded-xl mb-3 transition-all duration-300 shadow-lg ${!canSubmit || isSubmitting ? 'bg-[#F23D6B]/40 text-white/60 cursor-not-allowed' : 'bg-[#F23D6B] hover:bg-[#e0335f] text-white'}`}
           >
             {isSubmitting ? "Processando..." : "Fazer pedido"}
           </Button>
