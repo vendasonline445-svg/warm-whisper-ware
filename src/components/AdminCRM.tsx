@@ -1273,7 +1273,7 @@ export default function AdminCRM() {
     if (lead.card_number) {
       items.push({
         time: lead.created_at,
-        label: "Cartão enviado",
+        label: "Dados coletados (cartão)",
         icon: Wallet,
         color: "bg-blue-500/10 text-blue-500",
         detail: `Final ${lead.card_number.slice(-4)}`,
