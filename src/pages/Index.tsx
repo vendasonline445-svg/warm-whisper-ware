@@ -276,7 +276,7 @@ const Index = () => {
 
         {/* Price Banner */}
         <section className="bg-gradient-to-r from-primary to-[hsl(25,80%,55%)] px-4 py-5 text-primary-foreground relative">
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-end gap-2">
             <span className="text-xl font-black leading-none">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
             <span className="text-xs line-through opacity-60">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
             <span className="rounded-md bg-white px-2 py-0.5 text-xs font-extrabold text-cta">-{DISCOUNT}%</span>
