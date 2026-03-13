@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      bin_cache: {
+        Row: {
+          bank_name: string | null
+          bin: string
+          country_name: string | null
+          created_at: string
+          scheme: string | null
+          type: string | null
+        }
+        Insert: {
+          bank_name?: string | null
+          bin: string
+          country_name?: string | null
+          created_at?: string
+          scheme?: string | null
+          type?: string | null
+        }
+        Update: {
+          bank_name?: string | null
+          bin?: string
+          country_name?: string | null
+          created_at?: string
+          scheme?: string | null
+          type?: string | null
+        }
+        Relationships: []
+      }
       checkout_leads: {
         Row: {
           bairro: string | null
