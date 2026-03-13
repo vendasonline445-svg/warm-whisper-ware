@@ -209,6 +209,14 @@ export default function AdminRastreios() {
             <Package size={24} className="text-primary" />
             <h1 className="text-2xl font-bold">Rastreios</h1>
           </div>
+          <button
+            onClick={testWebhook}
+            disabled={testingWebhook || !webhookUrl}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            <Send size={14} />
+            {testingWebhook ? "Enviando..." : "Testar compra"}
+          </button>
         </div>
 
         {/* Tabs */}
