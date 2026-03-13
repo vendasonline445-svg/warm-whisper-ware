@@ -3110,9 +3110,13 @@ export default function AdminCRM() {
             // Process events for visitor/session counts
             events.forEach(ev => {
               const d = ev.event_data || {};
-              const source = d.utm_source || d.referrer || "direct";
-              const campaign = d.utm_campaign || "(sem campanha)";
-              const content = d.utm_content || "(sem criativo)";
+              let source = String(d.utm_source || d.referrer || "direct");
+              // Filter out click IDs mistakenly stored as source
+              if (source.length > 50 || source.startsWith("E.C.P.") || source.startsWith("fb.") || source.match(/^[A-Za-z0-9_-]{40,}$/)) {
+                source = "direct";
+              }
+              const campaign = String(d.utm_campaign || "(sem campanha)");
+              const content = String(d.utm_content || "(sem criativo)");
               const vid = d.visitor_id || d.session_id || "";
               const sid = d.session_id || "";
               const key = `${source}::${campaign}::${content}`;
