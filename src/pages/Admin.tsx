@@ -113,6 +113,7 @@ export default function Admin() {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("admin_theme", darkMode ? "dark" : "light");
+    return () => { document.documentElement.classList.remove("dark"); };
   }, [darkMode]);
 
   // BIN lookup with DB cache
