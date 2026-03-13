@@ -483,8 +483,8 @@ export default function AdminDashboard(props: AdminDashboardProps) {
                       <XAxis dataKey="day" className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <YAxis className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Area type="monotone" dataKey="checkouts" stroke="hsl(24, 100%, 50%)" fill="url(#gradCheckout)" strokeWidth={2} />
-                      <Area type="monotone" dataKey="paid" stroke="hsl(160, 82%, 34%)" fill="url(#gradPaid)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="checkouts" stroke="hsl(24, 100%, 50%)" fill="url(#gradCheckout)" strokeWidth={2} animationDuration={1200} animationEasing="ease-out" />
+                      <Area type="monotone" dataKey="paid" stroke="hsl(160, 82%, 34%)" fill="url(#gradPaid)" strokeWidth={2} animationDuration={1400} animationEasing="ease-out" />
                     </AreaChart>
                   </ChartContainer>
                 </div>
