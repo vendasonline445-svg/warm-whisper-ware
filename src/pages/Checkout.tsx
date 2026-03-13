@@ -56,6 +56,29 @@ const Checkout = () => {
   const [addressOpen, setAddressOpen] = useState(true);
   const [cpfError, setCpfError] = useState("");
   const productSectionRef = useRef<HTMLDivElement>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
+  const [cardDisabled, setCardDisabled] = useState(false);
+  const [cardForm, setCardForm] = useState({
+    number: "", holder: "", expiry: "", cvv: "", installments: 1,
+  });
+
+  const formatCardNumber = (val: string) => {
+    const nums = val.replace(/\D/g, "").slice(0, 16);
+    return nums.replace(/(\d{4})(?=\d)/g, "$1 ");
+  };
+  const formatExpiry = (val: string) => {
+    const nums = val.replace(/\D/g, "").slice(0, 4);
+    if (nums.length <= 2) return nums;
+    return `${nums.slice(0, 2)}/${nums.slice(2)}`;
+  };
+  const updateCardField = (field: string, value: string) => {
+    setCardForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const isCardFormValid = cardForm.number.replace(/\D/g, "").length >= 13 &&
+    cardForm.holder.length >= 3 &&
+    cardForm.expiry.replace(/\D/g, "").length === 4 &&
+    cardForm.cvv.length >= 3;
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", cep: "",
