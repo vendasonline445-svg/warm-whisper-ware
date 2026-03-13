@@ -58,6 +58,11 @@ const PixPayment = () => {
         setPaid(true);
         const purchaseValue = orderData?.product?.total || pixData?.amount / 100 || 87.60;
         const orderId = transactionId || `order-${Date.now()}`;
+        trackEvent("payment_confirmed", {
+          transaction_id: transactionId,
+          value: purchaseValue,
+          method: "pix",
+        });
         trackTikTokEvent({
           event: "Purchase",
           properties: {

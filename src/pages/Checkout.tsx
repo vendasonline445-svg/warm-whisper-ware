@@ -92,6 +92,7 @@ const Checkout = () => {
       },
     });
     trackPageViewOnce("/checkout");
+    trackEvent("checkout_initiated", { items: cartItems.length });
   }, []);
 
   const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
