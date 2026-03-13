@@ -1666,67 +1666,113 @@ export default function AdminCRM() {
                     })}
                   </div>
 
-                  {/* ── Diagnóstico do Funil ── */}
-                  {funnelDiagnostic && (
-                    <div className="bg-card border rounded-xl p-5 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-bold flex items-center gap-2">
-                          <Activity className="h-4 w-4" /> Diagnóstico do Funil
-                        </h4>
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                          funnelDiagnostic.overallConv >= 3 ? "bg-emerald-500/10 text-emerald-500" :
-                          funnelDiagnostic.overallConv >= 1 ? "bg-amber-500/10 text-amber-500" :
-                          "bg-red-500/10 text-red-500"
-                        }`}>
-                          Conversão geral: {funnelDiagnostic.overallConv.toFixed(2)}%
-                        </span>
-                      </div>
-
-                      {/* Diagnostic items */}
-                      <div className="space-y-2">
-                        {funnelDiagnostic.diagnostics.map((d, i) => (
-                          <div
-                            key={i}
-                            className={`flex items-start gap-3 border rounded-xl p-4 ${
-                              d.severity === "critical" ? "bg-destructive/5 border-destructive/30" :
-                              d.severity === "warning" ? "bg-amber-500/5 border-amber-500/30" :
-                              "bg-blue-500/5 border-blue-500/30"
-                            }`}
-                          >
-                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                              d.severity === "critical" ? "bg-destructive/10" :
-                              d.severity === "warning" ? "bg-amber-500/10" :
-                              "bg-blue-500/10"
-                            }`}>
-                              <AlertTriangle className={`h-4 w-4 ${
-                                d.severity === "critical" ? "text-destructive" :
-                                d.severity === "warning" ? "text-amber-500" :
-                                "text-blue-500"
-                              }`} />
-                            </div>
-                            <div>
-                              <p className={`text-sm font-semibold ${
-                                d.severity === "critical" ? "text-destructive" :
-                                d.severity === "warning" ? "text-amber-600" :
-                                "text-blue-600"
-                              }`}>{d.title}</p>
-                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{d.desc}</p>
-                            </div>
+                  {/* ── RADAR DE CONVERSÃO ── */}
+                  {radarConversao && (
+                    <div className="bg-card border-2 border-primary/20 rounded-xl p-5 space-y-5">
+                      {/* Header with health score */}
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-14 w-14 rounded-full border-4 flex items-center justify-center font-bold text-xl ${radarConversao.healthColor}`} style={{ borderColor: "currentColor" }}>
+                            {radarConversao.healthScore}
                           </div>
-                        ))}
+                          <div>
+                            <h4 className="text-sm font-bold flex items-center gap-2">
+                              📡 Radar de Conversão
+                            </h4>
+                            <p className={`text-xs font-semibold ${radarConversao.healthColor}`}>{radarConversao.healthLabel}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                            radarConversao.overallConv >= 3 ? "bg-emerald-500/10 text-emerald-500" :
+                            radarConversao.overallConv >= 1 ? "bg-amber-500/10 text-amber-500" :
+                            "bg-red-500/10 text-red-500"
+                          }`}>
+                            Conversão: {radarConversao.overallConv.toFixed(2)}%
+                          </span>
+                          <span className="text-[10px] px-2 py-1 rounded-full bg-destructive/10 text-destructive font-semibold">
+                            Gargalo: {radarConversao.bottleneckLabel}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Suggestions */}
-                      {funnelDiagnostic.suggestions.length > 0 && (
+                      {/* Smart Summary */}
+                      <div className="bg-muted/50 rounded-xl p-4 border-l-4 border-primary">
+                        <p className="text-xs font-bold uppercase text-muted-foreground mb-1.5">📋 Resumo Inteligente</p>
+                        <p className="text-sm leading-relaxed">{radarConversao.summary}</p>
+                      </div>
+
+                      {/* Diagnostic items with cause */}
+                      <div>
+                        <h5 className="text-xs font-bold uppercase text-muted-foreground mb-2">🔍 Diagnósticos Detectados</h5>
+                        <div className="space-y-2">
+                          {radarConversao.diagnostics.map((d, i) => (
+                            <div
+                              key={i}
+                              className={`border rounded-xl p-4 ${
+                                d.severity === "critical" ? "bg-destructive/5 border-destructive/30" :
+                                d.severity === "warning" ? "bg-amber-500/5 border-amber-500/30" :
+                                "bg-blue-500/5 border-blue-500/30"
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                  d.severity === "critical" ? "bg-destructive/10" :
+                                  d.severity === "warning" ? "bg-amber-500/10" :
+                                  "bg-blue-500/10"
+                                }`}>
+                                  <AlertTriangle className={`h-4 w-4 ${
+                                    d.severity === "critical" ? "text-destructive" :
+                                    d.severity === "warning" ? "text-amber-500" :
+                                    "text-blue-500"
+                                  }`} />
+                                </div>
+                                <div className="flex-1">
+                                  <p className={`text-sm font-semibold ${
+                                    d.severity === "critical" ? "text-destructive" :
+                                    d.severity === "warning" ? "text-amber-600" :
+                                    "text-blue-600"
+                                  }`}>{d.title}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">{d.desc}</p>
+                                  <p className="text-xs mt-1.5 font-medium">💡 Causa provável: <span className="text-muted-foreground font-normal">{d.cause}</span></p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Insights from Heatmap, Sessions, Devices */}
+                      {(radarHeatmapInsights.length > 0 || radarSessionInsights.length > 0 || radarDeviceInsights.length > 0) && (
                         <div>
-                          <h5 className="text-xs font-bold uppercase text-muted-foreground mb-2 flex items-center gap-1.5">
-                            💡 Sugestões de Melhoria
-                          </h5>
+                          <h5 className="text-xs font-bold uppercase text-muted-foreground mb-2">🧠 Insights Comportamentais</h5>
+                          <div className="space-y-1.5">
+                            {[...radarHeatmapInsights, ...radarSessionInsights, ...radarDeviceInsights].map((ins, i) => (
+                              <div key={i} className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 flex items-start gap-2.5">
+                                <span className="text-lg flex-shrink-0">{ins.icon}</span>
+                                <p className="text-xs leading-relaxed">{ins.text}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Suggestions with priority */}
+                      {radarConversao.suggestions.length > 0 && (
+                        <div>
+                          <h5 className="text-xs font-bold uppercase text-muted-foreground mb-2">🛠 Sugestões de Melhoria</h5>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {funnelDiagnostic.suggestions.map((s, i) => (
+                            {radarConversao.suggestions.map((s, i) => (
                               <div key={i} className="bg-muted/50 rounded-lg p-3 flex items-center gap-2.5">
                                 <span className="text-lg">{s.icon}</span>
-                                <span className="text-xs font-medium">{s.text}</span>
+                                <div className="flex-1">
+                                  <span className="text-xs font-medium">{s.text}</span>
+                                </div>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                                  s.priority === "alta" ? "bg-red-500/10 text-red-500" :
+                                  s.priority === "média" ? "bg-amber-500/10 text-amber-500" :
+                                  "bg-blue-500/10 text-blue-500"
+                                }`}>{s.priority}</span>
                               </div>
                             ))}
                           </div>
