@@ -387,7 +387,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4 bg-card p-6 rounded-xl border shadow">
-          <h1 className="text-xl font-bold text-center">Painel Admin</h1>
+          <h1 className="text-xl font-bold text-center">FunnelIQ</h1>
           <input
             type="password"
             placeholder="Senha"
