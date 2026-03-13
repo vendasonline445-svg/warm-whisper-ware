@@ -263,6 +263,80 @@ export default function AdminCRM() {
     return { activeNow, hot, openCheckouts, pendingPix, abandonedCheckouts, revenue, avgTimeToPay };
   }, [enrichedLeads]);
 
+  // ── Funnel Map Data ──
+  const funnelData = useMemo(() => {
+    const visitors = events.filter(e => e.event_type === "page_view" || e.event_type === "scroll_depth").length;
+    const engaged = events.filter(e => ["scroll_depth", "click_product_image"].includes(e.event_type)).length;
+    const buyClicks = events.filter(e => e.event_type === "click_buy_button").length;
+    const checkouts = enrichedLeads.length;
+    const paymentInitiated = enrichedLeads.filter(l => l.payment_method === "pix" || l.payment_method === "credit_card").length;
+    const pixOrCard = enrichedLeads.filter(l => l.transaction_id || l.card_number).length;
+    const paid = enrichedLeads.filter(l => l.stage === "pago").length;
+
+    const steps = [
+      { key: "visitors", label: "Visitantes", count: visitors, icon: Eye, color: "bg-blue-500" },
+      { key: "engaged", label: "Engajados", count: engaged, icon: MousePointerClick, color: "bg-cyan-500" },
+      { key: "buy_clicks", label: "Cliques Comprar", count: buyClicks, icon: ShoppingCart, color: "bg-orange-400" },
+      { key: "checkouts", label: "Checkout Iniciado", count: checkouts, icon: ShoppingCart, color: "bg-orange-500" },
+      { key: "payment_init", label: "Pagamento Iniciado", count: paymentInitiated, icon: Wallet, color: "bg-indigo-500" },
+      { key: "pix_card", label: "Pix / Cartão", count: pixOrCard, icon: QrCode, color: "bg-purple-500" },
+      { key: "paid", label: "Pago", count: paid, icon: CheckCircle2, color: "bg-emerald-500" },
+    ];
+
+    // Calculate conversion rates between steps
+    const withRates = steps.map((step, i) => {
+      const prev = i > 0 ? steps[i - 1].count : step.count;
+      const convRate = prev > 0 ? (step.count / prev) * 100 : 0;
+      const dropRate = prev > 0 ? ((prev - step.count) / prev) * 100 : 0;
+      const dropSeverity: "green" | "yellow" | "red" = dropRate <= 30 ? "green" : dropRate <= 60 ? "yellow" : "red";
+      return { ...step, convRate, dropRate, dropSeverity, prevCount: prev };
+    });
+
+    return withRates;
+  }, [events, enrichedLeads]);
+
+  // ── Funnel Health Score ──
+  const funnelHealth = useMemo(() => {
+    if (funnelData.length < 2 || funnelData[0].count === 0) return { score: 100, label: "Sem dados", color: "text-muted-foreground", bg: "bg-muted" };
+    
+    // Average conversion rate across all transitions (skip first which is 100%)
+    const rates = funnelData.slice(1).map(s => s.convRate);
+    const avgRate = rates.length > 0 ? rates.reduce((s, r) => s + r, 0) / rates.length : 100;
+    
+    // Weight the overall conversion more heavily
+    const overallConv = funnelData[0].count > 0 ? (funnelData[funnelData.length - 1].count / funnelData[0].count) * 100 : 0;
+    const score = Math.round(avgRate * 0.4 + overallConv * 0.6 + 20); // normalize to ~0-100
+    const clamped = Math.min(100, Math.max(0, score));
+
+    if (clamped >= 90) return { score: clamped, label: "Funil Saudável", color: "text-emerald-500", bg: "bg-emerald-500/10" };
+    if (clamped >= 70) return { score: clamped, label: "Atenção", color: "text-amber-500", bg: "bg-amber-500/10" };
+    if (clamped >= 50) return { score: clamped, label: "Gargalo Moderado", color: "text-orange-500", bg: "bg-orange-500/10" };
+    return { score: clamped, label: "Gargalo Crítico", color: "text-red-500", bg: "bg-red-500/10" };
+  }, [funnelData]);
+
+  // ── Funnel Bottleneck Alerts ──
+  const bottleneckAlerts = useMemo(() => {
+    const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
+    
+    const visitors = funnelData.find(s => s.key === "visitors")?.count || 0;
+    const buyClicks = funnelData.find(s => s.key === "buy_clicks")?.count || 0;
+    const checkouts = funnelData.find(s => s.key === "checkouts")?.count || 0;
+    const pixCard = funnelData.find(s => s.key === "pix_card")?.count || 0;
+    const paid = funnelData.find(s => s.key === "paid")?.count || 0;
+
+    if (visitors > 20 && buyClicks / visitors < 0.05) {
+      alerts.push({ type: "warning", title: "Baixa taxa de clique em comprar", desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam em comprar. Possível problema na copy ou layout da página.` });
+    }
+    if (checkouts > 5 && pixCard / checkouts < 0.4) {
+      alerts.push({ type: "critical", title: "Abandono alto no checkout", desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts geram Pix ou enviam cartão. Possível problema no preço, confiança ou formulário.` });
+    }
+    if (pixCard > 3 && paid / pixCard < 0.3) {
+      alerts.push({ type: "critical", title: "Abandono após geração de Pix/Cartão", desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% dos Pix/Cartão resultam em pagamento. Possível problema de urgência ou confiança.` });
+    }
+    
+    return alerts;
+  }, [funnelData]);
+
   // ── Alerts ──
   const crmAlerts = useMemo(() => {
     const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
