@@ -282,7 +282,7 @@ const Index = () => {
             <span className="rounded bg-primary-foreground/25 px-1.5 py-0.5 text-xs font-bold">-{DISCOUNT}%</span>
           </div>
           <div className="absolute bottom-2 right-4 text-right">
-            <div className="flex items-center gap-1 justify-end mb-0.5">
+            <div className="flex items-center gap-1 justify-end mb-2">
               <Zap className="h-3 w-3 fill-primary-foreground" />
               <span className="text-[10px] font-extrabold uppercase tracking-wider opacity-90">Oferta Relâmpago</span>
             </div>
