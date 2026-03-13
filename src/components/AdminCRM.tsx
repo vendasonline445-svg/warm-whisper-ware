@@ -353,10 +353,13 @@ export default function AdminCRM() {
     const src = String(e.event_data?.utm_source || "");
     if (!src) return "Direto";
     const s = src.toLowerCase();
-    if (s.includes("tiktok") || s.includes("tt")) return "TikTok";
+    // Normalize TikTok SCK codes (TT-timestamp-random)
+    if (/^tt-\d+/i.test(s) || s.includes("tiktok") || s === "tt") return "TikTok";
     if (s.includes("facebook") || s.includes("fb") || s.includes("instagram")) return "Ads";
     if (s.includes("google")) return "Google";
     if (s.includes("organic")) return "Orgânico";
+    // Filter long click IDs
+    if (src.length > 50 || /^[A-Za-z0-9_-]{40,}$/.test(src)) return "Direto";
     return src;
   };
 
