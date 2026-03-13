@@ -1032,7 +1032,7 @@ const Index = () => {
                   <p className="text-2xl font-extrabold text-cta tracking-wider my-2">DESCULPA80</p>
                   <p className="text-sm font-semibold text-cta">80% OFF na sua próxima compra</p>
                   <button
-                    onClick={() => { navigator.clipboard.writeText('DESCULPA80'); setCouponCopied(true); setTimeout(() => setCouponCopied(false), 2000); }}
+                    onClick={() => { localStorage.setItem('mesalar_coupon', 'DESCULPA80'); navigator.clipboard.writeText('DESCULPA80'); setCouponCopied(true); setTimeout(() => setCouponCopied(false), 2000); }}
                     className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-cta hover:underline"
                   >
                     <Copy className="h-3.5 w-3.5" />
