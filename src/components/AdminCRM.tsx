@@ -725,29 +725,7 @@ export default function AdminCRM() {
     };
   }, [funnelData, funnelHealth]);
 
-  // ── Radar: Heatmap Insights ──
-  const radarHeatmapInsights = useMemo(() => {
-    const insights: { icon: string; text: string }[] = [];
-    if (heatmapData.sections.length > 0) {
-      const heroClicks = heatmapData.sections.find(s => s.section === "hero");
-      const buySection = heatmapData.sections.find(s => s.section === "detalhes" || s.section === "galeria");
-      if (heroClicks && heroClicks.pct < 10 && heatmapData.totalClicks > 20) {
-        insights.push({ icon: "👆", text: "Poucos cliques no topo da página. CTA pode não estar visível." });
-      }
-      if (!buySection || (buySection.pct < 5 && heatmapData.totalClicks > 20)) {
-        insights.push({ icon: "🛒", text: "CTA pouco visível ou pouco atrativo. Considere reposicionar." });
-      }
-    }
-    if (heatmapData.totalScrollEvents > 10) {
-      const below50 = heatmapData.scrollBuckets.filter(b => b.min >= 50).reduce((s, b) => s + b.count, 0);
-      const total = heatmapData.scrollBuckets.reduce((s, b) => s + b.count, 0) || 1;
-      if (below50 / total < 0.3) {
-        insights.push({ icon: "📜", text: "Maioria dos visitantes não chega ao meio da página. Conteúdo acima da dobra pode não estar gerando interesse." });
-      }
-    }
-    return insights;
-  }, [heatmapData]);
-
+  // Note: radarHeatmapInsights, radarSessionInsights, radarDeviceInsights are defined after their dependencies below
 
   // ── Device Funnel Analysis ──
   const deviceFunnelAnalysis = useMemo(() => {
