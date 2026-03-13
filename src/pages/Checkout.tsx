@@ -9,9 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const PRODUCT_PRICE = 87.60;
-const OLD_PRICE = 199.90;
-const BASE_DISCOUNT_VALUE = 112.30;
+const SIZE_PRICES: Record<string, { price: number; oldPrice: number; discount: number }> = {
+  "120x60cm": { price: 69.90, oldPrice: 159.90, discount: 56 },
+  "150x60cm": { price: 79.90, oldPrice: 179.90, discount: 55 },
+  "180x60cm": { price: 87.60, oldPrice: 199.90, discount: 56 },
+  "240x60cm": { price: 109.90, oldPrice: 249.90, discount: 56 },
+};
 
 function useCheckoutCountdown() {
   const [seconds, setSeconds] = useState(299);
