@@ -812,6 +812,10 @@ export default function Admin() {
 
         {tab === "crm" && <AdminCRM />}
 
+        {tab === "tiktok" && <AdminTikTokTab />}
+
+        {tab === "rastreios" && <AdminRastreiosTab />}
+
         {tab === "logs" && (
           <div className="space-y-6">
             {logsLoading ? (
