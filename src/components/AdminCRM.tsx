@@ -1328,43 +1328,48 @@ export default function AdminCRM() {
     </span>
   );
 
-  const LeadCard = ({ l, borderColor }: { l: EnrichedLead; borderColor?: string }) => (
-    <div
-      onClick={() => setSelectedLead(l)}
-      className={`bg-card border ${borderColor || ""} rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors`}
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="flex-shrink-0 flex flex-col gap-1">
-          <ScoreBadge level={l.level} score={l.score} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold truncate">{l.name}</p>
-          <p className="text-[10px] text-muted-foreground truncate">
-            {l.email} · {l.cidade || "—"}/{l.uf || "—"}
-          </p>
-          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            <StageBadge stage={l.stage} />
-            <span className="text-[9px] text-muted-foreground">{l.origin}</span>
-            <span className="text-[9px] text-muted-foreground">· {l.device}</span>
-            <span className="text-[9px] text-muted-foreground">· {l.payment_method === "pix" ? "Pix" : "Cartão"}</span>
-            {l.campaign !== "—" && <span className="text-[9px] text-blue-500">· {l.campaign}</span>}
-            {l.creative !== "—" && <span className="text-[9px] text-purple-500">· {l.creative}</span>}
+  const LeadCard = ({ l, borderColor }: { l: EnrichedLead; borderColor?: string }) => {
+    const ScoreIcon = SCORE_CONFIG[l.level].icon;
+    const scoreColor = SCORE_CONFIG[l.level].colorClass;
+    return (
+      <div
+        onClick={() => setSelectedLead(l)}
+        className={`glass-card ${borderColor || ""} rounded-xl p-3.5 cursor-pointer hover:scale-[1.02] transition-all duration-200 hover:shadow-lg group`}
+      >
+        <div className="flex items-start justify-between mb-2">
+          <p className="text-sm font-bold truncate flex-1 mr-2">{l.name}</p>
+          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${SCORE_CONFIG[l.level].bgClass} ${scoreColor}`}>
+            <ScoreIcon className="h-3 w-3" />
+            {SCORE_CONFIG[l.level].label}
           </div>
         </div>
-      </div>
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <div className="text-right">
-          <p className="text-xs font-semibold">
-            {l.total_amount ? `R$ ${(l.total_amount / 100).toFixed(2)}` : "—"}
-          </p>
-          <p className="text-[10px] text-muted-foreground">
-            {formatDistanceToNow(new Date(l.created_at), { addSuffix: true, locale: ptBR })}
-          </p>
+        <p className="text-[11px] text-muted-foreground truncate">{l.email}</p>
+        <div className="flex items-center justify-between mt-2.5">
+          <div className="flex items-center gap-2">
+            {l.total_amount ? (
+              <span className="text-sm font-bold text-primary">
+                R$ {(l.total_amount / 100).toFixed(2).replace(".", ",")}
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">—</span>
+            )}
+          </div>
+          <span className="text-[10px] text-muted-foreground">
+            {l.cidade || "—"}/{l.uf || "—"}
+          </span>
         </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-muted-foreground">{l.payment_method === "pix" ? "Pix" : "Cartão"}</span>
+            <span className="text-[9px] text-muted-foreground">· {l.origin}</span>
+          </div>
+          <span className="text-[9px] text-muted-foreground">
+            {formatDistanceToNow(new Date(l.created_at), { addSuffix: true, locale: ptBR })}
+          </span>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
