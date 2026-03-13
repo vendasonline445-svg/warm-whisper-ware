@@ -263,6 +263,14 @@ const Index = () => {
       },
     });
   }, []);
+
+  // Lock body scroll when modals are open
+  useEffect(() => {
+    const anyOpen = storeOpen || chatOpen || exitModalOpen || exit2Open || colorModalOpen || cartOpen;
+    document.body.style.overflow = anyOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [storeOpen, chatOpen, exitModalOpen, exit2Open, colorModalOpen, cartOpen]);
+
   useEffect(() => {
     if (exitShown) return; // Stop intercepting once popup was shown
 
