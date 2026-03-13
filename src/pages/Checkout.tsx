@@ -137,7 +137,18 @@ const Checkout = () => {
   const [form, setForm] = useState(() => {
     try {
       const saved = localStorage.getItem('mesalar_checkout_form');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Seed crm identifiers from previously saved form data
+        if (parsed.email?.trim()) localStorage.setItem("crm_user_email", parsed.email.trim().toLowerCase());
+        if (parsed.phone?.trim()) {
+          const digits = parsed.phone.replace(/\D/g, "");
+          if (digits.length >= 10) {
+            localStorage.setItem("crm_user_phone", digits.startsWith("55") ? `+${digits}` : `+55${digits}`);
+          }
+        }
+        return parsed;
+      }
     } catch {}
     return {
       name: "", phone: "", email: "", cep: "",
