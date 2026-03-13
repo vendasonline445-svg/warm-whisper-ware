@@ -333,6 +333,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white pb-[72px]">
+      {/* Flying dot animation */}
+      {flyingDot && (
+        <div className="fixed z-[100] pointer-events-none" style={{
+          animation: 'flyToCart 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+          left: '50%',
+          bottom: '80px',
+        }}>
+          <div className="h-4 w-4 rounded-full bg-cta shadow-lg" />
+        </div>
+      )}
+      <style>{`
+        @keyframes flyToCart {
+          0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+          40% { transform: translate(20vw, -40vh) scale(1.3); opacity: 1; }
+          100% { transform: translate(35vw, -90vh) scale(0.3); opacity: 0; }
+        }
+      `}</style>
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b bg-card">
         <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 py-3">
