@@ -134,6 +134,9 @@ const Index = () => {
   const [reviewZoomOpen, setReviewZoomOpen] = useState(false);
   const [reviewZoomPhotos, setReviewZoomPhotos] = useState<string[]>([]);
   const [reviewZoomIndex, setReviewZoomIndex] = useState(0);
+  const [videoZoomOpen, setVideoZoomOpen] = useState(false);
+  const [videoZoomSrc, setVideoZoomSrc] = useState("");
+  const videoScrollRef = useRef<HTMLDivElement>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareClosing, setShareClosing] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -600,6 +603,40 @@ const Index = () => {
                 );
               })}
             </div>
+          </div>
+        </div>
+
+        {/* Gray Divider */}
+        <div className="mt-4 h-2 bg-muted/60" />
+
+        {/* Video Carousel Section */}
+        <div className="px-4 mt-4">
+          <h2 className="text-base font-bold mb-3">Vídeos do Produto</h2>
+          <div
+            ref={videoScrollRef}
+            className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+          >
+            {["/videos/video-1.mp4", "/videos/video-2.mp4", "/videos/video-3.mp4"].map((src, i) => (
+              <div
+                key={i}
+                className="flex-shrink-0 w-[45vw] max-w-[200px] snap-start cursor-pointer relative rounded-xl overflow-hidden bg-muted aspect-[9/16] active:scale-95 transition-transform"
+                onClick={() => { setVideoZoomSrc(src); setVideoZoomOpen(true); }}
+              >
+                <video
+                  src={src}
+                  className="w-full h-full object-cover"
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-foreground ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -1163,7 +1200,24 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Review Photo Zoom Modal */}
+      {/* Video Zoom Modal */}
+      <Dialog open={videoZoomOpen} onOpenChange={(open) => { setVideoZoomOpen(open); if (!open) setVideoZoomSrc(""); }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 border-0 bg-black shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
+          <DialogDescription className="sr-only">Vídeo do produto ampliado</DialogDescription>
+          <DialogTitle className="sr-only">Vídeo do produto</DialogTitle>
+          {videoZoomSrc && (
+            <video
+              src={videoZoomSrc}
+              className="w-full h-auto max-h-[85vh] rounded-lg"
+              controls
+              autoPlay
+              playsInline
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={reviewZoomOpen} onOpenChange={setReviewZoomOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
           <DialogDescription className="sr-only">Foto da avaliação ampliada</DialogDescription>
