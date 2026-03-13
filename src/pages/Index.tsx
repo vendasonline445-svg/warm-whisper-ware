@@ -137,18 +137,44 @@ const Index = () => {
   const [reportReason, setReportReason] = useState('');
   const [reportDescription, setReportDescription] = useState('');
   const [cartClosing, setCartClosing] = useState(false);
-  const [cartItem, setCartItem] = useState<{color: string; size: string; quantity: number} | null>(() => {
+  const [cartItems, setCartItems] = useState<{color: string; size: string; quantity: number}[]>(() => {
     try {
       const saved = localStorage.getItem('mesalar_cart');
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : parsed ? [parsed] : [];
+    } catch { return []; }
   });
 
-  const updateCart = (item: {color: string; size: string; quantity: number} | null) => {
-    setCartItem(item);
-    if (item) localStorage.setItem('mesalar_cart', JSON.stringify(item));
+  const saveCart = (items: {color: string; size: string; quantity: number}[]) => {
+    setCartItems(items);
+    if (items.length) localStorage.setItem('mesalar_cart', JSON.stringify(items));
     else localStorage.removeItem('mesalar_cart');
   };
+
+  const addToCart = (color: string, size: string, qty: number) => {
+    const existing = cartItems.findIndex(i => i.color === color && i.size === size);
+    if (existing >= 0) {
+      const updated = [...cartItems];
+      updated[existing] = { ...updated[existing], quantity: updated[existing].quantity + qty };
+      saveCart(updated);
+    } else {
+      saveCart([...cartItems, { color, size, quantity: qty }]);
+    }
+  };
+
+  const updateCartItem = (index: number, qty: number) => {
+    if (qty <= 0) {
+      saveCart(cartItems.filter((_, i) => i !== index));
+    } else {
+      const updated = [...cartItems];
+      updated[index] = { ...updated[index], quantity: qty };
+      saveCart(updated);
+    }
+  };
+
+  const cartTotalQty = cartItems.reduce((sum, i) => sum + i.quantity, 0);
+  const cartTotal = cartItems.reduce((sum, i) => sum + (SIZE_PRICES[i.size]?.price || PRICE) * i.quantity, 0);
 
   const closeCart = () => {
     setCartClosing(true);
