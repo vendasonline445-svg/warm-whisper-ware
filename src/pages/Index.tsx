@@ -1422,7 +1422,7 @@ const Index = () => {
                   <div className="flex-1">
                     <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
                     <p className="text-xs text-muted-foreground">Cor: {cartItem.color === 'preta' ? 'Preta' : 'Branca'} · {cartItem.size}</p>
-                    <p className="text-cta font-extrabold text-base mt-1">R$ {(PRICE * cartItem.quantity).toFixed(2).replace('.', ',')}</p>
+                    <p className="text-cta font-extrabold text-base mt-1">R$ {((SIZE_PRICES[cartItem.size]?.price || PRICE) * cartItem.quantity).toFixed(2).replace('.', ',')}</p>
                     <div className="flex items-center gap-3 mt-2">
                       <button
                         onClick={() => {
