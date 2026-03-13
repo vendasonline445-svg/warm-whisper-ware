@@ -274,31 +274,88 @@ export default function AdminCRM() {
     return { activeNow, hot, openCheckouts, pendingPix, abandonedCheckouts, revenue, avgTimeToPay };
   }, [enrichedLeads]);
 
-  // ── Funnel Map Data ──
+  // ── Funnel Map Data (unique visitors per stage) ──
   const funnelData = useMemo(() => {
-    const visitors = events.filter(e => e.event_type === "page_view" || e.event_type === "scroll_depth").length;
-    const engaged = events.filter(e => ["scroll_depth", "click_product_image"].includes(e.event_type)).length;
-    const buyClicks = events.filter(e => e.event_type === "click_buy_button").length;
-    const checkouts = enrichedLeads.length;
-    const paymentInitiated = enrichedLeads.filter(l => l.payment_method === "pix" || l.payment_method === "credit_card").length;
-    const pixOrCard = enrichedLeads.filter(l => l.transaction_id || l.card_number).length;
-    const paid = enrichedLeads.filter(l => l.stage === "pago").length;
+    // Build a set of unique visitor_ids that reached each stage
+    const stageVisitors: Record<string, Set<string>> = {
+      visitors: new Set<string>(),
+      engaged: new Set<string>(),
+      buy_clicks: new Set<string>(),
+      checkouts: new Set<string>(),
+      payment_init: new Set<string>(),
+      pix_card: new Set<string>(),
+      paid: new Set<string>(),
+    };
 
-    const steps = [
-      { key: "visitors", label: "Visitantes", count: visitors, icon: Eye, color: "bg-blue-500" },
-      { key: "engaged", label: "Engajados", count: engaged, icon: MousePointerClick, color: "bg-cyan-500" },
-      { key: "buy_clicks", label: "Cliques Comprar", count: buyClicks, icon: ShoppingCart, color: "bg-orange-400" },
-      { key: "checkouts", label: "Checkout Iniciado", count: checkouts, icon: ShoppingCart, color: "bg-orange-500" },
-      { key: "payment_init", label: "Pagamento Iniciado", count: paymentInitiated, icon: Wallet, color: "bg-indigo-500" },
-      { key: "pix_card", label: "Pix / Cartão", count: pixOrCard, icon: QrCode, color: "bg-purple-500" },
-      { key: "paid", label: "Pago", count: paid, icon: CheckCircle2, color: "bg-emerald-500" },
+    // From events: deduplicate by visitor_id
+    events.forEach(e => {
+      const vid = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
+      const key = String(vid);
+
+      if (e.event_type === "page_view") {
+        stageVisitors.visitors.add(key);
+      }
+      if (["scroll_depth", "click_product_image"].includes(e.event_type)) {
+        stageVisitors.visitors.add(key); // also a visitor
+        stageVisitors.engaged.add(key);
+      }
+      if (e.event_type === "click_buy_button") {
+        stageVisitors.visitors.add(key);
+        stageVisitors.engaged.add(key);
+        stageVisitors.buy_clicks.add(key);
+      }
+      if (e.event_type === "checkout_initiated") {
+        stageVisitors.checkouts.add(key);
+      }
+      if (e.event_type === "pix_generated" || e.event_type === "card_submitted") {
+        stageVisitors.pix_card.add(key);
+      }
+      if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") {
+        stageVisitors.paid.add(key);
+      }
+    });
+
+    // From leads: supplement checkout/payment stages
+    enrichedLeads.forEach(l => {
+      const vid = l.metadata?.visitor_id || l.email || l.id;
+      const key = String(vid);
+      stageVisitors.checkouts.add(key);
+      if (l.payment_method === "pix" || l.payment_method === "credit_card") {
+        stageVisitors.payment_init.add(key);
+      }
+      if (l.transaction_id || l.card_number) {
+        stageVisitors.pix_card.add(key);
+      }
+      if (l.stage === "pago") {
+        stageVisitors.paid.add(key);
+      }
+    });
+
+    // Build raw counts
+    const rawCounts = [
+      { key: "visitors", label: "Visitantes", rawCount: stageVisitors.visitors.size, icon: Eye, color: "bg-blue-500" },
+      { key: "engaged", label: "Engajados", rawCount: stageVisitors.engaged.size, icon: MousePointerClick, color: "bg-cyan-500" },
+      { key: "buy_clicks", label: "Cliques Comprar", rawCount: stageVisitors.buy_clicks.size, icon: ShoppingCart, color: "bg-orange-400" },
+      { key: "checkouts", label: "Checkout Iniciado", rawCount: stageVisitors.checkouts.size, icon: ShoppingCart, color: "bg-orange-500" },
+      { key: "payment_init", label: "Pagamento Iniciado", rawCount: stageVisitors.payment_init.size, icon: Wallet, color: "bg-indigo-500" },
+      { key: "pix_card", label: "Pix / Cartão", rawCount: stageVisitors.pix_card.size, icon: QrCode, color: "bg-purple-500" },
+      { key: "paid", label: "Pago", rawCount: stageVisitors.paid.size, icon: CheckCircle2, color: "bg-emerald-500" },
     ];
+
+    // Enforce monotonic decrease: each step <= previous step
+    const steps: (typeof rawCounts[0] & { count: number })[] = rawCounts.map((step, i) => ({
+      ...step,
+      count: step.rawCount,
+    }));
+    for (let i = 1; i < steps.length; i++) {
+      steps[i].count = Math.min(steps[i].rawCount, steps[i - 1].count);
+    }
 
     // Calculate conversion rates between steps
     const withRates = steps.map((step, i) => {
       const prev = i > 0 ? steps[i - 1].count : step.count;
-      const convRate = prev > 0 ? (step.count / prev) * 100 : 0;
-      const dropRate = prev > 0 ? ((prev - step.count) / prev) * 100 : 0;
+      const convRate = prev > 0 ? Math.min(100, (step.count / prev) * 100) : 0;
+      const dropRate = prev > 0 ? Math.min(100, ((prev - step.count) / prev) * 100) : 0;
       const dropSeverity: "green" | "yellow" | "red" = dropRate <= 30 ? "green" : dropRate <= 60 ? "yellow" : "red";
       return { ...step, convRate, dropRate, dropSeverity, prevCount: prev };
     });
