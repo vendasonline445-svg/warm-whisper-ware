@@ -1234,6 +1234,14 @@ export default function AdminCRM() {
                     <option value="1h">Última 1 hora</option>
                   </select>
                 </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Filtro de Bots</label>
+                  <select value={funnelBotFilter} onChange={e => setFunnelBotFilter(e.target.value)} className="w-full bg-background border rounded-lg px-3 py-2 text-xs">
+                    <option value="all">Todos os visitantes</option>
+                    <option value="exclude_bots">Excluir bots</option>
+                    <option value="valid">Somente tráfego válido</option>
+                  </select>
+                </div>
               </div>
 
               {/* Active filter tags */}
