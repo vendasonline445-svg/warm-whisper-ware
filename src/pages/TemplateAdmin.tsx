@@ -46,7 +46,7 @@ interface Lead {
 }
 
 export default function TemplateAdmin() {
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem("admin_auth") === "true");
   const [password, setPassword] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,6 +55,7 @@ export default function TemplateAdmin() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem("admin_auth", "true");
       setAuthenticated(true);
       setError("");
     } else {

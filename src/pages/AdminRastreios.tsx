@@ -31,7 +31,7 @@ interface WebhookLog {
 }
 
 export default function AdminRastreios() {
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem("admin_auth") === "true");
   const [password, setPassword] = useState("");
   const [orders, setOrders] = useState<OrderTracking[]>([]);
   const [loading, setLoading] = useState(false);
@@ -134,6 +134,7 @@ export default function AdminRastreios() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem("admin_auth", "true");
       setAuthenticated(true);
     } else {
       alert("Senha incorreta");

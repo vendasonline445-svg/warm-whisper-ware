@@ -19,7 +19,7 @@ interface Pixel {
 
 const AdminTikTok = () => {
   const navigate = useNavigate();
-  const [authed, setAuthed] = useState(false);
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem("admin_auth") === "true");
   const [password, setPassword] = useState("");
   const [pixels, setPixels] = useState<Pixel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +34,7 @@ const AdminTikTok = () => {
 
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem("admin_auth", "true");
       setAuthed(true);
     } else {
       toast({ title: "Senha incorreta", variant: "destructive" });
