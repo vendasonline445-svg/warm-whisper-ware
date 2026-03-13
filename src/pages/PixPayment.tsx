@@ -243,7 +243,8 @@ const PixPayment = () => {
               </Button>
             </div>
 
-            {/* Check payment button */}
+            {/* Check payment button - only after copying */}
+            {copied && (
             <div className="mt-5 text-center">
               <button
                 onClick={async () => {
@@ -264,6 +265,7 @@ const PixPayment = () => {
                 )}
               </button>
             </div>
+            )}
 
             {/* How to pay */}
             <div className="mt-6 rounded-2xl bg-white border border-border/30 p-5 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
