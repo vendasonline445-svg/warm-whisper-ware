@@ -581,12 +581,12 @@ export default function Admin() {
               buyClicks={buyClicks}
               imageClicks={imageClicks}
               avgScroll={avgScroll}
-              pixGeneratedCount={pixGeneratedCount}
-              paidCount={paidCount}
+              pixGeneratedCount={validPixGenerated}
+              paidCount={validPaidCount}
               pendingCount={pendingCount}
               totalRevenue={totalRevenue}
               pixPaidCount={pixPaidCount}
-              cardsCollected={cardsCollected}
+              cardsCollected={validCardsCollected}
               conversionRate={conversionRate}
               activeNow={activeNow}
               alerts={alerts}
