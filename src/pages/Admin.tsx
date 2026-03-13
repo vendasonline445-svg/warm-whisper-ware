@@ -35,6 +35,7 @@ interface Lead {
 }
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
