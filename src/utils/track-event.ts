@@ -11,11 +11,19 @@ function isBotUA(): boolean {
 function getOrCreateVisitorId(): string {
   const KEY = "mesalar_visitor_id";
   let id = localStorage.getItem(KEY);
+
+  // Accept visitor_id from URL (cross-domain handoff)
+  if (!id) {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get("visitor_id");
+    if (fromUrl) id = fromUrl;
+  }
+
   if (!id) {
     const rand = Math.random().toString(36).slice(2, 7);
     id = `v_${rand}_${Date.now()}`;
-    localStorage.setItem(KEY, id);
   }
+  localStorage.setItem(KEY, id);
   return id;
 }
 
