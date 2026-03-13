@@ -351,9 +351,9 @@ export default function Admin() {
     <div className="min-h-screen bg-background">
       {/* Top Nav */}
       <header className="border-b bg-card px-4 py-3">
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-lg font-bold">Painel Admin</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setTab("dashboard")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "dashboard" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
@@ -382,6 +382,16 @@ export default function Admin() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "logs" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
             >
               <Bug className="h-4 w-4" /> Logs
+            </button>
+            <span className="w-px bg-border mx-1 self-stretch" />
+            <button onClick={() => navigate("/admin/tiktok")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+              <Megaphone className="h-4 w-4" /> TikTok
+            </button>
+            <button onClick={() => navigate("/admin/rastreios")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+              <Package className="h-4 w-4" /> Rastreios
+            </button>
+            <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
+              <Download className="h-4 w-4" /> CSV
             </button>
           </div>
         </div>
@@ -432,61 +442,6 @@ export default function Admin() {
                   </Popover>
                 </div>
               )}
-            </div>
-
-            {/* Quick Actions - no topo */}
-            <div>
-              <h2 className="text-lg font-bold mb-3">Ações rápidas</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <button
-                  onClick={() => setTab("leads")}
-                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">Ver Leads</p>
-                    <p className="text-xs text-muted-foreground">{leads.length} registros</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => navigate("/admin/tiktok")}
-                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Megaphone className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">TikTok Pixels</p>
-                    <p className="text-xs text-muted-foreground">Gerenciar pixels</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => navigate("/admin/rastreios")}
-                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Package className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">Rastreios / Trackly</p>
-                    <p className="text-xs text-muted-foreground">Webhooks e envios</p>
-                  </div>
-                </button>
-                <button
-                  onClick={exportCSV}
-                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Download className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">Exportar CSV</p>
-                    <p className="text-xs text-muted-foreground">Todos os leads</p>
-                  </div>
-                </button>
-              </div>
             </div>
 
             {/* Funnel Metrics */}
