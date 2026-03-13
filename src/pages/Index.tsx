@@ -1176,22 +1176,27 @@ const Index = () => {
 
       {/* Image Zoom Modal */}
       <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
           <DialogDescription className="sr-only">Imagem ampliada do produto</DialogDescription>
           <DialogTitle className="sr-only">Imagem do produto</DialogTitle>
+          <button onClick={() => setZoomOpen(false)} className="absolute top-3 right-3 z-50 h-10 w-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+            <X className="h-6 w-6 text-white" />
+          </button>
           <div
             className="relative"
             onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; swiping.current = false; }}
             onTouchMove={(e) => {
               const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
-              const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
-              if (dx > dy && dx > 10) { swiping.current = true; e.preventDefault(); }
+              const dy = e.touches[0].clientY - touchStartY.current;
+              if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) { swiping.current = true; e.preventDefault(); }
               touchEndX.current = e.touches[0].clientX;
             }}
-            onTouchEnd={() => {
-              const diff = touchStartX.current - touchEndX.current;
-              if (swiping.current && Math.abs(diff) > 50) {
-                if (diff > 0) nextImage();
+            onTouchEnd={(e) => {
+              const diffX = touchStartX.current - touchEndX.current;
+              const diffY = e.changedTouches[0].clientY - touchStartY.current;
+              if (diffY > 100) { setZoomOpen(false); return; }
+              if (swiping.current && Math.abs(diffX) > 50) {
+                if (diffX > 0) nextImage();
                 else prevImage();
               }
             }}
@@ -1216,26 +1221,40 @@ const Index = () => {
 
       {/* Video Zoom Modal */}
       <Dialog open={videoZoomOpen} onOpenChange={(open) => { setVideoZoomOpen(open); if (!open) setVideoZoomSrc(""); }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 border-0 bg-black shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 border-0 bg-black shadow-none [&>button]:hidden">
           <DialogDescription className="sr-only">Vídeo do produto ampliado</DialogDescription>
           <DialogTitle className="sr-only">Vídeo do produto</DialogTitle>
-          {videoZoomSrc && (
-            <video
-              src={videoZoomSrc}
-              className="w-full h-auto max-h-[85vh] rounded-lg"
-              controls
-              autoPlay
-              playsInline
-            />
-          )}
+          <button onClick={() => { setVideoZoomOpen(false); setVideoZoomSrc(""); }} className="absolute top-3 right-3 z-50 h-10 w-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+            <X className="h-6 w-6 text-white" />
+          </button>
+          <div
+            onTouchStart={(e) => { touchStartY.current = e.touches[0].clientY; }}
+            onTouchEnd={(e) => {
+              const diffY = e.changedTouches[0].clientY - touchStartY.current;
+              if (diffY > 100) { setVideoZoomOpen(false); setVideoZoomSrc(""); }
+            }}
+          >
+            {videoZoomSrc && (
+              <video
+                src={videoZoomSrc}
+                className="w-full h-auto max-h-[85vh] rounded-lg"
+                controls
+                autoPlay
+                playsInline
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
-
+      {/* Review Photo Zoom Modal */}
       <Dialog open={reviewZoomOpen} onOpenChange={setReviewZoomOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:text-white [&>button]:bg-foreground/50 [&>button]:rounded-full">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
           <DialogDescription className="sr-only">Foto da avaliação ampliada</DialogDescription>
           <DialogTitle className="sr-only">Foto da avaliação</DialogTitle>
+          <button onClick={() => setReviewZoomOpen(false)} className="absolute top-3 right-3 z-50 h-10 w-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+            <X className="h-6 w-6 text-white" />
+          </button>
           <div
             className="relative"
             onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; swiping.current = false; }}
@@ -1245,10 +1264,12 @@ const Index = () => {
               if (dx > dy && dx > 10) { swiping.current = true; e.preventDefault(); }
               touchEndX.current = e.touches[0].clientX;
             }}
-            onTouchEnd={() => {
-              const diff = touchStartX.current - touchEndX.current;
-              if (swiping.current && Math.abs(diff) > 50) {
-                if (diff > 0) setReviewZoomIndex((prev) => Math.min(prev + 1, reviewZoomPhotos.length - 1));
+            onTouchEnd={(e) => {
+              const diffX = touchStartX.current - touchEndX.current;
+              const diffY = e.changedTouches[0].clientY - touchStartY.current;
+              if (diffY > 100) { setReviewZoomOpen(false); return; }
+              if (swiping.current && Math.abs(diffX) > 50) {
+                if (diffX > 0) setReviewZoomIndex((prev) => Math.min(prev + 1, reviewZoomPhotos.length - 1));
                 else setReviewZoomIndex((prev) => Math.max(prev - 1, 0));
               }
             }}
