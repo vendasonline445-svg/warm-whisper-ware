@@ -662,7 +662,7 @@ const Index = () => {
             <Store className="h-5 w-5" />
             <span>Loja</span>
           </button>
-          <button className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[32px]">
+          <button onClick={() => setChatOpen(true)} className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[32px]">
             <MessageCircle className="h-5 w-5" />
             <span>Chat</span>
           </button>
