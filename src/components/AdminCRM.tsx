@@ -360,124 +360,6 @@ export default function AdminCRM() {
     return src;
   };
 
-  // ── Filtered funnel data ──
-  const funnelData = useMemo(() => {
-    const now = Date.now();
-    const realtimeMap: Record<string, number> = { "5m": 5 * 60000, "30m": 30 * 60000, "1h": 3600000 };
-
-    let fe = events;
-    let fl = enrichedLeads;
-    let pvc = pageViewCount;
-
-    // Realtime filter
-    if (funnelRealtime !== "all" && realtimeMap[funnelRealtime]) {
-      const since = now - realtimeMap[funnelRealtime];
-      fe = fe.filter(e => new Date(e.created_at).getTime() > since);
-      fl = fl.filter(l => new Date(l.created_at).getTime() > since);
-      pvc = 0; // can't filter page_views by realtime, use events only
-    }
-
-    // Device filter
-    if (funnelDevice !== "all") {
-      fe = fe.filter(e => getEventDevice(e) === funnelDevice);
-      fl = fl.filter(l => l.device.toLowerCase() === (funnelDevice === "mobile" ? "mobile" : funnelDevice === "desktop" ? "desktop" : funnelDevice));
-      pvc = 0;
-    }
-
-    // Origin filter
-    if (funnelOrigin !== "all") {
-      fe = fe.filter(e => getEventOrigin(e) === funnelOrigin);
-      fl = fl.filter(l => l.origin === funnelOrigin);
-      pvc = 0;
-    }
-
-    // Creative filter
-    if (funnelCreative !== "all") {
-      fe = fe.filter(e => String(e.event_data?.utm_content || "") === funnelCreative);
-      fl = fl.filter(l => l.creative === funnelCreative);
-      pvc = 0;
-    }
-
-    // Bot filter
-    if (funnelBotFilter !== "all") {
-      fe = fe.filter(e => {
-        const vid = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
-        if (funnelBotFilter === "exclude_bots") return !botAnalysis.botVisitorIds.has(vid);
-        if (funnelBotFilter === "valid") return !botAnalysis.botVisitorIds.has(vid) && !botAnalysis.suspectVisitorIds.has(vid);
-        return true;
-      });
-      pvc = 0;
-    }
-
-    return buildFunnel(fe, fl, pvc);
-  }, [events, enrichedLeads, pageViewCount, funnelDevice, funnelOrigin, funnelCreative, funnelRealtime, funnelBotFilter, buildFunnel, botAnalysis]);
-
-  // ── Device comparison ──
-  const deviceComparison = useMemo(() => {
-    const devices = ["mobile", "desktop", "tablet"];
-    return devices.map(dev => {
-      const de = events.filter(e => getEventDevice(e) === dev);
-      const dl = enrichedLeads.filter(l => l.device.toLowerCase() === dev);
-      const funnel = buildFunnel(de, dl, 0);
-      const visitors = funnel[0]?.count || 0;
-      const paid = funnel[funnel.length - 1]?.count || 0;
-      const convRate = visitors > 0 ? (paid / visitors * 100) : 0;
-      return { device: dev, visitors, paid, convRate };
-    }).filter(d => d.visitors > 0);
-  }, [events, enrichedLeads, buildFunnel]);
-
-  // ── Unique creatives for filter ──
-  const uniqueCreatives = useMemo(() => {
-    const set = new Set<string>();
-    events.forEach(e => {
-      const c = e.event_data?.utm_content;
-      if (c && typeof c === "string") set.add(c);
-    });
-    return Array.from(set).sort();
-  }, [events]);
-
-  // ── Funnel Health Score ──
-  const funnelHealth = useMemo(() => {
-    if (funnelData.length < 2 || funnelData[0].count === 0) return { score: 100, label: "Sem dados", color: "text-muted-foreground", bg: "bg-muted" };
-    
-    // Average conversion rate across all transitions (skip first which is 100%)
-    const rates = funnelData.slice(1).map(s => s.convRate);
-    const avgRate = rates.length > 0 ? rates.reduce((s, r) => s + r, 0) / rates.length : 100;
-    
-    // Weight the overall conversion more heavily
-    const overallConv = funnelData[0].count > 0 ? (funnelData[funnelData.length - 1].count / funnelData[0].count) * 100 : 0;
-    const score = Math.round(avgRate * 0.4 + overallConv * 0.6 + 20); // normalize to ~0-100
-    const clamped = Math.min(100, Math.max(0, score));
-
-    if (clamped >= 90) return { score: clamped, label: "Funil Saudável", color: "text-emerald-500", bg: "bg-emerald-500/10" };
-    if (clamped >= 70) return { score: clamped, label: "Atenção", color: "text-amber-500", bg: "bg-amber-500/10" };
-    if (clamped >= 50) return { score: clamped, label: "Gargalo Moderado", color: "text-orange-500", bg: "bg-orange-500/10" };
-    return { score: clamped, label: "Gargalo Crítico", color: "text-red-500", bg: "bg-red-500/10" };
-  }, [funnelData]);
-
-  // ── Funnel Bottleneck Alerts ──
-  const bottleneckAlerts = useMemo(() => {
-    const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
-    
-    const visitors = funnelData.find(s => s.key === "visitors")?.count || 0;
-    const buyClicks = funnelData.find(s => s.key === "buy_clicks")?.count || 0;
-    const checkouts = funnelData.find(s => s.key === "checkouts")?.count || 0;
-    const pixCard = funnelData.find(s => s.key === "pix_card")?.count || 0;
-    const paid = funnelData.find(s => s.key === "paid")?.count || 0;
-
-    if (visitors > 20 && buyClicks / visitors < 0.05) {
-      alerts.push({ type: "warning", title: "Baixa taxa de clique em comprar", desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam em comprar. Possível problema na copy ou layout da página.` });
-    }
-    if (checkouts > 5 && pixCard / checkouts < 0.4) {
-      alerts.push({ type: "critical", title: "Abandono alto no checkout", desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts geram Pix ou enviam cartão. Possível problema no preço, confiança ou formulário.` });
-    }
-    if (pixCard > 3 && paid / pixCard < 0.3) {
-      alerts.push({ type: "critical", title: "Abandono após geração de Pix/Cartão", desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% dos Pix/Cartão resultam em pagamento. Possível problema de urgência ou confiança.` });
-    }
-    
-    return alerts;
-  }, [funnelData]);
-
   // ── Bot Detection Constants ──
   const BOT_UA_PATTERNS = /bot|crawler|spider|slurp|bingbot|googlebot|yandex|baidu|duckduck|sogou|exabot|facebot|ia_archiver|semrush|ahrefs|mj12bot|dotbot|petalbot|bytespider|headlesschrome|phantomjs|selenium|puppeteer|scrapy|python-requests|curl|wget|httpclient|java\//i;
 
@@ -500,7 +382,6 @@ export default function AdminCRM() {
   };
 
   const botAnalysis = useMemo(() => {
-    // Group events by visitor
     const visitorMap = new Map<string, { events: UserEvent[]; firstSeen: number; lastSeen: number }>();
     events.forEach(e => {
       const key = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
@@ -549,16 +430,12 @@ export default function AdminCRM() {
 
       const timeOnPage = (data.lastSeen - data.firstSeen) / 1000;
 
-      // Bot score calculation
       if (timeOnPage < 2 && data.events.length <= 2) { botScore += 30; reasons.push("Sessão < 2s"); }
       if (maxScroll < 5 && data.events.length > 0) { botScore += 20; reasons.push("Sem scroll"); }
       if (clicks === 0 && data.events.length > 0) { botScore += 20; reasons.push("Sem cliques"); }
       if (userAgent && BOT_UA_PATTERNS.test(userAgent)) { botScore += 50; reasons.push("User-agent suspeito"); }
-
-      // Multiple rapid events (possible automated)
       if (data.events.length > 8 && timeOnPage < 5) { botScore += 30; reasons.push("Muitos eventos rápidos"); }
 
-      // Desktop with zero interaction
       const dl = device.toLowerCase();
       if ((dl === "desktop" || dl === "Desktop") && clicks === 0 && maxScroll < 10 && timeOnPage < 5) {
         botScore += 15; reasons.push("Desktop sem interação");
@@ -583,12 +460,10 @@ export default function AdminCRM() {
       });
     });
 
-    // Distribution
     const total = scored.length || 1;
     const normal = scored.filter(v => v.botLevel === "normal").length;
     const suspeito = scored.filter(v => v.botLevel === "suspeito").length;
     const bot = scored.filter(v => v.botLevel === "bot").length;
-
     const dist = { normal, suspeito, bot };
     const distPct = {
       normal: Math.round((normal / total) * 100),
@@ -596,32 +471,130 @@ export default function AdminCRM() {
       bot: Math.round((bot / total) * 100),
     };
 
-    // Alerts
     const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
-    if (bot > 5) alerts.push({ type: "critical", title: "Prováveis bots detectados", desc: `${bot} visitantes com score de bot ≥ 61 (padrões de automação, user-agent suspeito ou sessões extremamente curtas).` });
-    if (suspeito > total * 0.25) alerts.push({ type: "warning", title: "Alta taxa de tráfego suspeito", desc: `${distPct.suspeito}% dos visitantes são suspeitos (score 31-60). Verifique qualidade das campanhas.` });
+    if (bot > 5) alerts.push({ type: "critical", title: "Prováveis bots detectados", desc: `${bot} visitantes com score de bot ≥ 61.` });
+    if (suspeito > total * 0.25) alerts.push({ type: "warning", title: "Alta taxa de tráfego suspeito", desc: `${distPct.suspeito}% dos visitantes são suspeitos.` });
 
-    // Desktop suspicious check
     const desktopVisitors = scored.filter(v => v.device.toLowerCase() === "desktop");
     const desktopClickers = desktopVisitors.filter(v => v.clicks > 0);
     if (desktopVisitors.length > 20 && desktopClickers.length / desktopVisitors.length < 0.05) {
-      alerts.push({ type: "critical", title: "Possível tráfego de baixa qualidade em desktop", desc: `${desktopVisitors.length} visitantes desktop, apenas ${desktopClickers.length} interagiram. Possível tráfego automatizado.` });
+      alerts.push({ type: "critical", title: "Possível tráfego de baixa qualidade em desktop", desc: `${desktopVisitors.length} visitantes desktop, apenas ${desktopClickers.length} interagiram.` });
     }
 
-    // Short sessions check
     const shortSessions = scored.filter(v => v.timeOnPage < 2).length;
     if (shortSessions > total * 0.3) {
-      alerts.push({ type: "warning", title: "Alta taxa de sessões curtas", desc: `${Math.round((shortSessions / total) * 100)}% dos visitantes ficaram menos de 2 segundos na página.` });
+      alerts.push({ type: "warning", title: "Alta taxa de sessões curtas", desc: `${Math.round((shortSessions / total) * 100)}% ficaram menos de 2s na página.` });
     }
 
     return { scored, dist, distPct, alerts, botVisitorIds, suspectVisitorIds, total: scored.length };
   }, [events]);
 
-  // ── Traffic Quality Analysis (uses botAnalysis) ──
+  // ── Filtered funnel data ──
+  const funnelData = useMemo(() => {
+    const now = Date.now();
+    const realtimeMap: Record<string, number> = { "5m": 5 * 60000, "30m": 30 * 60000, "1h": 3600000 };
+
+    let fe = events;
+    let fl = enrichedLeads;
+    let pvc = pageViewCount;
+
+    if (funnelRealtime !== "all" && realtimeMap[funnelRealtime]) {
+      const since = now - realtimeMap[funnelRealtime];
+      fe = fe.filter(e => new Date(e.created_at).getTime() > since);
+      fl = fl.filter(l => new Date(l.created_at).getTime() > since);
+      pvc = 0;
+    }
+
+    if (funnelDevice !== "all") {
+      fe = fe.filter(e => getEventDevice(e) === funnelDevice);
+      fl = fl.filter(l => l.device.toLowerCase() === funnelDevice);
+      pvc = 0;
+    }
+
+    if (funnelOrigin !== "all") {
+      fe = fe.filter(e => getEventOrigin(e) === funnelOrigin);
+      fl = fl.filter(l => l.origin === funnelOrigin);
+      pvc = 0;
+    }
+
+    if (funnelCreative !== "all") {
+      fe = fe.filter(e => String(e.event_data?.utm_content || "") === funnelCreative);
+      fl = fl.filter(l => l.creative === funnelCreative);
+      pvc = 0;
+    }
+
+    if (funnelBotFilter !== "all") {
+      fe = fe.filter(e => {
+        const vid = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
+        if (funnelBotFilter === "exclude_bots") return !botAnalysis.botVisitorIds.has(vid);
+        if (funnelBotFilter === "valid") return !botAnalysis.botVisitorIds.has(vid) && !botAnalysis.suspectVisitorIds.has(vid);
+        return true;
+      });
+      pvc = 0;
+    }
+
+    return buildFunnel(fe, fl, pvc);
+  }, [events, enrichedLeads, pageViewCount, funnelDevice, funnelOrigin, funnelCreative, funnelRealtime, funnelBotFilter, buildFunnel, botAnalysis]);
+
+  // ── Device comparison ──
+  const deviceComparison = useMemo(() => {
+    const devices = ["mobile", "desktop", "tablet"];
+    return devices.map(dev => {
+      const de = events.filter(e => getEventDevice(e) === dev);
+      const dl = enrichedLeads.filter(l => l.device.toLowerCase() === dev);
+      const funnel = buildFunnel(de, dl, 0);
+      const visitors = funnel[0]?.count || 0;
+      const paid = funnel[funnel.length - 1]?.count || 0;
+      const convRate = visitors > 0 ? (paid / visitors * 100) : 0;
+      return { device: dev, visitors, paid, convRate };
+    }).filter(d => d.visitors > 0);
+  }, [events, enrichedLeads, buildFunnel]);
+
+  const uniqueCreatives = useMemo(() => {
+    const set = new Set<string>();
+    events.forEach(e => {
+      const c = e.event_data?.utm_content;
+      if (c && typeof c === "string") set.add(c);
+    });
+    return Array.from(set).sort();
+  }, [events]);
+
+  const funnelHealth = useMemo(() => {
+    if (funnelData.length < 2 || funnelData[0].count === 0) return { score: 100, label: "Sem dados", color: "text-muted-foreground", bg: "bg-muted" };
+    const rates = funnelData.slice(1).map(s => s.convRate);
+    const avgRate = rates.length > 0 ? rates.reduce((s, r) => s + r, 0) / rates.length : 100;
+    const overallConv = funnelData[0].count > 0 ? (funnelData[funnelData.length - 1].count / funnelData[0].count) * 100 : 0;
+    const score = Math.round(avgRate * 0.4 + overallConv * 0.6 + 20);
+    const clamped = Math.min(100, Math.max(0, score));
+    if (clamped >= 90) return { score: clamped, label: "Funil Saudável", color: "text-emerald-500", bg: "bg-emerald-500/10" };
+    if (clamped >= 70) return { score: clamped, label: "Atenção", color: "text-amber-500", bg: "bg-amber-500/10" };
+    if (clamped >= 50) return { score: clamped, label: "Gargalo Moderado", color: "text-orange-500", bg: "bg-orange-500/10" };
+    return { score: clamped, label: "Gargalo Crítico", color: "text-red-500", bg: "bg-red-500/10" };
+  }, [funnelData]);
+
+  const bottleneckAlerts = useMemo(() => {
+    const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
+    const visitors = funnelData.find(s => s.key === "visitors")?.count || 0;
+    const buyClicks = funnelData.find(s => s.key === "buy_clicks")?.count || 0;
+    const checkouts = funnelData.find(s => s.key === "checkouts")?.count || 0;
+    const pixCard = funnelData.find(s => s.key === "pix_card")?.count || 0;
+    const paid = funnelData.find(s => s.key === "paid")?.count || 0;
+    if (visitors > 20 && buyClicks / visitors < 0.05) {
+      alerts.push({ type: "warning", title: "Baixa taxa de clique em comprar", desc: `Apenas ${((buyClicks / visitors) * 100).toFixed(1)}% dos visitantes clicam em comprar.` });
+    }
+    if (checkouts > 5 && pixCard / checkouts < 0.4) {
+      alerts.push({ type: "critical", title: "Abandono alto no checkout", desc: `Apenas ${((pixCard / checkouts) * 100).toFixed(0)}% dos checkouts geram Pix ou enviam cartão.` });
+    }
+    if (pixCard > 3 && paid / pixCard < 0.3) {
+      alerts.push({ type: "critical", title: "Abandono após geração de Pix/Cartão", desc: `Apenas ${((paid / pixCard) * 100).toFixed(0)}% resultam em pagamento.` });
+    }
+    return alerts;
+  }, [funnelData]);
+
+  // ── Traffic Quality Analysis ──
   const trafficAnalysis = useMemo(() => {
     const scored = botAnalysis.scored;
     const total = scored.length || 1;
-
     const dist = {
       ruim: scored.filter(v => v.quality === "ruim").length,
       frio: scored.filter(v => v.quality === "frio").length,
@@ -635,7 +608,6 @@ export default function AdminCRM() {
       quente: Math.round((dist.quente / total) * 100),
     };
 
-    // By source
     const sourceMap = new Map<string, { visitors: number; checkouts: number; paid: number; totalScore: number }>();
     scored.forEach(v => {
       const src = v.origin || "Direto";
@@ -659,8 +631,7 @@ export default function AdminCRM() {
     const sources = Array.from(sourceMap.entries()).map(([name, data]) => {
       const leadData = leadsByOrigin.get(name);
       return {
-        name,
-        visitors: data.visitors,
+        name, visitors: data.visitors,
         checkouts: leadData?.checkouts || data.checkouts,
         paid: leadData?.paid || data.paid,
         convRate: data.visitors > 0 ? ((leadData?.paid || data.paid) / data.visitors * 100) : 0,
@@ -668,17 +639,16 @@ export default function AdminCRM() {
       };
     }).sort((a, b) => b.visitors - a.visitors);
 
-    // Traffic alerts
     const trafficAlerts: { type: "critical" | "warning"; title: string; desc: string }[] = [...botAnalysis.alerts];
     if (dist.ruim > total * 0.4) {
-      trafficAlerts.push({ type: "warning", title: "Alta taxa de tráfego ruim", desc: `${distPct.ruim}% dos visitantes saem sem interagir. Verifique a qualidade do tráfego ou a landing page.` });
+      trafficAlerts.push({ type: "warning", title: "Alta taxa de tráfego ruim", desc: `${distPct.ruim}% dos visitantes saem sem interagir.` });
     }
     if (dist.frio > total * 0.5) {
-      trafficAlerts.push({ type: "warning", title: "Grande volume de visitantes frios", desc: `${distPct.frio}% dos visitantes tem baixa interação. A oferta pode não estar atraindo o público certo.` });
+      trafficAlerts.push({ type: "warning", title: "Grande volume de visitantes frios", desc: `${distPct.frio}% dos visitantes tem baixa interação.` });
     }
     sources.forEach(s => {
       if (s.visitors > 10 && s.convRate < 1 && s.avgQuality < 20) {
-        trafficAlerts.push({ type: "warning", title: `Campanha "${s.name}" com tráfego de baixa qualidade`, desc: `${s.visitors} visitantes, ${s.paid} pagamentos (${s.convRate.toFixed(1)}%). Score médio: ${s.avgQuality}.` });
+        trafficAlerts.push({ type: "warning", title: `Campanha "${s.name}" com tráfego de baixa qualidade`, desc: `${s.visitors} visitantes, ${s.paid} pagamentos (${s.convRate.toFixed(1)}%).` });
       }
     });
 
