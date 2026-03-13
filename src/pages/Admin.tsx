@@ -372,10 +372,10 @@ export default function Admin() {
     URL.revokeObjectURL(url);
   };
 
-  const paidCount = leads.filter(l => l.status === "paid").length;
+  const paidCount = Math.max(leads.filter(l => l.status === "paid").length, paidFromEvents);
   const pendingCount = leads.filter(l => l.status !== "paid" && l.payment_method === "pix").length;
   const totalRevenue = leads.filter(l => l.status === "paid").reduce((sum, l) => sum + (l.total_amount || 0), 0);
-  const pixGeneratedCount = leads.filter(l => l.payment_method === "pix").length;
+  const pixGeneratedCount = Math.max(leads.filter(l => l.payment_method === "pix").length, pixGeneratedFromEvents);
   const pixPaidCount = leads.filter(l => l.payment_method === "pix" && l.status === "paid").length;
   const checkoutsAbandoned = checkoutsCount - leads.length;
   const conversionRate = visitorsCount > 0 ? ((paidCount / visitorsCount) * 100).toFixed(1) : "0.0";
