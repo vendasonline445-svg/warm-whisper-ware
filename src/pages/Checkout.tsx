@@ -64,7 +64,7 @@ const Checkout = () => {
       if (updated.length === 0) {
         // Last item — navigate back
         localStorage.removeItem('mesalar_cart');
-        navigate('/');
+        navigate(getUrlWithUtm('/'));
         return;
       }
       setCartItems(updated);
