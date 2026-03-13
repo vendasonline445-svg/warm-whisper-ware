@@ -340,10 +340,10 @@ export default function AdminDashboard(props: AdminDashboardProps) {
   }, [visitorsCount, buyClicks, checkoutsCount, pixGeneratedCount, paidCount]);
 
   const heatmapData = useMemo(() => {
-    const visToClick = visitorsCount > 0 ? (buyClicks / visitorsCount) * 100 : 0;
-    const clickToCheckout = buyClicks > 0 ? (checkoutsCount / buyClicks) * 100 : 0;
-    const checkoutToPix = checkoutsCount > 0 ? (pixGeneratedCount / checkoutsCount) * 100 : 0;
-    const pixToPaid = pixGeneratedCount > 0 ? (paidCount / pixGeneratedCount) * 100 : 0;
+    const visToClick = visitorsCount > 0 ? Math.min((buyClicks / visitorsCount) * 100, 100) : 0;
+    const clickToCheckout = buyClicks > 0 ? Math.min((checkoutsCount / buyClicks) * 100, 100) : 0;
+    const checkoutToPix = checkoutsCount > 0 ? Math.min((pixGeneratedCount / checkoutsCount) * 100, 100) : 0;
+    const pixToPaid = pixGeneratedCount > 0 ? Math.min((paidCount / pixGeneratedCount) * 100, 100) : 0;
     return [
       { label: "Visitante → Clique", value: visToClick, benchmark: [10, 25] as [number, number] },
       { label: "Clique → Checkout", value: clickToCheckout, benchmark: [30, 60] as [number, number] },
