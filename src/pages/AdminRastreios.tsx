@@ -174,10 +174,20 @@ export default function AdminRastreios() {
     try {
       const { data: result, error } = await supabase.functions.invoke("send-trackly-webhook", {
         body: {
+          order_id: "TESTE-001",
           nome: "Cliente Teste",
           email: "teste@cliente.com",
+          telefone: "(11) 99999-0000",
+          rua: "Rua Teste",
+          numero: "100",
+          complemento: "",
+          bairro: "Centro",
           cep: "01001000",
+          cidade: "São Paulo",
+          estado: "SP",
           produto: "Produto Teste",
+          quantidade: "1",
+          preco_centavos: "9900",
           webhook_url: webhookUrl,
         },
       });
