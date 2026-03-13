@@ -2729,10 +2729,7 @@ export default function AdminCRM() {
                 </div>
               </div>
             </div>
-          </div>
           )}
-
-
           {/* ═══ CAMPANHAS - Campaign Performance ═══ */}
           {subTab === "campanhas" && (() => {
             // Build campaign data from events + leads
