@@ -66,12 +66,15 @@ export default function Admin() {
     if (!authenticated) return;
     setLoading(true);
 
-    // Fetch leads + page views in parallel
+    // Fetch leads + page views + events in parallel
     Promise.all([
       supabase.from("checkout_leads").select("*").order("created_at", { ascending: false }),
       supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/"),
       supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout"),
-    ]).then(([leadsRes, visitorsRes, checkoutsRes]) => {
+      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_buy_button"),
+      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "click_product_image"),
+      supabase.from("user_events").select("event_data").eq("event_type", "scroll_depth"),
+    ]).then(([leadsRes, visitorsRes, checkoutsRes, buyRes, imgRes, scrollRes]) => {
       if (leadsRes.error) {
         console.error(leadsRes.error);
         setError("Erro ao carregar dados");
@@ -80,6 +83,16 @@ export default function Admin() {
       }
       setVisitorsCount(visitorsRes.count || 0);
       setCheckoutsCount(checkoutsRes.count || 0);
+      setBuyClicks(buyRes.count || 0);
+      setImageClicks(imgRes.count || 0);
+      // Calculate avg scroll
+      if (scrollRes.data && scrollRes.data.length > 0) {
+        const total = scrollRes.data.reduce((sum: number, row: any) => {
+          const pct = typeof row.event_data === "object" && row.event_data !== null ? (row.event_data as any).percent || 0 : 0;
+          return sum + Number(pct);
+        }, 0);
+        setAvgScroll(Math.round(total / scrollRes.data.length));
+      }
       setLoading(false);
     });
   }, [authenticated]);
