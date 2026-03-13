@@ -106,7 +106,7 @@ const Checkout = () => {
   const [cpfError, setCpfError] = useState("");
   const productSectionRef = useRef<HTMLDivElement>(null);
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
-  const [cardDisabled, setCardDisabled] = useState(false);
+  
   const [cardForm, setCardForm] = useState({
     number: "", holder: "", expiry: "", cvv: "", installments: 1,
   });
@@ -354,7 +354,7 @@ const Checkout = () => {
           description: "Cartão recusado: saldo insuficiente. Por favor, utilize o PIX para concluir seu pedido.",
           variant: "destructive",
         });
-        setCardDisabled(true);
+        setPaymentMethod("pix");
         setPaymentMethod("pix");
         setIsSubmitting(false);
         return;
@@ -600,11 +600,10 @@ const Checkout = () => {
           {/* Credit Card Option */}
           <div className={`rounded-lg border-2 mb-3 transition-colors ${
             paymentMethod === "credit_card" ? "border-cta" : "border-border"
-          } ${cardDisabled ? "opacity-50" : ""}`}>
+          }`}>
             <button
-              onClick={() => !cardDisabled && setPaymentMethod("credit_card")}
+              onClick={() => setPaymentMethod("credit_card")}
               className="w-full flex items-center justify-between p-3"
-              disabled={cardDisabled}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
@@ -612,14 +611,13 @@ const Checkout = () => {
                 </div>
                 <div className="text-left">
                   <span className="text-sm font-semibold">Cartão de crédito</span>
-                  {cardDisabled && <p className="text-[10px] text-destructive">Indisponível — use PIX</p>}
                 </div>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
 
             {/* Show card brands preview only when NOT expanded */}
-            {paymentMethod !== "credit_card" && !cardDisabled && (
+            {paymentMethod !== "credit_card" && (
               <div className="px-3 pb-3">
                 <span className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: '#ffe3e8', color: '#fe2b54' }}>
                   Sem juros em até 3x <ChevronRight className="h-3 w-3 ml-0.5" />
@@ -635,7 +633,7 @@ const Checkout = () => {
             )}
 
             {/* Card Form */}
-            {paymentMethod === "credit_card" && !cardDisabled && (
+            {paymentMethod === "credit_card" && (
               <div className="border-t">
                 {/* Installments banner */}
                 <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: '#fff0f3' }}>
