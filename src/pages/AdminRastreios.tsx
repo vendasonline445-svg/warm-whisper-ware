@@ -333,6 +333,41 @@ export default function AdminRastreios() {
                 </button>
               </div>
             </div>
+
+            {/* Manual Test Section */}
+            <div className="border-t pt-6 mt-6">
+              <h3 className="text-md font-bold mb-4">Teste de envio manual</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nome *</label>
+                  <input type="text" value={manualName} onChange={(e) => setManualName(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do cliente" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email *</label>
+                  <input type="email" value={manualEmail} onChange={(e) => setManualEmail(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="email@exemplo.com" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">CEP *</label>
+                  <input type="text" value={manualCep} onChange={(e) => setManualCep(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="01001000" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Endereço *</label>
+                  <input type="text" value={manualEndereco} onChange={(e) => setManualEndereco(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Rua, número" required />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Produto *</label>
+                  <input type="text" value={manualProduto} onChange={(e) => setManualProduto(e.target.value)} className="w-full border rounded-lg px-4 py-2 text-sm" placeholder="Nome do produto" required />
+                </div>
+              </div>
+              <button
+                onClick={sendTracklyTest}
+                disabled={sendingManual || !webhookUrl}
+                className="mt-4 bg-primary text-primary-foreground px-6 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 disabled:opacity-50"
+              >
+                <Send size={14} />
+                {sendingManual ? "Enviando..." : "Enviar teste"}
+              </button>
+            </div>
           </div>
         )}
 
