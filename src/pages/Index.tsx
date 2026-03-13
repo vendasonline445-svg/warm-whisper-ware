@@ -106,7 +106,9 @@ const fmt = (n: number) => String(n).padStart(2, "0");
 
 const Index = () => {
   const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
   const touchEndX = useRef(0);
+  const swiping = useRef(false);
   const [currentImage, setCurrentImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("180x60cm");
   const [colorModalOpen, setColorModalOpen] = useState(false);
@@ -224,11 +226,17 @@ const Index = () => {
           <div
             className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-pointer"
             onClick={openColorModal}
-            onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
-            onTouchMove={(e) => { touchEndX.current = e.touches[0].clientX; }}
-            onTouchEnd={() => {
+            onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; swiping.current = false; }}
+            onTouchMove={(e) => {
+              const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+              const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+              if (dx > dy && dx > 10) { swiping.current = true; e.preventDefault(); }
+              touchEndX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
               const diff = touchStartX.current - touchEndX.current;
-              if (Math.abs(diff) > 50) {
+              if (swiping.current && Math.abs(diff) > 50) {
+                e.preventDefault();
                 if (diff > 0) nextImage();
                 else prevImage();
               }
