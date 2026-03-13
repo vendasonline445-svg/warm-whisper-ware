@@ -17,16 +17,22 @@ const SIZE_PRICES: Record<string, { price: number; oldPrice: number; discount: n
 };
 
 function useCheckoutCountdown() {
-  const [seconds, setSeconds] = useState(299);
+  const [time, setTime] = useState({ h: 0, m: 5, s: 0 });
   useEffect(() => {
     const interval = setInterval(() => {
-      setSeconds((s) => (s <= 0 ? 0 : s - 1));
+      setTime((prev) => {
+        let { h, m, s } = prev;
+        s--;
+        if (s < 0) { s = 59; m--; }
+        if (m < 0) { m = 59; h--; }
+        if (h < 0) return { h: 2, m: 59, s: 59 };
+        return { h, m, s };
+      });
     }, 1000);
     return () => clearInterval(interval);
   }, []);
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  const fmt = (n: number) => String(n).padStart(2, "0");
+  return { time, display: `${fmt(time.h)}:${fmt(time.m)}:${fmt(time.s)}` };
 }
 
 type CartItem = { color: string; size: string; quantity: number };
