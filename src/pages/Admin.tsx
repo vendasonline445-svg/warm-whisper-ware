@@ -434,6 +434,61 @@ export default function Admin() {
               )}
             </div>
 
+            {/* Quick Actions - no topo */}
+            <div>
+              <h2 className="text-lg font-bold mb-3">Ações rápidas</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button
+                  onClick={() => setTab("leads")}
+                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Ver Leads</p>
+                    <p className="text-xs text-muted-foreground">{leads.length} registros</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => navigate("/admin/tiktok")}
+                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Megaphone className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">TikTok Pixels</p>
+                    <p className="text-xs text-muted-foreground">Gerenciar pixels</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => navigate("/admin/rastreios")}
+                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Package className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Rastreios / Trackly</p>
+                    <p className="text-xs text-muted-foreground">Webhooks e envios</p>
+                  </div>
+                </button>
+                <button
+                  onClick={exportCSV}
+                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Download className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Exportar CSV</p>
+                    <p className="text-xs text-muted-foreground">Todos os leads</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             {/* Funnel Metrics */}
             <div>
               <h2 className="text-lg font-bold mb-3">Funil de Vendas</h2>
@@ -554,64 +609,6 @@ export default function Admin() {
               <div className="bg-card border rounded-xl p-5">
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Receita Total</p>
                 <p className="text-3xl font-bold mt-1">R$ {(totalRevenue / 100).toFixed(2).replace(".", ",")}</p>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div>
-              <h2 className="text-lg font-bold mb-3">Ações rápidas</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <button
-                  onClick={() => setTab("leads")}
-                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">Ver Leads</p>
-                    <p className="text-xs text-muted-foreground">{leads.length} registros</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => navigate("/admin/tiktok")}
-                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Megaphone className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">TikTok Pixels</p>
-                    <p className="text-xs text-muted-foreground">Gerenciar pixels</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => navigate("/admin/rastreios")}
-                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Package className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">Rastreios / Trackly</p>
-                    <p className="text-xs text-muted-foreground">Webhooks e envios</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={exportCSV}
-                  className="flex items-center gap-3 bg-card border rounded-xl p-4 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Download className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">Exportar CSV</p>
-                    <p className="text-xs text-muted-foreground">Todos os leads</p>
-                  </div>
-                </button>
               </div>
             </div>
 
