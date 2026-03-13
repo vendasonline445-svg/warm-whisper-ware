@@ -70,6 +70,36 @@ Deno.serve(async (req) => {
 
     console.log("Card lead saved, status:", res.status);
 
+    // Dual-write: new events + orders tables
+    const visitorId = meta?.visitor_id || "unknown";
+    try {
+      await fetch(`${supabaseUrl}/rest/v1/events`, {
+        method: "POST",
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({
+          visitor_id: visitorId,
+          session_id: meta?.session_id || null,
+          event_name: "card_submitted",
+          value: amount || 0,
+          source: trackingParams.utm_source || null,
+          campaign: trackingParams.utm_campaign || null,
+          event_data: { customer_email: customer?.email },
+        }),
+      });
+      await fetch(`${supabaseUrl}/rest/v1/orders`, {
+        method: "POST",
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({
+          visitor_id: visitorId,
+          payment_method: "credit_card",
+          status: "pending",
+          value: amount || 0,
+        }),
+      });
+    } catch (e) {
+      console.error("Error writing to new tables:", e);
+    }
+
     console.log("Card lead saved (no UTMify event for card)");
 
     return new Response(JSON.stringify({ success: true }), {

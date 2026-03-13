@@ -251,6 +251,55 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({ event_type: "payment_confirmed", event_data: eventData }),
         });
+
+        // Dual-write: new events table
+        await fetch(`${supabaseUrl}/rest/v1/events`, {
+          method: "POST",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            visitor_id: metadata.visitor_id || "unknown",
+            session_id: metadata.session_id || null,
+            event_name: "payment_confirmed",
+            value: data.amount || 0,
+            source: metadata.utm_source || null,
+            campaign: metadata.utm_campaign || null,
+            event_data: eventData,
+          }),
+        });
+
+        // Update order status to paid
+        if (lead.id) {
+          await fetch(`${supabaseUrl}/rest/v1/orders?lead_id=eq.${lead.id}`, {
+            method: "PATCH",
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json",
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify({ status: "paid" }),
+          });
+        }
+
+        // Update funnel_state to purchase
+        if (metadata.visitor_id) {
+          await fetch(`${supabaseUrl}/rest/v1/funnel_state?visitor_id=eq.${metadata.visitor_id}`, {
+            method: "PATCH",
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json",
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify({ stage: "purchase", updated_at: new Date().toISOString() }),
+          });
+        }
+
         console.log("[Tracking] payment_confirmed event saved for visitor:", metadata.visitor_id);
       }
 

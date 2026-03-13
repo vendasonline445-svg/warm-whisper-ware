@@ -177,6 +177,92 @@ export function getTrackingContext(): Record<string, string> {
   return { ...getVisitorContext() };
 }
 
+// ── Ensure visitor & session exist in new tables ──
+let _visitorEnsured = false;
+let _sessionEnsured = false;
+
+// Helper for new tables not yet in generated types
+const db = supabase as any;
+
+async function ensureVisitor() {
+  if (_visitorEnsured) return;
+  _visitorEnsured = true;
+  const vid = getOrCreateVisitorId();
+  try {
+    await db.from("visitors").upsert(
+      { visitor_id: vid, device: getDeviceType(), first_seen: new Date().toISOString() },
+      { onConflict: "visitor_id", ignoreDuplicates: true }
+    );
+  } catch {}
+}
+
+async function ensureSession() {
+  if (_sessionEnsured) return;
+  _sessionEnsured = true;
+  await ensureVisitor();
+  const sid = getOrCreateSessionId();
+  const vid = getOrCreateVisitorId();
+  const utm = getUtmParams();
+  const params = new URLSearchParams(window.location.search);
+  try {
+    await db.from("sessions").upsert(
+      {
+        session_id: sid,
+        visitor_id: vid,
+        device: getDeviceType(),
+        utm_source: utm.utm_source || null,
+        utm_campaign: utm.utm_campaign || null,
+        utm_medium: utm.utm_medium || null,
+        utm_content: utm.utm_content || null,
+        utm_term: utm.utm_term || null,
+        ttclid: params.get("ttclid") || null,
+        referrer: getReferrer(),
+      },
+      { onConflict: "session_id", ignoreDuplicates: true }
+    );
+  } catch {}
+}
+
+// ── Update funnel state ──
+const FUNNEL_PRIORITY: Record<string, number> = {
+  visit: 1, view_content: 2, add_to_cart: 3, checkout: 4, pix_generated: 5, card_submitted: 5, purchase: 6,
+};
+
+const EVENT_TO_STAGE: Record<string, string> = {
+  page_view: "visit",
+  visitor_session: "visit",
+  view_content: "view_content",
+  scroll_depth: "view_content",
+  click_product_image: "view_content",
+  click_buy_button: "add_to_cart",
+  checkout_initiated: "checkout",
+  pix_generated: "pix_generated",
+  card_submitted: "card_submitted",
+  payment_confirmed: "purchase",
+  pix_paid: "purchase",
+  payment_started: "checkout",
+};
+
+async function updateFunnelState(eventName: string) {
+  const stage = EVENT_TO_STAGE[eventName];
+  if (!stage) return;
+  const vid = getOrCreateVisitorId();
+  const priority = FUNNEL_PRIORITY[stage] || 0;
+
+  try {
+    // Get current stage
+    const { data } = await db.from("funnel_state").select("stage").eq("visitor_id", vid).maybeSingle();
+    const currentPriority = data ? (FUNNEL_PRIORITY[data.stage] || 0) : 0;
+
+    if (priority > currentPriority) {
+      await db.from("funnel_state").upsert(
+        { visitor_id: vid, stage, updated_at: new Date().toISOString() },
+        { onConflict: "visitor_id" }
+      );
+    }
+  } catch {}
+}
+
 // ── Deduplicated Page View Registration ──
 const registeredPageViews = new Set<string>();
 
@@ -195,6 +281,7 @@ export function trackPageViewOnce(page: string): void {
   sessionStorage.setItem(storageKey, "1");
 
   supabase.from("page_views").insert({ page }).then(() => {});
+  ensureSession();
 
   // Send visitor_session event only once per session (first page)
   if (!sessionStorage.getItem("crm_visit_sent")) {
@@ -213,13 +300,22 @@ export function trackPageViewOnce(page: string): void {
 
 // ── Event Queue ──
 let eventQueue: { event_type: string; event_data?: Json }[] = [];
+let newEventsQueue: { visitor_id: string; session_id: string | null; event_name: string; value: number; source: string | null; campaign: string | null; event_data: Json }[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
 function flush() {
-  if (eventQueue.length === 0) return;
-  const batch = [...eventQueue];
-  eventQueue = [];
-  supabase.from("user_events").insert(batch).then(() => {});
+  // Flush old table (dual-write)
+  if (eventQueue.length > 0) {
+    const batch = [...eventQueue];
+    eventQueue = [];
+    supabase.from("user_events").insert(batch).then(() => {});
+  }
+  // Flush new events table
+  if (newEventsQueue.length > 0) {
+    const batch = [...newEventsQueue];
+    newEventsQueue = [];
+    db.from("events").insert(batch).then(() => {});
+  }
 }
 
 export function trackEvent(event_type: string, event_data?: Record<string, string | number | boolean>) {
@@ -227,7 +323,25 @@ export function trackEvent(event_type: string, event_data?: Record<string, strin
 
   const context = getVisitorContext();
   const merged = { ...context, ...(event_data || {}) };
+
+  // Old table (dual-write for compatibility)
   eventQueue.push({ event_type, event_data: merged as Json });
+
+  // New events table
+  const utm = getUtmParams();
+  newEventsQueue.push({
+    visitor_id: context.visitor_id,
+    session_id: context.session_id || null,
+    event_name: event_type,
+    value: typeof event_data?.value === "number" ? event_data.value : 0,
+    source: utm.utm_source || null,
+    campaign: utm.utm_campaign || null,
+    event_data: merged as Json,
+  });
+
+  // Update funnel state asynchronously
+  updateFunnelState(event_type);
+
   if (flushTimer) clearTimeout(flushTimer);
   flushTimer = setTimeout(flush, 2000);
 }

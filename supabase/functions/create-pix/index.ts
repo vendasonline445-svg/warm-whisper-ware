@@ -196,6 +196,49 @@ Deno.serve(async (req) => {
     const orderId = data.id || Date.now();
     sendUtmifyEvent(orderId, customer, items, amount, trackingParams, "waiting_payment");
 
+    // Dual-write: create order in new orders table
+    const visitorId = parsedMeta?.visitor_id || parsedMeta?.tracking?.visitor_id || "unknown";
+    try {
+      await fetch(`${supabaseUrl}/rest/v1/orders`, {
+        method: "POST",
+        headers: {
+          apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          visitor_id: visitorId,
+          payment_method: "pix",
+          status: "pix_generated",
+          value: amount,
+          transaction_id: String(orderId),
+        }),
+      });
+
+      // Write event to new events table
+      await fetch(`${supabaseUrl}/rest/v1/events`, {
+        method: "POST",
+        headers: {
+          apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          visitor_id: visitorId,
+          session_id: parsedMeta?.session_id || null,
+          event_name: "pix_generated",
+          value: amount,
+          source: trackingParams.utm_source || null,
+          campaign: trackingParams.utm_campaign || null,
+          event_data: { transaction_id: String(orderId), customer_email: customer.email },
+        }),
+      });
+    } catch (e) {
+      console.error("Error writing to new tables:", e);
+    }
+
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
