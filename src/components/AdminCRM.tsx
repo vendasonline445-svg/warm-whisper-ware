@@ -6,7 +6,7 @@ import {
   Users, ShoppingCart, QrCode, CheckCircle2, Wallet, AlertTriangle,
   Flame, Thermometer, Snowflake, X, Clock, ChevronRight, Filter,
   TrendingUp, XCircle, DollarSign, CreditCard, Eye, MousePointerClick,
-  Smartphone, Monitor, Globe, Timer, Activity, ArrowDown, Heart, Zap
+  Smartphone, Monitor, Globe, Timer, Activity, ArrowDown, Heart, Zap, Shield, Bot, BarChart3
 } from "lucide-react";
 
 // ── Types ──
@@ -50,7 +50,8 @@ interface UserEvent {
 
 type FunnelStage = "visitante" | "engajado" | "clique_comprar" | "checkout_iniciado" | "pagamento_iniciado" | "pix_gerado" | "cartao_enviado" | "pago" | "abandonado";
 type ScoreLevel = "frio" | "morno" | "quente";
-type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors" | "funnel";
+type TrafficQuality = "ruim" | "frio" | "morno" | "quente";
+type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors" | "funnel" | "traffic";
 
 interface CRMFilters {
   paymentMethod: string;
@@ -337,6 +338,151 @@ export default function AdminCRM() {
     return alerts;
   }, [funnelData]);
 
+  // ── Traffic Quality Analysis ──
+  const trafficAnalysis = useMemo(() => {
+    // Group events by visitor/session
+    const visitorMap = new Map<string, { events: UserEvent[]; firstSeen: number; lastSeen: number }>();
+    
+    events.forEach(e => {
+      const key = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
+      const time = new Date(e.created_at).getTime();
+      const existing = visitorMap.get(key);
+      if (existing) {
+        existing.events.push(e);
+        existing.firstSeen = Math.min(existing.firstSeen, time);
+        existing.lastSeen = Math.max(existing.lastSeen, time);
+      } else {
+        visitorMap.set(key, { events: [e], firstSeen: time, lastSeen: time });
+      }
+    });
+
+    // Score each visitor
+    type ScoredVisitor = {
+      id: string;
+      score: number;
+      quality: TrafficQuality;
+      timeOnPage: number;
+      maxScroll: number;
+      clicks: number;
+      origin: string;
+      device: string;
+      isBot: boolean;
+    };
+
+    const scored: ScoredVisitor[] = [];
+
+    visitorMap.forEach((data, key) => {
+      let score = 5; // entered page
+      let maxScroll = 0;
+      let clicks = 0;
+      let origin = "Direto";
+      let device = "—";
+
+      data.events.forEach(e => {
+        if (e.event_type === "scroll_depth") {
+          const pct = Number(e.event_data?.percent || 0);
+          maxScroll = Math.max(maxScroll, pct);
+          if (pct > 30) score += 10;
+        }
+        if (e.event_type === "click_product_image") { score += 10; clicks++; }
+        if (e.event_type === "click_buy_button") { score += 20; clicks++; }
+        if (e.event_type === "checkout_initiated") score += 40;
+        if (e.event_type === "pix_generated") score += 60;
+        if (e.event_type === "card_submitted") score += 50;
+        if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") score += 100;
+        
+        if (e.event_data?.utm_source) origin = String(e.event_data.utm_source);
+        if (e.event_data?.device) device = String(e.event_data.device);
+      });
+
+      const timeOnPage = (data.lastSeen - data.firstSeen) / 1000;
+      const isBot = timeOnPage < 2 && maxScroll < 5 && clicks === 0 && data.events.length > 3;
+
+      let quality: TrafficQuality = "quente";
+      if (score <= 10) quality = "ruim";
+      else if (score <= 30) quality = "frio";
+      else if (score <= 60) quality = "morno";
+
+      // Override for very short sessions
+      if (timeOnPage < 3 && maxScroll < 10 && clicks === 0) quality = "ruim";
+      if (clicks === 0 && maxScroll < 20 && score <= 15) quality = "frio";
+
+      scored.push({
+        id: typeof key === "string" ? key.slice(0, 8) : String(key).slice(0, 8),
+        score, quality, timeOnPage, maxScroll, clicks, origin, device, isBot,
+      });
+    });
+
+    // Distribution
+    const total = scored.length || 1;
+    const dist = {
+      ruim: scored.filter(v => v.quality === "ruim").length,
+      frio: scored.filter(v => v.quality === "frio").length,
+      morno: scored.filter(v => v.quality === "morno").length,
+      quente: scored.filter(v => v.quality === "quente").length,
+    };
+    const distPct = {
+      ruim: Math.round((dist.ruim / total) * 100),
+      frio: Math.round((dist.frio / total) * 100),
+      morno: Math.round((dist.morno / total) * 100),
+      quente: Math.round((dist.quente / total) * 100),
+    };
+
+    // By source
+    const sourceMap = new Map<string, { visitors: number; checkouts: number; paid: number; totalScore: number }>();
+    scored.forEach(v => {
+      const src = v.origin || "Direto";
+      const existing = sourceMap.get(src) || { visitors: 0, checkouts: 0, paid: 0, totalScore: 0 };
+      existing.visitors++;
+      existing.totalScore += v.score;
+      if (v.score >= 40) existing.checkouts++;
+      if (v.score >= 100) existing.paid++;
+      sourceMap.set(src, existing);
+    });
+
+    // Also count from enrichedLeads by origin
+    const leadsByOrigin = new Map<string, { checkouts: number; paid: number }>();
+    enrichedLeads.forEach(l => {
+      const src = l.origin;
+      const existing = leadsByOrigin.get(src) || { checkouts: 0, paid: 0 };
+      existing.checkouts++;
+      if (l.stage === "pago") existing.paid++;
+      leadsByOrigin.set(src, existing);
+    });
+
+    const sources = Array.from(sourceMap.entries()).map(([name, data]) => {
+      const leadData = leadsByOrigin.get(name);
+      return {
+        name,
+        visitors: data.visitors,
+        checkouts: leadData?.checkouts || data.checkouts,
+        paid: leadData?.paid || data.paid,
+        convRate: data.visitors > 0 ? ((leadData?.paid || data.paid) / data.visitors * 100) : 0,
+        avgQuality: data.visitors > 0 ? Math.round(data.totalScore / data.visitors) : 0,
+      };
+    }).sort((a, b) => b.visitors - a.visitors);
+
+    // Traffic alerts
+    const trafficAlerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
+    const botCount = scored.filter(v => v.isBot).length;
+    if (botCount > 5) {
+      trafficAlerts.push({ type: "critical", title: "Possível tráfego automatizado detectado", desc: `${botCount} visitantes com comportamento de bot (sessão < 2s, sem interação, múltiplos eventos).` });
+    }
+    if (dist.ruim > total * 0.4) {
+      trafficAlerts.push({ type: "warning", title: "Alta taxa de tráfego ruim", desc: `${distPct.ruim}% dos visitantes saem sem interagir. Verifique a qualidade do tráfego ou a landing page.` });
+    }
+    if (dist.frio > total * 0.5) {
+      trafficAlerts.push({ type: "warning", title: "Grande volume de visitantes frios", desc: `${distPct.frio}% dos visitantes tem baixa interação. A oferta pode não estar atraindo o público certo.` });
+    }
+    sources.forEach(s => {
+      if (s.visitors > 10 && s.convRate < 1 && s.avgQuality < 20) {
+        trafficAlerts.push({ type: "warning", title: `Campanha "${s.name}" com tráfego de baixa qualidade`, desc: `${s.visitors} visitantes, ${s.paid} pagamentos (${s.convRate.toFixed(1)}%). Score médio: ${s.avgQuality}.` });
+      }
+    });
+
+    return { scored, dist, distPct, sources, trafficAlerts, botCount, total: scored.length };
+  }, [events, enrichedLeads]);
+
   // ── Alerts ──
   const crmAlerts = useMemo(() => {
     const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
@@ -617,6 +763,7 @@ export default function AdminCRM() {
             { key: "recovery" as const, label: "Recuperação", icon: Clock, badge: recoveryLeads.length },
             { key: "visitors" as const, label: "Online", icon: Activity, badge: recentVisitors.length },
             { key: "alerts" as const, label: "Alertas", icon: AlertTriangle, badge: crmAlerts.length + bottleneckAlerts.length },
+            { key: "traffic" as const, label: "Tráfego", icon: Shield, badge: trafficAnalysis.trafficAlerts.length },
           ]).map(t => (
             <button
               key={t.key}
@@ -931,6 +1078,133 @@ export default function AdminCRM() {
                   </div>
                 ))
               )}
+            </div>
+          )}
+
+          {/* ═══ TRAFFIC QUALITY ═══ */}
+          {subTab === "traffic" && (
+            <div className="space-y-6">
+              {/* Distribution Card */}
+              <div className="bg-card border rounded-xl p-5">
+                <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
+                  <Shield className="h-4 w-4" /> Qualidade do Tráfego
+                  <span className="text-xs text-muted-foreground font-normal">({trafficAnalysis.total} visitantes)</span>
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {([
+                    { key: "quente" as const, label: "Leads Quentes", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: Flame },
+                    { key: "morno" as const, label: "Leads Mornos", color: "text-amber-500", bg: "bg-amber-500/10", icon: Thermometer },
+                    { key: "frio" as const, label: "Tráfego Frio", color: "text-slate-400", bg: "bg-slate-400/10", icon: Snowflake },
+                    { key: "ruim" as const, label: "Tráfego Ruim", color: "text-red-500", bg: "bg-red-500/10", icon: XCircle },
+                  ]).map(q => {
+                    const Icon = q.icon;
+                    return (
+                      <div key={q.key} className={`rounded-xl p-3 ${q.bg}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon className={`h-4 w-4 ${q.color}`} />
+                          <span className={`text-lg font-bold ${q.color}`}>{trafficAnalysis.distPct[q.key]}%</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground font-medium">{q.label}</p>
+                        <p className="text-xs font-semibold">{trafficAnalysis.dist[q.key]}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Progress bar */}
+                <div className="flex h-3 rounded-full overflow-hidden mt-4">
+                  {trafficAnalysis.distPct.quente > 0 && <div className="bg-emerald-500" style={{ width: `${trafficAnalysis.distPct.quente}%` }} />}
+                  {trafficAnalysis.distPct.morno > 0 && <div className="bg-amber-500" style={{ width: `${trafficAnalysis.distPct.morno}%` }} />}
+                  {trafficAnalysis.distPct.frio > 0 && <div className="bg-slate-400" style={{ width: `${trafficAnalysis.distPct.frio}%` }} />}
+                  {trafficAnalysis.distPct.ruim > 0 && <div className="bg-red-500" style={{ width: `${trafficAnalysis.distPct.ruim}%` }} />}
+                </div>
+                {trafficAnalysis.botCount > 0 && (
+                  <div className="flex items-center gap-2 mt-3 text-xs text-destructive">
+                    <Bot className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{trafficAnalysis.botCount} possíveis bots detectados</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Campaign Quality Table */}
+              <div className="bg-card border rounded-xl overflow-hidden">
+                <div className="p-4 border-b">
+                  <h4 className="text-sm font-bold flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" /> Qualidade por Origem de Tráfego
+                  </h4>
+                </div>
+                {trafficAnalysis.sources.length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground text-sm">Sem dados de origem</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          {["Origem", "Visitantes", "Checkouts", "Pagamentos", "Conversão", "Score Médio", "Qualidade"].map(h => (
+                            <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {trafficAnalysis.sources.map(s => {
+                          const qualityLabel = s.avgQuality >= 61 ? "Quente" : s.avgQuality >= 31 ? "Morno" : s.avgQuality >= 11 ? "Frio" : "Ruim";
+                          const qualityColor = s.avgQuality >= 61 ? "text-emerald-500 bg-emerald-500/10" : s.avgQuality >= 31 ? "text-amber-500 bg-amber-500/10" : s.avgQuality >= 11 ? "text-slate-500 bg-slate-500/10" : "text-red-500 bg-red-500/10";
+                          return (
+                            <tr key={s.name} className="border-b hover:bg-muted/30 transition-colors">
+                              <td className="px-4 py-3 font-semibold">{s.name}</td>
+                              <td className="px-4 py-3">{s.visitors}</td>
+                              <td className="px-4 py-3">{s.checkouts}</td>
+                              <td className="px-4 py-3">{s.paid}</td>
+                              <td className="px-4 py-3">
+                                <span className={`font-bold ${s.convRate < 2 ? "text-red-500" : s.convRate < 5 ? "text-amber-500" : "text-emerald-500"}`}>
+                                  {s.convRate.toFixed(1)}%
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 font-bold">{s.avgQuality}</td>
+                              <td className="px-4 py-3">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${qualityColor}`}>{qualityLabel}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Traffic Diagnostics */}
+              <div>
+                <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                  <AlertTriangle className="h-4 w-4" /> Diagnóstico de Tráfego
+                </h4>
+                {trafficAnalysis.trafficAlerts.length === 0 ? (
+                  <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    <span className="text-sm font-medium">Tráfego saudável — nenhum alerta detectado</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {trafficAnalysis.trafficAlerts.map((a, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-start gap-3 border rounded-xl p-4 ${
+                          a.type === "critical" ? "bg-destructive/5 border-destructive/30" : "bg-amber-500/5 border-amber-500/30"
+                        }`}
+                      >
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          a.type === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
+                        }`}>
+                          {a.type === "critical" ? <Bot className="h-4 w-4 text-destructive" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                        </div>
+                        <div>
+                          <p className={`text-sm font-semibold ${a.type === "critical" ? "text-destructive" : "text-amber-600"}`}>{a.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </>
