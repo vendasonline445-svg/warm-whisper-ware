@@ -754,14 +754,16 @@ const Checkout = () => {
           <a href="/politica-de-privacidade" className="font-bold text-foreground underline">Política de privacidade</a>.
         </p>
 
-        <p className="mt-3 text-xs text-success flex items-center gap-1">
-          😊 Você está economizando R$ {totalSavings.toFixed(2).replace(".", ",")} nesse pedido.
-        </p>
       </div>
 
       {/* Sticky Bottom */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
         <div className="mx-auto max-w-[480px] px-4">
+          <div className="w-full py-2 px-3 rounded-lg mt-2" style={{ backgroundColor: '#fff0f3' }}>
+            <p className="text-xs flex items-center gap-1" style={{ color: '#fe2b54' }}>
+              😊 Parabéns! Você está economizando R$ {totalSavings.toFixed(2).replace(".", ",")} nesse pedido.
+            </p>
+          </div>
           <div className="flex items-center justify-between py-2">
             <span className="font-bold text-sm">Total ({totalQty} {totalQty === 1 ? 'item' : 'itens'})</span>
             <span className="font-bold text-lg text-cta">R$ {total.toFixed(2).replace(".", ",")}</span>
