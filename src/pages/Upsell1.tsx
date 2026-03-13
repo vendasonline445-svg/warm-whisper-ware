@@ -132,7 +132,7 @@ const Upsell1 = () => {
       }
 
       sessionStorage.setItem("pixData", JSON.stringify(data));
-      sessionStorage.setItem("pixReturnTo", "/upsell1");
+      sessionStorage.setItem("pixReturnTo", "/taxa-alfandega");
       navigate("/pix");
     } catch (err) {
       console.error("Upsell PIX error:", err);
