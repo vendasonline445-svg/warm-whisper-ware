@@ -184,6 +184,54 @@ export type Database = {
         }
         Relationships: []
       }
+      tracking_settings: {
+        Row: {
+          id: string
+          updated_at: string
+          webhook_enabled: boolean
+          webhook_url: string
+        }
+        Insert: {
+          id?: string
+          updated_at?: string
+          webhook_enabled?: boolean
+          webhook_url?: string
+        }
+        Update: {
+          id?: string
+          updated_at?: string
+          webhook_enabled?: boolean
+          webhook_url?: string
+        }
+        Relationships: []
+      }
+      tracking_webhook_logs: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string | null
+          response: string | null
+          status: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          response?: string | null
+          status?: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          response?: string | null
+          status?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
