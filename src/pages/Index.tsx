@@ -126,7 +126,9 @@ const Index = () => {
   const [modalQty, setModalQty] = useState(1);
   const [flyingDot, setFlyingDot] = useState(false);
   const [exitModalOpen, setExitModalOpen] = useState(false);
+  const [exit2Open, setExit2Open] = useState(false);
   const [exitShown, setExitShown] = useState(false);
+  const [exit2Shown, setExit2Shown] = useState(false);
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
