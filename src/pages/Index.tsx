@@ -122,6 +122,10 @@ const Index = () => {
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [reportMenuOpen, setReportMenuOpen] = useState(false);
+  const [reportStep, setReportStep] = useState<'menu' | 'reasons' | 'form' | 'done'>('menu');
+  const [reportReason, setReportReason] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
   const [cartClosing, setCartClosing] = useState(false);
   const [cartItem, setCartItem] = useState<{color: string; size: string; quantity: number} | null>(() => {
     try {
