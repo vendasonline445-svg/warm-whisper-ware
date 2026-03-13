@@ -2068,6 +2068,367 @@ export default function AdminCRM() {
                   </div>
                 </div>
               )}
+
+              {/* ── RADAR DE CONVERSÃO ── */}
+              {funnelSubView === "radar" && (() => {
+                // Build visitor behavior data
+                const visitorMap = new Map<string, { events: UserEvent[]; firstSeen: number; lastSeen: number; utm_source: string; utm_campaign: string; utm_content: string }>();
+                events.forEach(e => {
+                  const vid = String(e.event_data?.visitor_id || e.event_data?.session_id || e.id);
+                  const time = new Date(e.created_at).getTime();
+                  const existing = visitorMap.get(vid);
+                  if (existing) {
+                    existing.events.push(e);
+                    existing.firstSeen = Math.min(existing.firstSeen, time);
+                    existing.lastSeen = Math.max(existing.lastSeen, time);
+                    if (e.event_data?.utm_source) existing.utm_source = String(e.event_data.utm_source);
+                    if (e.event_data?.utm_campaign) existing.utm_campaign = String(e.event_data.utm_campaign);
+                    if (e.event_data?.utm_content) existing.utm_content = String(e.event_data.utm_content);
+                  } else {
+                    visitorMap.set(vid, {
+                      events: [e],
+                      firstSeen: time,
+                      lastSeen: time,
+                      utm_source: String(e.event_data?.utm_source || ""),
+                      utm_campaign: String(e.event_data?.utm_campaign || ""),
+                      utm_content: String(e.event_data?.utm_content || ""),
+                    });
+                  }
+                });
+
+                const totalVisitors = visitorMap.size;
+                let totalScroll = 0, scrollCount = 0, totalTime = 0;
+                let buyClicks = 0, checkouts = 0, pixGenerated = 0, paid = 0;
+                let bounceVisitors = 0; // < 3s and < 10% scroll
+
+                visitorMap.forEach(v => {
+                  const timeOnPage = (v.lastSeen - v.firstSeen) / 1000;
+                  totalTime += timeOnPage;
+                  let maxScroll = 0;
+                  let hasBuy = false, hasCheckout = false, hasPix = false, hasPaid = false;
+                  v.events.forEach(e => {
+                    if (e.event_type === "scroll_depth" || e.event_type === "scroll_milestone") {
+                      const pct = Number(e.event_data?.percent || 0);
+                      maxScroll = Math.max(maxScroll, pct);
+                    }
+                    if (e.event_type === "click_buy_button") hasBuy = true;
+                    if (e.event_type === "checkout_initiated") hasCheckout = true;
+                    if (e.event_type === "pix_generated" || e.event_type === "card_submitted") hasPix = true;
+                    if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") hasPaid = true;
+                  });
+                  if (maxScroll > 0) { totalScroll += maxScroll; scrollCount++; }
+                  if (hasBuy) buyClicks++;
+                  if (hasCheckout) checkouts++;
+                  if (hasPix) pixGenerated++;
+                  if (hasPaid) paid++;
+                  if (timeOnPage < 3 && maxScroll < 10) bounceVisitors++;
+                });
+
+                const avgScroll = scrollCount > 0 ? Math.round(totalScroll / scrollCount) : 0;
+                const avgTime = totalVisitors > 0 ? Math.round(totalTime / totalVisitors) : 0;
+                const buyRate = totalVisitors > 0 ? (buyClicks / totalVisitors) * 100 : 0;
+                const checkoutRate = buyClicks > 0 ? (checkouts / buyClicks) * 100 : 0;
+                const payRate = checkouts > 0 ? (paid / checkouts) * 100 : 0;
+                const bounceRate = totalVisitors > 0 ? (bounceVisitors / totalVisitors) * 100 : 0;
+
+                // ── DETECTOR 1: Oferta Fraca ──
+                let ofertaScore = 0;
+                if (buyRate < 2) ofertaScore += 40;
+                else if (buyRate < 5) ofertaScore += 20;
+                if (avgScroll < 30) ofertaScore += 20;
+                else if (avgScroll < 50) ofertaScore += 10;
+                if (avgTime < 10) ofertaScore += 20;
+                else if (avgTime < 30) ofertaScore += 10;
+                if (totalVisitors > 50 && buyClicks < 5) ofertaScore += 20;
+                ofertaScore = Math.min(100, ofertaScore);
+
+                const ofertaDiag = ofertaScore >= 50
+                  ? "Possível oferta fraca detectada. A taxa de clique no botão de compra está muito baixa. Isso pode indicar que a proposta de valor não está clara ou que a oferta não está convincente."
+                  : ofertaScore >= 30
+                  ? "Oferta com sinais moderados de fraqueza. Considere otimizar elementos de conversão."
+                  : "Oferta aparenta estar saudável com base nos dados atuais.";
+
+                const ofertaSugestoes = ofertaScore >= 30 ? [
+                  "Melhorar headline com foco em benefício principal",
+                  "Reforçar benefícios e proposta de valor da oferta",
+                  "Adicionar mais provas sociais (depoimentos, avaliações)",
+                  "Destacar diferenciais únicos do produto",
+                ] : [];
+
+                // ── DETECTOR 2: Preço Alto ──
+                let precoScore = 0;
+                if (buyClicks > 5 && checkoutRate < 30) precoScore += 35;
+                else if (checkoutRate < 50) precoScore += 15;
+                if (checkouts > 3 && payRate < 20) precoScore += 35;
+                else if (payRate < 40) precoScore += 15;
+                if (pixGenerated > 0 && paid === 0) precoScore += 20;
+                if (buyClicks > 10 && checkouts < 3) precoScore += 10;
+                precoScore = Math.min(100, precoScore);
+
+                let precoDiag = "";
+                if (buyClicks > 0 && checkoutRate < 30) {
+                  precoDiag = "Possível resistência ao preço. Usuários demonstram interesse no produto mas não iniciam checkout.";
+                } else if (checkouts > 0 && payRate < 30) {
+                  precoDiag = "Possível fricção relacionada ao preço ou percepção de valor. Muitos checkouts iniciados, poucos concluídos.";
+                } else if (precoScore >= 30) {
+                  precoDiag = "Sinais moderados de resistência ao preço detectados.";
+                } else {
+                  precoDiag = "Preço aparenta estar adequado com base nos dados atuais.";
+                }
+
+                const precoSugestoes = precoScore >= 30 ? [
+                  "Testar preço menor ou oferecer desconto temporário",
+                  "Oferecer bônus ou brinde para aumentar percepção de valor",
+                  "Dividir pagamento em mais parcelas sem juros",
+                  "Reforçar valor percebido (comparação de preço, garantia)",
+                ] : [];
+
+                // ── DETECTOR 3: Criativo Enganoso ──
+                let criativoScore = 0;
+                if (bounceRate > 60) criativoScore += 35;
+                else if (bounceRate > 40) criativoScore += 20;
+                if (avgTime < 3) criativoScore += 30;
+                else if (avgTime < 5) criativoScore += 15;
+                if (avgScroll < 10) criativoScore += 25;
+                else if (avgScroll < 20) criativoScore += 10;
+                if (totalVisitors > 30 && buyClicks === 0) criativoScore += 10;
+                criativoScore = Math.min(100, criativoScore);
+
+                let criativoDiag = "";
+                if (avgTime < 3 && avgScroll < 10) {
+                  criativoDiag = "Criativo pode estar gerando cliques acidentais ou promessa diferente da oferta. Visitantes saem em menos de 3 segundos com scroll mínimo.";
+                } else if (bounceRate > 50) {
+                  criativoDiag = "O criativo pode estar prometendo algo diferente do que o usuário encontra na página. Alta taxa de rejeição imediata.";
+                } else if (criativoScore >= 30) {
+                  criativoDiag = "Sinais moderados de desalinhamento entre criativo e oferta.";
+                } else {
+                  criativoDiag = "Criativos aparentam estar alinhados com a oferta.";
+                }
+
+                const criativoSugestoes = criativoScore >= 30 ? [
+                  "Ajustar mensagem do anúncio para refletir a oferta real",
+                  "Alinhar promessa do criativo com o que o usuário encontra na página",
+                  "Testar novo criativo com abordagem diferente",
+                ] : [];
+
+                // ── Per-campaign analysis for criativo enganoso ──
+                const campaignBounce = new Map<string, { total: number; bounced: number; content: string }>();
+                visitorMap.forEach(v => {
+                  const key = v.utm_content || v.utm_campaign || "";
+                  if (!key) return;
+                  const timeOnPage = (v.lastSeen - v.firstSeen) / 1000;
+                  let maxScroll = 0;
+                  v.events.forEach(e => {
+                    if (e.event_type === "scroll_depth" || e.event_type === "scroll_milestone") {
+                      maxScroll = Math.max(maxScroll, Number(e.event_data?.percent || 0));
+                    }
+                  });
+                  const existing = campaignBounce.get(key) || { total: 0, bounced: 0, content: key };
+                  existing.total++;
+                  if (timeOnPage < 3 && maxScroll < 10) existing.bounced++;
+                  campaignBounce.set(key, existing);
+                });
+
+                const problemCreatives = Array.from(campaignBounce.values())
+                  .filter(c => c.total >= 3 && (c.bounced / c.total) > 0.5)
+                  .sort((a, b) => (b.bounced / b.total) - (a.bounced / a.total))
+                  .slice(0, 5);
+
+                const scoreColor = (s: number) => s >= 60 ? "text-destructive" : s >= 30 ? "text-amber-500" : "text-emerald-500";
+                const scoreBg = (s: number) => s >= 60 ? "bg-destructive/10 border-destructive/30" : s >= 30 ? "bg-amber-500/10 border-amber-500/30" : "bg-emerald-500/10 border-emerald-500/30";
+                const scoreLabel = (s: number) => s >= 60 ? "Alto Risco" : s >= 30 ? "Atenção" : "Saudável";
+
+                return (
+                  <div className="space-y-6">
+                    <h3 className="text-sm font-bold flex items-center gap-2">
+                      <Target className="h-4 w-4" /> Diagnóstico Inteligente de Conversão
+                    </h3>
+
+                    {/* Overview Scores */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { label: "Oferta Fraca", score: ofertaScore, icon: "📉" },
+                        { label: "Preço Alto", score: precoScore, icon: "💰" },
+                        { label: "Criativo Enganoso", score: criativoScore, icon: "🎭" },
+                      ].map(d => (
+                        <div key={d.label} className={`border rounded-xl p-4 ${scoreBg(d.score)}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold">{d.icon} {d.label}</span>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${scoreBg(d.score)} ${scoreColor(d.score)}`}>
+                              {scoreLabel(d.score)}
+                            </span>
+                          </div>
+                          <div className="flex items-end gap-2">
+                            <span className={`text-3xl font-black ${scoreColor(d.score)}`}>{d.score}%</span>
+                            <span className="text-[10px] text-muted-foreground mb-1">probabilidade</span>
+                          </div>
+                          <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${d.score >= 60 ? "bg-destructive" : d.score >= 30 ? "bg-amber-500" : "bg-emerald-500"}`}
+                              style={{ width: `${d.score}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Dados base */}
+                    <div className="bg-card border rounded-xl p-4">
+                      <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Dados Base da Análise</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[
+                          { label: "Visitantes", value: totalVisitors },
+                          { label: "Scroll Médio", value: `${avgScroll}%` },
+                          { label: "Tempo Médio", value: `${avgTime}s` },
+                          { label: "Cliques Comprar", value: buyClicks },
+                          { label: "Checkouts", value: checkouts },
+                          { label: "Pix/Cartão", value: pixGenerated },
+                          { label: "Pagos", value: paid },
+                          { label: "Taxa Rejeição", value: `${Math.round(bounceRate)}%` },
+                        ].map(m => (
+                          <div key={m.label} className="text-center p-2 bg-muted/50 rounded-lg">
+                            <p className="text-lg font-bold">{m.value}</p>
+                            <p className="text-[10px] text-muted-foreground">{m.label}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* ── Detector 1: Oferta Fraca ── */}
+                    <div className={`border rounded-xl overflow-hidden ${scoreBg(ofertaScore)}`}>
+                      <div className="p-4 border-b border-border/30">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-bold flex items-center gap-2">📉 Detector de Oferta Fraca</h4>
+                          <span className={`text-sm font-black ${scoreColor(ofertaScore)}`}>{ofertaScore}%</span>
+                        </div>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <p className="text-xs leading-relaxed">{ofertaDiag}</p>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-background/60 rounded-lg p-2">
+                            <p className="text-sm font-bold">{buyRate.toFixed(1)}%</p>
+                            <p className="text-[9px] text-muted-foreground">Taxa de Clique</p>
+                          </div>
+                          <div className="bg-background/60 rounded-lg p-2">
+                            <p className="text-sm font-bold">{avgScroll}%</p>
+                            <p className="text-[9px] text-muted-foreground">Scroll Médio</p>
+                          </div>
+                          <div className="bg-background/60 rounded-lg p-2">
+                            <p className="text-sm font-bold">{avgTime}s</p>
+                            <p className="text-[9px] text-muted-foreground">Tempo Médio</p>
+                          </div>
+                        </div>
+                        {ofertaSugestoes.length > 0 && (
+                          <div className="bg-background/60 rounded-lg p-3">
+                            <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Sugestões de Melhoria</p>
+                            <ul className="space-y-1">
+                              {ofertaSugestoes.map((s, i) => (
+                                <li key={i} className="text-xs flex items-start gap-2">
+                                  <span className="text-primary mt-0.5">•</span> {s}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Detector 2: Preço Alto ── */}
+                    <div className={`border rounded-xl overflow-hidden ${scoreBg(precoScore)}`}>
+                      <div className="p-4 border-b border-border/30">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-bold flex items-center gap-2">💰 Detector de Preço Alto</h4>
+                          <span className={`text-sm font-black ${scoreColor(precoScore)}`}>{precoScore}%</span>
+                        </div>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <p className="text-xs leading-relaxed">{precoDiag}</p>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-background/60 rounded-lg p-2">
+                            <p className="text-sm font-bold">{checkoutRate.toFixed(1)}%</p>
+                            <p className="text-[9px] text-muted-foreground">Clique → Checkout</p>
+                          </div>
+                          <div className="bg-background/60 rounded-lg p-2">
+                            <p className="text-sm font-bold">{payRate.toFixed(1)}%</p>
+                            <p className="text-[9px] text-muted-foreground">Checkout → Pago</p>
+                          </div>
+                          <div className="bg-background/60 rounded-lg p-2">
+                            <p className="text-sm font-bold">{pixGenerated}</p>
+                            <p className="text-[9px] text-muted-foreground">Pix/Cartão</p>
+                          </div>
+                        </div>
+                        {precoSugestoes.length > 0 && (
+                          <div className="bg-background/60 rounded-lg p-3">
+                            <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Sugestões de Melhoria</p>
+                            <ul className="space-y-1">
+                              {precoSugestoes.map((s, i) => (
+                                <li key={i} className="text-xs flex items-start gap-2">
+                                  <span className="text-primary mt-0.5">•</span> {s}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Detector 3: Criativo Enganoso ── */}
+                    <div className={`border rounded-xl overflow-hidden ${scoreBg(criativoScore)}`}>
+                      <div className="p-4 border-b border-border/30">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-bold flex items-center gap-2">🎭 Detector de Criativo Enganoso</h4>
+                          <span className={`text-sm font-black ${scoreColor(criativoScore)}`}>{criativoScore}%</span>
+                        </div>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <p className="text-xs leading-relaxed">{criativoDiag}</p>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-background/60 rounded-lg p-2">
+                            <p className="text-sm font-bold">{Math.round(bounceRate)}%</p>
+                            <p className="text-[9px] text-muted-foreground">Taxa Rejeição</p>
+                          </div>
+                          <div className="bg-background/60 rounded-lg p-2">
+                            <p className="text-sm font-bold">{avgTime}s</p>
+                            <p className="text-[9px] text-muted-foreground">Tempo Médio</p>
+                          </div>
+                          <div className="bg-background/60 rounded-lg p-2">
+                            <p className="text-sm font-bold">{avgScroll}%</p>
+                            <p className="text-[9px] text-muted-foreground">Scroll Médio</p>
+                          </div>
+                        </div>
+
+                        {/* Problem Creatives */}
+                        {problemCreatives.length > 0 && (
+                          <div className="bg-background/60 rounded-lg p-3">
+                            <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">⚠️ Criativos com Alto Abandono</p>
+                            <div className="space-y-2">
+                              {problemCreatives.map((c, i) => (
+                                <div key={i} className="flex items-center justify-between text-xs">
+                                  <span className="font-mono font-medium truncate max-w-[180px]">{c.content}</span>
+                                  <span className="text-destructive font-bold">{Math.round((c.bounced / c.total) * 100)}% abandono ({c.bounced}/{c.total})</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {criativoSugestoes.length > 0 && (
+                          <div className="bg-background/60 rounded-lg p-3">
+                            <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Sugestões de Melhoria</p>
+                            <ul className="space-y-1">
+                              {criativoSugestoes.map((s, i) => (
+                                <li key={i} className="text-xs flex items-start gap-2">
+                                  <span className="text-primary mt-0.5">•</span> {s}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
