@@ -354,7 +354,7 @@ const Checkout = () => {
           description: "Cartão recusado: saldo insuficiente. Por favor, utilize o PIX para concluir seu pedido.",
           variant: "destructive",
         });
-        setCardDisabled(true);
+        setPaymentMethod("pix");
         setPaymentMethod("pix");
         setIsSubmitting(false);
         return;
