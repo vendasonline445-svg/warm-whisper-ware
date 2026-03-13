@@ -279,7 +279,7 @@ const Index = () => {
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-black leading-none">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
             <span className="text-xs line-through opacity-60">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
-            <span className="rounded-lg bg-white px-2.5 py-1 text-sm font-extrabold text-primary">-{DISCOUNT}%</span>
+            <span className="rounded-md bg-white px-2 py-0.5 text-xs font-extrabold text-cta">-{DISCOUNT}%</span>
           </div>
           <div className="absolute bottom-2 right-4 text-right">
             <div className="flex items-center gap-1 justify-end mb-2">
