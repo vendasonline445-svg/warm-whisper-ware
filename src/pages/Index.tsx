@@ -1200,9 +1200,9 @@ const Index = () => {
               />
               <div>
                 <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
-                <p className="text-cta font-extrabold text-lg">R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}</p>
-                <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.oldPrice ?? 159.90).toFixed(2).replace('.', ',')}</p>
-                <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">Economize {SIZE_PRICES[selectedSize]?.discount ?? 56}%</span>
+                <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.75).toFixed(2).replace('.', ',')}</p>
+                <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}</p>
+                <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">+25% OFF com cupom</span>
               </div>
             </div>
 
@@ -1273,7 +1273,7 @@ const Index = () => {
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                Aproveitar desconto 🔥 - R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}
+                Aproveitar desconto 🔥 - R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.75).toFixed(2).replace('.', ',')}
               </button>
               <p className="text-[10px] text-muted-foreground mt-2 text-center">Válido por tempo limitado. Não perca!</p>
             </div>
@@ -1324,9 +1324,9 @@ const Index = () => {
               />
               <div>
                 <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
-                <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.oldPrice ?? 159.90) * 0.5).toFixed(2).replace('.', ',')}</p>
-                <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.oldPrice ?? 159.90).toFixed(2).replace('.', ',')}</p>
-                <span className="inline-block mt-0.5 rounded bg-destructive/10 text-destructive text-[10px] font-bold px-1.5 py-0.5">Economize 50%</span>
+                <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.50).toFixed(2).replace('.', ',')}</p>
+                <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}</p>
+                <span className="inline-block mt-0.5 rounded bg-destructive/10 text-destructive text-[10px] font-bold px-1.5 py-0.5">+50% OFF com cupom</span>
               </div>
             </div>
 
@@ -1397,7 +1397,7 @@ const Index = () => {
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                Garantir com 50% OFF 🔥 - R$ {((SIZE_PRICES[selectedSize]?.oldPrice ?? 159.90) * 0.5).toFixed(2).replace('.', ',')}
+                Garantir com 50% OFF 🔥 - R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.50).toFixed(2).replace('.', ',')}
               </button>
               <p className="text-[10px] text-muted-foreground mt-2 text-center">Última oferta. Após fechar, o desconto será perdido!</p>
             </div>
