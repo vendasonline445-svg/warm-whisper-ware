@@ -274,9 +274,11 @@ export default function AdminTikTokTab() {
       const clickIdAfter = sessionStorage.getItem("mesalar_click_id") || "perdido!";
       log("");
       log("🔗 Verificação de persistência:");
-      log(`   visitor_id: ${visitorIdAfter === visitorId ? "✅ mantido" : "❌ PERDIDO"}`);
-      log(`   click_id: ${clickIdAfter === clickId ? "✅ mantido" : "❌ PERDIDO"}`);
-      log(`   campaign: ${campaign !== "—" ? "✅ associado" : "⚠ sem campanha"}`);
+      const visitorIdAfter = localStorage.getItem("mesalar_visitor_id") || "";
+      const clickIdAfter = sessionStorage.getItem("mesalar_click_id") || "";
+      log(`   visitor_id: ${visitorIdAfter ? "✅ mantido" : "❌ PERDIDO"}`);
+      log(`   click_id: ${clickIdAfter ? "✅ mantido" : "❌ PERDIDO"}`);
+      log(`   campaign: ${campaign !== "—" ? "✅ associado" : "ℹ️ sem campanha (normal sem UTM)"}`);
       log("");
       log("🎉 Simulação concluída!");
     } catch (err: any) {
