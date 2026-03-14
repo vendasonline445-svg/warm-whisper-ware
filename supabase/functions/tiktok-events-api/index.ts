@@ -129,8 +129,7 @@ Deno.serve(async (req) => {
       .from("tiktok_event_dedup")
       .delete()
       .lt("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .then(() => {})
-      .catch(() => {});
+      .then(() => {});
 
     return new Response(
       JSON.stringify({ success: response.ok, tiktok_response: resData }),
