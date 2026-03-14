@@ -11,12 +11,15 @@ function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
     if (authError) {
       setError("Email ou senha incorretos");
@@ -24,14 +27,35 @@ function AdminLogin() {
     setLoading(false);
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    if (password.length < 6) {
+      setError("A senha deve ter no mínimo 6 caracteres");
+      setLoading(false);
+      return;
+    }
+    const { error: authError } = await supabase.auth.signUp({ email, password });
+    if (authError) {
+      setError(authError.message);
+    } else {
+      setSuccess("Conta criada! Verifique seu email para confirmar o cadastro.");
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background admin-bg p-4">
-      <form onSubmit={handleLogin} className="w-full max-w-sm space-y-6 glass-card p-8 rounded-2xl">
+      <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="w-full max-w-sm space-y-6 glass-card p-8 rounded-2xl">
         <div className="flex flex-col items-center gap-3">
           <FunnelIQLogo size={48} />
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight">FunnelIQ</h1>
-            <p className="text-xs text-muted-foreground mt-1">Inteligência para otimizar funis de conversão</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isSignUp ? "Crie sua conta" : "Inteligência para otimizar funis de conversão"}
+            </p>
           </div>
         </div>
         <input
@@ -41,6 +65,7 @@ function AdminLogin() {
           onChange={(e) => setEmail(e.target.value)}
           className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
           autoComplete="email"
+          required
         />
         <input
           type="password"
@@ -48,15 +73,24 @@ function AdminLogin() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-          autoComplete="current-password"
+          autoComplete={isSignUp ? "new-password" : "current-password"}
+          required
         />
         {error && <p className="text-destructive text-sm text-center">{error}</p>}
+        {success && <p className="text-green-500 text-sm text-center">{success}</p>}
         <button
           type="submit"
           disabled={loading}
           className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-3 rounded-xl font-semibold transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
         >
-          {loading ? "Entrando..." : "Entrar"}
+          {loading ? (isSignUp ? "Criando..." : "Entrando...") : (isSignUp ? "Criar conta" : "Entrar")}
+        </button>
+        <button
+          type="button"
+          onClick={() => { setIsSignUp(!isSignUp); setError(""); setSuccess(""); }}
+          className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {isSignUp ? "Já tem conta? Entrar" : "Não tem conta? Criar acesso"}
         </button>
       </form>
     </div>
