@@ -97,10 +97,10 @@ Deno.serve(async (req) => {
         Location: `${adminUrl}/admin?oauth=success&bc_id=${stateData.bc_id}`,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("OAuth callback error:", error);
     return new Response(
-      `<html><body><h2>Erro interno</h2><p>${error.message}</p></body></html>`,
+      `<html><body><h2>Erro interno</h2><p>${(error as Error).message}</p></body></html>`,
       { headers: { ...corsHeaders, "Content-Type": "text/html" }, status: 500 }
     );
   }
