@@ -569,15 +569,18 @@ function AdminContent() {
           } />
         )}
 
-        
+        {/* New Settings tabs */}
+        {tab === "settings-tracking" && <SettingsTracking />}
+        {tab === "settings-pixels" && <SettingsPixels />}
+        {tab === "settings-integrations" && <SettingsIntegrations />}
+        {tab === "settings-admin" && <SettingsAdmin />}
 
-        {(tab === "settings-scripts" || tab === "tracking-pixels") && <AdminTrackingHub key={`settings-${tab}`} />}
-
-        {tab === "tracking-config" && <AdminTrackingConfig />}
-
-        {tab === "settings-csv" && <AdminClientHub key="csv" defaultTab="clientes" />}
-
-        {(tab === "ai" || tab === "ai-insights") && (
+        {/* Legacy settings tabs - redirect to new ones */}
+        {tab === "tracking-config" && <SettingsTracking />}
+        {tab === "tracking-pixels" && <SettingsPixels />}
+        {tab === "settings-scripts" && <SettingsTracking />}
+        {tab === "settings-csv" && <SettingsAdmin defaultTab="csv" />}
+        {tab === "logs" && (
           <AdminAIAssistant
             visitors={visitorsCount}
             conversions={paidCount}
