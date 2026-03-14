@@ -98,7 +98,9 @@ function generateEventId(): string {
 // ── Visitor / Session context (auto-create if missing) ──────────────────
 function getOrCreateVisitorId(): string {
   try {
-    let id = getStorageItem(localStorage, "visitor_id");
+    let id = (window as any).fiqVisitorId
+      || getStorageItem(localStorage, "visitor_id")
+      || null;
     if (!id) {
       const params = new URLSearchParams(window.location.search);
       id = params.get("visitor_id") || null;
@@ -108,7 +110,7 @@ function getOrCreateVisitorId(): string {
     }
     setStorageItem(localStorage, "visitor_id", id);
     return id;
-  } catch { return ""; }
+  } catch { return "visitor_unknown"; }
 }
 
 function getOrCreateSessionId(): string {
