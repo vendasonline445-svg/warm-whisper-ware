@@ -12,6 +12,7 @@ import AdminClientHub from "@/components/AdminClientHub";
 import AdminAdsHub from "@/components/AdminAdsHub";
 import AdminAnalyticsHub from "@/components/AdminAnalyticsHub";
 import AdminFunnelHealthTester from "@/components/AdminFunnelHealthTester";
+import AdminLiveActivity from "@/components/AdminLiveActivity";
 import AdminSidebar, { type AdminTab } from "@/components/AdminSidebar";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
 import { ptBR } from "date-fns/locale";
@@ -486,7 +487,11 @@ export default function Admin() {
           <AdminFunnelHealthTester />
         )}
 
-        {(tab === "dashboard" || tab === "live-activity" || tab === "alerts") && (
+        {tab === "live-activity" && (
+          <AdminLiveActivity />
+        )}
+
+        {(tab === "dashboard" || tab === "alerts") && (
           <div className="space-y-6">
             {/* Period Filter */}
             <div className="flex flex-wrap items-center gap-2">
