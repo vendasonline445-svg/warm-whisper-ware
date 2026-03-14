@@ -63,7 +63,6 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const {
-      site_id,
       event_name,
       visitor_id,
       session_id,
@@ -76,6 +75,7 @@ Deno.serve(async (req) => {
       is_health_check,
       timestamp,
     } = body;
+    const site_id = body.site_id ?? "mesa-dobravel";
 
     if (!event_name || !visitor_id) {
       return new Response(JSON.stringify({ error: "Missing event_name or visitor_id" }), {
