@@ -301,13 +301,8 @@ const Checkout = () => {
     if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
 
-    // Identify user for TikTok before submitting
-    await identifyTikTokUser({
-      email: form.email,
-      phone: form.phone,
-      externalId: form.cpf,
-    });
-    await setUserData({
+    // Identify user for tracking before submitting
+    await identifyUser({
       email: form.email,
       phone: form.phone,
       externalId: form.cpf,
