@@ -308,8 +308,21 @@ export default function AdminSidebar({
       {/* Footer */}
       <div className={cn(
         "border-t border-border/60 shrink-0",
-        collapsed ? "p-1 space-y-0.5" : "p-1.5 space-y-0.5"
+        collapsed ? "p-1 space-y-0.5" : "p-1.5 space-y-1.5"
       )}>
+        {/* User info */}
+        {!collapsed && profile && (
+          <div className="flex items-center gap-2 px-2 py-1">
+            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+              {profile.full_name?.[0] ?? profile.email?.[0]?.toUpperCase() ?? "?"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium truncate">{profile.full_name ?? "Usuário"}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{profile.email}</p>
+            </div>
+          </div>
+        )}
+
         <div className={cn("flex gap-0.5", collapsed ? "flex-col" : "")}>
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -347,7 +360,7 @@ export default function AdminSidebar({
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button
-                onClick={onLogout}
+                onClick={() => { signOut(); onLogout(); }}
                 className={cn(
                   "h-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
                   collapsed ? "w-full" : "flex-1"
