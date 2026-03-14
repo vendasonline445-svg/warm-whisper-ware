@@ -77,10 +77,27 @@ const Checkout = () => {
   });
 
   const updateCartItemQty = (index: number, qty: number) => {
+    if (isStoreCheckout) {
+      if (qty <= 0) {
+        const updated = storeItems.filter((_, i) => i !== index);
+        if (updated.length === 0) {
+          localStorage.removeItem('fiq_cart');
+          navigate('/loja');
+          return;
+        }
+        setStoreItems(updated);
+        localStorage.setItem('fiq_cart', JSON.stringify(updated));
+      } else {
+        const updated = [...storeItems];
+        updated[index] = { ...updated[index], quantity: qty };
+        setStoreItems(updated);
+        localStorage.setItem('fiq_cart', JSON.stringify(updated));
+      }
+      return;
+    }
     if (qty <= 0) {
       const updated = cartItems.filter((_, i) => i !== index);
       if (updated.length === 0) {
-        // Last item — navigate back
         localStorage.removeItem('mesalar_cart');
         navigate(getUrlWithUtm('/'));
         return;
