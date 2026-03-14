@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { trackTikTokEvent } from "@/lib/tiktok-tracking";
+import { trackFunnelEvent } from "@/lib/tracking-hub";
 import { getUrlWithUtm } from "@/utils/utm";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent, trackPageViewOnce } from "@/utils/track-event";
@@ -279,14 +279,13 @@ const Index = () => {
 
   // ViewContent event on mount + track page view + scroll depth
   useEffect(() => {
-    trackTikTokEvent({
-      event: "ViewContent",
+    trackFunnelEvent({
+      event: "view_content",
+      value: PRICE,
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
         content_name: "Mesa Dobrável 180x60cm",
-        value: PRICE,
-        currency: "BRL",
         contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
     });
@@ -389,14 +388,13 @@ const Index = () => {
     setModalQty(1);
     setColorModalMode(mode);
     setColorModalOpen(true);
-    trackTikTokEvent({
-      event: "AddToCart",
+    trackFunnelEvent({
+      event: "add_to_cart",
+      value: PRICE,
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
         content_name: "Mesa Dobrável 180x60cm",
-        value: PRICE,
-        currency: "BRL",
         contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
     });
@@ -428,7 +426,7 @@ const Index = () => {
   };
 
   const handleBuyNow = () => {
-    trackEvent("click_buy_button");
+    trackFunnelEvent({ event: "click_buy" });
     if (cartItems.length > 0) {
       nav(getUrlWithUtm(`/checkout`));
     } else {

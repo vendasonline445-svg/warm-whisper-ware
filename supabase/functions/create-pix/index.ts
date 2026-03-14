@@ -192,9 +192,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fire UTMify waiting_payment event
+    // UTMify DISABLED — FunnelIQ Tracking Hub is now the single source of events
+    // sendUtmifyEvent(orderId, customer, items, amount, trackingParams, "waiting_payment");
     const orderId = data.id || Date.now();
-    sendUtmifyEvent(orderId, customer, items, amount, trackingParams, "waiting_payment");
 
     // Write to checkout_leads so dashboard picks it up
     try {

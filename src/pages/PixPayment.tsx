@@ -4,8 +4,8 @@ import { ArrowLeft, Copy, AlertTriangle, Check, RefreshCw, Clock } from "lucide-
 import { getUrlWithUtm } from "@/utils/utm";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { trackTikTokEvent } from "@/lib/tiktok-tracking";
-import { trackEvent, trackPageViewOnce } from "@/utils/track-event";
+import { trackFunnelEvent } from "@/lib/tracking-hub";
+import { trackPageViewOnce } from "@/utils/track-event";
 
 const PIX_TIMEOUT_MINUTES = 15;
 
@@ -58,20 +58,16 @@ const PixPayment = () => {
         setPaid(true);
         const purchaseValue = orderData?.product?.total || pixData?.amount / 100 || 87.60;
         const orderId = transactionId || `order-${Date.now()}`;
-        trackEvent("payment_confirmed", {
-          transaction_id: transactionId,
+        trackFunnelEvent({
+          event: "purchase",
           value: purchaseValue,
-          method: "pix",
-        });
-        trackTikTokEvent({
-          event: "Purchase",
           properties: {
+            transaction_id: transactionId,
+            method: "pix",
+            order_id: orderId,
             content_type: "product",
             content_id: "mesa-dobravel",
             content_name: "Mesa Dobrável Retrátil",
-            value: purchaseValue,
-            currency: "BRL",
-            order_id: orderId,
             contents: [{ content_id: "mesa-dobravel", quantity: orderData?.product?.quantity || 1 }],
           },
           userData: orderData?.customer ? {
@@ -103,15 +99,16 @@ const PixPayment = () => {
   }, [transactionId, checkPaymentStatus]);
 
   useEffect(() => {
-    trackTikTokEvent({
-      event: "AddPaymentInfo",
+    trackFunnelEvent({
+      event: "add_payment_info",
+      value: total,
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
         content_name: "Mesa Dobrável Retrátil",
-        value: total,
-        currency: "BRL",
         contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
+        method: "pix",
+        transaction_id: transactionId,
       },
       userData: orderData?.customer ? {
         email: orderData.customer.email,
@@ -120,7 +117,6 @@ const PixPayment = () => {
       } : undefined,
     });
     trackPageViewOnce("/pix");
-    trackEvent("payment_started", { method: "pix", transaction_id: transactionId });
   }, []);
 
   const pixInfo = pixData?.pix || pixData?.pixQrCode || pixData?.qr_code_data || {};

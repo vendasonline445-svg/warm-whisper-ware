@@ -45,22 +45,9 @@ const Upsell1 = () => {
     }
   }, []);
 
-  // Fire TikTok CompletePayment event on upsell load
+  // Purchase event already fired in PixPayment — no duplicate here
   useEffect(() => {
-    try {
-      const ttq = (window as any).ttq;
-      if (ttq) {
-        ttq.track("CompletePayment", {
-          content_type: "product",
-          content_id: "mesa-dobravel",
-          value: 87.60,
-          currency: "BRL",
-        });
-        console.log("TikTok CompletePayment event fired");
-      }
-    } catch (e) {
-      console.error("TikTok pixel error:", e);
-    }
+    console.log("[TrackingHub] Upsell page loaded — Purchase already sent from PixPayment");
   }, []);
 
   const orderDataStr = sessionStorage.getItem("orderData");

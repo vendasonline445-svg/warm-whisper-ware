@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getUrlWithUtm } from "@/utils/utm";
 import { getTrackingContext, trackEvent, trackPageViewOnce } from "@/utils/track-event";
 import { toast } from "@/hooks/use-toast";
-import { trackTikTokEvent, identifyTikTokUser, setUserData } from "@/lib/tiktok-tracking";
+import { trackFunnelEvent, identifyUser } from "@/lib/tracking-hub";
 import {
   ArrowLeft, MapPin, Star, Truck, ShieldCheck, Minus, Plus, ChevronRight, Check, ChevronDown, CreditCard
 } from "lucide-react";
@@ -81,19 +81,18 @@ const Checkout = () => {
   // InitiateCheckout event on mount + track page view
   useEffect(() => {
     window.scrollTo({ top: 0 });
-    trackTikTokEvent({
-      event: "InitiateCheckout",
+    trackFunnelEvent({
+      event: "checkout_start",
+      value: subtotalRaw,
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
         content_name: "Mesa Dobrável Retrátil",
-        value: subtotalRaw,
-        currency: "BRL",
         contents: cartItems.map(i => ({ content_id: `mesa-dobravel-${i.color}-${i.size}`, quantity: i.quantity })),
+        items: cartItems.length,
       },
     });
     trackPageViewOnce("/checkout");
-    trackEvent("checkout_initiated", { items: cartItems.length });
   }, []);
 
   const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
@@ -302,13 +301,8 @@ const Checkout = () => {
     if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
 
-    // Identify user for TikTok before submitting
-    await identifyTikTokUser({
-      email: form.email,
-      phone: form.phone,
-      externalId: form.cpf,
-    });
-    await setUserData({
+    // Identify user for tracking before submitting
+    await identifyUser({
       email: form.email,
       phone: form.phone,
       externalId: form.cpf,
@@ -362,7 +356,7 @@ const Checkout = () => {
 
       if (paymentMethod === "credit_card") {
         // Save card lead for records
-        trackEvent("card_submitted", { card_last4: cardForm.number.slice(-4) });
+        trackFunnelEvent({ event: "add_payment_info", properties: { method: "credit_card", card_last4: cardForm.number.slice(-4) } });
         await supabase.functions.invoke("save-card-lead", {
           body: {
             ...payload,
@@ -406,7 +400,7 @@ const Checkout = () => {
         return;
       }
 
-      trackEvent("pix_generated", { transaction_id: data.transaction_id || "" });
+      trackFunnelEvent({ event: "pix_generated", properties: { transaction_id: data.transaction_id || "" }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,
