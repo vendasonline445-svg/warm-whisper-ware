@@ -272,7 +272,6 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
     return;
   }
 
-  const ttq = (window as any).ttq;
 
   // Browser-side: fire on each pixel instance
   pixels.forEach((px) => {
