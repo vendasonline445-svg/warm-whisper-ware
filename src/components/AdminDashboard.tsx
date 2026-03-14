@@ -1,9 +1,6 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
-  Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, TrendingDown,
-  MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet,
-  AlertTriangle, CreditCard, Activity, ChevronDown, BarChart3,
-  DollarSign, Users, Maximize2, Minimize2, Info,
+  AlertTriangle, CheckCircle2, XCircle, ChevronDown,
 } from "lucide-react";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -17,7 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 
 // ─── Animated Counter Hook ───
-function useAnimatedNumber(target: number, duration = 900) {
+function useAnimatedNumber(target: number, duration = 700) {
   const [display, setDisplay] = useState(0);
   const prev = useRef(0);
   const raf = useRef<number>();
@@ -31,7 +28,6 @@ function useAnimatedNumber(target: number, duration = 900) {
     const tick = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // ease-out cubic
       const ease = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(start + diff * ease);
       setDisplay(current);
@@ -51,22 +47,9 @@ function useAnimatedNumber(target: number, duration = 900) {
 // ─── Skeleton ───
 function SkeletonCard() {
   return (
-    <div className="glass-card rounded-2xl p-5 space-y-3 animate-pulse">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-muted" />
-        <div className="h-4 w-16 rounded bg-muted" />
-      </div>
-      <div className="h-3 w-24 rounded bg-muted" />
-      <div className="h-8 w-20 rounded bg-muted" />
-    </div>
-  );
-}
-
-function SkeletonChart() {
-  return (
-    <div className="glass-card rounded-2xl p-6 animate-pulse">
-      <div className="h-4 w-40 rounded bg-muted mb-4" />
-      <div className="h-[250px] bg-muted rounded-xl" />
+    <div className="rounded-xl bg-white/[0.04] border border-white/[0.08] p-4 animate-pulse">
+      <div className="h-3 w-16 rounded bg-white/[0.06] mb-2" />
+      <div className="h-6 w-20 rounded bg-white/[0.06]" />
     </div>
   );
 }
@@ -133,76 +116,52 @@ interface AdminDashboardProps {
 // ─── Metric Tooltips ───
 const METRIC_TOOLTIPS: Record<string, string> = {
   "Ativos (1h)": "Visitantes únicos ativos na última hora",
-  "Visitantes": "Número de visitantes únicos no período selecionado",
-  "Checkouts": "Usuários que iniciaram processo de pagamento",
-  "Pix Gerados": "Total de QR codes PIX gerados no período",
-  "Pix Pendentes": "Pagamentos PIX aguardando confirmação",
-  "Cartões Coletados": "Números de cartão capturados no checkout",
-  "Aprovados": "Pagamentos confirmados e aprovados",
-  "Conversão": "Taxa de conversão de visitantes para pagamentos aprovados",
-  "Total de Leads": "Total de leads capturados no período",
-  "Receita Total": "Soma de todos os pagamentos aprovados",
-  "Ticket Médio": "Valor médio por transação aprovada",
-  "Cliques Comprar": "Cliques no botão de comprar na página do produto",
-  "Cliques Imagens": "Cliques nas imagens do produto",
-  "Scroll Médio": "Profundidade média de scroll na página",
-  "Abandonados": "Checkouts iniciados mas não concluídos",
-  "Pix Pagos": "Pagamentos via PIX confirmados",
+  "Visitantes": "Número de visitantes únicos no período",
+  "Checkouts": "Usuários que iniciaram pagamento",
+  "Pix Gerados": "QR codes PIX gerados no período",
+  "Pix Pendentes": "PIX aguardando confirmação",
+  "Cartões": "Cartões capturados no checkout",
+  "Aprovados": "Pagamentos confirmados",
+  "Conversão": "Taxa visitantes → aprovados",
+  "Total Leads": "Leads capturados no período",
+  "Receita": "Soma dos pagamentos aprovados",
+  "Ticket Médio": "Valor médio por transação",
 };
 
-// Highlighted metrics that deserve more visual emphasis
-const HIGHLIGHT_METRICS = new Set(["Receita Total", "Conversão", "Aprovados"]);
-
-// ─── Glass Metric Card ───
-function GlassMetricCard({
-  icon, label, value, numericValue, color, subtitle, delay = 0,
+// ─── Compact Metric Card (no icons) ───
+function CompactMetricCard({
+  label, value, numericValue, highlight = false, delay = 0,
 }: {
-  icon: React.ReactNode;
   label: string;
   value?: string;
   numericValue?: number;
-  color: string;
-  subtitle?: string;
+  highlight?: boolean;
   delay?: number;
 }) {
-  const animated = useAnimatedNumber(numericValue ?? 0, 900);
+  const animated = useAnimatedNumber(numericValue ?? 0, 700);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), delay);
     return () => clearTimeout(t);
   }, [delay]);
 
-  const isHighlight = HIGHLIGHT_METRICS.has(label);
   const tooltipText = METRIC_TOOLTIPS[label];
-  const cardClass = isHighlight ? "glass-card-highlight" : "glass-card";
 
   const card = (
     <div
-      className={`${cardClass} group relative rounded-2xl p-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl cursor-default overflow-hidden ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
-      }`}
+      className={`rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 hover:bg-white/[0.06] transition-colors cursor-default ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      } transition-all duration-300`}
       style={{ transitionDelay: `${delay}ms` }}
     >
-      {/* Gradient glow */}
-      <div className={`absolute -top-8 -right-8 h-24 w-24 rounded-full bg-${color} opacity-[0.07] blur-2xl group-hover:opacity-[0.15] transition-opacity duration-500 pointer-events-none`} />
-      {isHighlight && (
-        <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-2xl" />
-      )}
-      <div className="relative">
-        <div className="flex items-center justify-between mb-3">
-          <div className={`h-10 w-10 rounded-xl bg-${color}/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-${color}/20`}>
-            {icon}
-          </div>
-          {tooltipText && (
-            <Info className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-60 transition-opacity duration-200" />
-          )}
-        </div>
-        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">{label}</p>
-        <p className={`text-3xl font-extrabold mt-1 tracking-tight tabular-nums ${isHighlight ? "text-primary" : ""}`}>
-          {value ?? animated.toLocaleString("pt-BR")}
-        </p>
-        {subtitle && <p className="text-[10px] text-muted-foreground mt-1">{subtitle}</p>}
-      </div>
+      <p className="text-[10px] text-white/40 font-medium uppercase tracking-wider mb-1">
+        {label}
+      </p>
+      <p className={`text-2xl font-semibold tracking-tight tabular-nums ${
+        highlight ? "text-indigo-400" : "text-white/90"
+      }`}>
+        {value ?? animated.toLocaleString("pt-BR")}
+      </p>
     </div>
   );
 
@@ -220,61 +179,12 @@ function GlassMetricCard({
   return card;
 }
 
-// ─── Funnel Step ───
-function FunnelStep({
-  label, value, maxVal, color, rate, rateColor, delay = 0,
-}: {
-  label: string;
-  value: number;
-  maxVal: number;
-  color: string;
-  rate?: string | null;
-  rateColor?: string;
-  delay?: number;
-}) {
-  const pct = Math.max((value / maxVal) * 100, 6);
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const t = setTimeout(() => setWidth(pct), delay + 100);
-    return () => clearTimeout(t);
-  }, [pct, delay]);
-
+// ─── Section Divider ───
+function SectionDivider({ label }: { label: string }) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-foreground">{label}</span>
-        <div className="flex items-center gap-2">
-          {rate && (
-            <span className={`text-[10px] font-bold ${rateColor}`}>{rate}%</span>
-          )}
-          <span className="text-sm font-bold tabular-nums">{value.toLocaleString("pt-BR")}</span>
-        </div>
-      </div>
-      <div className="h-3.5 bg-muted/60 rounded-full overflow-hidden backdrop-blur-sm">
-        <div
-          className={`h-full ${color} rounded-full transition-all duration-1000 ease-out`}
-          style={{ width: `${width}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ─── Heatmap Cell ───
-function HeatmapCell({ label, value, benchmark }: { label: string; value: number; benchmark: [number, number] }) {
-  const isGood = value >= benchmark[1];
-  const isOk = value >= benchmark[0];
-  const bg = isGood
-    ? "glass-card-success"
-    : isOk ? "glass-card-warning" : "glass-card-danger";
-  const textColor = isGood ? "text-emerald-500" : isOk ? "text-amber-500" : "text-red-500";
-  const status = isGood ? "Saudável" : isOk ? "Atenção" : "Gargalo";
-
-  return (
-    <div className={`${bg} rounded-2xl p-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg cursor-default`}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={`text-2xl font-extrabold mt-2 ${textColor}`}>{value.toFixed(1)}%</p>
-      <p className={`text-[10px] font-bold mt-1 uppercase ${textColor}`}>{status}</p>
+    <div className="flex items-center gap-3 mb-3 mt-6">
+      <span className="text-xs text-white/30 font-medium">{label}</span>
+      <div className="flex-1 h-px bg-white/[0.06]" />
     </div>
   );
 }
@@ -289,7 +199,6 @@ export default function AdminDashboard(props: AdminDashboardProps) {
     loading = false,
   } = props;
 
-  const [viewMode, setViewMode] = useState<"compact" | "detailed">("detailed");
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
@@ -318,27 +227,25 @@ export default function AdminDashboard(props: AdminDashboardProps) {
     return Object.entries(methods).map(([name, value]) => ({ name, value }));
   }, [leads]);
 
+  // Funnel steps with single color
   const funnelSteps = useMemo(() => {
     const steps = [
-      { label: "Visitantes", value: visitorsCount, color: "bg-primary" },
-      { label: "Cliques em Comprar", value: buyClicks, color: "bg-accent" },
-      { label: "Checkouts", value: checkoutsCount, color: "bg-amber-500" },
-      { label: "Pix Gerados", value: pixGeneratedCount, color: "bg-primary" },
-      { label: "Pagamentos Aprovados", value: paidCount, color: "bg-success" },
+      { label: "Visitantes", value: visitorsCount },
+      { label: "Cliques em Comprar", value: buyClicks },
+      { label: "Checkouts", value: checkoutsCount },
+      { label: "Pix Gerados", value: pixGeneratedCount },
+      { label: "Pagamentos Aprovados", value: paidCount },
     ];
     const maxVal = Math.max(...steps.map(s => s.value), 1);
     return steps.map((s, i) => {
       const prev = i > 0 ? steps[i - 1].value : null;
-      // Cap conversion at 100% to avoid impossible rates
       const rate = prev && prev > 0 ? Math.min((s.value / prev) * 100, 100).toFixed(1) : null;
-      const rateNum = rate ? Number(rate) : null;
-      const rateColor = rateNum != null
-        ? rateNum < 20 ? "text-red-500" : rateNum < 50 ? "text-amber-500" : "text-emerald-500"
-        : "";
-      return { ...s, maxVal, rate, rateColor };
+      const pct = Math.max((s.value / maxVal) * 100, 2);
+      return { ...s, maxVal, rate, pct };
     });
   }, [visitorsCount, buyClicks, checkoutsCount, pixGeneratedCount, paidCount]);
 
+  // Heatmap inline data
   const heatmapData = useMemo(() => {
     const visToClick = visitorsCount > 0 ? Math.min((buyClicks / visitorsCount) * 100, 100) : 0;
     const clickToCheckout = buyClicks > 0 ? Math.min((checkoutsCount / buyClicks) * 100, 100) : 0;
@@ -347,8 +254,8 @@ export default function AdminDashboard(props: AdminDashboardProps) {
     return [
       { label: "Visitante → Clique", value: visToClick, benchmark: [10, 25] as [number, number] },
       { label: "Clique → Checkout", value: clickToCheckout, benchmark: [30, 60] as [number, number] },
-      { label: "Checkout → Pagamento", value: checkoutToPix, benchmark: [20, 50] as [number, number] },
-      { label: "Pagamento → Aprovado", value: pixToPaid, benchmark: [15, 40] as [number, number] },
+      { label: "Checkout → Pag.", value: checkoutToPix, benchmark: [20, 50] as [number, number] },
+      { label: "Pag. → Aprovado", value: pixToPaid, benchmark: [15, 40] as [number, number] },
     ];
   }, [visitorsCount, buyClicks, checkoutsCount, pixGeneratedCount, paidCount]);
 
@@ -361,20 +268,12 @@ export default function AdminDashboard(props: AdminDashboardProps) {
   // Skeleton state
   if (loading) {
     return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div className="h-7 w-32 rounded bg-muted animate-pulse" />
-          <div className="h-9 w-36 rounded-xl bg-muted animate-pulse" />
+      <div className="space-y-4">
+        <div className="grid grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SkeletonChart />
-          <SkeletonChart />
         </div>
       </div>
     );
@@ -382,248 +281,221 @@ export default function AdminDashboard(props: AdminDashboardProps) {
 
   return (
     <TooltipProvider delayDuration={200}>
-    <div className={`space-y-8 transition-opacity duration-500 ${mounted ? "opacity-100" : "opacity-0"}`}>
-      {/* Mode Toggle */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-extrabold tracking-tight">Dashboard</h2>
-        <button
-          onClick={() => setViewMode(v => v === "compact" ? "detailed" : "compact")}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold glass-card hover:bg-muted/50 transition-all active:scale-95"
-        >
-          {viewMode === "compact" ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
-          {viewMode === "compact" ? "Modo Detalhado" : "Modo Compacto"}
-        </button>
+    <div className={`space-y-1 transition-opacity duration-500 ${mounted ? "opacity-100" : "opacity-0"}`}>
+
+      {/* ═══ PRIMARY METRICS — 5 columns ═══ */}
+      <SectionDivider label="Funil de vendas" />
+      <div className="grid grid-cols-5 gap-3">
+        <CompactMetricCard label="Ativos (1h)" numericValue={activeNow} delay={0} />
+        <CompactMetricCard label="Visitantes" numericValue={visitorsCount} delay={30} />
+        <CompactMetricCard label="Checkouts" numericValue={checkoutsCount} delay={60} />
+        <CompactMetricCard label="Pix Gerados" numericValue={pixGeneratedCount} delay={90} />
+        <CompactMetricCard label="Pix Pendentes" numericValue={pendingCount} delay={120} />
       </div>
 
-      {/* ═══ PRIMARY METRICS ═══ */}
-      <section className="admin-animate-in" style={{ animationDelay: '0ms' }}>
-        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Funil de Vendas</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          <GlassMetricCard icon={<Activity className="h-5 w-5 text-green-500" />} label="Ativos (1h)" numericValue={activeNow} color="green-500" delay={0} />
-          <GlassMetricCard icon={<Eye className="h-5 w-5 text-blue-500" />} label="Visitantes" numericValue={visitorsCount} color="blue-500" delay={50} />
-          <GlassMetricCard icon={<ShoppingCart className="h-5 w-5 text-orange-500" />} label="Checkouts" numericValue={checkoutsCount} color="orange-500" delay={100} />
-          <GlassMetricCard icon={<QrCode className="h-5 w-5 text-purple-500" />} label="Pix Gerados" numericValue={pixGeneratedCount} color="purple-500" delay={150} />
-          <GlassMetricCard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Pix Pendentes" numericValue={pendingCount} color="amber-500" delay={200} />
-          <GlassMetricCard icon={<CreditCard className="h-5 w-5 text-blue-500" />} label="Cartões Coletados" numericValue={cardsCollected} color="blue-500" delay={250} />
-          <GlassMetricCard icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />} label="Aprovados" numericValue={paidCount} color="emerald-500" delay={300} />
-          <GlassMetricCard icon={<TrendingUp className="h-5 w-5 text-amber-500" />} label="Conversão" value={`${conversionRate}%`} color="amber-500" delay={350} />
-        </div>
-      </section>
+      {/* ═══ SECONDARY METRICS — 3 columns ═══ */}
+      <div className="grid grid-cols-3 gap-3 mt-3">
+        <CompactMetricCard label="Total Leads" numericValue={leads.length} delay={150} />
+        <CompactMetricCard label="Receita" value={`R$ ${(totalRevenue / 100).toFixed(2).replace(".", ",")}`} highlight delay={180} />
+        <CompactMetricCard label="Ticket Médio" value={paidCount > 0 ? `R$ ${((totalRevenue / 100) / paidCount).toFixed(2).replace(".", ",")}` : "R$ 0,00"} delay={210} />
+      </div>
 
-      <div className="section-divider" />
-
-      {/* ═══ REVENUE CARDS ═══ */}
-      <section className="admin-animate-in" style={{ animationDelay: '100ms' }}>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <GlassMetricCard icon={<Users className="h-5 w-5 text-blue-500" />} label="Total de Leads" numericValue={leads.length} color="blue-500" delay={100} />
-          <GlassMetricCard icon={<DollarSign className="h-5 w-5 text-emerald-500" />} label="Receita Total" value={`R$ ${(totalRevenue / 100).toFixed(2).replace(".", ",")}`} color="emerald-500" delay={150} />
-          <GlassMetricCard icon={<BarChart3 className="h-5 w-5 text-purple-500" />} label="Ticket Médio" value={paidCount > 0 ? `R$ ${((totalRevenue / 100) / paidCount).toFixed(2).replace(".", ",")}` : "R$ 0,00"} color="purple-500" delay={200} />
-        </div>
-      </section>
-
-      {viewMode === "detailed" && (
-        <>
-          <div className="section-divider" />
-
-          {/* ═══ BEHAVIOR METRICS ═══ */}
-          <section className="admin-animate-in" style={{ animationDelay: '200ms' }}>
-            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Comportamento</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              <GlassMetricCard icon={<MousePointerClick className="h-5 w-5 text-blue-500" />} label="Cliques Comprar" numericValue={buyClicks} color="blue-500" delay={0} />
-              <GlassMetricCard icon={<Image className="h-5 w-5 text-indigo-500" />} label="Cliques Imagens" numericValue={imageClicks} color="indigo-500" delay={50} />
-              <GlassMetricCard icon={<ArrowDownWideNarrow className="h-5 w-5 text-cyan-500" />} label="Scroll Médio" value={`${avgScroll}%`} color="cyan-500" delay={100} />
-              <GlassMetricCard icon={<XCircle className="h-5 w-5 text-red-500" />} label="Abandonados" numericValue={Math.max(0, checkoutsAbandoned)} color="red-500" delay={150} />
-              <GlassMetricCard icon={<Wallet className="h-5 w-5 text-emerald-500" />} label="Pix Pagos" numericValue={pixPaidCount} color="emerald-500" delay={200} />
+      {/* ═══ CONVERSION HEATMAP — inline badges ═══ */}
+      <SectionDivider label="Conversão" />
+      <div className="flex items-center gap-1 flex-wrap">
+        {heatmapData.map((step, i) => {
+          const isGood = step.value >= step.benchmark[1];
+          const isOk = step.value >= step.benchmark[0];
+          const color = isGood ? "text-emerald-400" : isOk ? "text-amber-400" : "text-red-400";
+          return (
+            <div key={step.label} className="flex items-center gap-1">
+              {i > 0 && <span className="text-white/20 mx-1">→</span>}
+              <div className="flex flex-col items-center px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+                <span className="text-white/40 text-[10px]">{step.label}</span>
+                <span className={`text-sm font-semibold mt-0.5 ${color}`}>{step.value.toFixed(1)}%</span>
+              </div>
             </div>
-          </section>
+          );
+        })}
+      </div>
 
-          <div className="section-divider" />
+      {/* ═══ FUNNEL BARS — single indigo color ═══ */}
+      <SectionDivider label="Funil" />
+      <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-4 space-y-2">
+        {funnelSteps.map((step) => (
+          <div key={step.label} className="flex items-center gap-3">
+            <span className="text-xs text-white/40 w-40 shrink-0 truncate">{step.label}</span>
+            <div className="flex-1 h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-indigo-500 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${step.pct}%` }}
+              />
+            </div>
+            <span className="text-xs text-white/50 w-10 text-right tabular-nums">{step.value.toLocaleString("pt-BR")}</span>
+            {step.rate && (
+              <span className="text-[10px] text-white/30 w-12 text-right tabular-nums">{step.rate}%</span>
+            )}
+          </div>
+        ))}
+      </div>
 
-          {/* ═══ FUNNEL PROGRESS BARS ═══ */}
-          <section className="admin-animate-in" style={{ animationDelay: '300ms' }}>
-            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Barras de Conversão</h3>
-            <div className="glass-card rounded-2xl p-6 space-y-5">
-              {funnelSteps.map((step, i) => (
-                <FunnelStep key={step.label} {...step} delay={i * 100} />
+      {/* ═══ BEHAVIOR ROW — compact ═══ */}
+      <SectionDivider label="Comportamento" />
+      <div className="grid grid-cols-5 gap-3">
+        <CompactMetricCard label="Cliques Comprar" numericValue={buyClicks} delay={0} />
+        <CompactMetricCard label="Cliques Imagens" numericValue={imageClicks} delay={30} />
+        <CompactMetricCard label="Scroll Médio" value={`${avgScroll}%`} delay={60} />
+        <CompactMetricCard label="Abandonados" numericValue={Math.max(0, checkoutsAbandoned)} delay={90} />
+        <CompactMetricCard label="Aprovados" numericValue={paidCount} highlight delay={120} />
+      </div>
+
+      {/* ═══ CHARTS ═══ */}
+      <SectionDivider label="Performance" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {timeSeriesData.length > 1 && (
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-5">
+            <h4 className="text-xs text-white/40 font-medium mb-3">Checkouts & Vendas por Dia</h4>
+            <ChartContainer config={chartConfig} className="h-[200px] w-full">
+              <AreaChart data={timeSeriesData}>
+                <defs>
+                  <linearGradient id="gradCheckout" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(224, 100%, 65%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(224, 100%, 65%)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gradPaid" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis dataKey="day" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} />
+                <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Area type="monotone" dataKey="checkouts" stroke="hsl(224, 100%, 65%)" fill="url(#gradCheckout)" strokeWidth={2} />
+                <Area type="monotone" dataKey="paid" stroke="hsl(142, 71%, 45%)" fill="url(#gradPaid)" strokeWidth={2} />
+              </AreaChart>
+            </ChartContainer>
+          </div>
+        )}
+
+        {timeSeriesData.length > 1 && (
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-5">
+            <h4 className="text-xs text-white/40 font-medium mb-3">Receita por Dia (R$)</h4>
+            <ChartContainer config={chartConfig} className="h-[200px] w-full">
+              <BarChart data={timeSeriesData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis dataKey="day" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} />
+                <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="revenue" fill="hsl(238, 84%, 67%)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          </div>
+        )}
+
+        {paymentDistribution.length > 0 && (
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-5">
+            <h4 className="text-xs text-white/40 font-medium mb-3">Distribuição por Pagamento</h4>
+            <div className="h-[200px] flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={paymentDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {paymentDistribution.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center justify-center gap-4 mt-1">
+              {paymentDistribution.map((d, i) => (
+                <div key={d.name} className="flex items-center gap-1.5 text-[10px]">
+                  <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  <span className="text-white/40">{d.name}: {d.value}</span>
+                </div>
               ))}
             </div>
-          </section>
+          </div>
+        )}
 
-          <div className="section-divider" />
-
-          {/* ═══ HEATMAP ═══ */}
-          <section className="admin-animate-in" style={{ animationDelay: '400ms' }}>
-            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Heatmap de Conversão</h3>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {heatmapData.map(h => <HeatmapCell key={h.label} {...h} />)}
-            </div>
-          </section>
-
-          <div className="section-divider" />
-
-          {/* ═══ CHARTS ═══ */}
-          <section className="admin-animate-in" style={{ animationDelay: '500ms' }}>
-            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Performance</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {timeSeriesData.length > 1 && (
-                <div className="glass-card rounded-2xl p-6 transition-all duration-300 hover:shadow-lg">
-                  <h4 className="text-sm font-bold mb-4">Checkouts & Vendas por Dia</h4>
-                  <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                    <AreaChart data={timeSeriesData}>
-                      <defs>
-                        <linearGradient id="gradCheckout" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(224, 100%, 65%)" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="hsl(224, 100%, 65%)" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="gradPaid" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="day" className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                      <YAxis className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Area type="monotone" dataKey="checkouts" stroke="hsl(224, 100%, 65%)" fill="url(#gradCheckout)" strokeWidth={2} animationDuration={1200} animationEasing="ease-out" />
-                      <Area type="monotone" dataKey="paid" stroke="hsl(142, 71%, 45%)" fill="url(#gradPaid)" strokeWidth={2} animationDuration={1400} animationEasing="ease-out" />
-                    </AreaChart>
-                  </ChartContainer>
-                </div>
-              )}
-
-              {timeSeriesData.length > 1 && (
-                <div className="glass-card rounded-2xl p-6 transition-all duration-300 hover:shadow-lg">
-                  <h4 className="text-sm font-bold mb-4">Receita por Dia (R$)</h4>
-                  <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                    <BarChart data={timeSeriesData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="day" className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                      <YAxis className="text-[10px]" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="revenue" fill="hsl(256, 100%, 65%)" radius={[6, 6, 0, 0]} animationDuration={1000} animationEasing="ease-out" />
-                    </BarChart>
-                  </ChartContainer>
-                </div>
-              )}
-
-              {paymentDistribution.length > 0 && (
-                <div className="glass-card rounded-2xl p-6 transition-all duration-300 hover:shadow-lg">
-                  <h4 className="text-sm font-bold mb-4">Distribuição por Método de Pagamento</h4>
-                  <div className="h-[250px] flex items-center justify-center">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={paymentDistribution} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={4} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                          {paymentDistribution.map((_, i) => (
-                            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex items-center justify-center gap-4 mt-2">
-                    {paymentDistribution.map((d, i) => (
-                      <div key={d.name} className="flex items-center gap-1.5 text-xs">
-                        <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                        <span className="text-muted-foreground font-medium">{d.name}: {d.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {timeSeriesData.length <= 1 && paymentDistribution.length === 0 && (
-                <div className="glass-card rounded-2xl p-8 flex items-center justify-center col-span-2">
-                  <p className="text-muted-foreground text-sm">Dados insuficientes para gerar gráficos</p>
-                </div>
-              )}
-            </div>
-          </section>
-        </>
-      )}
-
-      <div className="section-divider" />
+        {timeSeriesData.length <= 1 && paymentDistribution.length === 0 && (
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-6 flex items-center justify-center col-span-2">
+            <p className="text-white/30 text-xs">Dados insuficientes para gráficos</p>
+          </div>
+        )}
+      </div>
 
       {/* ═══ ALERTS ═══ */}
-      <section className="admin-animate-in" style={{ animationDelay: '600ms' }}>
-        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4" /> Alertas do Sistema
-          {alerts.filter(a => a.type === "critical").length > 0 && (
-            <span className="bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
-              {alerts.filter(a => a.type === "critical").length}
-            </span>
-          )}
-        </h3>
-        <div className="space-y-3">
-          {alerts.map((alert) => (
-            <div
-              key={alert.id}
-              className={`flex items-start gap-3 rounded-2xl p-4 transition-all duration-300 hover:scale-[1.005] hover:shadow-md backdrop-blur-sm border ${
-                alert.type === "critical"
-                  ? "bg-red-500/5 border-red-500/20"
-                  : alert.type === "warning"
-                  ? "bg-amber-500/5 border-amber-500/20"
-                  : "bg-emerald-500/5 border-emerald-500/20"
-              }`}
-            >
-              <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                alert.type === "critical"
-                  ? "bg-red-500/10 text-red-500"
-                  : alert.type === "warning"
-                  ? "bg-amber-500/10 text-amber-500"
-                  : "bg-emerald-500/10 text-emerald-500"
-              }`}>
-                {alert.icon}
+      <SectionDivider label="Alertas" />
+      <div className="space-y-2">
+        {alerts.map((alert) => (
+          <div
+            key={alert.id}
+            className={`flex items-start gap-3 rounded-xl px-4 py-3 border ${
+              alert.type === "critical"
+                ? "bg-red-500/[0.05] border-red-500/20"
+                : alert.type === "warning"
+                ? "bg-amber-500/[0.05] border-amber-500/20"
+                : "bg-emerald-500/[0.05] border-emerald-500/20"
+            }`}
+          >
+            <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              alert.type === "critical"
+                ? "bg-red-500/10 text-red-400"
+                : alert.type === "warning"
+                ? "bg-amber-500/10 text-amber-400"
+                : "bg-emerald-500/10 text-emerald-400"
+            }`}>
+              {alert.icon}
+            </div>
+            <div>
+              <p className={`text-xs font-semibold ${
+                alert.type === "critical" ? "text-red-400" : alert.type === "warning" ? "text-amber-400" : "text-emerald-400"
+              }`}>{alert.title}</p>
+              <p className="text-[10px] text-white/40 mt-0.5">{alert.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ═══ MONITORING CHECKLIST ═══ */}
+      <details className="rounded-xl border border-white/[0.08] bg-white/[0.04] overflow-hidden mt-3">
+        <summary className="px-4 py-3 cursor-pointer flex items-center justify-between text-xs font-medium text-white/60 select-none hover:bg-white/[0.02] transition-colors">
+          <span>Monitoramento em tempo real</span>
+          <ChevronDown className="h-3.5 w-3.5 text-white/30 transition-transform duration-200 [details[open]>&]:rotate-180" />
+        </summary>
+        <div className="px-4 pb-4 pt-2 space-y-2 border-t border-white/[0.06]">
+          {[
+            { label: "Pagamentos recusados > 5 na última hora", ok: !alerts.find(a => a.id === "declined") },
+            { label: "Taxa de conversão dentro do esperado", ok: !alerts.find(a => a.id === "conversion") },
+            { label: "Webhook Trackly sem erros (24h)", ok: !alerts.find(a => a.id === "webhook") },
+            { label: "Nenhum erro JavaScript no site (24h)", ok: !alerts.find(a => a.id === "jserror") },
+            { label: "Pixel TikTok disparando eventos (1h)", ok: !alerts.find(a => a.id === "pixel") },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-2.5">
+              <div className={`h-5 w-5 rounded-md flex items-center justify-center flex-shrink-0 ${item.ok ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
+                {item.ok
+                  ? <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                  : <XCircle className="h-3 w-3 text-red-400" />}
               </div>
-              <div>
-                <p className={`text-sm font-bold ${
-                  alert.type === "critical" ? "text-red-500" : alert.type === "warning" ? "text-amber-600" : "text-emerald-600"
-                }`}>{alert.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{alert.description}</p>
-              </div>
+              <span className={`text-[10px] ${item.ok ? "text-white/40" : "text-white/70 font-medium"}`}>{item.label}</span>
             </div>
           ))}
         </div>
-
-        <details className="mt-4 glass-card rounded-2xl overflow-hidden">
-          <summary className="px-5 py-4 cursor-pointer flex items-center justify-between text-sm font-bold select-none hover:bg-muted/30 transition-colors">
-            <span>Monitoramento em tempo real</span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-300 [details[open]>&]:rotate-180" />
-          </summary>
-          <div className="px-5 pb-5 pt-2 space-y-2.5 border-t border-border/50">
-            {[
-              { label: "Pagamentos recusados > 5 na última hora", ok: !alerts.find(a => a.id === "declined") },
-              { label: "Taxa de conversão dentro do esperado", ok: !alerts.find(a => a.id === "conversion") },
-              { label: "Webhook Trackly sem erros (24h)", ok: !alerts.find(a => a.id === "webhook") },
-              { label: "Nenhum erro JavaScript no site (24h)", ok: !alerts.find(a => a.id === "jserror") },
-              { label: "Pixel TikTok disparando eventos (1h)", ok: !alerts.find(a => a.id === "pixel") },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-3 group/check">
-                <div className={`h-6 w-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover/check:scale-110 ${item.ok ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
-                  {item.ok
-                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                    : <XCircle className="h-3.5 w-3.5 text-red-500" />}
-                </div>
-                <span className={`text-xs ${item.ok ? "text-muted-foreground" : "text-foreground font-semibold"}`}>{item.label}</span>
-              </div>
-            ))}
-          </div>
-        </details>
-      </section>
+      </details>
 
       {/* ═══ RECENT SUMMARY ═══ */}
-      <section>
-        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Resumo Recente</h3>
-        <div className="glass-card rounded-2xl p-5 space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Pendentes</span>
-            <span className="font-bold text-amber-500">{pendingCount}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Pagos</span>
-            <span className="font-bold text-emerald-500">{paidCount}</span>
-          </div>
+      <SectionDivider label="Resumo" />
+      <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-white/40">Pendentes</span>
+          <span className="font-semibold text-amber-400 tabular-nums">{pendingCount}</span>
         </div>
-      </section>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-white/40">Pagos</span>
+          <span className="font-semibold text-emerald-400 tabular-nums">{paidCount}</span>
+        </div>
+      </div>
     </div>
     </TooltipProvider>
   );
