@@ -701,6 +701,8 @@ export default function Admin() {
 
         {tab === "tracking" && <AdminTrackingHub />}
 
+        {tab === "clients" && <AdminClientHub />}
+
         {tab === "rastreios" && <AdminRastreiosTab />}
 
         {tab === "ai" && (
