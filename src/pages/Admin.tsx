@@ -491,7 +491,7 @@ export default function Admin() {
           <AdminLiveActivity />
         )}
 
-        {(tab === "dashboard" || tab === "alerts") && (
+        {tab === "dashboard" && (
           <div className="space-y-6">
             {/* Period Filter */}
             <div className="flex flex-wrap items-center gap-2">
@@ -644,25 +644,25 @@ export default function Admin() {
           </div>
         )}
 
-        {(tab === "crm" || tab === "crm-sessions" || tab === "crm-recovery" || tab === "crm-checkout") && <AdminCRM />}
+        {(tab === "crm" || tab === "crm-recovery") && <AdminCRM />}
 
         {tab === "tiktok" && <AdminTikTokTab />}
 
-        {(tab === "tracking" || tab === "tracking-sessions" || tab === "tracking-clicks" || tab === "tracking-links" || tab === "tracking-pixels" || tab === "tracking-scripts" || tab === "tracking-debug") && <AdminTrackingHub />}
+        {(tab === "tracking" || tab === "tracking-sessions" || tab === "tracking-clicks" || tab === "tracking-links" || tab === "tracking-debug") && <AdminTrackingHub />}
 
         {(tab === "clients" || tab === "clients-bc") && <AdminClientHub />}
 
-        {(tab === "ads" || tab === "ads-creatives" || tab === "ads-automation" || tab === "ads-budgets" || tab === "ads-performance") && <AdminAdsHub />}
+        {(tab === "campaigns" || tab === "campaigns-creatives" || tab === "campaigns-automation" || tab === "campaigns-budgets" || tab === "campaigns-performance") && <AdminAdsHub />}
 
-        {(tab === "analytics" || tab === "analytics-campaigns" || tab === "analytics-creatives" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && <AdminAnalyticsHub />}
+        {(tab === "analytics" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && <AdminAnalyticsHub />}
 
         {tab === "rastreios" && <AdminRastreiosTab />}
 
-        {tab === "settings-scripts" && <AdminTrackingHub />}
+        {(tab === "settings-scripts" || tab === "tracking-pixels") && <AdminTrackingHub />}
 
         {tab === "settings-csv" && <AdminClientHub />}
 
-        {(tab === "ai" || tab === "ai-optimization" || tab === "ai-alerts" || tab === "ai-insights") && (
+        {(tab === "ai" || tab === "ai-insights") && (
           <AdminAIAssistant
             visitors={visitorsCount}
             buyClicks={buyClicks}
