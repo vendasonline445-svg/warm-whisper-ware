@@ -315,11 +315,18 @@ export async function trackFunnelEvent(options: TrackOptions) {
   // 3. Build DB payload
   const siteId = getSiteId();
 
+  // Enrich with cached identity for EMQ diagnostics
+  const identity = getCachedIdentity();
+
   const eventData: Record<string, any> = {
     ...properties,
     event_id: eventId,
     is_consistent: isConsistent,
     page_url: window.location.href,
+    currency: "BRL",
+    ...(identity.email_hash && { email: identity.email_hash }),
+    ...(identity.phone_hash && { phone_number: identity.phone_hash }),
+    ...(identity.external_id && { external_id: identity.external_id }),
   };
 
   const dbPayload = {
