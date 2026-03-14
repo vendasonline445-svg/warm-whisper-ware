@@ -511,6 +511,18 @@ export default function Admin() {
               <Users className="h-4 w-4" /> Client Hub
             </button>
             <button
+              onClick={() => setTab("ads")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "ads" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            >
+              <Megaphone className="h-4 w-4" /> Ads Hub
+            </button>
+            <button
+              onClick={() => setTab("analytics")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "analytics" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            >
+              <TrendingUp className="h-4 w-4" /> Analytics Hub
+            </button>
+            <button
               onClick={() => setTab("tiktok")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "tiktok" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
             >
