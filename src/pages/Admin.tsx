@@ -565,7 +565,7 @@ function AdminContent() {
           } />
         )}
 
-        {tab === "rastreios" && <AdminRastreiosTab />}
+        
 
         {(tab === "settings-scripts" || tab === "tracking-pixels") && <AdminTrackingHub key={`settings-${tab}`} />}
 
@@ -576,19 +576,9 @@ function AdminContent() {
         {(tab === "ai" || tab === "ai-insights") && (
           <AdminAIAssistant
             visitors={visitorsCount}
-            buyClicks={buyClicks}
-            imageClicks={imageClicks}
-            avgScroll={avgScroll}
-            checkouts={checkoutsCount}
-            abandoned={Math.max(0, checkoutsCount - leads.length)}
-            pixGenerated={validPixGenerated}
-            pixPaid={pixPaidCount}
-            cardsCollected={validCardsCollected}
-            paid={paidCount}
-            pending={pendingCount}
-            totalRevenue={totalRevenue}
-            activeNow={activeNow}
-            totalLeads={leads.length}
+            conversions={paidCount}
+            revenue={totalRevenue}
+            totalEvents={leads.length}
           />
         )}
 
