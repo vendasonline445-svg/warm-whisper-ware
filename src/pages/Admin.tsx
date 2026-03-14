@@ -652,7 +652,7 @@ export default function Admin() {
 
         {(tab === "clients" || tab === "clients-bc") && <AdminClientHub />}
 
-        {(tab === "ads" || tab === "ads-creatives" || tab === "ads-automation" || tab === "ads-budgets" || tab === "ads-performance") && <AdminAdsHub />}
+        {(tab === "campaigns" || tab === "campaigns-creatives" || tab === "campaigns-automation" || tab === "campaigns-budgets" || tab === "campaigns-performance") && <AdminAdsHub />}
 
         {(tab === "analytics" || tab === "analytics-campaigns" || tab === "analytics-creatives" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && <AdminAnalyticsHub />}
 
