@@ -18,6 +18,13 @@ import type { Json } from "@/integrations/supabase/types";
 const DEBUG = "[TrackingHub]";
 const db = supabase as any;
 
+// ── Site ID helper ─────────────────────────────────────────────────────
+function getSiteId(): string {
+  try {
+    return (window as any).fiqSiteId || localStorage.getItem('fiq_site_id') || 'mesa-dobravel';
+  } catch { return 'mesa-dobravel'; }
+}
+
 // ── Storage helpers with fiq_* prefix + mesalar_* fallback ──────────────
 function getStorageItem(storage: Storage, key: string): string | null {
   try {

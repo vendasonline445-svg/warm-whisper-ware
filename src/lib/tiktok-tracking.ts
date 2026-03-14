@@ -329,17 +329,15 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
 
 export async function trackPageView() {
   const pixels = await loadPixels();
-  const ttq = (window as any).ttq;
-  if (!ttq) return;
 
   pixels.forEach((px) => {
-    try {
-      const instance = ttq.instance(px.pixel_id);
-      if (instance) {
+    const instance = getTTQInstance(px.pixel_id);
+    if (instance) {
+      try {
         instance.page();
+      } catch (e) {
+        console.warn(`${DEBUG} page() error for ${px.pixel_id}:`, e);
       }
-    } catch (e) {
-      console.warn(`${DEBUG} page() error for ${px.pixel_id}:`, e);
     }
   });
   console.log(`${DEBUG} page() fired on ${pixels.length} pixel(s)`);
