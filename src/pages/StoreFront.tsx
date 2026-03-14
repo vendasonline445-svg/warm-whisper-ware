@@ -38,29 +38,30 @@ export default function StoreFront() {
           : <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">Sem foto</div>
         }
         {topBadge && (
-          <div className="absolute top-1 left-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded font-bold">
+          <div className="absolute top-1.5 left-1.5 bg-[#FF4C6A] text-white text-[10px] px-2 py-0.5 rounded font-bold leading-tight">
             {topBadge}
           </div>
         )}
       </div>
-      <div className="p-2">
-        <p className="text-xs text-gray-700 line-clamp-2 leading-tight mb-1 min-h-[2.5rem]">
+      <div className="p-2.5">
+        <p className="text-xs text-gray-800 line-clamp-2 leading-tight mb-1.5 min-h-[2.5rem] font-medium">
           {p.name}
         </p>
-        <p className="text-base font-bold text-red-500">{fmt(p.price_cents)}</p>
+        <div className="flex items-baseline gap-1">
+          <span className="text-[10px] text-[#FF4C6A] font-medium">R$</span>
+          <span className="text-lg font-bold text-[#FF4C6A] leading-none">{(p.price_cents/100).toFixed(2).replace('.',',')}</span>
+        </div>
         {p.original_price_cents && (
-          <div className="flex items-center gap-1">
-            <p className="text-xs text-gray-400 line-through">{fmt(p.original_price_cents)}</p>
-            <span className="text-xs bg-red-500 text-white px-1 rounded font-medium">
-              {discount(p)}% OFF
-            </span>
+          <p className="text-[11px] text-gray-400 line-through">{fmt(p.original_price_cents)}</p>
+        )}
+        {discount(p) > 0 && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="text-[10px] text-[#FF4C6A]">🏷️</span>
+            <span className="text-[11px] text-[#FF4C6A] font-semibold">{discount(p)}% OFF</span>
           </div>
         )}
         {p.sold_count > 0 && (
-          <p className="text-xs text-gray-400 mt-0.5">{p.sold_count.toLocaleString("pt-BR")} vendido(s)</p>
-        )}
-        {p.free_shipping && (
-          <p className="text-xs text-green-600 font-medium mt-0.5">Cupom frete grátis</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">{p.sold_count.toLocaleString("pt-BR")} vendido(s)</p>
         )}
       </div>
     </div>
@@ -68,10 +69,13 @@ export default function StoreFront() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header da loja */}
+      {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        {/* Barra de busca */}
+        {/* Top bar */}
         <div className="flex items-center gap-2 px-3 py-2">
+          <button className="text-gray-600 p-1">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          </button>
           <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1.5">
             <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -94,45 +98,45 @@ export default function StoreFront() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             {totalItems > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FF4C6A] text-white text-[10px] rounded-full flex items-center justify-center font-bold">
                 {totalItems}
               </span>
             )}
           </button>
         </div>
 
-        {/* Info da loja */}
+        {/* Store info */}
         <div className="flex items-center justify-between px-3 pb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-              AT
+          <div className="flex items-center gap-2.5">
+            <div className="w-11 h-11 bg-gradient-to-br from-pink-400 to-orange-400 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              AC
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-800">Achadinhos TikTok</p>
+              <p className="text-sm font-semibold text-gray-800">Achadinhos Casa Shop</p>
               <p className="text-xs text-gray-500">{products.reduce((s,p)=>s+(p.sold_count||0),0).toLocaleString("pt-BR")} vendido(s)</p>
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="px-3 py-1 bg-orange-500 text-white text-xs rounded font-medium">Seguir</button>
-            <button className="px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded">Mensagem</button>
+            <button className="px-4 py-1.5 bg-[#FF4C6A] text-white text-xs rounded font-medium">Seguir</button>
+            <button className="px-4 py-1.5 border border-gray-300 text-gray-600 text-xs rounded">Mensagem</button>
           </div>
         </div>
 
-        {/* Banners de cupom */}
+        {/* Coupon banners */}
         <div className="flex gap-2 px-3 pb-2 overflow-x-auto">
-          <div className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded px-2 py-1.5 min-w-[160px] shrink-0">
+          <div className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 min-w-[180px] shrink-0">
             <div>
               <p className="text-xs font-semibold text-orange-700">Cupom de frete grátis</p>
-              <p className="text-xs text-orange-600">Sem gasto mínimo</p>
+              <p className="text-[11px] text-orange-600">Sem gasto mínimo</p>
             </div>
-            <button className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded ml-2">Resgatar</button>
+            <button className="text-xs bg-[#FF4C6A] text-white px-2.5 py-1 rounded ml-2 font-medium">Resgatar</button>
           </div>
-          <div className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded px-2 py-1.5 min-w-[160px] shrink-0">
+          <div className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 min-w-[180px] shrink-0">
             <div>
               <p className="text-xs font-semibold text-orange-700">Até 85% OFF</p>
-              <p className="text-xs text-orange-600">Em produtos selecionados</p>
+              <p className="text-[11px] text-orange-600">Em produtos selecionados</p>
             </div>
-            <button className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded ml-2">Resgatar</button>
+            <button className="text-xs bg-[#FF4C6A] text-white px-2.5 py-1 rounded ml-2 font-medium">Resgatar</button>
           </div>
         </div>
 
@@ -148,7 +152,7 @@ export default function StoreFront() {
               onClick={() => setTab(t.id as any)}
               className={`flex-1 py-2.5 text-xs font-medium border-b-2 transition-colors ${
                 tab === t.id
-                  ? 'border-orange-500 text-orange-500'
+                  ? 'border-[#FF4C6A] text-[#FF4C6A]'
                   : 'border-transparent text-gray-500'
               }`}
             >
@@ -159,12 +163,12 @@ export default function StoreFront() {
       </div>
 
       <div className="p-3 space-y-4">
-        {/* Principais produtos (TOP 1, 2, 3) */}
+        {/* Featured products (TOP 1, 2, 3) */}
         {tab === 'home' && featured.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-semibold text-gray-800">Principais produtos</h2>
-              <button className="text-xs text-orange-500">›</button>
+              <button className="text-xs text-gray-400">›</button>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {featured.slice(0, 3).map((p, i) => (
@@ -174,12 +178,14 @@ export default function StoreFront() {
           </div>
         )}
 
-        {/* Recomendado para você */}
+        {/* Recommended */}
         <div>
           {tab === 'home' && (
-            <h2 className="text-sm font-semibold text-gray-800 text-center mb-3">
-              Recomendado para você
-            </h2>
+            <div className="flex items-center justify-center mb-3">
+              <div className="flex-1 h-px bg-gray-200" />
+              <h2 className="text-sm font-semibold text-gray-800 px-3">Recomendado para você</h2>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
           )}
           <div className="grid grid-cols-2 gap-2">
             {filtered.map(p => (
@@ -195,22 +201,29 @@ export default function StoreFront() {
         )}
       </div>
 
-      {/* Espaço para bottom nav */}
+      {/* Spacer for bottom nav */}
       <div className="h-16" />
 
-      {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex">
-        <button className="flex-1 py-3 text-xs text-center text-orange-500 font-medium">🏠 Loja</button>
-        <button onClick={() => navigate("/carrinho")} className="flex-1 py-3 text-xs text-center text-gray-500 relative">
-          🛒 Carrinho
+      {/* Bottom nav - matching reference */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-50">
+        <button className="flex-1 flex flex-col items-center py-2.5 text-[#FF4C6A]">
+          <svg className="w-5 h-5 mb-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          <span className="text-[10px] font-medium">Loja</span>
+        </button>
+        <button className="flex-1 flex flex-col items-center py-2.5 text-gray-400">
+          <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          <span className="text-[10px]">Chat</span>
+        </button>
+        <button onClick={() => navigate("/carrinho")} className="flex-1 flex flex-col items-center py-2.5 text-gray-400 relative">
+          <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <span className="text-[10px]">Carrinho</span>
           {totalItems > 0 && (
-            <span className="absolute top-1.5 right-6 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+            <span className="absolute top-1 right-4 w-4 h-4 bg-[#FF4C6A] text-white text-[10px] rounded-full flex items-center justify-center font-bold">
               {totalItems}
             </span>
           )}
-        </button>
-        <button onClick={() => navigate("/loja-admin")} className="flex-1 py-3 text-xs text-center text-gray-500">
-          ⚙️ Admin
         </button>
       </nav>
     </div>
