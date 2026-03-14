@@ -41,6 +41,30 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          campaign_external_id: string | null
+          campaign_name: string
+          created_at: string
+          id: string
+          platform: string
+        }
+        Insert: {
+          campaign_external_id?: string | null
+          campaign_name: string
+          created_at?: string
+          id?: string
+          platform?: string
+        }
+        Update: {
+          campaign_external_id?: string | null
+          campaign_name?: string
+          created_at?: string
+          id?: string
+          platform?: string
+        }
+        Relationships: []
+      }
       checkout_leads: {
         Row: {
           bairro: string | null
@@ -136,6 +160,59 @@ export type Database = {
           uf?: string | null
         }
         Relationships: []
+      }
+      clicks: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string | null
+          tracking_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id?: string | null
+          tracking_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string | null
+          tracking_id?: string | null
+        }
+        Relationships: []
+      }
+      creatives: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          creative_external_id: string | null
+          creative_name: string
+          id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          creative_external_id?: string | null
+          creative_name: string
+          id?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          creative_external_id?: string | null
+          creative_name?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creatives_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       events: {
         Row: {
@@ -338,7 +415,9 @@ export type Database = {
       }
       sessions: {
         Row: {
+          campaign_id: string | null
           created_at: string
+          creative_id: string | null
           device: string | null
           referrer: string | null
           session_id: string
@@ -351,7 +430,9 @@ export type Database = {
           visitor_id: string
         }
         Insert: {
+          campaign_id?: string | null
           created_at?: string
+          creative_id?: string | null
           device?: string | null
           referrer?: string | null
           session_id: string
@@ -364,7 +445,9 @@ export type Database = {
           visitor_id: string
         }
         Update: {
+          campaign_id?: string | null
           created_at?: string
+          creative_id?: string | null
           device?: string | null
           referrer?: string | null
           session_id?: string
@@ -377,6 +460,20 @@ export type Database = {
           visitor_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sessions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "creatives"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sessions_visitor_id_fkey"
             columns: ["visitor_id"]
@@ -412,6 +509,48 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      tracked_links: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          creative_id: string | null
+          id: string
+          tracking_id: string
+          url: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          creative_id?: string | null
+          id?: string
+          tracking_id: string
+          url: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          creative_id?: string | null
+          id?: string
+          tracking_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracked_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracked_links_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "creatives"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tracking_settings: {
         Row: {
