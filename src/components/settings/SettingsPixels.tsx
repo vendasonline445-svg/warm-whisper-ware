@@ -218,6 +218,12 @@ export default function SettingsPixels() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Diagnóstico de Qualidade */}
+      <div className="mt-6 border-t border-border pt-6">
+        <h3 className="text-sm font-semibold mb-4">Diagnóstico de Qualidade (TikTok EMQ)</h3>
+        <AdminTikTokTab diagnosticsOnly={true} />
+      </div>
     </div>
   );
 }
