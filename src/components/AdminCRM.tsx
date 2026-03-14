@@ -1079,20 +1079,22 @@ export default function AdminCRM() {
       });
     }
 
-    // Add matched user events
-    lead.events.forEach(e => {
-      const cfg = EVENT_LABELS[e.event_type];
-      if (cfg) {
-        const detail = e.event_type === "scroll_depth" ? `${e.event_data?.percent || 0}%` : undefined;
-        items.push({
-          time: e.created_at,
-          label: cfg.label,
-          icon: cfg.icon,
-          color: cfg.color,
-          detail,
-        });
-      }
-    });
+    // Add matched events from tracker
+    const vid = lead.visitorId;
+    if (vid) {
+      const matchedEvents = trackerEvents.filter(e => e.visitor_id === vid);
+      matchedEvents.forEach(e => {
+        const cfg = EVENT_LABELS[e.event_name];
+        if (cfg) {
+          items.push({
+            time: e.created_at,
+            label: cfg.label,
+            icon: Eye,
+            color: cfg.color,
+          });
+        }
+      });
+    }
 
     return items.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
   };
