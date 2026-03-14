@@ -213,8 +213,8 @@ function AdminContent() {
         if (cardLeads.length > 0) lookupBins(cardLeads);
       }
 
-      // Deduplicate events by visitor_id (same logic as CRM)
-      const allEvents = (eventsRes.data || []) as { event_type: string; event_data: any; created_at: string }[];
+      // Deduplicate events by visitor_id (unified events table)
+      const allEvents = (eventsRes.data || []) as { event_name: string; event_data: any; created_at: string; visitor_id: string }[];
       const visitorIds = new Set<string>();
       const buyClickIds = new Set<string>();
       const imgClickIds = new Set<string>();
@@ -227,27 +227,26 @@ function AdminContent() {
       const activeIds = new Set<string>();
 
       allEvents.forEach(e => {
-        const vid = e.event_data?.visitor_id || e.event_data?.session_id || "";
+        const vid = e.visitor_id || e.event_data?.visitor_id || "";
         const key = String(vid);
         
-        if (e.event_type === "page_view" || e.event_type === "visitor_session") {
+        if (e.event_name === "page_view" || e.event_name === "view_content") {
           if (key) visitorIds.add(key);
         }
-        if (e.event_type === "click_buy_button" && key) buyClickIds.add(key);
-        if (e.event_type === "click_product_image" && key) imgClickIds.add(key);
-        if (e.event_type === "checkout_initiated" && key) checkoutIds.add(key);
-        if ((e.event_type === "pix_generated" || e.event_type === "payment_started") && key) pixGenIds.add(key);
-        if ((e.event_type === "payment_confirmed" || e.event_type === "pix_paid") && key) paidIds.add(key);
-        if (e.event_type === "scroll_depth") {
+        if ((e.event_name === "click_buy" || e.event_name === "add_to_cart") && key) buyClickIds.add(key);
+        if (e.event_name === "view_content" && key) imgClickIds.add(key);
+        if ((e.event_name === "checkout_start" || e.event_name === "checkout_started") && key) checkoutIds.add(key);
+        if ((e.event_name === "pix_generated" || e.event_name === "add_payment_info") && key) pixGenIds.add(key);
+        if ((e.event_name === "purchase" || e.event_name === "payment_confirmed" || e.event_name === "pix_paid") && key) paidIds.add(key);
+        if (e.event_name === "view_content") {
           const pct = typeof e.event_data === "object" && e.event_data !== null ? Number(e.event_data.percent || 0) : 0;
-          scrollTotal += pct;
-          scrollCount++;
+          if (pct > 0) { scrollTotal += pct; scrollCount++; }
         }
         // Active in last hour
         if (key && new Date(e.created_at).getTime() > recentOneHour) activeIds.add(key);
       });
 
-      // Use max between page_views count and deduped visitor_ids for consistency
+      // Use events-based counts
       const dedupedVisitors = Math.max(visitorsPageRes.count || 0, visitorIds.size);
       const dedupedCheckouts = Math.max(checkoutsPageRes.count || 0, checkoutIds.size);
 
