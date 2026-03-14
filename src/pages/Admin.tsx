@@ -440,7 +440,7 @@ function AdminContent() {
         onExportCSV={exportCSV}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(d => !d)}
-        onLogout={() => { sessionStorage.removeItem("admin_auth"); setAuthenticated(false); }}
+        onLogout={() => { supabase.auth.signOut(); }}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(c => !c)}
       />
