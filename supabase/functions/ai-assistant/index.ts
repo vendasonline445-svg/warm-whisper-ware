@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -8,12 +10,36 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const { messages, context, mode } = await req.json();
+  const { messages, context, mode, client_id } = await req.json();
 
-  const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+  // Try to get client-specific key from integration_settings first
+  let ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    const query = adminClient
+      .from('integration_settings')
+      .select('config')
+      .eq('integration_key', 'anthropic_api_key_secure')
+      .eq('enabled', true);
+
+    if (client_id) query.eq('client_id', client_id);
+
+    const { data } = await query.maybeSingle();
+    const config = data?.config as Record<string, any> | null;
+    if (config?.encrypted_key) {
+      ANTHROPIC_API_KEY = config.encrypted_key;
+    }
+  } catch {
+    // Fall back to env secret
+  }
+
   if (!ANTHROPIC_API_KEY) {
     return new Response(
-      JSON.stringify({ error: 'ANTHROPIC_API_KEY não configurada' }),
+      JSON.stringify({ error: 'ANTHROPIC_API_KEY não configurada. Configure em Settings → Integrações.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

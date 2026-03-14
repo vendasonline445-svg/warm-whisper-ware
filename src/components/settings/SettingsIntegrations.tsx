@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plug, Save, Settings2, CheckCircle2 } from "lucide-react";
+import { Plug, Save, Settings2, CheckCircle2, Trash2, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 interface IntegrationSetting {
   id: string;
@@ -16,6 +17,7 @@ interface IntegrationSetting {
   name: string;
   enabled: boolean;
   config: Record<string, any>;
+  client_id: string | null;
 }
 
 interface IntegrationDef {
@@ -66,22 +68,27 @@ const GROUPS: Record<string, string> = {
   analytics: "Analytics",
   heatmaps: "Heatmaps",
   tracking: "Tracking Externo",
-  ai: "Anthropic AI",
 };
 
 export default function SettingsIntegrations() {
+  const { profile } = useAuth();
+  const clientId = profile?.client_id;
+
   const [settings, setSettings] = useState<IntegrationSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [editKey, setEditKey] = useState<string | null>(null);
   const [editConfig, setEditConfig] = useState<Record<string, any>>({});
-  const [anthropicConfigured, setAnthropicConfigured] = useState(false);
+
+  // Anthropic state
   const [anthropicKey, setAnthropicKey] = useState("");
-  const [savingAnthropic, setSavingAnthropic] = useState(false);
+  const [anthropicHint, setAnthropicHint] = useState<string | null>(null);
+  const [anthropicEditing, setAnthropicEditing] = useState(false);
+  const [anthropicSaving, setAnthropicSaving] = useState(false);
 
   useEffect(() => {
     loadSettings();
-    checkAnthropicKey();
-  }, []);
+    loadAnthropicHint();
+  }, [clientId]);
 
   const loadSettings = async () => {
     setLoading(true);
@@ -91,16 +98,18 @@ export default function SettingsIntegrations() {
     setLoading(false);
   };
 
-  const checkAnthropicKey = async () => {
-    // Try calling ai-assistant with an empty request to check if key is set
-    try {
-      const { error } = await supabase.functions.invoke("ai-assistant", {
-        body: { messages: [{ role: "user", content: "ping" }], context: null, mode: "assistente" },
-      });
-      // If no error about key, it's configured
-      setAnthropicConfigured(!error || !error.message?.includes("ANTHROPIC_API_KEY"));
-    } catch {
-      setAnthropicConfigured(false);
+  const loadAnthropicHint = async () => {
+    const query = supabase
+      .from("integration_settings")
+      .select("config")
+      .eq("integration_key", "anthropic_ai");
+    
+    if (clientId) query.eq("client_id", clientId);
+    
+    const { data } = await query.maybeSingle();
+    const config = data?.config as Record<string, any> | null;
+    if (config?.api_key_hint) {
+      setAnthropicHint(config.api_key_hint);
     }
   };
 
@@ -138,6 +147,60 @@ export default function SettingsIntegrations() {
       await supabase.from("integration_settings").update({ enabled: !existing.enabled }).eq("id", existing.id);
       loadSettings();
     }
+  };
+
+  // Anthropic key management
+  const saveAnthropicKey = async () => {
+    if (!anthropicKey.startsWith("sk-ant-")) {
+      toast.error("A chave deve começar com sk-ant-");
+      return;
+    }
+    setAnthropicSaving(true);
+
+    try {
+      const { error } = await supabase.functions.invoke("save-anthropic-key", {
+        body: { api_key: anthropicKey, client_id: clientId },
+      });
+
+      if (error) throw error;
+
+      const hint = "..." + anthropicKey.slice(-8);
+      await supabase.from("integration_settings").upsert(
+        {
+          integration_key: "anthropic_ai",
+          name: "Claude AI",
+          config: { api_key_hint: hint, status: "configured" },
+          enabled: true,
+          client_id: clientId,
+        },
+        { onConflict: "integration_key" }
+      );
+
+      setAnthropicHint(hint);
+      setAnthropicKey("");
+      setAnthropicEditing(false);
+      toast.success("API Key salva com sucesso!");
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao salvar a chave");
+    } finally {
+      setAnthropicSaving(false);
+    }
+  };
+
+  const removeAnthropicKey = async () => {
+    await supabase.from("integration_settings").upsert(
+      {
+        integration_key: "anthropic_ai",
+        name: "Claude AI",
+        config: { status: "not_configured" },
+        enabled: false,
+        client_id: clientId,
+      },
+      { onConflict: "integration_key" }
+    );
+    setAnthropicHint(null);
+    setAnthropicEditing(false);
+    toast.success("API Key removida");
   };
 
   const groupedIntegrations = Object.keys(GROUPS).map(group => ({
@@ -195,7 +258,7 @@ export default function SettingsIntegrations() {
             </div>
           ))}
 
-          {/* Anthropic AI Section */}
+          {/* Anthropic AI Section — single section */}
           <div>
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Anthropic AI</h2>
             <Card>
@@ -213,33 +276,62 @@ export default function SettingsIntegrations() {
                       </p>
                     </div>
                   </div>
-                  {anthropicConfigured && (
-                    <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px] gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> Configurada
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {anthropicHint && !anthropicEditing && (
+                      <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px] gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Configurada
+                      </Badge>
+                    )}
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setAnthropicEditing(!anthropicEditing)}>
+                      {anthropicEditing ? <X className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
                 </div>
-                {!anthropicConfigured && (
-                  <div className="flex gap-2">
+
+                {/* Show saved key hint or edit form */}
+                {anthropicHint && !anthropicEditing ? (
+                  <div className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
+                    <span className="text-xs font-mono text-muted-foreground">
+                      sk-ant-••••••••{anthropicHint}
+                    </span>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setAnthropicEditing(true)}>
+                        Trocar
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive hover:text-destructive" onClick={removeAnthropicKey}>
+                        <Trash2 className="h-3 w-3 mr-1" /> Remover
+                      </Button>
+                    </div>
+                  </div>
+                ) : (anthropicEditing || !anthropicHint) && (
+                  <div className="space-y-2">
                     <Input
                       type="password"
-                      placeholder="sk-ant-..."
+                      placeholder="sk-ant-api03-..."
                       value={anthropicKey}
                       onChange={(e) => setAnthropicKey(e.target.value)}
-                      className="text-sm"
+                      className="text-sm font-mono"
                     />
-                    <Button
-                      size="sm"
-                      disabled={!anthropicKey.trim() || savingAnthropic}
-                      onClick={async () => {
-                        setSavingAnthropic(true);
-                        toast.info("A chave da API precisa ser configurada nas secrets do projeto. Entre em contato com o administrador.");
-                        setSavingAnthropic(false);
-                      }}
-                      className="gap-1"
-                    >
-                      <Save className="h-3.5 w-3.5" /> Salvar
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={saveAnthropicKey}
+                        disabled={anthropicSaving || !anthropicKey}
+                        className="flex-1 gap-1"
+                        size="sm"
+                      >
+                        <Save className="h-3.5 w-3.5" />
+                        {anthropicSaving ? "Salvando..." : anthropicHint ? "Atualizar chave" : "Salvar chave"}
+                      </Button>
+                      {anthropicEditing && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setAnthropicEditing(false); setAnthropicKey(""); }}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 )}
               </CardContent>
