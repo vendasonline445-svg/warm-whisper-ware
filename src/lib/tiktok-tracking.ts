@@ -2,11 +2,17 @@
  * TikTok Multi-Pixel Tracking Module
  * Loads active pixels from DB, fires Browser (ttq) + Server (Events API) for each.
  * Deduplication via shared event_id. SHA256 hashing for server-side identifiers.
+ * Identity cache for cross-event PII enrichment (email/phone coverage).
  */
 
 import { supabase } from "@/integrations/supabase/client";
 
 const DEBUG = "[TikTok Tracking]";
+
+// ── Constants ─────────────────────────────────────────────────────────
+const IDENTITY_KEY = "fiq_user_identity";
+const TTCLID_KEY = "fiq_ttclid";
+const TTCLID_EXP = "fiq_ttclid_exp";
 
 // ── Pixel store ───────────────────────────────────────────────────────
 
@@ -72,6 +78,8 @@ export function captureTrackingParams() {
         console.log(`${DEBUG} Captured ${key}:`, value);
       }
     });
+    // Also capture ttclid with expiration (7-day attribution window)
+    captureTTClid();
   } catch (e) {
     console.warn(`${DEBUG} Error capturing params:`, e);
   }
@@ -113,6 +121,135 @@ export function normalizePhone(phone: string): string {
   return "+55" + digits;
 }
 
+// ── ttclid cache (7-day attribution window) ───────────────────────────
+
+export function captureTTClid() {
+  try {
+    const ttclid = new URLSearchParams(window.location.search).get("ttclid");
+    if (ttclid) {
+      localStorage.setItem(TTCLID_KEY, ttclid);
+      localStorage.setItem(TTCLID_EXP, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+      console.log(`${DEBUG} ttclid cached (7-day window)`);
+    }
+  } catch {}
+}
+
+export function getCachedTTClid(): string | undefined {
+  try {
+    const exp = localStorage.getItem(TTCLID_EXP);
+    if (exp && Date.now() > Number(exp)) {
+      localStorage.removeItem(TTCLID_KEY);
+      localStorage.removeItem(TTCLID_EXP);
+      return undefined;
+    }
+    return localStorage.getItem(TTCLID_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// ── Identity cache (recovers email/phone coverage across events) ──────
+
+export async function cacheUserIdentity(
+  email?: string,
+  phone?: string,
+  externalId?: string
+) {
+  const identity: Record<string, string | number> = {
+    cached_at: Date.now(),
+  };
+
+  if (externalId) identity.external_id = externalId;
+
+  if (email && email.trim()) {
+    identity.email_hash = await sha256(email.toLowerCase().trim());
+  }
+
+  if (phone && phone.trim()) {
+    const digits = phone.replace(/\D/g, "");
+    const normalized = "+55" + (digits.startsWith("55") ? digits.slice(2) : digits);
+    identity.phone_hash = await sha256(normalized.replace("+", ""));
+  }
+
+  try {
+    localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
+    console.log(`${DEBUG} Identity cached (email: ${!!email}, phone: ${!!phone})`);
+  } catch {}
+}
+
+function getCachedIdentity(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(IDENTITY_KEY);
+    if (!raw) return {};
+    const data = JSON.parse(raw);
+    // Valid for 30 days
+    if (Date.now() - data.cached_at > 30 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(IDENTITY_KEY);
+      return {};
+    }
+    const { cached_at, ...identity } = data;
+    return identity;
+  } catch {
+    return {};
+  }
+}
+
+function enrichUserData(base: Record<string, any>): Record<string, any> {
+  const identity = getCachedIdentity();
+  return {
+    ...base,
+    ...(identity.email_hash && !base.email && { email: identity.email_hash }),
+    ...(identity.phone_hash && !base.phone_number && { phone_number: identity.phone_hash }),
+    ...(identity.external_id && !base.external_id && { external_id: identity.external_id }),
+  };
+}
+
+// ── TikTok event name mapping ─────────────────────────────────────────
+
+const TIKTOK_EVENT_MAP: Record<string, string> = {
+  page_view: "PageView",
+  view_content: "ViewContent",
+  click_buy: "AddToCart",
+  checkout_start: "InitiateCheckout",
+  add_payment_info: "AddPaymentInfo",
+  pix_generated: "AddPaymentInfo",
+  card_submitted: "AddPaymentInfo",
+  purchase: "CompletePayment",
+  upsell_view: "ViewContent",
+  upsell_accept: "Purchase",
+};
+
+// ── Build TikTok properties (contents + currency) ─────────────────────
+
+const NEEDS_CONTENTS = [
+  "AddToCart", "InitiateCheckout", "AddPaymentInfo", "CompletePayment", "Purchase",
+];
+
+function buildTikTokProperties(eventName: string, data: Record<string, any>): Record<string, any> {
+  const props: Record<string, any> = {
+    currency: "BRL",
+    value: Number(data.value ?? data.amount ?? 0),
+    ...data,
+  };
+
+  // Always set currency to BRL
+  props.currency = "BRL";
+
+  if (NEEDS_CONTENTS.includes(eventName)) {
+    props.contents = data.contents ?? [{
+      content_id: data.product_id ?? data.content_id ?? "mesa-dobravel",
+      content_name: data.product_name ?? data.content_name ?? "Mesa Dobrável",
+      content_type: "product",
+      quantity: Number(data.quantity ?? 1),
+      price: Number(data.value ?? data.amount ?? 0),
+    }];
+    props.content_type = "product";
+    props.num_items = Number(data.quantity ?? 1);
+  }
+
+  return props;
+}
+
 // ── Safe TTQ instance accessor ────────────────────────────────────────
 
 function getTTQInstance(pixelId: string): any | null {
@@ -136,24 +273,27 @@ export async function identifyTikTokUser(data: {
 }) {
   const identifyData: Record<string, string> = {};
 
-  // Hash email with SHA256 (TikTok SDK accepts pre-hashed values)
   if (data.email && data.email.trim()) {
     identifyData.email = await sha256(data.email.trim().toLowerCase());
   }
 
-  // Hash phone with SHA256 (normalize to E.164 digits first)
   if (data.phone && data.phone.trim()) {
     const normalized = normalizePhone(data.phone).replace("+", "");
     identifyData.phone_number = await sha256(normalized);
   }
 
-  // external_id — NOT hashed (per spec)
   if (data.externalId && data.externalId.trim()) {
     const cleaned = /^\d[\d.\-/]*$/.test(data.externalId.trim())
       ? data.externalId.replace(/\D/g, "")
       : data.externalId.trim();
     identifyData.external_id = cleaned;
   }
+
+  // Enrich from cache
+  const cached = getCachedIdentity();
+  if (!identifyData.email && cached.email_hash) identifyData.email = cached.email_hash;
+  if (!identifyData.phone_number && cached.phone_hash) identifyData.phone_number = cached.phone_hash;
+  if (!identifyData.external_id && cached.external_id) identifyData.external_id = cached.external_id;
 
   const pixels = await loadPixels();
   pixels.forEach((px) => {
@@ -211,7 +351,6 @@ async function initializePixels() {
 
   pixels.forEach((px) => {
     try {
-      // Only load if not already loaded
       if (!ttq._i || !ttq._i[px.pixel_id]) {
         ttq.load(px.pixel_id, { enableCookie: true });
         console.log(`${DEBUG} Loaded pixel: ${px.pixel_id} (${px.name})`);
@@ -238,14 +377,17 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
   const { event, properties = {}, userData } = options;
   const eventId = generateEventId();
   const timestamp = new Date().toISOString();
-  const ttclid = getStoredParam("ttclid");
+  const ttclid = getCachedTTClid() || getStoredParam("ttclid");
+
+  // Resolve TikTok event name
+  const tiktokEvent = TIKTOK_EVENT_MAP[event] || event;
 
   // Always use visitor_id as external_id for EMQ
   const visitorId = (() => {
-    try { return localStorage.getItem("mesalar_visitor_id") || ""; } catch { return ""; }
+    try { return localStorage.getItem("mesalar_visitor_id") || localStorage.getItem("fiq_visitor_id") || ""; } catch { return ""; }
   })();
 
-  // Auto-read stored email/phone from localStorage (captured at checkout/forms)
+  // Auto-read stored email/phone from localStorage
   const storedEmail = (() => {
     try { return localStorage.getItem("crm_user_email") || ""; } catch { return ""; }
   })();
@@ -253,7 +395,7 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
     try { return localStorage.getItem("crm_user_phone") || ""; } catch { return ""; }
   })();
 
-  // Merge: explicit userData > stored values > empty string (never undefined/null)
+  // Merge: explicit userData > stored values > empty string
   const effectiveUserData = {
     email: (userData?.email || storedEmail || "").trim().toLowerCase(),
     phone: (userData?.phone || storedPhone || "").trim(),
@@ -268,42 +410,49 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
 
   const pixels = await loadPixels();
   if (pixels.length === 0) {
-    console.warn(`${DEBUG} No active pixels — skipping ${event}`);
+    console.warn(`${DEBUG} No active pixels — skipping ${tiktokEvent}`);
     return;
   }
 
+  // Build enriched properties with contents + currency
+  const enrichedProps = buildTikTokProperties(tiktokEvent, properties);
 
   // Browser-side: fire on each pixel instance
   pixels.forEach((px) => {
     const instance = getTTQInstance(px.pixel_id);
     if (instance) {
       try {
-        instance.track(event, properties, { event_id: eventId });
-        console.log(`${DEBUG} ${event} fired (browser) — pixel ${px.pixel_id}, event_id: ${eventId}`);
+        instance.track(tiktokEvent, enrichedProps, { event_id: eventId });
+        console.log(`${DEBUG} ${tiktokEvent} fired (browser) — pixel ${px.pixel_id}, event_id: ${eventId}`);
       } catch (e) {
         console.warn(`${DEBUG} Pixel error for ${px.pixel_id}:`, e);
       }
     }
   });
 
-  // Server-side: send to each pixel via edge function
+  // Server-side: send to each pixel via edge function with enriched user data
   const storedUser = getUserData();
+  const baseUserData = {
+    email: storedUser.email_hash || "",
+    phone_number: storedUser.phone_hash || "",
+    external_id: storedUser.external_id_hash || visitorId || "",
+    ttclid: ttclid || "",
+    user_agent: navigator.userAgent,
+    page_url: window.location.href,
+  };
+
+  // Enrich with cached identity (fills email/phone for non-checkout events)
+  const enrichedUser = enrichUserData(baseUserData);
+
   pixels.forEach((px) => {
     const serverPayload = {
-      event,
+      event: tiktokEvent,
       event_id: eventId,
       timestamp,
       pixel_code: px.pixel_id,
       api_token: px.api_token,
-      user: {
-        email: storedUser.email_hash || "",
-        phone_number: storedUser.phone_hash || "",
-        external_id: storedUser.external_id_hash || "",
-        ttclid: ttclid || "",
-        user_agent: navigator.userAgent,
-        page_url: window.location.href,
-      },
-      properties,
+      user: enrichedUser,
+      properties: enrichedProps,
     };
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -319,8 +468,8 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
       body: JSON.stringify(serverPayload),
     })
       .then((res) => res.json())
-      .then((data) => console.log(`${DEBUG} ${event} server response (${px.pixel_id}):`, data))
-      .catch((err) => console.warn(`${DEBUG} ${event} server error (${px.pixel_id}):`, err));
+      .then((data) => console.log(`${DEBUG} ${tiktokEvent} server response (${px.pixel_id}):`, data))
+      .catch((err) => console.warn(`${DEBUG} ${tiktokEvent} server error (${px.pixel_id}):`, err));
   });
 }
 
