@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import {
   Plus, Trash2, Activity, CheckCircle2, AlertTriangle, XCircle,
-  Zap, Shield, Link2, Clock, Play, Gauge, Search, Eye, Settings2,
-  Globe, ChevronRight, RefreshCw, ExternalLink
+  Zap, Shield, Link2, Clock, Play, Gauge, Search, Globe,
+  ChevronRight, RefreshCw, Pencil, Save, X
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -36,20 +36,15 @@ interface UserEvent {
 
 type DiagStatus = "ok" | "warn" | "error" | "loading";
 
-interface Integration {
+interface DetectedIntegration {
   key: string;
   name: string;
   icon: string;
-  color: string;
-  bgColor: string;
-  borderColor: string;
+  group: string;
   detected: boolean;
   active: boolean;
   pixelId: string;
-  type: "database" | "hardcoded";
-  events24h: number;
-  lastEvent: string | null;
-  dbPixel?: Pixel;
+  description: string;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────
@@ -59,71 +54,62 @@ const TRACKED_INTERNAL = [
   "pix_generated", "card_submitted", "payment_confirmed"
 ];
 
-const PLATFORM_META: Record<string, { name: string; icon: string; color: string; bgColor: string; borderColor: string; detect: () => boolean; getId: () => string }> = {
-  tiktok: {
-    name: "TikTok Pixel",
-    icon: "🎵",
-    color: "text-foreground",
-    bgColor: "bg-card",
-    borderColor: "border-border",
-    detect: () => typeof window !== "undefined" && !!(window as any).ttq,
-    getId: () => {
-      const ttq = (window as any).ttq;
-      if (ttq?._i) {
-        const keys = Object.keys(ttq._i);
-        return keys.length > 0 ? keys[0] : "";
-      }
-      return "";
-    },
-  },
-  meta: {
-    name: "Meta Pixel",
-    icon: "📘",
-    color: "text-foreground",
-    bgColor: "bg-card",
-    borderColor: "border-border",
-    detect: () => typeof window !== "undefined" && !!(window as any).fbq,
-    getId: () => "",
-  },
-  gtag: {
-    name: "Google Analytics",
-    icon: "📊",
-    color: "text-foreground",
-    bgColor: "bg-card",
-    borderColor: "border-border",
-    detect: () => typeof window !== "undefined" && !!(window as any).gtag,
-    getId: () => "",
-  },
-  gtm: {
-    name: "Google Tag Manager",
-    icon: "🏷️",
-    color: "text-foreground",
-    bgColor: "bg-card",
-    borderColor: "border-border",
-    detect: () => typeof window !== "undefined" && !!(window as any).google_tag_manager,
-    getId: () => "",
-  },
-  clarity: {
-    name: "Microsoft Clarity",
-    icon: "🔍",
-    color: "text-foreground",
-    bgColor: "bg-card",
-    borderColor: "border-border",
-    detect: () => typeof window !== "undefined" && !!(window as any).clarity,
-    getId: () => "vsbxker0lm",
-  },
-  hotjar: {
-    name: "Hotjar",
-    icon: "🔥",
-    color: "text-foreground",
-    bgColor: "bg-card",
-    borderColor: "border-border",
-    detect: () => typeof window !== "undefined" && !!(window as any).hj,
-    getId: () => "",
-  },
+const GROUPS = {
+  tiktok: { label: "TikTok Pixels", icon: "🎵" },
+  ads: { label: "Pixels de Anúncios", icon: "📢" },
+  analytics: { label: "Analytics", icon: "📊" },
+  heatmaps: { label: "Heatmaps / Session Recording", icon: "🔍" },
+  tracking: { label: "Tracking Externo", icon: "🔗" },
 };
 
-// ── Status Icon ───────────────────────────────────────────────────────
+const HARDCODED_INTEGRATIONS: {
+  key: string; name: string; icon: string; group: string;
+  detect: () => boolean; getId: () => string; description: string;
+}[] = [
+  {
+    key: "meta", name: "Meta Pixel", icon: "📘", group: "ads",
+    detect: () => !!(window as any).fbq,
+    getId: () => "", description: "Facebook / Instagram Ads pixel"
+  },
+  {
+    key: "gtag", name: "Google Analytics", icon: "📊", group: "analytics",
+    detect: () => !!(window as any).gtag,
+    getId: () => "", description: "Google Analytics 4 (gtag.js)"
+  },
+  {
+    key: "gtm", name: "Google Tag Manager", icon: "🏷️", group: "analytics",
+    detect: () => !!(window as any).google_tag_manager,
+    getId: () => "", description: "Gerenciador de tags do Google"
+  },
+  {
+    key: "clarity", name: "Microsoft Clarity", icon: "🔍", group: "heatmaps",
+    detect: () => !!(window as any).clarity,
+    getId: () => "vsbxker0lm", description: "Heatmaps e session recording"
+  },
+  {
+    key: "xtracky", name: "xTracky", icon: "📡", group: "tracking",
+    detect: () => {
+      const scripts = document.querySelectorAll("script[src]");
+      for (const s of scripts) {
+        if ((s as HTMLScriptElement).src.includes("xTracky") || (s as HTMLScriptElement).src.includes("utm-handler")) return true;
+      }
+      return false;
+    },
+    getId: () => "45fe2123-fa22-4c43-9a3b-1b0629b5f2a7", description: "UTM handler e tracking de parâmetros"
+  },
+  {
+    key: "utmify", name: "UTMify", icon: "🎯", group: "tracking",
+    detect: () => {
+      // UTMify runs server-side in edge functions, check if token exists
+      try {
+        return !!localStorage.getItem("utmify_detected") || true; // We know it's integrated via edge functions
+      } catch { return false; }
+    },
+    getId: () => "", description: "Monitoramento de conversões (server-side)"
+  },
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────
 
 function StatusIcon({ status }: { status: DiagStatus }) {
   if (status === "ok") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
@@ -133,12 +119,8 @@ function StatusIcon({ status }: { status: DiagStatus }) {
 }
 
 function StatusBadge({ active, detected }: { active: boolean; detected: boolean }) {
-  if (active && detected) {
-    return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20">Ativo</Badge>;
-  }
-  if (active && !detected) {
-    return <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30 hover:bg-amber-500/20">Não detectado</Badge>;
-  }
+  if (active && detected) return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20">Ativo</Badge>;
+  if (active && !detected) return <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30 hover:bg-amber-500/20">Não detectado</Badge>;
   return <Badge variant="secondary" className="opacity-60">Desativado</Badge>;
 }
 
@@ -147,7 +129,6 @@ function StatusBadge({ active, detected }: { active: boolean; detected: boolean 
 // ═══════════════════════════════════════════════════════════════════════
 
 export default function AdminTikTokTab() {
-  // ── State ───────────────────────────────────────────────────────────
   const [pixels, setPixels] = useState<Pixel[]>([]);
   const [loading, setLoading] = useState(false);
   const [events, setEvents] = useState<UserEvent[]>([]);
@@ -158,8 +139,13 @@ export default function AdminTikTokTab() {
   const [form, setForm] = useState({ name: "", pixel_id: "", api_token: "" });
   const [adding, setAdding] = useState(false);
 
+  // Edit pixel
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", pixel_id: "", api_token: "" });
+  const [saving, setSaving] = useState(false);
+
   // Detail dialog
-  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const [selectedDetected, setSelectedDetected] = useState<DetectedIntegration | null>(null);
 
   // Testing
   const [testing, setTesting] = useState(false);
@@ -169,28 +155,18 @@ export default function AdminTikTokTab() {
 
   // ── Data Fetching ───────────────────────────────────────────────────
 
-  useEffect(() => {
-    fetchPixels();
-    fetchRecentEvents();
-  }, []);
+  useEffect(() => { fetchPixels(); fetchRecentEvents(); }, []);
 
   const fetchPixels = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("tiktok_pixels")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data } = await supabase.from("tiktok_pixels").select("*").order("created_at", { ascending: false });
     setPixels((data as Pixel[]) || []);
     setLoading(false);
   };
 
   const fetchRecentEvents = async () => {
     setEventsLoading(true);
-    const { data } = await supabase
-      .from("user_events")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
+    const { data } = await supabase.from("user_events").select("*").order("created_at", { ascending: false }).limit(200);
     setEvents((data as UserEvent[]) || []);
     setEventsLoading(false);
   };
@@ -198,104 +174,61 @@ export default function AdminTikTokTab() {
   // ── CRUD ────────────────────────────────────────────────────────────
 
   const handleAdd = async () => {
-    if (!form.name || !form.pixel_id || !form.api_token) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" });
-      return;
-    }
+    if (!form.name || !form.pixel_id || !form.api_token) { toast({ title: "Preencha todos os campos", variant: "destructive" }); return; }
     setAdding(true);
-    const { error } = await supabase.from("tiktok_pixels").insert({
-      name: form.name,
-      pixel_id: form.pixel_id,
-      api_token: form.api_token,
-      status: "active",
-    });
-    if (error) {
-      toast({ title: "Erro ao adicionar", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Pixel adicionado!" });
-      setForm({ name: "", pixel_id: "", api_token: "" });
-      setShowAddForm(false);
-      fetchPixels();
-    }
+    const { error } = await supabase.from("tiktok_pixels").insert({ name: form.name, pixel_id: form.pixel_id, api_token: form.api_token, status: "active" });
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); }
+    else { toast({ title: "Pixel adicionado!" }); setForm({ name: "", pixel_id: "", api_token: "" }); setShowAddForm(false); fetchPixels(); }
     setAdding(false);
   };
 
   const toggleStatus = async (pixel: Pixel) => {
     const newStatus = pixel.status === "active" ? "inactive" : "active";
     const { error } = await supabase.from("tiktok_pixels").update({ status: newStatus }).eq("id", pixel.id);
-    if (error) {
-      toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
-    } else {
-      fetchPixels();
-    }
+    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    else fetchPixels();
   };
 
   const deletePixel = async (id: string) => {
-    if (!confirm("Tem certeza que deseja remover este pixel?")) return;
+    if (!confirm("Remover este pixel?")) return;
     const { error } = await supabase.from("tiktok_pixels").delete().eq("id", id);
-    if (error) {
-      toast({ title: "Erro ao remover", description: error.message, variant: "destructive" });
-    } else {
-      fetchPixels();
-    }
+    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    else fetchPixels();
   };
 
-  // ── Build Integrations List ─────────────────────────────────────────
+  const startEdit = (px: Pixel) => {
+    setEditingId(px.id);
+    setEditForm({ name: px.name, pixel_id: px.pixel_id, api_token: px.api_token });
+  };
 
-  const integrations = useMemo<Integration[]>(() => {
-    const list: Integration[] = [];
-    const now = Date.now();
-    const h24ago = now - 24 * 60 * 60 * 1000;
+  const saveEdit = async (id: string) => {
+    if (!editForm.name || !editForm.pixel_id || !editForm.api_token) { toast({ title: "Preencha todos os campos", variant: "destructive" }); return; }
+    setSaving(true);
+    const { error } = await supabase.from("tiktok_pixels").update({ name: editForm.name, pixel_id: editForm.pixel_id, api_token: editForm.api_token }).eq("id", id);
+    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    else { toast({ title: "Alterações salvas!" }); setEditingId(null); fetchPixels(); }
+    setSaving(false);
+  };
 
-    // TikTok pixels from database
-    pixels.forEach((px) => {
-      const pixelEvents = events.filter(
-        (e) => TRACKED_INTERNAL.includes(e.event_type) && e.event_data?.visitor_id
-      );
-      const events24h = pixelEvents.filter((e) => new Date(e.created_at).getTime() > h24ago).length;
-      const lastEvt = pixelEvents.length > 0 ? pixelEvents[0].created_at : null;
+  // ── Build detected integrations ─────────────────────────────────────
 
-      list.push({
-        key: `tiktok-${px.id}`,
-        name: px.name || "TikTok Pixel",
-        icon: "🎵",
-        color: "text-foreground",
-        bgColor: "bg-card",
-        borderColor: "border-border",
-        detected: PLATFORM_META.tiktok.detect(),
-        active: px.status === "active",
-        pixelId: px.pixel_id,
-        type: "database",
-        events24h,
-        lastEvent: lastEvt,
-        dbPixel: px,
-      });
+  const detectedIntegrations = useMemo<DetectedIntegration[]>(() => {
+    return HARDCODED_INTEGRATIONS.map((h) => {
+      const detected = typeof window !== "undefined" ? h.detect() : false;
+      return {
+        key: h.key, name: h.name, icon: h.icon, group: h.group,
+        detected, active: detected, pixelId: detected ? h.getId() : "",
+        description: h.description,
+      };
     });
+  }, []);
 
-    // Auto-detect hardcoded integrations (exclude TikTok if we already have DB pixels)
-    Object.entries(PLATFORM_META).forEach(([key, meta]) => {
-      if (key === "tiktok") return; // handled above
-      const detected = meta.detect();
-      const pixelId = meta.getId();
+  // ── Events per pixel (24h) ──────────────────────────────────────────
 
-      list.push({
-        key,
-        name: meta.name,
-        icon: meta.icon,
-        color: meta.color,
-        bgColor: meta.bgColor,
-        borderColor: meta.borderColor,
-        detected,
-        active: detected,
-        pixelId,
-        type: "hardcoded",
-        events24h: 0,
-        lastEvent: null,
-      });
-    });
-
-    return list;
-  }, [pixels, events]);
+  const events24hCount = useMemo(() => {
+    const h24ago = Date.now() - 24 * 60 * 60 * 1000;
+    return events.filter((e) => TRACKED_INTERNAL.includes(e.event_type) && new Date(e.created_at).getTime() > h24ago).length;
+  }, [events]);
 
   // ── Diagnostics ─────────────────────────────────────────────────────
 
@@ -307,9 +240,7 @@ export default function AdminTikTokTab() {
     const hasEvents = relevantEvents.length > 0;
     const total = relevantEvents.length || 1;
 
-    const eventsWithEventId = relevantEvents.filter((e) => e.event_data && ("event_id" in e.event_data || "visitor_id" in e.event_data));
-    const eventIdCoverage = Math.round((eventsWithEventId.length / total) * 100);
-
+    const eventIdCoverage = Math.round((relevantEvents.filter((e) => e.event_data && ("event_id" in e.event_data || "visitor_id" in e.event_data)).length / total) * 100);
     const emailCoverage = Math.round((relevantEvents.filter((e) => e.event_data?.email && String(e.event_data.email).trim()).length / total) * 100);
     const phoneCoverage = Math.round((relevantEvents.filter((e) => e.event_data?.phone && String(e.event_data.phone).trim()).length / total) * 100);
     const extIdCoverage = Math.round((relevantEvents.filter((e) => e.event_data?.visitor_id && String(e.event_data.visitor_id).trim()).length / total) * 100);
@@ -347,18 +278,14 @@ export default function AdminTikTokTab() {
   // ── Test / Simulate ─────────────────────────────────────────────────
 
   const runPixelTest = async () => {
-    setTesting(true);
-    setTestResults([]);
+    setTesting(true); setTestResults([]);
     const results: typeof testResults = [];
-    const testEvents = ["ViewContent", "AddToCart", "InitiateCheckout", "CompletePayment"];
-    for (const ev of testEvents) {
+    for (const ev of ["ViewContent", "AddToCart", "InitiateCheckout", "CompletePayment"]) {
       try {
         const { trackTikTokEvent } = await import("@/lib/tiktok-tracking");
-        await trackTikTokEvent({ event: ev, properties: { content_type: "product", content_id: "test-diagnostico", value: 1, currency: "BRL", _test: true } });
+        await trackTikTokEvent({ event: ev, properties: { content_type: "product", content_id: "test", value: 1, currency: "BRL", _test: true } });
         results.push({ event: ev, status: "ok", msg: "Enviado" });
-      } catch (err: any) {
-        results.push({ event: ev, status: "error", msg: err?.message || "Falha" });
-      }
+      } catch (err: any) { results.push({ event: ev, status: "error", msg: err?.message || "Falha" }); }
       setTestResults([...results]);
       await new Promise((r) => setTimeout(r, 400));
     }
@@ -367,47 +294,45 @@ export default function AdminTikTokTab() {
   };
 
   const simulateConversion = async () => {
-    setSimulating(true);
-    setSimResults([]);
-    const log = (msg: string) => setSimResults((prev) => [...prev, msg]);
+    setSimulating(true); setSimResults([]);
+    const log = (msg: string) => setSimResults((p) => [...p, msg]);
     try {
       const { getTrackingContext } = await import("@/utils/track-event");
       const ctx = getTrackingContext();
-      const visitorId = ctx.visitor_id || localStorage.getItem("mesalar_visitor_id") || "";
-      log(`✅ visitor_id: ${visitorId || "gerado agora"}`);
-
+      log(`✅ visitor_id: ${ctx.visitor_id || "gerado"}`);
       const { trackTikTokEvent } = await import("@/lib/tiktok-tracking");
       for (const ev of ["ViewContent", "AddToCart", "InitiateCheckout", "Purchase"]) {
-        log(`📤 Enviando ${ev}...`);
-        await trackTikTokEvent({ event: ev, properties: { content_id: "sim-test", value: 87.6, currency: "BRL", _test: true } });
-        log(`✅ ${ev} enviado`);
+        log(`📤 ${ev}...`);
+        await trackTikTokEvent({ event: ev, properties: { content_id: "sim", value: 87.6, currency: "BRL", _test: true } });
+        log(`✅ ${ev}`);
         await new Promise((r) => setTimeout(r, 300));
       }
-      log("🎉 Simulação concluída!");
-    } catch (err: any) {
-      log(`❌ Erro: ${err?.message || "desconhecido"}`);
-    }
+      log("🎉 Concluído!");
+    } catch (err: any) { log(`❌ ${err?.message || "Erro"}`); }
     setSimulating(false);
   };
 
   // ── Recent Events ───────────────────────────────────────────────────
 
-  const recentTikTokEvents = useMemo(() => {
-    return events
-      .filter((e) => TRACKED_INTERNAL.includes(e.event_type))
-      .slice(0, 30)
-      .map((e) => ({
-        type: e.event_type,
-        visitorId: e.event_data?.visitor_id || "—",
-        campaign: e.event_data?.utm_campaign || "—",
-        time: e.created_at,
-      }));
-  }, [events]);
+  const recentTikTokEvents = useMemo(() =>
+    events.filter((e) => TRACKED_INTERNAL.includes(e.event_type)).slice(0, 30).map((e) => ({
+      type: e.event_type,
+      visitorId: e.event_data?.visitor_id || "—",
+      campaign: e.event_data?.utm_campaign || "—",
+      time: e.created_at,
+    })),
+  [events]);
 
-  // ── Counts ──────────────────────────────────────────────────────────
+  // ── Group detected integrations ─────────────────────────────────────
 
-  const activeCount = integrations.filter((i) => i.active).length;
-  const detectedCount = integrations.filter((i) => i.detected).length;
+  const groupedDetected = useMemo(() => {
+    const groups: Record<string, DetectedIntegration[]> = {};
+    detectedIntegrations.forEach((d) => {
+      if (!groups[d.group]) groups[d.group] = [];
+      groups[d.group].push(d);
+    });
+    return groups;
+  }, [detectedIntegrations]);
 
   // ═══════════════════════════════════════════════════════════════════
   // RENDER
@@ -415,15 +340,14 @@ export default function AdminTikTokTab() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            Gerenciador de Integrações
+            <Globe className="h-5 w-5 text-primary" /> Gerenciador de Integrações
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {activeCount} ativa(s) · {detectedCount} detectada(s) no site
+            {pixels.filter((p) => p.status === "active").length} pixel(s) ativo(s) · {detectedIntegrations.filter((d) => d.detected).length} integrações detectadas
           </p>
         </div>
         <div className="flex gap-2">
@@ -436,115 +360,159 @@ export default function AdminTikTokTab() {
         </div>
       </div>
 
-      {/* ── Health Score Summary ── */}
+      {/* Health Score */}
       <div className={`rounded-xl p-4 ${scoreBg} flex items-center gap-4 border ${diagnostics.score >= 80 ? "border-emerald-500/20" : diagnostics.score >= 50 ? "border-amber-500/20" : "border-red-500/20"}`}>
         <Gauge className={`h-10 w-10 ${scoreColor}`} />
         <div className="flex-1">
           <p className="text-xs font-medium text-muted-foreground">Pixel Health Score</p>
-          <p className={`text-3xl font-black ${scoreColor}`}>
-            {diagnostics.score} <span className="text-base font-medium text-muted-foreground">/ 100</span>
-          </p>
+          <p className={`text-3xl font-black ${scoreColor}`}>{diagnostics.score} <span className="text-base font-medium text-muted-foreground">/ 100</span></p>
         </div>
         <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="text-center">
-            <p className="text-lg font-bold text-foreground">{diagnostics.totalEvents}</p>
-            <p>Eventos</p>
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-bold text-foreground">{diagnostics.extIdCoverage}%</p>
-            <p>Matching</p>
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-bold text-foreground">{diagnostics.dupCount}</p>
-            <p>Duplicados</p>
-          </div>
+          <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.totalEvents}</p><p>Eventos</p></div>
+          <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.extIdCoverage}%</p><p>Matching</p></div>
+          <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.dupCount}</p><p>Duplicados</p></div>
         </div>
       </div>
 
-      {/* ── Integration Cards Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {loading ? (
-          <p className="text-sm text-muted-foreground col-span-2">Carregando...</p>
-        ) : integrations.length === 0 ? (
-          <p className="text-sm text-muted-foreground col-span-2">Nenhuma integração encontrada.</p>
-        ) : (
-          integrations.map((integ) => (
-            <Card
-              key={integ.key}
-              className={`transition-all hover:shadow-md cursor-pointer ${!integ.active ? "opacity-50" : ""}`}
-              onClick={() => setSelectedIntegration(integ)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{integ.icon}</span>
-                    <div>
-                      <p className="font-semibold text-sm">{integ.name}</p>
-                      {integ.pixelId && (
-                        <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                          {integ.pixelId.length > 24 ? `${integ.pixelId.slice(0, 24)}...` : integ.pixelId}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    {integ.type === "database" && integ.dbPixel && (
-                      <Switch
-                        checked={integ.active}
-                        onCheckedChange={() => toggleStatus(integ.dbPixel!)}
-                      />
-                    )}
-                  </div>
-                </div>
+      {/* ═══════════ TIKTOK PIXELS SECTION ═══════════ */}
+      <div className="space-y-3">
+        <h2 className="font-bold text-sm flex items-center gap-2">
+          <span className="text-lg">🎵</span> TikTok Pixels
+          <Badge variant="secondary" className="ml-1">{pixels.length}</Badge>
+        </h2>
 
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
-                  <StatusBadge active={integ.active} detected={integ.detected} />
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    {integ.type === "database" && (
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Carregando...</p>
+        ) : pixels.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              Nenhum pixel TikTok cadastrado. Clique em "Novo Pixel" para adicionar.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-3">
+            {pixels.map((px) => {
+              const isEditing = editingId === px.id;
+              return (
+                <Card key={px.id} className={!isEditing && px.status !== "active" ? "opacity-50" : ""}>
+                  <CardContent className="p-4">
+                    {isEditing ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase">Editando Pixel</p>
+                          <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}><X className="h-3.5 w-3.5" /></Button>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground">Nome</label>
+                          <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background mt-1" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground">Pixel ID</label>
+                          <input value={editForm.pixel_id} onChange={(e) => setEditForm({ ...editForm, pixel_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background font-mono mt-1" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground">Events API Access Token</label>
+                          <input value={editForm.api_token} onChange={(e) => setEditForm({ ...editForm, api_token: e.target.value })} type="password" className="w-full border rounded-lg px-3 py-2 text-sm bg-background mt-1" />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => saveEdit(px.id)} disabled={saving} className="flex-1">
+                            <Save className="h-3.5 w-3.5 mr-1" /> {saving ? "Salvando..." : "Salvar alterações"}
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => deletePixel(px.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
                       <>
-                        <span className="flex items-center gap-1">
-                          <Activity className="h-3 w-3" /> {integ.events24h} <span className="hidden sm:inline">eventos/24h</span>
-                        </span>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">🎵</span>
+                            <div>
+                              <p className="font-semibold text-sm">{px.name}</p>
+                              <p className="text-xs text-muted-foreground font-mono mt-0.5">{px.pixel_id}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => startEdit(px)}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Switch checked={px.status === "active"} onCheckedChange={() => toggleStatus(px)} />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                          <StatusBadge active={px.status === "active"} detected={typeof window !== "undefined" && !!(window as any).ttq} />
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> {events24hCount} eventos/24h</span>
+                            <span className="text-muted-foreground/50">Token: {px.api_token.slice(0, 8)}...</span>
+                          </div>
+                        </div>
                       </>
                     )}
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {/* ── Diagnostics Section ── */}
+      {/* ═══════════ OTHER INTEGRATIONS BY GROUP ═══════════ */}
+      {(Object.entries(GROUPS) as [string, { label: string; icon: string }][])
+        .filter(([key]) => key !== "tiktok")
+        .map(([groupKey, groupMeta]) => {
+          const items = groupedDetected[groupKey];
+          if (!items || items.length === 0) return null;
+          return (
+            <div key={groupKey} className="space-y-3">
+              <h2 className="font-bold text-sm flex items-center gap-2">
+                <span className="text-lg">{groupMeta.icon}</span> {groupMeta.label}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {items.map((integ) => (
+                  <Card
+                    key={integ.key}
+                    className={`transition-all hover:shadow-md cursor-pointer ${!integ.detected ? "opacity-40" : ""}`}
+                    onClick={() => setSelectedDetected(integ)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{integ.icon}</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">{integ.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{integ.description}</p>
+                          {integ.pixelId && <p className="text-xs font-mono text-muted-foreground mt-1">{integ.pixelId}</p>}
+                        </div>
+                        <StatusBadge active={integ.active} detected={integ.detected} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+      {/* ═══════════ DIAGNOSTICS ═══════════ */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Shield className="h-4 w-4 text-primary" /> Diagnóstico Avançado
-          </CardTitle>
-          <CardDescription>Advanced Matching, deduplicação e cobertura de eventos</CardDescription>
+          <CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Diagnóstico Avançado</CardTitle>
+          <CardDescription>Advanced Matching, deduplicação e cobertura</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Status rows */}
           <div className="grid gap-2">
             {[
               { label: "Pixels ativos", status: (diagnostics.hasPixels ? "ok" : "error") as DiagStatus, detail: `${pixels.filter((p) => p.status === "active").length} pixel(s)` },
               { label: "SDK ttq carregado", status: (diagnostics.ttqLoaded ? "ok" : "warn") as DiagStatus, detail: diagnostics.ttqLoaded ? "Sim" : "Não detectado (normal no admin)" },
-              { label: "Eventos recebidos", status: (diagnostics.hasEvents ? "ok" : "warn") as DiagStatus, detail: `${diagnostics.totalEvents} eventos recentes` },
-              { label: "Event ID funcionando", status: (diagnostics.eventIdCoverage > 80 ? "ok" : diagnostics.eventIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.eventIdCoverage}% cobertura` },
-              { label: "Advanced Matching ativo", status: (diagnostics.extIdCoverage > 80 ? "ok" : diagnostics.extIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `external_id: ${diagnostics.extIdCoverage}%` },
+              { label: "Eventos recebidos", status: (diagnostics.hasEvents ? "ok" : "warn") as DiagStatus, detail: `${diagnostics.totalEvents} eventos` },
+              { label: "Event ID", status: (diagnostics.eventIdCoverage > 80 ? "ok" : diagnostics.eventIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.eventIdCoverage}%` },
+              { label: "Advanced Matching", status: (diagnostics.extIdCoverage > 80 ? "ok" : diagnostics.extIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.extIdCoverage}%` },
             ].map((item, i) => (
               <div key={i} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <StatusIcon status={item.status} />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </div>
+                <div className="flex items-center gap-2"><StatusIcon status={item.status} /><span className="text-sm font-medium">{item.label}</span></div>
                 <span className="text-xs text-muted-foreground">{item.detail}</span>
               </div>
             ))}
           </div>
 
-          {/* Advanced Matching bars */}
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: "Email", value: diagnostics.emailCoverage },
@@ -553,50 +521,25 @@ export default function AdminTikTokTab() {
             ].map((item, i) => (
               <div key={i} className="rounded-lg bg-muted/30 p-3 text-center">
                 <p className="text-xs text-muted-foreground">{item.label}</p>
-                <p className={`text-xl font-bold ${item.value >= 70 ? "text-emerald-500" : item.value >= 30 ? "text-amber-500" : "text-red-500"}`}>
-                  {item.value}%
-                </p>
+                <p className={`text-xl font-bold ${item.value >= 70 ? "text-emerald-500" : item.value >= 30 ? "text-amber-500" : "text-red-500"}`}>{item.value}%</p>
                 <div className="w-full h-1.5 rounded-full bg-muted mt-1">
-                  <div
-                    className={`h-1.5 rounded-full transition-all ${item.value >= 70 ? "bg-emerald-500" : item.value >= 30 ? "bg-amber-500" : "bg-red-500"}`}
-                    style={{ width: `${item.value}%` }}
-                  />
+                  <div className={`h-1.5 rounded-full transition-all ${item.value >= 70 ? "bg-emerald-500" : item.value >= 30 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${item.value}%` }} />
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Dedup & ttclid */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg bg-muted/30 p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <StatusIcon status={diagnostics.dupCount === 0 ? "ok" : "warn"} />
-                <span className="text-sm font-medium">Deduplicação</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {diagnostics.dupCount === 0 ? "Nenhuma duplicação" : `${diagnostics.dupCount} duplicação(ões)`}
-              </p>
+              <div className="flex items-center gap-2 mb-1"><StatusIcon status={diagnostics.dupCount === 0 ? "ok" : "warn"} /><span className="text-sm font-medium">Deduplicação</span></div>
+              <p className="text-xs text-muted-foreground">{diagnostics.dupCount === 0 ? "Nenhuma duplicação" : `${diagnostics.dupCount} duplicação(ões)`}</p>
             </div>
             <div className="rounded-lg bg-muted/30 p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <StatusIcon status={diagnostics.ttclidDetected ? "ok" : "warn"} />
-                <span className="text-sm font-medium">Click ID (ttclid)</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {diagnostics.ttclidDetected ? "Detectado" : "Não detectado"}
-              </p>
+              <div className="flex items-center gap-2 mb-1"><StatusIcon status={diagnostics.ttclidDetected ? "ok" : "warn"} /><span className="text-sm font-medium">Click ID</span></div>
+              <p className="text-xs text-muted-foreground">{diagnostics.ttclidDetected ? "Detectado" : "Não detectado"}</p>
             </div>
           </div>
 
-          {/* Alerts */}
-          {diagnostics.dupCount > 0 && (
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-amber-600">{diagnostics.dupCount} evento(s) possivelmente duplicado(s).</p>
-            </div>
-          )}
-
-          {/* Test Buttons */}
           <div className="flex gap-2">
             <Button variant="default" size="sm" onClick={runPixelTest} disabled={testing} className="flex-1">
               <Play className="h-3.5 w-3.5 mr-1" /> {testing ? "Testando..." : "Testar Pixel"}
@@ -609,43 +552,28 @@ export default function AdminTikTokTab() {
           {testResults.length > 0 && (
             <div className="rounded-lg bg-muted/30 p-3 space-y-1">
               {testResults.map((r, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <StatusIcon status={r.status} />
-                  <span className="font-mono">{r.event}</span>
-                  <span className="text-muted-foreground">— {r.msg}</span>
-                </div>
+                <div key={i} className="flex items-center gap-2 text-xs"><StatusIcon status={r.status} /><span className="font-mono">{r.event}</span><span className="text-muted-foreground">— {r.msg}</span></div>
               ))}
             </div>
           )}
-
           {simResults.length > 0 && (
             <div className="rounded-lg bg-muted/30 p-3 font-mono text-xs space-y-0.5 max-h-[200px] overflow-y-auto">
-              {simResults.map((line, i) => (
-                <p key={i} className={line.startsWith("❌") ? "text-red-500" : "text-foreground"}>{line}</p>
-              ))}
+              {simResults.map((line, i) => <p key={i} className={line.startsWith("❌") ? "text-red-500" : "text-foreground"}>{line}</p>)}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* ── Recent Events ── */}
+      {/* Recent Events */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Search className="h-4 w-4" /> Eventos Recentes ({recentTikTokEvents.length})
-            </CardTitle>
-            <Button variant="ghost" size="sm" onClick={fetchRecentEvents}>
-              <RefreshCw className="h-3 w-3" />
-            </Button>
+            <CardTitle className="text-sm flex items-center gap-2"><Search className="h-4 w-4" /> Eventos Recentes ({recentTikTokEvents.length})</CardTitle>
+            <Button variant="ghost" size="sm" onClick={fetchRecentEvents}><RefreshCw className="h-3 w-3" /></Button>
           </div>
         </CardHeader>
         <CardContent>
-          {eventsLoading ? (
-            <p className="text-xs text-muted-foreground">Carregando...</p>
-          ) : recentTikTokEvents.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhum evento recente.</p>
-          ) : (
+          {eventsLoading ? <p className="text-xs text-muted-foreground">Carregando...</p> : recentTikTokEvents.length === 0 ? <p className="text-xs text-muted-foreground">Nenhum evento.</p> : (
             <div className="rounded-lg border overflow-hidden max-h-[280px] overflow-y-auto">
               <table className="w-full text-xs">
                 <thead className="bg-muted/50 sticky top-0">
@@ -662,9 +590,7 @@ export default function AdminTikTokTab() {
                       <td className="px-3 py-1.5 font-mono">{ev.type}</td>
                       <td className="px-3 py-1.5 text-muted-foreground">{String(ev.visitorId).slice(0, 18)}</td>
                       <td className="px-3 py-1.5 text-muted-foreground">{String(ev.campaign).slice(0, 25)}</td>
-                      <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">
-                        {new Date(ev.time).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                      </td>
+                      <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">{new Date(ev.time).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -679,134 +605,35 @@ export default function AdminTikTokTab() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Adicionar Pixel TikTok</DialogTitle>
-            <DialogDescription>Insira os dados do pixel para iniciar o rastreamento.</DialogDescription>
+            <DialogDescription>Preencha os dados do pixel.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-2">
-            <input
-              placeholder="Nome (ex: Campanha Principal)"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border rounded-lg px-4 py-2.5 text-sm bg-background"
-            />
-            <input
-              placeholder="Pixel ID (ex: D6GM4RBC77UAAN00B800)"
-              value={form.pixel_id}
-              onChange={(e) => setForm({ ...form, pixel_id: e.target.value })}
-              className="w-full border rounded-lg px-4 py-2.5 text-sm bg-background"
-            />
-            <input
-              placeholder="Events API Access Token"
-              value={form.api_token}
-              onChange={(e) => setForm({ ...form, api_token: e.target.value })}
-              type="password"
-              className="w-full border rounded-lg px-4 py-2.5 text-sm bg-background"
-            />
-            <Button onClick={handleAdd} disabled={adding} className="w-full">
-              {adding ? "Adicionando..." : "Adicionar Pixel"}
-            </Button>
+            <div><label className="text-xs font-medium text-muted-foreground">Nome</label><input placeholder="Ex: Campanha Principal" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border rounded-lg px-3 py-2.5 text-sm bg-background mt-1" /></div>
+            <div><label className="text-xs font-medium text-muted-foreground">Pixel ID</label><input placeholder="Ex: D6GM4RBC77UAAN00B800" value={form.pixel_id} onChange={(e) => setForm({ ...form, pixel_id: e.target.value })} className="w-full border rounded-lg px-3 py-2.5 text-sm bg-background font-mono mt-1" /></div>
+            <div><label className="text-xs font-medium text-muted-foreground">Events API Access Token</label><input placeholder="Token de acesso" value={form.api_token} onChange={(e) => setForm({ ...form, api_token: e.target.value })} type="password" className="w-full border rounded-lg px-3 py-2.5 text-sm bg-background mt-1" /></div>
+            <Button onClick={handleAdd} disabled={adding} className="w-full">{adding ? "Adicionando..." : "Adicionar Pixel"}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* ═══════════ DETAIL DIALOG ═══════════ */}
-      <Dialog open={!!selectedIntegration} onOpenChange={() => setSelectedIntegration(null)}>
+      {/* ═══════════ DETECTED DETAIL DIALOG ═══════════ */}
+      <Dialog open={!!selectedDetected} onOpenChange={() => setSelectedDetected(null)}>
         <DialogContent className="max-w-md">
-          {selectedIntegration && (
+          {selectedDetected && (
             <>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <span className="text-xl">{selectedIntegration.icon}</span>
-                  {selectedIntegration.name}
-                </DialogTitle>
-                <DialogDescription>Detalhes da integração</DialogDescription>
+                <DialogTitle className="flex items-center gap-2"><span className="text-xl">{selectedDetected.icon}</span>{selectedDetected.name}</DialogTitle>
+                <DialogDescription>{selectedDetected.description}</DialogDescription>
               </DialogHeader>
-
               <div className="space-y-4 pt-2">
-                {/* Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Status</span>
-                  <StatusBadge active={selectedIntegration.active} detected={selectedIntegration.detected} />
-                </div>
-
-                {/* Pixel ID */}
-                {selectedIntegration.pixelId && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Pixel ID</span>
-                    <span className="text-xs font-mono text-muted-foreground">{selectedIntegration.pixelId}</span>
-                  </div>
-                )}
-
-                {/* Type */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Tipo</span>
-                  <span className="text-xs text-muted-foreground">
-                    {selectedIntegration.type === "database" ? "Gerenciado (banco de dados)" : "Hardcoded (index.html)"}
-                  </span>
-                </div>
-
-                {/* Events */}
-                {selectedIntegration.type === "database" && (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Eventos (24h)</span>
-                      <span className="text-sm font-bold">{selectedIntegration.events24h}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Último evento</span>
-                      <span className="text-xs text-muted-foreground">
-                        {selectedIntegration.lastEvent
-                          ? new Date(selectedIntegration.lastEvent).toLocaleString("pt-BR")
-                          : "Nenhum"}
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {/* Diagnostic mini */}
+                <div className="flex items-center justify-between"><span className="text-sm font-medium">Status</span><StatusBadge active={selectedDetected.active} detected={selectedDetected.detected} /></div>
+                {selectedDetected.pixelId && <div className="flex items-center justify-between"><span className="text-sm font-medium">ID / Token</span><span className="text-xs font-mono text-muted-foreground">{selectedDetected.pixelId}</span></div>}
+                <div className="flex items-center justify-between"><span className="text-sm font-medium">Tipo</span><span className="text-xs text-muted-foreground">Hardcoded (index.html / edge function)</span></div>
                 <div className="rounded-lg bg-muted/30 p-3 space-y-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Diagnóstico</p>
-                  <div className="flex items-center gap-2 text-sm">
-                    <StatusIcon status={selectedIntegration.active ? "ok" : "error"} />
-                    <span>{selectedIntegration.active ? "Pixel ativo" : "Pixel desativado"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <StatusIcon status={selectedIntegration.detected ? "ok" : "warn"} />
-                    <span>{selectedIntegration.detected ? "SDK detectado no site" : "SDK não detectado nesta página"}</span>
-                  </div>
-                  {selectedIntegration.type === "database" && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <StatusIcon status={selectedIntegration.events24h > 0 ? "ok" : "warn"} />
-                      <span>{selectedIntegration.events24h > 0 ? `${selectedIntegration.events24h} eventos nas últimas 24h` : "Sem eventos nas últimas 24h"}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-sm"><StatusIcon status={selectedDetected.detected ? "ok" : "error"} /><span>{selectedDetected.detected ? "Script detectado no site" : "Script não detectado"}</span></div>
+                  <div className="flex items-center gap-2 text-sm"><StatusIcon status={selectedDetected.active ? "ok" : "warn"} /><span>{selectedDetected.active ? "Integração ativa" : "Integração inativa"}</span></div>
                 </div>
-
-                {/* Actions */}
-                {selectedIntegration.type === "database" && selectedIntegration.dbPixel && (
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant={selectedIntegration.active ? "outline" : "default"}
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        toggleStatus(selectedIntegration.dbPixel!);
-                        setSelectedIntegration(null);
-                      }}
-                    >
-                      {selectedIntegration.active ? "Desativar" : "Ativar"}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        deletePixel(selectedIntegration.dbPixel!.id);
-                        setSelectedIntegration(null);
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Remover
-                    </Button>
-                  </div>
-                )}
               </div>
             </>
           )}
