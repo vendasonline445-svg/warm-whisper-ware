@@ -274,8 +274,8 @@ export async function trackFunnelEvent(options: TrackOptions) {
     }
   }
 
-  const visitorId = getVisitorId();
-  const sessionId = getSessionId();
+  const visitorId = getOrCreateVisitorId();
+  const sessionId = getOrCreateSessionId();
   const timestamp = new Date().toISOString();
 
   // 3. Build DB payload
