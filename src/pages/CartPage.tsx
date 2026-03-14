@@ -70,14 +70,8 @@ export default function CartPage() {
         </div>
         <button
           onClick={() => {
-            const first = items[0];
-            if (!first) return;
-            const params = new URLSearchParams({
-              product: first.slug,
-              price: String(first.priceCents),
-              name: first.name,
-            });
-            navigate(`/checkout?${params.toString()}`);
+            // fiq_cart is already saved via CartProvider, checkout reads it directly
+            navigate('/checkout');
           }}
           className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold text-base"
         >
