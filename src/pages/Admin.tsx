@@ -11,9 +11,10 @@ import AdminAIAssistant from "@/components/AdminAIAssistant";
 import AdminClientHub from "@/components/AdminClientHub";
 import AdminAdsHub from "@/components/AdminAdsHub";
 import AdminAnalyticsHub from "@/components/AdminAnalyticsHub";
+import AdminSidebar, { type AdminTab } from "@/components/AdminSidebar";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
 import { ptBR } from "date-fns/locale";
-import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Activity, Sparkles, LogOut } from "lucide-react";
+import { CheckCircle2, TrendingUp, CreditCard, Webhook, Bug, Radio, CalendarIcon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -51,7 +52,7 @@ interface Lead {
   transaction_id: string | null;
 }
 
-type Tab = "dashboard" | "leads" | "crm" | "logs" | "tiktok" | "tracking" | "rastreios" | "ai" | "clients" | "ads" | "analytics";
+type Tab = AdminTab;
 
 type PeriodKey = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
 
@@ -103,6 +104,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [visitorsCount, setVisitorsCount] = useState(0);
   const [checkoutsCount, setCheckoutsCount] = useState(0);
   const [buyClicks, setBuyClicks] = useState(0);
@@ -449,113 +451,36 @@ export default function Admin() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background admin-bg">
-      {/* Top Nav */}
-      <header className="border-b border-border/50 bg-card/80 backdrop-blur-xl px-4 py-3 sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between flex-wrap gap-2">
-          <FunnelIQLogo size={32} showText />
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => setTab("dashboard")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "dashboard" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-            >
-              <LayoutDashboard className="h-4 w-4" /> Início
-            </button>
-            <button
-              onClick={() => setTab("leads")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "leads" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-            >
-              <Users className="h-4 w-4" /> Leads
-            </button>
-            <button
-              onClick={() => setTab("crm")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "crm" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-            >
-              <Contact className="h-4 w-4" /> CRM
-            </button>
-            <button
-              onClick={() => {
-                setTab("logs");
-                setLogsLoading(true);
-                Promise.all([
-                  supabase.from("user_events").select("*").eq("event_type", "js_error").order("created_at", { ascending: false }).limit(50),
-                  supabase.from("tracking_webhook_logs").select("*").order("created_at", { ascending: false }).limit(50),
-                ]).then(([errRes, whRes]) => {
-                  setErrorLogs(errRes.data || []);
-                  setWebhookLogs(whRes.data || []);
-                  setLogsLoading(false);
-                });
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "logs" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-            >
-              <Bug className="h-4 w-4" /> Logs
-            </button>
-            <span className="w-px bg-border mx-1 self-stretch" />
-            <button
-              onClick={() => setTab("ai")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "ai" ? "bg-gradient-to-r from-primary to-accent text-primary-foreground" : "bg-accent/10 text-accent hover:bg-accent/20"}`}
-            >
-              <Sparkles className="h-4 w-4" /> AI
-            </button>
-            <button
-              onClick={() => setTab("tracking")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "tracking" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-            >
-              <Activity className="h-4 w-4" /> Tracking Hub
-            </button>
-            <button
-              onClick={() => setTab("clients")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "clients" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-            >
-              <Users className="h-4 w-4" /> Client Hub
-            </button>
-            <button
-              onClick={() => setTab("ads")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "ads" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-            >
-              <Megaphone className="h-4 w-4" /> Ads Hub
-            </button>
-            <button
-              onClick={() => setTab("analytics")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "analytics" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-            >
-              <TrendingUp className="h-4 w-4" /> Analytics Hub
-            </button>
-            <button
-              onClick={() => setTab("tiktok")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "tiktok" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-            >
-              <Megaphone className="h-4 w-4" /> Integrações
-            </button>
-            <button
-              onClick={() => setTab("rastreios")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "rastreios" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-            >
-              <Package className="h-4 w-4" /> Rastreios
-            </button>
-            <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors">
-              <Download className="h-4 w-4" /> CSV
-            </button>
-            <button
-              onClick={() => setDarkMode(d => !d)}
-              className="flex items-center justify-center h-9 w-9 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-              title={darkMode ? "Modo Claro" : "Modo Escuro"}
-            >
-              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-            <button
-              onClick={() => { sessionStorage.removeItem("admin_auth"); setAuthenticated(false); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
-              title="Sair"
-            >
-              <LogOut className="h-4 w-4" /> Sair
-            </button>
-          </div>
-        </div>
-      </header>
+  const handleSetTab = (newTab: Tab) => {
+    setTab(newTab);
+    if (newTab === "logs") {
+      setLogsLoading(true);
+      Promise.all([
+        supabase.from("user_events").select("*").eq("event_type", "js_error").order("created_at", { ascending: false }).limit(50),
+        supabase.from("tracking_webhook_logs").select("*").order("created_at", { ascending: false }).limit(50),
+      ]).then(([errRes, whRes]) => {
+        setErrorLogs(errRes.data || []);
+        setWebhookLogs(whRes.data || []);
+        setLogsLoading(false);
+      });
+    }
+  };
 
-      <div className="max-w-[1400px] mx-auto p-4">
+  return (
+    <div className="min-h-screen bg-background admin-bg flex">
+      <AdminSidebar
+        currentTab={tab}
+        onTabChange={handleSetTab}
+        onExportCSV={exportCSV}
+        darkMode={darkMode}
+        onToggleDarkMode={() => setDarkMode(d => !d)}
+        onLogout={() => { sessionStorage.removeItem("admin_auth"); setAuthenticated(false); }}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+      />
+
+      <main className="flex-1 min-w-0 overflow-auto">
+        <div className="max-w-[1400px] mx-auto p-4">
         {tab === "dashboard" && (
           <div className="space-y-6">
             {/* Period Filter */}
@@ -1106,7 +1031,8 @@ export default function Admin() {
             )}
           </div>
         )}
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
