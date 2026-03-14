@@ -78,7 +78,7 @@ const Checkout = () => {
     }
   };
 
-  // InitiateCheckout event on mount + track page view
+  // Checkout page: fire checkout_start once on mount
   useEffect(() => {
     window.scrollTo({ top: 0 });
     trackFunnelEvent({
@@ -93,6 +93,7 @@ const Checkout = () => {
       },
     });
     trackPageViewOnce("/checkout");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
