@@ -291,8 +291,8 @@ export async function trackFunnelEvent(options: TrackOptions) {
     }
   }
 
-  const visitorId = getOrCreateVisitorId();
-  const sessionId = getOrCreateSessionId();
+  const visitorId = getOrCreateVisitorId() || "visitor_unknown";
+  const sessionId = getOrCreateSessionId() || `s_fallback_${Date.now()}`;
   const timestamp = new Date().toISOString();
 
   // 3. Build DB payload
@@ -307,8 +307,8 @@ export async function trackFunnelEvent(options: TrackOptions) {
 
   const dbPayload = {
     visitor_id: visitorId,
-    session_id: sessionId || null,
-    event_name: event,
+    session_id: sessionId,
+    event_name: event || "unknown_event",
     value: typeof value === "number" ? value : 0,
     source: getUtmSource() || null,
     campaign: getUtmCampaign() || null,
