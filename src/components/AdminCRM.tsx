@@ -236,134 +236,60 @@ export default function AdminCRM() {
     return src;
   };
 
-  // ── Bot Detection Constants ──
-  const BOT_UA_PATTERNS = /bot|crawler|spider|slurp|bingbot|googlebot|yandex|baidu|duckduck|sogou|exabot|facebot|ia_archiver|semrush|ahrefs|mj12bot|dotbot|petalbot|bytespider|headlesschrome|phantomjs|selenium|puppeteer|scrapy|python-requests|curl|wget|httpclient|java\//i;
+  // ── Traffic-enriched bot data (adds quality/score for traffic analysis) ──
+  type TrafficScoredVisitor = ScoredVisitor & { quality: TrafficQuality; score: number; isBot: boolean; fullId: string };
 
-  // ── Bot Scoring per Visitor ──
-  type ScoredVisitor = {
-    id: string;
-    score: number;
-    botScore: number;
-    botLevel: BotLevel;
-    quality: TrafficQuality;
-    timeOnPage: number;
-    maxScroll: number;
-    clicks: number;
-    origin: string;
-    device: string;
-    userAgent: string;
-    isBot: boolean;
-    eventCount: number;
-    reasons: string[];
-  };
-
-  const botAnalysis = useMemo(() => {
-    const visitorMap = new Map<string, { events: UserEvent[]; firstSeen: number; lastSeen: number }>();
+  const trafficBotData = useMemo(() => {
+    const visitorMap = new Map<string, UserEvent[]>();
     events.forEach(e => {
       const key = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
-      const time = new Date(e.created_at).getTime();
-      const existing = visitorMap.get(key);
-      if (existing) {
-        existing.events.push(e);
-        existing.firstSeen = Math.min(existing.firstSeen, time);
-        existing.lastSeen = Math.max(existing.lastSeen, time);
-      } else {
-        visitorMap.set(key, { events: [e], firstSeen: time, lastSeen: time });
-      }
+      const arr = visitorMap.get(key) || [];
+      arr.push(e);
+      visitorMap.set(key, arr);
     });
 
-    const scored: ScoredVisitor[] = [];
-    const botVisitorIds = new Set<string>();
-    const suspectVisitorIds = new Set<string>();
-
-    visitorMap.forEach((data, key) => {
-      let botScore = 0;
-      const reasons: string[] = [];
-      let maxScroll = 0;
-      let clicks = 0;
-      let origin = "Direto";
-      let device = "—";
-      let userAgent = "";
+    const scored: TrafficScoredVisitor[] = [];
+    visitorMap.forEach((evts, key) => {
       let qualityScore = 5;
-
-      data.events.forEach(e => {
-        const ua = String(e.event_data?.user_agent || "");
-        if (ua) userAgent = ua;
-        if (e.event_type === "scroll_depth") {
+      evts.forEach(e => {
+        if (e.event_type === "scroll_depth" || e.event_type === "view_content") {
           const pct = Number(e.event_data?.percent || 0);
-          maxScroll = Math.max(maxScroll, pct);
           if (pct > 30) qualityScore += 10;
         }
-        if (e.event_type === "click_product_image") { qualityScore += 10; clicks++; }
-        if (e.event_type === "click_buy_button") { qualityScore += 20; clicks++; }
-        if (e.event_type === "checkout_initiated") qualityScore += 40;
+        if (e.event_type === "click_buy" || e.event_type === "click_buy_button") qualityScore += 20;
+        if (e.event_type === "checkout_start" || e.event_type === "checkout_started") qualityScore += 40;
         if (e.event_type === "pix_generated") qualityScore += 60;
         if (e.event_type === "card_submitted") qualityScore += 50;
-        if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") qualityScore += 100;
-        if (e.event_data?.utm_source) origin = String(e.event_data.utm_source);
-        if (e.event_data?.device) device = String(e.event_data.device);
+        if (e.event_type === "purchase" || e.event_type === "payment_confirmed" || e.event_type === "pix_paid") qualityScore += 100;
       });
 
-      const timeOnPage = (data.lastSeen - data.firstSeen) / 1000;
-
-      if (timeOnPage < 2 && data.events.length <= 2) { botScore += 30; reasons.push("Sessão < 2s"); }
-      if (maxScroll < 5 && data.events.length > 0) { botScore += 20; reasons.push("Sem scroll"); }
-      if (clicks === 0 && data.events.length > 0) { botScore += 20; reasons.push("Sem cliques"); }
-      if (userAgent && BOT_UA_PATTERNS.test(userAgent)) { botScore += 50; reasons.push("User-agent suspeito"); }
-      if (data.events.length > 8 && timeOnPage < 5) { botScore += 30; reasons.push("Muitos eventos rápidos"); }
-
-      const dl = device.toLowerCase();
-      if ((dl === "desktop" || dl === "Desktop") && clicks === 0 && maxScroll < 10 && timeOnPage < 5) {
-        botScore += 15; reasons.push("Desktop sem interação");
-      }
-
-      const botLevel: BotLevel = botScore >= 61 ? "bot" : botScore >= 31 ? "suspeito" : "normal";
-
+      const botEntry = botAnalysis.scored.find(s => s.fullId === key);
       let quality: TrafficQuality = "quente";
       if (qualityScore <= 10) quality = "ruim";
       else if (qualityScore <= 30) quality = "frio";
       else if (qualityScore <= 60) quality = "morno";
-      if (timeOnPage < 3 && maxScroll < 10 && clicks === 0) quality = "ruim";
-      if (clicks === 0 && maxScroll < 20 && qualityScore <= 15) quality = "frio";
-
-      if (botLevel === "bot") botVisitorIds.add(key);
-      if (botLevel === "suspeito") suspectVisitorIds.add(key);
 
       scored.push({
-        id: typeof key === "string" ? key.slice(0, 8) : String(key).slice(0, 8),
-        score: qualityScore, botScore, botLevel, quality, timeOnPage, maxScroll, clicks, origin, device, userAgent,
-        isBot: botLevel === "bot", eventCount: data.events.length, reasons,
+        id: key.slice(0, 8),
+        fullId: key,
+        botScore: botEntry?.botScore || 0,
+        botLevel: botEntry?.botLevel || "normal",
+        timeOnPage: botEntry?.timeOnPage || 0,
+        maxScroll: botEntry?.maxScroll || 0,
+        clicks: botEntry?.clicks || 0,
+        origin: botEntry?.origin || "Direto",
+        device: botEntry?.device || "—",
+        userAgent: botEntry?.userAgent || "",
+        eventCount: evts.length,
+        reasons: botEntry?.reasons || [],
+        quality,
+        score: qualityScore,
+        isBot: botEntry?.botLevel === "bot",
       });
     });
 
-    const total = scored.length || 1;
-    const normal = scored.filter(v => v.botLevel === "normal").length;
-    const suspeito = scored.filter(v => v.botLevel === "suspeito").length;
-    const bot = scored.filter(v => v.botLevel === "bot").length;
-    const dist = { normal, suspeito, bot };
-    const distPct = {
-      normal: Math.round((normal / total) * 100),
-      suspeito: Math.round((suspeito / total) * 100),
-      bot: Math.round((bot / total) * 100),
-    };
-
-    const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
-    if (bot > 5) alerts.push({ type: "critical", title: "Prováveis bots detectados", desc: `${bot} visitantes com score de bot ≥ 61.` });
-    if (suspeito > total * 0.25) alerts.push({ type: "warning", title: "Alta taxa de tráfego suspeito", desc: `${distPct.suspeito}% dos visitantes são suspeitos.` });
-
-    const desktopVisitors = scored.filter(v => v.device.toLowerCase() === "desktop");
-    const desktopClickers = desktopVisitors.filter(v => v.clicks > 0);
-    if (desktopVisitors.length > 20 && desktopClickers.length / desktopVisitors.length < 0.05) {
-      alerts.push({ type: "critical", title: "Possível tráfego de baixa qualidade em desktop", desc: `${desktopVisitors.length} visitantes desktop, apenas ${desktopClickers.length} interagiram.` });
-    }
-
-    const shortSessions = scored.filter(v => v.timeOnPage < 2).length;
-    if (shortSessions > total * 0.3) {
-      alerts.push({ type: "warning", title: "Alta taxa de sessões curtas", desc: `${Math.round((shortSessions / total) * 100)}% ficaram menos de 2s na página.` });
-    }
-
-    return { scored, dist, distPct, alerts, botVisitorIds, suspectVisitorIds, total: scored.length };
-  }, [events]);
+    return scored;
+  }, [events, botAnalysis]);
 
   // ── Filtered funnel data ──
   const funnelData = useMemo(() => {
