@@ -29,7 +29,7 @@ export default function StoreFront() {
 
   const ProductCard = ({ p, topBadge }: { p: any; topBadge?: string }) => (
     <div
-      onClick={() => navigate(`/p/${p.slug}`)}
+      onClick={() => navigate(p.slug === 'mesa-dobravel-portatil' ? '/' : `/p/${p.slug}`)}
       className="bg-white rounded-lg overflow-hidden cursor-pointer border border-gray-100 hover:shadow-md transition-shadow"
     >
       <div className="relative aspect-square bg-gray-50">
