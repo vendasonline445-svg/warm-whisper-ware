@@ -1296,7 +1296,7 @@ export default function AdminCRM() {
           {subTab === "pipeline" && (
             <div className="overflow-x-auto pb-4">
               <div className="flex gap-4 min-w-max">
-                {(["checkout_iniciado", "pagamento_iniciado", "pix_gerado", "cartao_enviado", "pago"] as FunnelStage[]).map(stage => {
+                {(["checkout_iniciado", "pagamento_iniciado", "pix_gerado", "cartao_enviado", "pago"] as PipelineStage[]).map(stage => {
                   const items = pipeline[stage];
                   const stageRevenue = items.reduce((sum, l) => sum + (l.status === "paid" ? (l.total_amount || 0) / 100 : 0), 0);
                   return (
