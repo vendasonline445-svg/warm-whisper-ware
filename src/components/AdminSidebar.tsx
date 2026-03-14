@@ -17,7 +17,6 @@ import { useAuth } from "@/hooks/use-auth";
 
 export type AdminTab = 
   | "dashboard" | "funnel-health" | "live-activity"
-  | "crm" | "leads" | "crm-recovery"
   | "tracking" | "tracking-sessions" | "tracking-clicks" | "tracking-links" | "tracking-debug"
   | "campaigns" | "campaigns-creatives" | "campaigns-performance" | "campaigns-automation" | "campaigns-budgets"
   | "analytics" | "analytics-attribution" | "analytics-revenue" | "analytics-reports"
