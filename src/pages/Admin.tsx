@@ -5,6 +5,10 @@ import { format, startOfDay, endOfDay, subDays, startOfMonth } from "date-fns";
 
 import AdminTikTokTab from "@/components/AdminTikTokTab";
 import AdminTrackingHub from "@/components/AdminTrackingHub";
+import SettingsTracking from "@/components/settings/SettingsTracking";
+import SettingsPixels from "@/components/settings/SettingsPixels";
+import SettingsIntegrations from "@/components/settings/SettingsIntegrations";
+import SettingsAdmin from "@/components/settings/SettingsAdmin";
 
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminAIAssistant from "@/components/AdminAIAssistant";
@@ -565,13 +569,17 @@ function AdminContent() {
           } />
         )}
 
-        
+        {/* New Settings tabs */}
+        {tab === "settings-tracking" && <SettingsTracking />}
+        {tab === "settings-pixels" && <SettingsPixels />}
+        {tab === "settings-integrations" && <SettingsIntegrations />}
+        {tab === "settings-admin" && <SettingsAdmin />}
 
-        {(tab === "settings-scripts" || tab === "tracking-pixels") && <AdminTrackingHub key={`settings-${tab}`} />}
-
-        {tab === "tracking-config" && <AdminTrackingConfig />}
-
-        {tab === "settings-csv" && <AdminClientHub key="csv" defaultTab="clientes" />}
+        {/* Legacy settings tabs - redirect to new ones */}
+        {tab === "tracking-config" && <SettingsTracking />}
+        {tab === "tracking-pixels" && <SettingsPixels />}
+        {tab === "settings-scripts" && <SettingsTracking />}
+        {tab === "settings-csv" && <SettingsAdmin defaultTab="csv" />}
 
         {(tab === "ai" || tab === "ai-insights") && (
           <AdminAIAssistant
