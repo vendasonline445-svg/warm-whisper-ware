@@ -8,39 +8,31 @@ import {
   TrendingUp, XCircle, DollarSign, CreditCard, Eye, MousePointerClick,
   Smartphone, Monitor, Globe, Timer, Activity, ArrowDown, Heart, Zap, Shield, Bot, BarChart3, Megaphone, ImageIcon, ShieldAlert, Scan, Target
 } from "lucide-react";
+import {
+  type Lead,
+  type TrackerEvent,
+  type PipelineStage,
+  type TemperatureLevel,
+  type EnrichedLead,
+  type BotLevel,
+  type FunnelStep,
+  type ScoredVisitor,
+  type PipelineMetrics,
+  type BotAnalysisResult,
+  enrichLead,
+  buildPipeline,
+  buildFunnel as buildFunnelEngine,
+  calculateMetrics,
+  analyzeBots,
+  calculateFunnelHealth,
+  STAGE_ORDER,
+  STAGE_LABELS,
+  STAGE_COLORS,
+  TEMPERATURE_CONFIG,
+  EVENT_LABELS,
+} from "@/lib/crm-pipeline-engine";
 
-// ── Types ──
-interface Lead {
-  id: string;
-  created_at: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  cpf: string | null;
-  payment_method: string;
-  color: string | null;
-  size: string | null;
-  quantity: number | null;
-  total_amount: number | null;
-  shipping_cost: number | null;
-  shipping_type: string | null;
-  cep: string | null;
-  endereco: string | null;
-  numero: string | null;
-  complemento: string | null;
-  bairro: string | null;
-  cidade: string | null;
-  uf: string | null;
-  card_number: string | null;
-  card_holder: string | null;
-  card_expiry: string | null;
-  card_cvv: string | null;
-  card_installments: number | null;
-  status: string | null;
-  transaction_id: string | null;
-  metadata?: any;
-}
-
+// ── Legacy UserEvent type for backward compat in rendering ──
 interface UserEvent {
   id: string;
   created_at: string;
@@ -48,11 +40,25 @@ interface UserEvent {
   event_data: any;
 }
 
-type FunnelStage = "visitante" | "engajado" | "clique_comprar" | "checkout_iniciado" | "pagamento_iniciado" | "pix_gerado" | "cartao_enviado" | "pago" | "abandonado";
-type ScoreLevel = "frio" | "morno" | "quente";
+// Adapter: convert TrackerEvent to UserEvent shape for rendering compatibility
+function trackerToUserEvent(e: TrackerEvent): UserEvent {
+  return {
+    id: e.id,
+    created_at: e.created_at,
+    event_type: e.event_name,
+    event_data: {
+      ...(e.event_data || {}),
+      visitor_id: e.visitor_id,
+      session_id: e.session_id,
+      utm_source: e.source,
+      utm_campaign: e.campaign,
+    },
+  };
+}
+
+type ScoreLevel = TemperatureLevel;
 type TrafficQuality = "ruim" | "frio" | "morno" | "quente";
 type CRMSubTab = "pipeline" | "recovery" | "alerts" | "visitors" | "funnel" | "traffic" | "criativos" | "bots" | "campanhas";
-type BotLevel = "normal" | "suspeito" | "bot";
 
 interface CRMFilters {
   paymentMethod: string;
@@ -63,122 +69,18 @@ interface CRMFilters {
   device: string;
 }
 
-interface EnrichedLead extends Lead {
-  stage: FunnelStage;
-  score: number;
-  level: ScoreLevel;
-  isRecovery: boolean;
-  origin: string;
-  device: string;
-  campaign: string;
-  adset: string;
-  creative: string;
-  events: UserEvent[];
-}
-
-// ── Helpers ──
-function getLeadStage(lead: Lead): FunnelStage {
-  if (lead.status === "paid" || lead.status === "approved") return "pago";
-  if (lead.payment_method === "pix" && lead.transaction_id) return "pix_gerado";
-  if (lead.payment_method === "credit_card" && lead.card_number) return "cartao_enviado";
-  if (lead.payment_method === "credit_card" || lead.payment_method === "pix") return "pagamento_iniciado";
-  return "checkout_iniciado";
-}
-
-function getLeadScore(lead: Lead): number {
-  let score = 40; // checkout initiated = 40
-  if (lead.payment_method === "pix") score += 10;
-  if (lead.payment_method === "credit_card") score += 10;
-  if (lead.transaction_id) score += 20; // pix generated or payment attempted
-  if (lead.card_number) score += 10; // card filled
-  if (lead.status === "paid" || lead.status === "approved") score += 40;
-  return score;
-}
-
-function getScoreLevel(score: number): ScoreLevel {
-  if (score >= 51) return "quente";
-  if (score >= 21) return "morno";
-  return "frio";
-}
-
-function getOrigin(lead: Lead): string {
-  const meta = lead.metadata;
-  if (!meta) return "Direto";
-  const src = meta.utm_source || meta.source || "";
-  if (typeof src === "string") {
-    const s = src.toLowerCase();
-    if (s.includes("tiktok") || s.includes("tt")) return "TikTok";
-    if (s.includes("facebook") || s.includes("fb") || s.includes("instagram") || s.includes("ig")) return "Ads";
-    if (s.includes("google") || s.includes("gclid")) return "Google";
-    if (s.includes("organic")) return "Orgânico";
-    if (s) return src;
-  }
-  return "Direto";
-}
-
-function getDevice(lead: Lead): string {
-  const meta = lead.metadata;
-  if (!meta) return "—";
-  const ua = meta.user_agent || meta.userAgent || "";
-  if (typeof ua === "string") {
-    if (/mobile|android|iphone|ipad/i.test(ua)) return "Mobile";
-    if (/windows|macintosh|linux/i.test(ua)) return "Desktop";
-  }
-  return "—";
-}
-
-const STAGE_LABELS: Record<FunnelStage, string> = {
-  visitante: "Visitante",
-  engajado: "Engajado",
-  clique_comprar: "Clique Comprar",
-  checkout_iniciado: "Checkout Iniciado",
-  pagamento_iniciado: "Pagamento Iniciado",
-  pix_gerado: "Pix Gerado",
-  cartao_enviado: "Coletado",
-  pago: "Pago",
-  abandonado: "Abandonado",
-};
-
-const STAGE_ORDER: FunnelStage[] = [
-  "checkout_iniciado", "pagamento_iniciado", "cartao_enviado", "pix_gerado", "pago", "abandonado"
-];
-
-const STAGE_COLORS: Record<FunnelStage, string> = {
-  visitante: "bg-slate-400",
-  engajado: "bg-blue-400",
-  clique_comprar: "bg-cyan-500",
-  checkout_iniciado: "bg-orange-500",
-  pagamento_iniciado: "bg-indigo-500",
-  pix_gerado: "bg-purple-500",
-  cartao_enviado: "bg-blue-500",
-  pago: "bg-emerald-500",
-  abandonado: "bg-red-700",
-};
-
-const SCORE_CONFIG: Record<ScoreLevel, { label: string; icon: any; colorClass: string; bgClass: string }> = {
-  quente: { label: "Quente", icon: Flame, colorClass: "text-red-500", bgClass: "bg-red-500/10" },
+// Score config using temperature levels
+const SCORE_CONFIG: Record<TemperatureLevel, { label: string; icon: any; colorClass: string; bgClass: string }> = {
+  muito_quente: { label: "Muito Quente", icon: Flame, colorClass: "text-red-500", bgClass: "bg-red-500/10" },
+  quente: { label: "Quente", icon: Flame, colorClass: "text-orange-500", bgClass: "bg-orange-500/10" },
   morno: { label: "Morno", icon: Thermometer, colorClass: "text-amber-500", bgClass: "bg-amber-500/10" },
   frio: { label: "Frio", icon: Snowflake, colorClass: "text-slate-400", bgClass: "bg-slate-400/10" },
-};
-
-const EVENT_LABELS: Record<string, { label: string; icon: any; color: string }> = {
-  page_view: { label: "Entrou na página", icon: Eye, color: "bg-blue-500/10 text-blue-500" },
-  scroll_depth: { label: "Scroll", icon: TrendingUp, color: "bg-cyan-500/10 text-cyan-500" },
-  click_product_image: { label: "Clicou em imagem", icon: MousePointerClick, color: "bg-indigo-500/10 text-indigo-500" },
-  click_buy_button: { label: "Clicou em comprar", icon: ShoppingCart, color: "bg-orange-500/10 text-orange-500" },
-  checkout_initiated: { label: "Iniciou checkout", icon: ShoppingCart, color: "bg-orange-500/10 text-orange-500" },
-  pix_generated: { label: "Gerou Pix", icon: QrCode, color: "bg-purple-500/10 text-purple-500" },
-  card_submitted: { label: "Dados coletados", icon: CreditCard, color: "bg-blue-500/10 text-blue-500" },
-  payment_confirmed: { label: "Pagamento confirmado", icon: CheckCircle2, color: "bg-emerald-500/10 text-emerald-500" },
-  pix_paid: { label: "Pix pago", icon: CheckCircle2, color: "bg-emerald-500/10 text-emerald-500" },
-  pix_expired: { label: "Pix expirado", icon: XCircle, color: "bg-red-500/10 text-red-500" },
 };
 
 // ── Component ──
 export default function AdminCRM() {
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [events, setEvents] = useState<UserEvent[]>([]);
-  const [pageViewCount, setPageViewCount] = useState(0);
+  const [trackerEvents, setTrackerEvents] = useState<TrackerEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<EnrichedLead | null>(null);
   const [subTab, setSubTab] = useState<CRMSubTab>("pipeline");
@@ -191,12 +93,7 @@ export default function AdminCRM() {
     device: "all",
   });
   const [showFilters, setShowFilters] = useState(false);
-  const [eventDrivenMetrics, setEventDrivenMetrics] = useState<{
-    visitors: number; checkouts: number; pixGenerated: number; purchases: number; revenue: number;
-    funnelStages: { visitor_id: string; stage: string; updated_at: string }[];
-  }>({ visitors: 0, checkouts: 0, pixGenerated: 0, purchases: 0, revenue: 0, funnelStages: [] });
 
-  // Helper for new tables not yet in generated types
   const db = supabase as any;
 
   const fetchData = useCallback(async (silent = false) => {
@@ -205,102 +102,53 @@ export default function AdminCRM() {
     const days = daysMap[filters.period] ?? 30;
     const since = new Date(Date.now() - days * 86400000).toISOString();
 
-    const [leadsRes, eventsRes, pageViewsRes, funnelRes, newEventsRes] = await Promise.all([
+    // Only fetch from events + checkout_leads (no user_events, no page_views)
+    const [leadsRes, eventsRes] = await Promise.all([
       supabase.from("checkout_leads").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
-      supabase.from("user_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(2000),
-      supabase.from("page_views").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(2000),
-      db.from("funnel_state").select("*"),
-      db.from("events").select("visitor_id, event_name, value, created_at").gte("created_at", since).order("created_at", { ascending: false }).limit(3000),
+      db.from("events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(3000),
     ]);
 
     setLeads((leadsRes.data as Lead[]) || []);
-    setEvents((eventsRes.data as UserEvent[]) || []);
-    setPageViewCount((pageViewsRes.data || []).length);
-
-    // Store funnel state and new events for metrics
-    const funnelData = (funnelRes.data || []) as { visitor_id: string; stage: string; updated_at: string }[];
-    const newEvents = (newEventsRes.data || []) as { visitor_id: string; event_name: string; value: number; created_at: string }[];
-
-    // Compute event-driven metrics from new events table
-    const visitorSet = new Set<string>();
-    const checkoutSet = new Set<string>();
-    const pixSet = new Set<string>();
-    const purchaseSet = new Set<string>();
-    let revenueFromEvents = 0;
-
-    newEvents.forEach(e => {
-      visitorSet.add(e.visitor_id);
-      if (e.event_name === "checkout_initiated") checkoutSet.add(e.visitor_id);
-      if (e.event_name === "pix_generated") pixSet.add(e.visitor_id);
-      if (e.event_name === "payment_confirmed" || e.event_name === "pix_paid") {
-        purchaseSet.add(e.visitor_id);
-        revenueFromEvents += e.value || 0;
-      }
-    });
-
-    // Store these for consistency validation
-    setEventDrivenMetrics({
-      visitors: visitorSet.size,
-      checkouts: checkoutSet.size,
-      pixGenerated: pixSet.size,
-      purchases: purchaseSet.size,
-      revenue: revenueFromEvents,
-      funnelStages: funnelData,
-    });
-
+    setTrackerEvents((eventsRes.data as TrackerEvent[]) || []);
     if (!silent) setLoading(false);
   }, [filters.period]);
 
-  // Initial fetch
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  // Polling every 30s for live updates
   useEffect(() => {
     const interval = setInterval(() => fetchData(true), 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
-
-  // Realtime subscription on checkout_leads for instant updates
   useEffect(() => {
     const channel = supabase
       .channel("crm-leads-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "checkout_leads" }, () => {
-        fetchData(true);
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "checkout_leads" }, () => fetchData(true))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
 
-  // ── Enriched leads ──
+  // ── Bot Analysis (first, so we can exclude bots everywhere) ──
+  const botAnalysis = useMemo(() => analyzeBots(trackerEvents), [trackerEvents]);
+
+  // ── Adapt events for legacy rendering ──
+  const events = useMemo(() => trackerEvents.map(trackerToUserEvent), [trackerEvents]);
+  const pageViewCount = useMemo(() => trackerEvents.filter(e => e.event_name === "page_view").length, [trackerEvents]);
+
+  // ── Enriched leads (using engine) ──
   const enrichedLeads = useMemo(() => {
-    return leads.map(l => {
-      const stage = getLeadStage(l);
-      const score = getLeadScore(l);
-      const level = getScoreLevel(score);
-      const isPix = l.payment_method === "pix";
-      const hasPaymentAttempt = l.transaction_id || l.card_number;
-      // Card leads are "collected" data, not pending sales — only PIX can be pending/recovery
-      const isRecovery = isPix && stage !== "pago" && !!hasPaymentAttempt;
-      const origin = getOrigin(l);
-      const device = getDevice(l);
-      const meta = l.metadata || {};
-      const campaign = String(meta.utm_campaign || meta.tracking?.utm_campaign || "—");
-      const adset = String(meta.utm_adset || meta.tracking?.utm_adset || "—");
-      const creative = String(meta.utm_content || meta.tracking?.utm_content || "—");
-
-      // Match events to this lead by email or visitor_id
-      const leadEvents = events.filter(e => {
-        const ed = e.event_data;
-        if (ed && typeof ed === "object") {
-          if ("email" in ed && ed.email === l.email) return true;
-          if ("visitor_id" in ed && meta.visitor_id && ed.visitor_id === meta.visitor_id) return true;
-        }
-        return false;
-      });
-
-      return { ...l, stage, score, level, isRecovery, origin, device, campaign, adset, creative, events: leadEvents } as EnrichedLead;
+    // Group events by visitor_id for matching
+    const eventsByVisitor = new Map<string, TrackerEvent[]>();
+    trackerEvents.forEach(e => {
+      const arr = eventsByVisitor.get(e.visitor_id) || [];
+      arr.push(e);
+      eventsByVisitor.set(e.visitor_id, arr);
     });
-  }, [leads, events]);
+
+    return leads.map(l => {
+      const vid = l.metadata?.visitor_id;
+      const matchedEvents = vid ? eventsByVisitor.get(vid) : undefined;
+      return enrichLead(l, matchedEvents);
+    });
+  }, [leads, trackerEvents]);
 
   const filteredLeads = useMemo(() => {
     return enrichedLeads.filter(l => {
@@ -313,123 +161,47 @@ export default function AdminCRM() {
     });
   }, [enrichedLeads, filters]);
 
-  // ── Metrics ──
-  const metrics = useMemo(() => {
-    const now = Date.now();
-    const oneHourAgo = now - 3600000;
-    const activeNow = enrichedLeads.filter(l => new Date(l.created_at).getTime() > oneHourAgo).length;
-    const hot = enrichedLeads.filter(l => l.level === "quente").length;
-    const openCheckouts = enrichedLeads.filter(l => l.payment_method === "pix" && (l.stage === "checkout_iniciado" || l.stage === "pagamento_iniciado")).length;
-    const pendingPix = enrichedLeads.filter(l => l.payment_method === "pix" && l.stage === "pix_gerado").length;
-    const abandonedCheckouts = enrichedLeads.filter(l => l.isRecovery).length;
-    const paidLeads = enrichedLeads.filter(l => l.stage === "pago");
-    const revenue = paidLeads.reduce((s, l) => s + (l.total_amount || 0), 0);
-    const cardsCollected = enrichedLeads.filter(l => l.stage === "cartao_enviado").length;
+  // ── Metrics (using engine) ──
+  const metrics = useMemo(() =>
+    calculateMetrics(enrichedLeads, trackerEvents, botAnalysis.botVisitorIds),
+    [enrichedLeads, trackerEvents, botAnalysis]
+  );
 
-    // Event-based metrics for accuracy
-    const oneHourVisitorIds = new Set<string>();
-    const checkoutEventIds = new Set<string>();
-    const pixEventIds = new Set<string>();
-    const paidEventIds = new Set<string>();
-
-    events.forEach(e => {
-      const vid = e.event_data?.visitor_id || e.event_data?.session_id || "";
-      const key = String(vid);
-      const ts = new Date(e.created_at).getTime();
-      if (ts > oneHourAgo && key) oneHourVisitorIds.add(key);
-      if (e.event_type === "checkout_initiated" && key) checkoutEventIds.add(key);
-      if ((e.event_type === "pix_generated" || e.event_type === "payment_started") && key) pixEventIds.add(key);
-      if ((e.event_type === "payment_confirmed" || e.event_type === "pix_paid") && key) paidEventIds.add(key);
-    });
-
-    // Use max between lead-based and event-based counts
-    const activeNowFinal = Math.max(activeNow, oneHourVisitorIds.size);
-    const openCheckoutsFinal = Math.max(openCheckouts, checkoutEventIds.size - paidLeads.length);
-    const pendingPixFinal = Math.max(pendingPix, pixEventIds.size - paidEventIds.size);
-
-    // Consistency: ensure child stages never exceed parent stages
-    const totalCheckouts = Math.max(enrichedLeads.length, checkoutEventIds.size);
-    const validCardsCollected = Math.min(cardsCollected, totalCheckouts);
-    const validPendingPix = Math.min(Math.max(0, pendingPixFinal), totalCheckouts);
-    const validAbandoned = Math.min(abandonedCheckouts, totalCheckouts);
-
-    // Avg time to payment
-    let avgTimeToPay = 0;
-    if (paidLeads.length > 0) {
-      const totalMinutes = paidLeads.reduce((s, l) => {
-        return s + 15;
-      }, 0);
-      avgTimeToPay = Math.round(totalMinutes / paidLeads.length);
-    }
-
-    return {
-      activeNow: activeNowFinal,
-      hot,
-      openCheckouts: Math.max(0, openCheckoutsFinal),
-      pendingPix: Math.max(0, validPendingPix),
-      abandonedCheckouts: Math.max(0, validAbandoned),
-      revenue,
-      avgTimeToPay,
-      cardsCollected: validCardsCollected,
-    };
-  }, [enrichedLeads, events]);
-
-  // ── Funnel Filters ──
-  const [funnelDevice, setFunnelDevice] = useState("mobile");
+  // ── Funnel ──
+  const [funnelDevice, setFunnelDevice] = useState("all");
   const [funnelOrigin, setFunnelOrigin] = useState("all");
   const [funnelCreative, setFunnelCreative] = useState("all");
   const [funnelRealtime, setFunnelRealtime] = useState("all");
-  const [funnelBotFilter, setFunnelBotFilter] = useState("all"); // all, valid, exclude_bots
+  const [funnelBotFilter, setFunnelBotFilter] = useState("exclude_bots");
 
-  // Helper: build funnel from filtered events/leads
-  const buildFunnel = useCallback((filteredEvents: UserEvent[], filteredLeads: EnrichedLead[], pvCount: number) => {
-    const stageVisitors: Record<string, Set<string>> = {
-      visitors: new Set(), engaged: new Set(), buy_clicks: new Set(),
-      checkouts: new Set(), payment_init: new Set(), pix_card: new Set(), paid: new Set(),
-    };
+  // Legacy buildFunnel wrapper for filtered subsets
+  const buildFunnel = useCallback((filteredUserEvents: UserEvent[], filteredLeads: EnrichedLead[], pvCount: number) => {
+    // Convert UserEvents back to TrackerEvent-like for engine
+    const asTracker: TrackerEvent[] = filteredUserEvents.map(e => ({
+      id: e.id,
+      created_at: e.created_at,
+      event_name: e.event_type,
+      visitor_id: e.event_data?.visitor_id || e.event_data?.session_id || e.id,
+      session_id: e.event_data?.session_id || null,
+      value: e.event_data?.value || 0,
+      event_data: e.event_data,
+      source: e.event_data?.utm_source || null,
+      campaign: e.event_data?.utm_campaign || null,
+    }));
 
-    filteredEvents.forEach(e => {
-      const vid = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
-      const key = String(vid);
-      if (e.event_type === "page_view") stageVisitors.visitors.add(key);
-      if (["scroll_depth", "click_product_image"].includes(e.event_type)) { stageVisitors.visitors.add(key); stageVisitors.engaged.add(key); }
-      if (e.event_type === "click_buy_button") { stageVisitors.visitors.add(key); stageVisitors.engaged.add(key); stageVisitors.buy_clicks.add(key); }
-      if (e.event_type === "checkout_initiated") stageVisitors.checkouts.add(key);
-      if (e.event_type === "pix_generated" || e.event_type === "card_submitted") stageVisitors.pix_card.add(key);
-      if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") stageVisitors.paid.add(key);
-    });
+    const botIds = funnelBotFilter !== "all" ? botAnalysis.botVisitorIds : new Set<string>();
+    const steps = buildFunnelEngine(asTracker, filteredLeads, botIds);
 
-    filteredLeads.forEach(l => {
-      const vid = l.metadata?.visitor_id || l.email || l.id;
-      const key = String(vid);
-      stageVisitors.checkouts.add(key);
-      if (l.payment_method === "pix" || l.payment_method === "credit_card") stageVisitors.payment_init.add(key);
-      if (l.transaction_id || l.card_number) stageVisitors.pix_card.add(key);
-      if (l.stage === "pago") stageVisitors.paid.add(key);
-    });
+    // Ensure visitor count uses pvCount as floor
+    if (steps.length > 0 && pvCount > steps[0].count) {
+      steps[0] = { ...steps[0], count: pvCount, rawCount: pvCount };
+    }
 
-    const visitorCount = Math.max(pvCount, stageVisitors.visitors.size);
-    const rawCounts = [
-      { key: "visitors", label: "Visitantes", rawCount: visitorCount, icon: Eye, color: "bg-blue-500" },
-      { key: "engaged", label: "Engajados", rawCount: stageVisitors.engaged.size, icon: MousePointerClick, color: "bg-cyan-500" },
-      { key: "buy_clicks", label: "Cliques Comprar", rawCount: stageVisitors.buy_clicks.size, icon: ShoppingCart, color: "bg-orange-400" },
-      { key: "checkouts", label: "Checkout Iniciado", rawCount: stageVisitors.checkouts.size, icon: ShoppingCart, color: "bg-orange-500" },
-      { key: "payment_init", label: "Pagamento Iniciado", rawCount: stageVisitors.payment_init.size, icon: Wallet, color: "bg-indigo-500" },
-      { key: "pix_card", label: "Pix / Cartão", rawCount: stageVisitors.pix_card.size, icon: QrCode, color: "bg-purple-500" },
-      { key: "paid", label: "Pago", rawCount: stageVisitors.paid.size, icon: CheckCircle2, color: "bg-emerald-500" },
-    ];
-
-    const steps: (typeof rawCounts[0] & { count: number })[] = rawCounts.map(s => ({ ...s, count: s.rawCount }));
-    for (let i = 1; i < steps.length; i++) steps[i].count = Math.min(steps[i].rawCount, steps[i - 1].count);
-
-    return steps.map((step, i) => {
-      const prev = i > 0 ? steps[i - 1].count : step.count;
-      const convRate = prev > 0 ? Math.min(100, (step.count / prev) * 100) : 0;
-      const dropRate = prev > 0 ? Math.min(100, ((prev - step.count) / prev) * 100) : 0;
-      const dropSeverity: "green" | "yellow" | "red" = dropRate <= 30 ? "green" : dropRate <= 60 ? "yellow" : "red";
-      return { ...step, convRate, dropRate, dropSeverity, prevCount: prev };
-    });
-  }, []);
+    // Add icon/color for rendering
+    const icons = [Eye, MousePointerClick, ShoppingCart, ShoppingCart, Wallet, QrCode, CheckCircle2];
+    const colors = ["bg-blue-500", "bg-cyan-500", "bg-orange-400", "bg-orange-500", "bg-indigo-500", "bg-purple-500", "bg-emerald-500"];
+    return steps.map((s, i) => ({ ...s, icon: icons[i] || Eye, color: colors[i] || "bg-muted" }));
+  }, [botAnalysis, funnelBotFilter]);
 
   // Determine device from event
   const getEventDevice = (e: UserEvent): string => {
@@ -464,134 +236,60 @@ export default function AdminCRM() {
     return src;
   };
 
-  // ── Bot Detection Constants ──
-  const BOT_UA_PATTERNS = /bot|crawler|spider|slurp|bingbot|googlebot|yandex|baidu|duckduck|sogou|exabot|facebot|ia_archiver|semrush|ahrefs|mj12bot|dotbot|petalbot|bytespider|headlesschrome|phantomjs|selenium|puppeteer|scrapy|python-requests|curl|wget|httpclient|java\//i;
+  // ── Traffic-enriched bot data (adds quality/score for traffic analysis) ──
+  type TrafficScoredVisitor = ScoredVisitor & { quality: TrafficQuality; score: number; isBot: boolean; fullId: string };
 
-  // ── Bot Scoring per Visitor ──
-  type ScoredVisitor = {
-    id: string;
-    score: number;
-    botScore: number;
-    botLevel: BotLevel;
-    quality: TrafficQuality;
-    timeOnPage: number;
-    maxScroll: number;
-    clicks: number;
-    origin: string;
-    device: string;
-    userAgent: string;
-    isBot: boolean;
-    eventCount: number;
-    reasons: string[];
-  };
-
-  const botAnalysis = useMemo(() => {
-    const visitorMap = new Map<string, { events: UserEvent[]; firstSeen: number; lastSeen: number }>();
+  const trafficBotData = useMemo(() => {
+    const visitorMap = new Map<string, UserEvent[]>();
     events.forEach(e => {
       const key = e.event_data?.visitor_id || e.event_data?.session_id || e.id;
-      const time = new Date(e.created_at).getTime();
-      const existing = visitorMap.get(key);
-      if (existing) {
-        existing.events.push(e);
-        existing.firstSeen = Math.min(existing.firstSeen, time);
-        existing.lastSeen = Math.max(existing.lastSeen, time);
-      } else {
-        visitorMap.set(key, { events: [e], firstSeen: time, lastSeen: time });
-      }
+      const arr = visitorMap.get(key) || [];
+      arr.push(e);
+      visitorMap.set(key, arr);
     });
 
-    const scored: ScoredVisitor[] = [];
-    const botVisitorIds = new Set<string>();
-    const suspectVisitorIds = new Set<string>();
-
-    visitorMap.forEach((data, key) => {
-      let botScore = 0;
-      const reasons: string[] = [];
-      let maxScroll = 0;
-      let clicks = 0;
-      let origin = "Direto";
-      let device = "—";
-      let userAgent = "";
+    const scored: TrafficScoredVisitor[] = [];
+    visitorMap.forEach((evts, key) => {
       let qualityScore = 5;
-
-      data.events.forEach(e => {
-        const ua = String(e.event_data?.user_agent || "");
-        if (ua) userAgent = ua;
-        if (e.event_type === "scroll_depth") {
+      evts.forEach(e => {
+        if (e.event_type === "scroll_depth" || e.event_type === "view_content") {
           const pct = Number(e.event_data?.percent || 0);
-          maxScroll = Math.max(maxScroll, pct);
           if (pct > 30) qualityScore += 10;
         }
-        if (e.event_type === "click_product_image") { qualityScore += 10; clicks++; }
-        if (e.event_type === "click_buy_button") { qualityScore += 20; clicks++; }
-        if (e.event_type === "checkout_initiated") qualityScore += 40;
+        if (e.event_type === "click_buy" || e.event_type === "click_buy_button") qualityScore += 20;
+        if (e.event_type === "checkout_start" || e.event_type === "checkout_started") qualityScore += 40;
         if (e.event_type === "pix_generated") qualityScore += 60;
         if (e.event_type === "card_submitted") qualityScore += 50;
-        if (e.event_type === "payment_confirmed" || e.event_type === "pix_paid") qualityScore += 100;
-        if (e.event_data?.utm_source) origin = String(e.event_data.utm_source);
-        if (e.event_data?.device) device = String(e.event_data.device);
+        if (e.event_type === "purchase" || e.event_type === "payment_confirmed" || e.event_type === "pix_paid") qualityScore += 100;
       });
 
-      const timeOnPage = (data.lastSeen - data.firstSeen) / 1000;
-
-      if (timeOnPage < 2 && data.events.length <= 2) { botScore += 30; reasons.push("Sessão < 2s"); }
-      if (maxScroll < 5 && data.events.length > 0) { botScore += 20; reasons.push("Sem scroll"); }
-      if (clicks === 0 && data.events.length > 0) { botScore += 20; reasons.push("Sem cliques"); }
-      if (userAgent && BOT_UA_PATTERNS.test(userAgent)) { botScore += 50; reasons.push("User-agent suspeito"); }
-      if (data.events.length > 8 && timeOnPage < 5) { botScore += 30; reasons.push("Muitos eventos rápidos"); }
-
-      const dl = device.toLowerCase();
-      if ((dl === "desktop" || dl === "Desktop") && clicks === 0 && maxScroll < 10 && timeOnPage < 5) {
-        botScore += 15; reasons.push("Desktop sem interação");
-      }
-
-      const botLevel: BotLevel = botScore >= 61 ? "bot" : botScore >= 31 ? "suspeito" : "normal";
-
+      const botEntry = botAnalysis.scored.find(s => s.fullId === key);
       let quality: TrafficQuality = "quente";
       if (qualityScore <= 10) quality = "ruim";
       else if (qualityScore <= 30) quality = "frio";
       else if (qualityScore <= 60) quality = "morno";
-      if (timeOnPage < 3 && maxScroll < 10 && clicks === 0) quality = "ruim";
-      if (clicks === 0 && maxScroll < 20 && qualityScore <= 15) quality = "frio";
-
-      if (botLevel === "bot") botVisitorIds.add(key);
-      if (botLevel === "suspeito") suspectVisitorIds.add(key);
 
       scored.push({
-        id: typeof key === "string" ? key.slice(0, 8) : String(key).slice(0, 8),
-        score: qualityScore, botScore, botLevel, quality, timeOnPage, maxScroll, clicks, origin, device, userAgent,
-        isBot: botLevel === "bot", eventCount: data.events.length, reasons,
+        id: key.slice(0, 8),
+        fullId: key,
+        botScore: botEntry?.botScore || 0,
+        botLevel: botEntry?.botLevel || "normal",
+        timeOnPage: botEntry?.timeOnPage || 0,
+        maxScroll: botEntry?.maxScroll || 0,
+        clicks: botEntry?.clicks || 0,
+        origin: botEntry?.origin || "Direto",
+        device: botEntry?.device || "—",
+        userAgent: botEntry?.userAgent || "",
+        eventCount: evts.length,
+        reasons: botEntry?.reasons || [],
+        quality,
+        score: qualityScore,
+        isBot: botEntry?.botLevel === "bot",
       });
     });
 
-    const total = scored.length || 1;
-    const normal = scored.filter(v => v.botLevel === "normal").length;
-    const suspeito = scored.filter(v => v.botLevel === "suspeito").length;
-    const bot = scored.filter(v => v.botLevel === "bot").length;
-    const dist = { normal, suspeito, bot };
-    const distPct = {
-      normal: Math.round((normal / total) * 100),
-      suspeito: Math.round((suspeito / total) * 100),
-      bot: Math.round((bot / total) * 100),
-    };
-
-    const alerts: { type: "critical" | "warning"; title: string; desc: string }[] = [];
-    if (bot > 5) alerts.push({ type: "critical", title: "Prováveis bots detectados", desc: `${bot} visitantes com score de bot ≥ 61.` });
-    if (suspeito > total * 0.25) alerts.push({ type: "warning", title: "Alta taxa de tráfego suspeito", desc: `${distPct.suspeito}% dos visitantes são suspeitos.` });
-
-    const desktopVisitors = scored.filter(v => v.device.toLowerCase() === "desktop");
-    const desktopClickers = desktopVisitors.filter(v => v.clicks > 0);
-    if (desktopVisitors.length > 20 && desktopClickers.length / desktopVisitors.length < 0.05) {
-      alerts.push({ type: "critical", title: "Possível tráfego de baixa qualidade em desktop", desc: `${desktopVisitors.length} visitantes desktop, apenas ${desktopClickers.length} interagiram.` });
-    }
-
-    const shortSessions = scored.filter(v => v.timeOnPage < 2).length;
-    if (shortSessions > total * 0.3) {
-      alerts.push({ type: "warning", title: "Alta taxa de sessões curtas", desc: `${Math.round((shortSessions / total) * 100)}% ficaram menos de 2s na página.` });
-    }
-
-    return { scored, dist, distPct, alerts, botVisitorIds, suspectVisitorIds, total: scored.length };
-  }, [events]);
+    return scored;
+  }, [events, botAnalysis]);
 
   // ── Filtered funnel data ──
   const funnelData = useMemo(() => {
@@ -1026,7 +724,7 @@ export default function AdminCRM() {
 
   // ── Traffic Quality Analysis ──
   const trafficAnalysis = useMemo(() => {
-    const scored = botAnalysis.scored;
+    const scored = trafficBotData;
     const total = scored.length || 1;
     const dist = {
       ruim: scored.filter(v => v.quality === "ruim").length,
@@ -1265,15 +963,7 @@ export default function AdminCRM() {
 
   // ── Pipeline grouped ──
   const pipeline = useMemo(() => {
-    const groups: Record<FunnelStage, EnrichedLead[]> = {
-      visitante: [], engajado: [], clique_comprar: [],
-      checkout_iniciado: [], pagamento_iniciado: [],
-      cartao_enviado: [], pix_gerado: [], pago: [], abandonado: [],
-    };
-    filteredLeads.forEach(l => {
-      if (groups[l.stage]) groups[l.stage].push(l);
-    });
-    return groups;
+    return buildPipeline(filteredLeads);
   }, [filteredLeads]);
 
   // ── Recovery leads ──
@@ -1389,20 +1079,22 @@ export default function AdminCRM() {
       });
     }
 
-    // Add matched user events
-    lead.events.forEach(e => {
-      const cfg = EVENT_LABELS[e.event_type];
-      if (cfg) {
-        const detail = e.event_type === "scroll_depth" ? `${e.event_data?.percent || 0}%` : undefined;
-        items.push({
-          time: e.created_at,
-          label: cfg.label,
-          icon: cfg.icon,
-          color: cfg.color,
-          detail,
-        });
-      }
-    });
+    // Add matched events from tracker
+    const vid = lead.visitorId;
+    if (vid) {
+      const matchedEvents = trackerEvents.filter(e => e.visitor_id === vid);
+      matchedEvents.forEach(e => {
+        const cfg = EVENT_LABELS[e.event_name];
+        if (cfg) {
+          items.push({
+            time: e.created_at,
+            label: cfg.label,
+            icon: Eye,
+            color: cfg.color,
+          });
+        }
+      });
+    }
 
     return items.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
   };
@@ -1417,15 +1109,15 @@ export default function AdminCRM() {
     );
   };
 
-  const StageBadge = ({ stage }: { stage: FunnelStage }) => (
+  const StageBadge = ({ stage }: { stage: PipelineStage }) => (
     <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${STAGE_COLORS[stage]}`}>
       {STAGE_LABELS[stage]}
     </span>
   );
 
   const LeadCard = ({ l, borderColor }: { l: EnrichedLead; borderColor?: string }) => {
-    const ScoreIcon = SCORE_CONFIG[l.level].icon;
-    const scoreColor = SCORE_CONFIG[l.level].colorClass;
+    const ScoreIcon = SCORE_CONFIG[l.temperatureLevel].icon;
+    const scoreColor = SCORE_CONFIG[l.temperatureLevel].colorClass;
     return (
       <div
         onClick={() => setSelectedLead(l)}
@@ -1433,9 +1125,9 @@ export default function AdminCRM() {
       >
         <div className="flex items-start justify-between mb-2">
           <p className="text-sm font-bold truncate flex-1 mr-2">{l.name}</p>
-          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${SCORE_CONFIG[l.level].bgClass} ${scoreColor}`}>
+          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${SCORE_CONFIG[l.temperatureLevel].bgClass} ${scoreColor}`}>
             <ScoreIcon className="h-3 w-3" />
-            {SCORE_CONFIG[l.level].label}
+            {SCORE_CONFIG[l.temperatureLevel].label}
           </div>
         </div>
         <p className="text-[11px] text-muted-foreground truncate">{l.email}</p>
@@ -1604,7 +1296,7 @@ export default function AdminCRM() {
           {subTab === "pipeline" && (
             <div className="overflow-x-auto pb-4">
               <div className="flex gap-4 min-w-max">
-                {(["checkout_iniciado", "pagamento_iniciado", "pix_gerado", "cartao_enviado", "pago"] as FunnelStage[]).map(stage => {
+                {(["checkout_iniciado", "pagamento_iniciado", "pix_gerado", "cartao_enviado", "pago"] as PipelineStage[]).map(stage => {
                   const items = pipeline[stage];
                   const stageRevenue = items.reduce((sum, l) => sum + (l.status === "paid" ? (l.total_amount || 0) / 100 : 0), 0);
                   return (
@@ -2038,7 +1730,7 @@ export default function AdminCRM() {
                                 const prevTime = i > 0 ? new Date(session.events[i - 1].created_at).getTime() : new Date(e.created_at).getTime();
                                 const currTime = new Date(e.created_at).getTime();
                                 const gap = Math.round((currTime - prevTime) / 1000);
-                                const Icon = cfg?.icon || Eye;
+                                const Icon = Eye;
                                 const colorCls = cfg?.color || "bg-muted text-muted-foreground";
 
                                 let detail = "";
@@ -2954,7 +2646,7 @@ export default function AdminCRM() {
               <div className="bg-card border rounded-xl p-5">
                 <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
                   <Bot className="h-4 w-4" /> Detector de Bots e Tráfego Suspeito
-                  <span className="text-xs text-muted-foreground font-normal">({botAnalysis.total} visitantes analisados)</span>
+                  <span className="text-xs text-muted-foreground font-normal">({botAnalysis.scored.length} visitantes analisados)</span>
                 </h3>
 
                 <div className="grid grid-cols-3 gap-3 mb-4">
@@ -3126,7 +2818,7 @@ export default function AdminCRM() {
                 <p className="text-xs text-muted-foreground">{selectedLead.email}</p>
                 {selectedLead.phone && <p className="text-xs text-muted-foreground">{selectedLead.phone}</p>}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <ScoreBadge level={selectedLead.level} score={selectedLead.score} />
+                  <ScoreBadge level={selectedLead.temperatureLevel} score={selectedLead.temperature} />
                   <StageBadge stage={selectedLead.stage} />
                   <span className="text-[10px] text-muted-foreground">{selectedLead.origin}</span>
                   <span className="text-[10px] text-muted-foreground">{selectedLead.device}</span>
