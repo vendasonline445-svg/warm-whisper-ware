@@ -124,7 +124,7 @@ function StatusBadge({ active, detected }: { active: boolean; detected: boolean 
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════
 
-export default function AdminTikTokTab() {
+export default function AdminTikTokTab({ diagnosticsOnly = false }: { diagnosticsOnly?: boolean } = {}) {
   const [pixels, setPixels] = useState<Pixel[]>([]);
   const [loading, setLoading] = useState(false);
   const [events, setEvents] = useState<UserEvent[]>([]);
