@@ -100,7 +100,7 @@ interface SystemAlert {
 function AdminContent() {
   const navigate = useNavigate();
   const [authenticated] = useState(true); // Auth handled by ProtectedRoute
-  const [password, setPassword] = useState("");
+  const [_password, _setPassword] = useState(""); // unused, kept for type compat
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
