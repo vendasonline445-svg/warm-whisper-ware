@@ -94,7 +94,6 @@ const INTEGRATION_DEFS: IntegrationDef[] = [
 ];
 
 const GROUPS: Record<string, { label: string; icon: string }> = {
-  tiktok: { label: "TikTok Pixels", icon: "🎵" },
   ads: { label: "Pixels de Anúncios", icon: "📢" },
   analytics: { label: "Analytics", icon: "📊" },
   heatmaps: { label: "Heatmaps / Session Recording", icon: "🔍" },
