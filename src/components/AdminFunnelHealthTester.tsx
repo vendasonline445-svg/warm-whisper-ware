@@ -431,6 +431,56 @@ export default function AdminFunnelHealthTester() {
           </Card>
         </div>
       </div>
+
+      {/* Server-side Event Log */}
+      {serverLogs.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Eventos Server-Side (últimos 20)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="pb-2 font-medium text-muted-foreground">Evento</th>
+                    <th className="pb-2 font-medium text-muted-foreground">Fonte</th>
+                    <th className="pb-2 font-medium text-muted-foreground">Status</th>
+                    <th className="pb-2 font-medium text-muted-foreground">Site</th>
+                    <th className="pb-2 font-medium text-muted-foreground">Horário</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {serverLogs.map((log: any) => (
+                    <tr key={log.id} className="border-b border-border/50">
+                      <td className="py-1.5 font-mono">{log.event_name}</td>
+                      <td className="py-1.5">
+                        <Badge variant={log.source === 'webhook' ? 'default' : 'secondary'} className="text-[9px]">
+                          {log.source}
+                        </Badge>
+                      </td>
+                      <td className="py-1.5">
+                        {log.success ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 text-red-500" />
+                        )}
+                      </td>
+                      <td className="py-1.5 text-muted-foreground">{log.site_id}</td>
+                      <td className="py-1.5 text-muted-foreground">
+                        {new Date(log.created_at).toLocaleString("pt-BR")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
