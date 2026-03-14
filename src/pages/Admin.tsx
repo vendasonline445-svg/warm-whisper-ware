@@ -5,6 +5,10 @@ import { format, startOfDay, endOfDay, subDays, startOfMonth } from "date-fns";
 
 import AdminTikTokTab from "@/components/AdminTikTokTab";
 import AdminTrackingHub from "@/components/AdminTrackingHub";
+import SettingsTracking from "@/components/settings/SettingsTracking";
+import SettingsPixels from "@/components/settings/SettingsPixels";
+import SettingsIntegrations from "@/components/settings/SettingsIntegrations";
+import SettingsAdmin from "@/components/settings/SettingsAdmin";
 
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminAIAssistant from "@/components/AdminAIAssistant";
