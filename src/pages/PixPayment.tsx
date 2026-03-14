@@ -4,8 +4,8 @@ import { ArrowLeft, Copy, AlertTriangle, Check, RefreshCw, Clock } from "lucide-
 import { getUrlWithUtm } from "@/utils/utm";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { trackTikTokEvent } from "@/lib/tiktok-tracking";
-import { trackEvent, trackPageViewOnce } from "@/utils/track-event";
+import { trackFunnelEvent } from "@/lib/tracking-hub";
+import { trackPageViewOnce } from "@/utils/track-event";
 
 const PIX_TIMEOUT_MINUTES = 15;
 
