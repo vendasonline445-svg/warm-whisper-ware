@@ -580,7 +580,8 @@ function AdminContent() {
         {tab === "tracking-pixels" && <SettingsPixels />}
         {tab === "settings-scripts" && <SettingsTracking />}
         {tab === "settings-csv" && <SettingsAdmin defaultTab="csv" />}
-        {tab === "logs" && (
+
+        {(tab === "ai" || tab === "ai-insights") && (
           <AdminAIAssistant
             visitors={visitorsCount}
             conversions={paidCount}
@@ -589,7 +590,6 @@ function AdminContent() {
           />
         )}
 
-        {tab === "logs" && (
           <div className="space-y-6">
             {logsLoading ? (
               <p className="text-center text-muted-foreground py-8">Carregando logs...</p>
