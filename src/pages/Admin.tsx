@@ -533,21 +533,45 @@ function AdminContent() {
 
         {tab === "tiktok" && <AdminTikTokTab />}
 
-        {(tab === "tracking" || tab === "tracking-sessions" || tab === "tracking-clicks" || tab === "tracking-links" || tab === "tracking-debug") && <AdminTrackingHub />}
+        {(tab === "tracking" || tab === "tracking-sessions" || tab === "tracking-clicks" || tab === "tracking-links" || tab === "tracking-debug") && (
+          <AdminTrackingHub key={tab} defaultTab={
+            tab === "tracking-sessions" ? "sessoes" :
+            tab === "tracking-clicks" ? "cliques" :
+            tab === "tracking-links" ? "links" :
+            tab === "tracking-debug" ? "debug" :
+            "eventos"
+          } />
+        )}
 
-        {(tab === "clients" || tab === "clients-bc") && <AdminClientHub />}
+        {(tab === "clients" || tab === "clients-bc") && (
+          <AdminClientHub key={tab} defaultTab={tab === "clients-bc" ? "business_centers" : "clientes"} />
+        )}
 
-        {(tab === "campaigns" || tab === "campaigns-creatives" || tab === "campaigns-automation" || tab === "campaigns-budgets" || tab === "campaigns-performance") && <AdminAdsHub />}
+        {(tab === "campaigns" || tab === "campaigns-creatives" || tab === "campaigns-automation" || tab === "campaigns-budgets" || tab === "campaigns-performance") && (
+          <AdminAdsHub key={tab} defaultTab={
+            tab === "campaigns-creatives" ? "creatives" :
+            tab === "campaigns-automation" ? "automation" :
+            tab === "campaigns-budgets" ? "budgets" :
+            "campaigns"
+          } />
+        )}
 
-        {(tab === "analytics" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && <AdminAnalyticsHub />}
+        {(tab === "analytics" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && (
+          <AdminAnalyticsHub key={tab} defaultTab={
+            tab === "analytics-attribution" ? "campaign_perf" :
+            tab === "analytics-revenue" ? "revenue" :
+            tab === "analytics-reports" ? "alerts" :
+            "overview"
+          } />
+        )}
 
         {tab === "rastreios" && <AdminRastreiosTab />}
 
-        {(tab === "settings-scripts" || tab === "tracking-pixels") && <AdminTrackingHub />}
+        {(tab === "settings-scripts" || tab === "tracking-pixels") && <AdminTrackingHub key={`settings-${tab}`} />}
 
         {tab === "tracking-config" && <AdminTrackingConfig />}
 
-        {tab === "settings-csv" && <AdminClientHub />}
+        {tab === "settings-csv" && <AdminClientHub key="csv" defaultTab="clientes" />}
 
         {(tab === "ai" || tab === "ai-insights") && (
           <AdminAIAssistant

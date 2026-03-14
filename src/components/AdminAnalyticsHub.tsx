@@ -48,8 +48,8 @@ interface SystemAlert {
   description: string;
 }
 
-export default function AdminAnalyticsHub() {
-  const [subTab, setSubTab] = useState<SubTab>("overview");
+export default function AdminAnalyticsHub({ defaultTab }: { defaultTab?: SubTab }) {
+  const [subTab, setSubTab] = useState<SubTab>(defaultTab ?? "overview");
   const [loading, setLoading] = useState(false);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [creatives, setCreatives] = useState<any[]>([]);

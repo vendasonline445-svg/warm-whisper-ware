@@ -234,8 +234,8 @@ function analyzePixelHealth(events: any[]): PixelAlert[] {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-export default function AdminTrackingHub() {
-  const [subTab, setSubTab] = useState<SubTab>("campanhas");
+export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }) {
+  const [subTab, setSubTab] = useState<SubTab>(defaultTab ?? "campanhas");
   const [loading, setLoading] = useState(false);
 
   const [campaigns, setCampaigns] = useState<any[]>([]);
