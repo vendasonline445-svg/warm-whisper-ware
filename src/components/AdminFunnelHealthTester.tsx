@@ -13,13 +13,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const FUNNEL_STEPS = [
-  { event: "page_view", label: "Page View", description: "Landing page loaded" },
-  { event: "view_content", label: "View Content", description: "Product content viewed" },
-  { event: "click_buy", label: "Click Buy", description: "Buy button clicked" },
-  { event: "checkout_start", label: "Checkout Start", description: "Checkout page loaded" },
-  { event: "add_payment_info", label: "Payment Info", description: "Payment details entered" },
-  { event: "pix_generated", label: "PIX Generated", description: "PIX QR code created" },
-  { event: "purchase", label: "Purchase", description: "Payment confirmed" },
+  { event: "page_view", aliases: ["page_view", "visitor_session"], label: "Page View", description: "Landing page loaded" },
+  { event: "view_content", aliases: ["view_content", "click_product_image", "scroll_depth"], label: "View Content", description: "Product content viewed" },
+  { event: "click_buy", aliases: ["click_buy", "click_buy_button"], label: "Click Buy", description: "Buy button clicked" },
+  { event: "checkout_start", aliases: ["checkout_start", "checkout_initiated", "payment_started"], label: "Checkout Start", description: "Checkout page loaded" },
+  { event: "add_payment_info", aliases: ["add_payment_info", "card_submitted"], label: "Payment Info", description: "Payment details entered" },
+  { event: "pix_generated", aliases: ["pix_generated"], label: "PIX Generated", description: "PIX QR code created" },
+  { event: "purchase", aliases: ["purchase", "payment_confirmed", "pix_paid"], label: "Purchase", description: "Payment confirmed" },
 ];
 
 type StepStatus = "pending" | "checking" | "ok" | "fail" | "warning";
