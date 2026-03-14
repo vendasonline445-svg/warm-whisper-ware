@@ -654,7 +654,7 @@ export default function Admin() {
 
         {(tab === "campaigns" || tab === "campaigns-creatives" || tab === "campaigns-automation" || tab === "campaigns-budgets" || tab === "campaigns-performance") && <AdminAdsHub />}
 
-        {(tab === "analytics" || tab === "analytics-campaigns" || tab === "analytics-creatives" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && <AdminAnalyticsHub />}
+        {(tab === "analytics" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && <AdminAnalyticsHub />}
 
         {tab === "rastreios" && <AdminRastreiosTab />}
 
