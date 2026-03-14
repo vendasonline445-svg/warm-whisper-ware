@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { initTikTokTracking, trackPageView } from "@/lib/tiktok-tracking";
+import { initSessionReplay } from "@/lib/session-replay";
 import Index from "./pages/Index";
 import Checkout from "./pages/Checkout";
 import TemplateCheckout from "./pages/TemplateCheckout";
@@ -34,6 +35,7 @@ function TikTokSPATracker() {
 
 // Init tracking on app load
 initTikTokTracking();
+initSessionReplay();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

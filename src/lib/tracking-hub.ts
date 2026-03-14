@@ -12,6 +12,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { trackTikTokEvent, identifyTikTokUser, setUserData } from "@/lib/tiktok-tracking";
+import { createMultiModelAttribution } from "@/lib/attribution-engine";
 import type { Json } from "@/integrations/supabase/types";
 
 const DEBUG = "[TrackingHub]";
@@ -265,13 +266,19 @@ export async function trackFunnelEvent(options: TrackOptions) {
     event_data: eventData as Json,
   };
 
-  // 4. Try DB insert with retry queue fallback
+  // 4. Try DB insert with retry queue fallback (localStorage + server-side event_queue)
   const { error } = await db.from("events").insert(dbPayload);
   if (error) {
     console.warn(`${DEBUG} DB insert failed, queuing for retry: ${eventId}`);
     const queue = loadRetryQueue();
     queue.push({ dbPayload, retries: 0, critical: CRITICAL_EVENTS.has(event), eventId });
     saveRetryQueue(queue);
+    // Also push to server-side event_queue as backup
+    db.from("event_queue").insert({
+      event_name: event,
+      payload: dbPayload as Json,
+      status: "pending",
+    }).then(() => {});
   } else {
     console.log(`${DEBUG} ✓ ${event} saved to DB (event_id: ${eventId})`);
   }
@@ -292,10 +299,16 @@ export async function trackFunnelEvent(options: TrackOptions) {
     } catch {}
   }
 
-  // 6. Attribution on purchase
+  // 6. Attribution on purchase (multi-model)
   if (event === "purchase" && visitorId) {
-    // Use the DB-generated UUID from insert or generate one
-    createAttribution(eventId, visitorId, sessionId, value);
+    createMultiModelAttribution({
+      eventId,
+      eventType: event,
+      visitorId,
+      sessionId,
+      revenue: value,
+      model: "last_click",
+    });
   }
 
   // 7. Distribute to TikTok (Browser + Server)

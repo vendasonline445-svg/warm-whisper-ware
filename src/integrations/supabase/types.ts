@@ -59,11 +59,13 @@ export type Database = {
         Row: {
           attribution_model: string | null
           campaign_id: string | null
+          click_id: string | null
           client_id: string | null
           created_at: string
           creative_id: string | null
           currency: string | null
           event_id: string
+          event_type: string | null
           id: string
           revenue: number | null
           session_id: string | null
@@ -71,11 +73,13 @@ export type Database = {
         Insert: {
           attribution_model?: string | null
           campaign_id?: string | null
+          click_id?: string | null
           client_id?: string | null
           created_at?: string
           creative_id?: string | null
           currency?: string | null
           event_id: string
+          event_type?: string | null
           id?: string
           revenue?: number | null
           session_id?: string | null
@@ -83,11 +87,13 @@ export type Database = {
         Update: {
           attribution_model?: string | null
           campaign_id?: string | null
+          click_id?: string | null
           client_id?: string | null
           created_at?: string
           creative_id?: string | null
           currency?: string | null
           event_id?: string
+          event_type?: string | null
           id?: string
           revenue?: number | null
           session_id?: string | null
@@ -259,6 +265,7 @@ export type Database = {
           clicks: number | null
           client_id: string | null
           cpc: number | null
+          cpm: number | null
           created_at: string
           ctr: number | null
           date: string
@@ -271,6 +278,7 @@ export type Database = {
           clicks?: number | null
           client_id?: string | null
           cpc?: number | null
+          cpm?: number | null
           created_at?: string
           ctr?: number | null
           date: string
@@ -283,6 +291,7 @@ export type Database = {
           clicks?: number | null
           client_id?: string | null
           cpc?: number | null
+          cpm?: number | null
           created_at?: string
           ctr?: number | null
           date?: string
@@ -492,6 +501,60 @@ export type Database = {
         }
         Relationships: []
       }
+      creative_metrics: {
+        Row: {
+          campaign_id: string | null
+          clicks: number | null
+          conversions: number | null
+          cpa: number | null
+          creative_id: string | null
+          id: string
+          revenue: number | null
+          roas: number | null
+          spend: number | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          clicks?: number | null
+          conversions?: number | null
+          cpa?: number | null
+          creative_id?: string | null
+          id?: string
+          revenue?: number | null
+          roas?: number | null
+          spend?: number | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          clicks?: number | null
+          conversions?: number | null
+          cpa?: number | null
+          creative_id?: string | null
+          id?: string
+          revenue?: number | null
+          roas?: number | null
+          spend?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_metrics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creative_metrics_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "creatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creatives: {
         Row: {
           campaign_id: string | null
@@ -523,6 +586,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_queue: {
+        Row: {
+          created_at: string
+          event_name: string
+          id: string
+          next_retry_at: string | null
+          payload: Json
+          retry_count: number
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          id?: string
+          next_retry_at?: string | null
+          payload?: Json
+          retry_count?: number
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          id?: string
+          next_retry_at?: string | null
+          payload?: Json
+          retry_count?: number
+          status?: string
+        }
+        Relationships: []
       }
       events: {
         Row: {
@@ -565,6 +658,47 @@ export type Database = {
           visitor_id?: string
         }
         Relationships: []
+      }
+      funnel_diagnostics: {
+        Row: {
+          checkout_to_payment_rate: number | null
+          click_to_checkout_rate: number | null
+          client_id: string | null
+          id: string
+          payment_to_purchase_rate: number | null
+          status: string
+          updated_at: string
+          visitor_to_click_rate: number | null
+        }
+        Insert: {
+          checkout_to_payment_rate?: number | null
+          click_to_checkout_rate?: number | null
+          client_id?: string | null
+          id?: string
+          payment_to_purchase_rate?: number | null
+          status?: string
+          updated_at?: string
+          visitor_to_click_rate?: number | null
+        }
+        Update: {
+          checkout_to_payment_rate?: number | null
+          click_to_checkout_rate?: number | null
+          client_id?: string | null
+          id?: string
+          payment_to_purchase_rate?: number | null
+          status?: string
+          updated_at?: string
+          visitor_to_click_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_diagnostics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funnel_state: {
         Row: {
@@ -720,6 +854,42 @@ export type Database = {
           created_at?: string
           id?: string
           page?: string
+        }
+        Relationships: []
+      }
+      session_actions: {
+        Row: {
+          created_at: string
+          element: string | null
+          event_type: string
+          id: string
+          mouse_x: number | null
+          mouse_y: number | null
+          page_url: string | null
+          scroll_position: number | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          element?: string | null
+          event_type: string
+          id?: string
+          mouse_x?: number | null
+          mouse_y?: number | null
+          page_url?: string | null
+          scroll_position?: number | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          element?: string | null
+          event_type?: string
+          id?: string
+          mouse_x?: number | null
+          mouse_y?: number | null
+          page_url?: string | null
+          scroll_position?: number | null
+          session_id?: string
         }
         Relationships: []
       }
