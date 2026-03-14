@@ -1293,6 +1293,24 @@ export type Database = {
           },
         ]
       }
+      tiktok_event_dedup: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          pixel_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          pixel_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          pixel_id?: string
+        }
+        Relationships: []
+      }
       tiktok_pixels: {
         Row: {
           api_token: string

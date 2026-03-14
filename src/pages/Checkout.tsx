@@ -5,6 +5,7 @@ import { getUrlWithUtm } from "@/utils/utm";
 import { getTrackingContext, trackEvent, trackPageViewOnce } from "@/utils/track-event";
 import { toast } from "@/hooks/use-toast";
 import { trackFunnelEvent, identifyUser } from "@/lib/tracking-hub";
+import { cacheUserIdentity } from "@/lib/tiktok-tracking";
 import {
   ArrowLeft, MapPin, Star, Truck, ShieldCheck, Minus, Plus, ChevronRight, Check, ChevronDown, CreditCard
 } from "lucide-react";
@@ -308,6 +309,13 @@ const Checkout = () => {
       phone: form.phone,
       externalId: form.cpf,
     });
+
+    // Cache identity for cross-event PII enrichment (email/phone coverage on all events)
+    await cacheUserIdentity(
+      form.email,
+      form.phone,
+      localStorage.getItem("fiq_visitor_id") || localStorage.getItem("mesalar_visitor_id") || undefined
+    );
 
     try {
       const totalAmountInCents = Math.round(total * 100);

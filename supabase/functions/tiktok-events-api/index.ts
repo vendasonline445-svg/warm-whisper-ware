@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -30,6 +32,36 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── Deduplication check ───────────────────────────────────────────
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    if (event_id) {
+      const { data: existing } = await supabase
+        .from("tiktok_event_dedup")
+        .select("event_id")
+        .eq("event_id", event_id)
+        .eq("pixel_id", pixel_code)
+        .maybeSingle();
+
+      if (existing) {
+        console.log(`[TikTok Dedup] Skipping duplicate: ${event_id} for pixel ${pixel_code}`);
+        return new Response(
+          JSON.stringify({ success: true, deduplicated: true, message: "Evento duplicado ignorado" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Record as sent (fire-and-forget, don't block the main flow)
+      supabase
+        .from("tiktok_event_dedup")
+        .insert({ event_id, pixel_id: pixel_code })
+        .then(() => {})
+        .catch((e: any) => console.warn("[TikTok Dedup] Insert error:", e));
+    }
+
+    // ── Capture real client IP ────────────────────────────────────────
     const clientIp =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") ||
@@ -38,22 +70,26 @@ Deno.serve(async (req) => {
 
     const eventData = {
       event,
-      event_id,
+      event_id: event_id || `${event}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       event_time: Math.floor(new Date(timestamp || new Date().toISOString()).getTime() / 1000),
       user: {
         email: user?.email || undefined,
         phone_number: user?.phone_number || undefined,
         external_id: user?.external_id || undefined,
-        ip: clientIp || undefined,
+        ip: clientIp || user?.ip || undefined,
         user_agent: user?.user_agent || undefined,
         ttclid: user?.ttclid || undefined,
       },
       page: {
         url: user?.page_url || undefined,
       },
-      properties: properties || {},
+      properties: {
+        ...(properties || {}),
+        currency: properties?.currency || "BRL",
+      },
     };
 
+    // Clean undefined values from user object
     eventData.user = Object.fromEntries(
       Object.entries(eventData.user).filter(([_, v]) => v)
     ) as any;
@@ -87,6 +123,15 @@ Deno.serve(async (req) => {
     } catch {
       resData = { raw: resText };
     }
+
+    // ── Cleanup old dedup entries (older than 24h) ────────────────────
+    // Fire-and-forget cleanup of stale entries
+    supabase
+      .from("tiktok_event_dedup")
+      .delete()
+      .lt("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .then(() => {})
+      .catch(() => {});
 
     return new Response(
       JSON.stringify({ success: response.ok, tiktok_response: resData }),

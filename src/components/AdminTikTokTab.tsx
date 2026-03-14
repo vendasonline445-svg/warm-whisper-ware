@@ -270,6 +270,8 @@ export default function AdminTikTokTab() {
     const emailCoverage = Math.round((relevantEvents.filter((e) => e.event_data?.email && String(e.event_data.email).trim()).length / total) * 100);
     const phoneCoverage = Math.round((relevantEvents.filter((e) => e.event_data?.phone && String(e.event_data.phone).trim()).length / total) * 100);
     const extIdCoverage = Math.round((relevantEvents.filter((e) => e.event_data?.visitor_id && String(e.event_data.visitor_id).trim()).length / total) * 100);
+    const currencyCoverage = Math.round((relevantEvents.filter((e) => e.event_data?.currency === "BRL").length / total) * 100);
+    const contentsCoverage = Math.round((relevantEvents.filter((e) => e.event_data?.contents && Array.isArray(e.event_data.contents)).length / total) * 100);
 
     let dupCount = 0;
     const sorted = [...relevantEvents].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -281,21 +283,27 @@ export default function AdminTikTokTab() {
     }
 
     let ttclidDetected = false;
-    try { ttclidDetected = !!localStorage.getItem("tt_ttclid"); } catch {}
+    try { ttclidDetected = !!localStorage.getItem("fiq_ttclid") || !!localStorage.getItem("tt_ttclid"); } catch {}
 
+    // Score calculation (0-100)
     let score = 0;
+    // Infrastructure (35pts)
     if (hasPixels) score += 15;
     if (ttqLoaded || hasPixels) score += 10;
     if (hasEvents) score += 10;
+    // Data quality (55pts)
     if (eventIdCoverage > 80) score += 15; else if (eventIdCoverage > 50) score += 8;
-    if (extIdCoverage > 80) score += 20; else if (extIdCoverage > 50) score += 10;
+    if (extIdCoverage > 80) score += 10; else if (extIdCoverage > 50) score += 5;
     if (emailCoverage > 20) score += 10; else if (emailCoverage > 5) score += 5;
     if (phoneCoverage > 20) score += 10; else if (phoneCoverage > 5) score += 5;
-    if (dupCount === 0) score += 10; else if (dupCount < 3) score += 5;
+    if (currencyCoverage > 90) score += 5; else if (currencyCoverage > 50) score += 2;
+    if (contentsCoverage > 80) score += 5; else if (contentsCoverage > 30) score += 2;
+    // Attribution (10pts)
+    if (dupCount === 0) score += 5; else if (dupCount < 3) score += 2;
     if (ttclidDetected) score += 5; else if (hasPixels) score += 3;
     score = Math.min(score, 100);
 
-    return { hasPixels, ttqLoaded, hasEvents, eventIdCoverage, emailCoverage, phoneCoverage, extIdCoverage, dupCount, ttclidDetected, score, totalEvents: relevantEvents.length };
+    return { hasPixels, ttqLoaded, hasEvents, eventIdCoverage, emailCoverage, phoneCoverage, extIdCoverage, currencyCoverage, contentsCoverage, dupCount, ttclidDetected, score, totalEvents: relevantEvents.length };
   }, [pixels, events]);
 
   const scoreColor = diagnostics.score >= 80 ? "text-emerald-500" : diagnostics.score >= 50 ? "text-amber-500" : "text-red-500";
@@ -516,6 +524,10 @@ export default function AdminTikTokTab() {
                   { label: "Eventos", status: (diagnostics.hasEvents ? "ok" : "warn") as DiagStatus, detail: `${diagnostics.totalEvents}` },
                   { label: "Event ID", status: (diagnostics.eventIdCoverage > 80 ? "ok" : diagnostics.eventIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.eventIdCoverage}%` },
                   { label: "Advanced Matching", status: (diagnostics.extIdCoverage > 80 ? "ok" : diagnostics.extIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.extIdCoverage}%` },
+                  { label: "Currency BRL", status: (diagnostics.currencyCoverage > 90 ? "ok" : diagnostics.currencyCoverage > 50 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.currencyCoverage}%` },
+                  { label: "Contents", status: (diagnostics.contentsCoverage > 80 ? "ok" : diagnostics.contentsCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.contentsCoverage}%` },
+                  { label: "Duplicatas", status: (diagnostics.dupCount === 0 ? "ok" : diagnostics.dupCount < 3 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.dupCount}` },
+                  { label: "ttclid", status: (diagnostics.ttclidDetected ? "ok" : "warn") as DiagStatus, detail: diagnostics.ttclidDetected ? "Detectado" : "Sem ttclid" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
                     <div className="flex items-center gap-2"><StatusIcon status={item.status} /><span className="text-sm">{item.label}</span></div>
@@ -523,8 +535,13 @@ export default function AdminTikTokTab() {
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {[{ label: "Email", value: diagnostics.emailCoverage }, { label: "Telefone", value: diagnostics.phoneCoverage }, { label: "External ID", value: diagnostics.extIdCoverage }].map((item, i) => (
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: "Email", value: diagnostics.emailCoverage },
+                  { label: "Telefone", value: diagnostics.phoneCoverage },
+                  { label: "External ID", value: diagnostics.extIdCoverage },
+                  { label: "IP (server)", value: 100 },
+                ].map((item, i) => (
                   <div key={i} className="rounded-lg bg-muted/30 p-3 text-center">
                     <p className="text-xs text-muted-foreground">{item.label}</p>
                     <p className={`text-xl font-bold ${item.value >= 70 ? "text-emerald-500" : item.value >= 30 ? "text-amber-500" : "text-red-500"}`}>{item.value}%</p>
