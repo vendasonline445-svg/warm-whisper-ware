@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfDay, endOfDay, subDays, startOfMonth } from "date-fns";
 import AdminCRM from "@/components/AdminCRM";
 import AdminTikTokTab from "@/components/AdminTikTokTab";
+import AdminTrackingHub from "@/components/AdminTrackingHub";
 import AdminRastreiosTab from "@/components/AdminRastreiosTab";
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminAIAssistant from "@/components/AdminAIAssistant";
