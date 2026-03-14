@@ -422,7 +422,7 @@ function AdminContent() {
     if (newTab === "logs") {
       setLogsLoading(true);
       Promise.all([
-        supabase.from("user_events").select("*").eq("event_type", "js_error").order("created_at", { ascending: false }).limit(50),
+        supabase.from("events").select("*").eq("event_name", "js_error").order("created_at", { ascending: false }).limit(50),
         supabase.from("tracking_webhook_logs").select("*").order("created_at", { ascending: false }).limit(50),
       ]).then(([errRes, whRes]) => {
         setErrorLogs(errRes.data || []);
