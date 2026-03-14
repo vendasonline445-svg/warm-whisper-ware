@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, TrendingUp, DollarSign, Target, AlertTriangle, Activity, Users, Zap } from "lucide-react";
+import { BarChart3, TrendingUp, DollarSign, Target, AlertTriangle, Activity, Users, Zap, Wallet } from "lucide-react";
 
 const db = supabase as any;
 
