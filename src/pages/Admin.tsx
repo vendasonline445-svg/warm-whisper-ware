@@ -15,14 +15,13 @@ import AdminFunnelHealthTester from "@/components/AdminFunnelHealthTester";
 import AdminLiveActivity from "@/components/AdminLiveActivity";
 import AdminSidebar, { type AdminTab } from "@/components/AdminSidebar";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle2, TrendingUp, CreditCard, Webhook, Bug, Radio, CalendarIcon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-
-const ADMIN_PASSWORD = "12345";
 
 interface Lead {
   id: string;
