@@ -81,19 +81,18 @@ const Checkout = () => {
   // InitiateCheckout event on mount + track page view
   useEffect(() => {
     window.scrollTo({ top: 0 });
-    trackTikTokEvent({
-      event: "InitiateCheckout",
+    trackFunnelEvent({
+      event: "checkout_start",
+      value: subtotalRaw,
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
         content_name: "Mesa Dobrável Retrátil",
-        value: subtotalRaw,
-        currency: "BRL",
         contents: cartItems.map(i => ({ content_id: `mesa-dobravel-${i.color}-${i.size}`, quantity: i.quantity })),
+        items: cartItems.length,
       },
     });
     trackPageViewOnce("/checkout");
-    trackEvent("checkout_initiated", { items: cartItems.length });
   }, []);
 
   const couponUsed = localStorage.getItem('mesalar_coupon_used') === 'true';
