@@ -97,9 +97,9 @@ interface SystemAlert {
   description: string;
 }
 
-export default function Admin() {
+function AdminContent() {
   const navigate = useNavigate();
-  const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem("admin_auth") === "true");
+  const [authenticated] = useState(true); // Auth handled by ProtectedRoute
   const [password, setPassword] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
