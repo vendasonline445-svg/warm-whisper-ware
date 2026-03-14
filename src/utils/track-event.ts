@@ -13,6 +13,23 @@ import type { Json } from "@/integrations/supabase/types";
 
 const db = supabase as any;
 
+// ── Identity cache reader (avoid circular import from tiktok-tracking) ──
+function getCachedIdentity(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem("fiq_user_identity");
+    if (!raw) return {};
+    const data = JSON.parse(raw);
+    if (Date.now() - data.cached_at > 30 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem("fiq_user_identity");
+      return {};
+    }
+    const { cached_at, ...identity } = data;
+    return identity;
+  } catch {
+    return {};
+  }
+}
+
 // ── Storage helpers with fiq_* prefix + mesalar_* fallback ──
 function getStore(storage: Storage, key: string): string | null {
   try {
