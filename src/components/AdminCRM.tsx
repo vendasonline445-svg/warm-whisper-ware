@@ -2646,7 +2646,7 @@ export default function AdminCRM() {
               <div className="bg-card border rounded-xl p-5">
                 <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
                   <Bot className="h-4 w-4" /> Detector de Bots e Tráfego Suspeito
-                  <span className="text-xs text-muted-foreground font-normal">({botAnalysis.total} visitantes analisados)</span>
+                  <span className="text-xs text-muted-foreground font-normal">({botAnalysis.scored.length} visitantes analisados)</span>
                 </h3>
 
                 <div className="grid grid-cols-3 gap-3 mb-4">
