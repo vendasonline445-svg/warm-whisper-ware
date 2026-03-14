@@ -1,15 +1,189 @@
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function sendTracklyWebhook(supabaseUrl: string, supabaseKey: string, lead: any, data: any) {
-  // Check if webhook is enabled
+const DEFAULT_TRACKLY_WEBHOOK_URL =
+  "https://tracklybrasil.tech/public/webhook.php?token=wh_73e5eecea7881d9dc7765fbb3d3fffd4593dd823f14b3353a92a87b0b58f49d5&source=vegacheckout";
+
+const PAID_STATUSES = new Set([
+  "paid",
+  "approved",
+  "approved_payment",
+  "succeeded",
+  "success",
+]);
+
+function restHeaders(serviceKey: string) {
+  return {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    "Content-Type": "application/json",
+    Prefer: "return=minimal",
+  };
+}
+
+function pickFirstString(...values: any[]): string | null {
+  for (const value of values) {
+    if (value === null || value === undefined) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return null;
+}
+
+function pickFirstNumber(...values: any[]): number {
+  for (const value of values) {
+    if (value === null || value === undefined) continue;
+    const num = Number(value);
+    if (Number.isFinite(num)) return num;
+  }
+  return 0;
+}
+
+function asObject(value: unknown): Record<string, any> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, any>)
+    : {};
+}
+
+function parseRawPayload(rawBody: string): Record<string, any> {
+  if (!rawBody?.trim()) return {};
+
+  try {
+    const parsed = JSON.parse(rawBody);
+    return asObject(parsed);
+  } catch {
+    // fallback to form-encoded
+  }
+
+  try {
+    const params = new URLSearchParams(rawBody);
+    const formData: Record<string, any> = {};
+
+    for (const [key, value] of params.entries()) {
+      formData[key] = value;
+    }
+
+    if (typeof formData.payload === "string") {
+      try {
+        formData.payload = JSON.parse(formData.payload);
+      } catch {
+        // keep as string
+      }
+    }
+
+    if (typeof formData.data === "string") {
+      try {
+        formData.data = JSON.parse(formData.data);
+      } catch {
+        // keep as string
+      }
+    }
+
+    return formData;
+  } catch {
+    return {};
+  }
+}
+
+function normalizeWebhook(payload: Record<string, any>) {
+  const root = asObject(payload);
+  const data = asObject(root.data);
+  const tx = asObject(root.transaction);
+  const payment = asObject(root.payment);
+  const payloadField = asObject(root.payload);
+
+  const statusRaw = pickFirstString(
+    root.status,
+    data.status,
+    tx.status,
+    payment.status,
+    payloadField.status,
+  );
+  const status = statusRaw?.toLowerCase() ?? null;
+
+  const transactionId = pickFirstString(
+    root.id,
+    data.id,
+    tx.id,
+    payment.id,
+    payloadField.id,
+    root.transaction_id,
+    data.transaction_id,
+    tx.transaction_id,
+    root.order_id,
+    data.order_id,
+    root.external_id,
+    data.external_id,
+  );
+
+  const amount = pickFirstNumber(
+    root.amount,
+    data.amount,
+    tx.amount,
+    payment.amount,
+    payloadField.amount,
+    root.total_amount,
+    data.total_amount,
+  );
+
+  const customer = asObject(
+    root.customer || data.customer || tx.customer || payment.customer || payloadField.customer,
+  );
+
+  const itemsCandidate =
+    root.items || data.items || tx.items || payment.items || payloadField.items;
+  const items = Array.isArray(itemsCandidate) ? itemsCandidate : [];
+
+  return {
+    root,
+    data,
+    status,
+    transactionId,
+    amount,
+    customer,
+    items,
+  };
+}
+
+async function insertApiLog(
+  supabaseUrl: string,
+  serviceKey: string,
+  method: string,
+  requestPayload: Record<string, any>,
+  responsePayload: Record<string, any>,
+  statusCode: number,
+) {
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/api_logs`, {
+      method: "POST",
+      headers: restHeaders(serviceKey),
+      body: JSON.stringify({
+        endpoint: "hygros-webhook",
+        method,
+        request_payload: requestPayload,
+        response_payload: responsePayload,
+        status_code: statusCode,
+      }),
+    });
+  } catch (err) {
+    console.error("[hygros-webhook] Failed to persist api_logs:", err);
+  }
+}
+
+async function sendTracklyWebhook(
+  supabaseUrl: string,
+  serviceKey: string,
+  lead: any,
+  normalized: ReturnType<typeof normalizeWebhook>,
+) {
   const settingsRes = await fetch(
     `${supabaseUrl}/rest/v1/tracking_settings?select=webhook_url,webhook_enabled&limit=1`,
-    { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
   );
+
   const settingsArr = await settingsRes.json();
   const settings = Array.isArray(settingsArr) ? settingsArr[0] : null;
 
@@ -18,20 +192,23 @@ async function sendTracklyWebhook(supabaseUrl: string, supabaseKey: string, lead
     return;
   }
 
-  const webhookUrl = settings?.webhook_url ||
-    "https://tracklybrasil.tech/public/webhook.php?token=wh_73e5eecea7881d9dc7765fbb3d3fffd4593dd823f14b3353a92a87b0b58f49d5&source=vegacheckout";
+  const webhookUrl = settings?.webhook_url || DEFAULT_TRACKLY_WEBHOOK_URL;
 
-  const productName = (data.items && data.items[0]?.title) || "Mesa Portátil Dobrável";
-  const productQty = (data.items && data.items[0]?.quantity) || lead.quantity || 1;
-  const productPrice = (data.items && data.items[0]?.unitPrice) || lead.total_amount || 0;
+  const firstItem = normalized.items[0] || {};
+  const productName = firstItem.title || "Mesa Portátil Dobrável";
+  const productQty = Number.parseInt(String(firstItem.quantity ?? lead.quantity ?? 1), 10) || 1;
+  const productPrice = Number.parseInt(
+    String(firstItem.unitPrice ?? lead.total_amount ?? normalized.amount ?? 0),
+    10,
+  ) || 0;
 
   const payload = {
     status: "paid",
-    orderId: lead.transaction_id || String(data.id),
+    orderId: lead.transaction_id || normalized.transactionId || "",
     customer: {
-      name: lead.name || data.customer?.name || "",
-      email: lead.email || data.customer?.email || "",
-      phone: lead.phone || data.customer?.phone || "",
+      name: lead.name || normalized.customer?.name || "",
+      email: lead.email || normalized.customer?.email || "",
+      phone: lead.phone || normalized.customer?.phone || "",
     },
     address: {
       street: lead.endereco || "",
@@ -45,13 +222,12 @@ async function sendTracklyWebhook(supabaseUrl: string, supabaseKey: string, lead
     products: [
       {
         name: productName,
-        quantity: parseInt(productQty) || 1,
-        priceInCents: parseInt(productPrice) || 0,
+        quantity: productQty,
+        priceInCents: productPrice,
       },
     ],
   };
 
-  console.log("[Trackly] payment detected");
   console.log("[Trackly] Sending webhook:", JSON.stringify(payload));
 
   const tracklyRes = await fetch(webhookUrl, {
@@ -61,18 +237,11 @@ async function sendTracklyWebhook(supabaseUrl: string, supabaseKey: string, lead
   });
 
   const tracklyText = await tracklyRes.text();
-  console.log(`[Trackly] webhook response received (${tracklyRes.status}):`, tracklyText);
-  console.log("[Trackly] webhook sent");
+  console.log(`[Trackly] webhook response (${tracklyRes.status}):`, tracklyText);
 
-  // Log webhook call
   await fetch(`${supabaseUrl}/rest/v1/tracking_webhook_logs`, {
     method: "POST",
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
+    headers: restHeaders(serviceKey),
     body: JSON.stringify({
       order_id: lead.id,
       webhook_url: webhookUrl,
@@ -80,30 +249,19 @@ async function sendTracklyWebhook(supabaseUrl: string, supabaseKey: string, lead
       http_status: tracklyRes.status,
       response: tracklyText.slice(0, 500),
       payload_sent: JSON.stringify(payload),
+      client_id: lead.client_id || null,
     }),
   });
 
-  // Mark as sent
-  await fetch(`${supabaseUrl}/rest/v1/checkout_leads?id=eq.${lead.id}`, {
+  await fetch(`${supabaseUrl}/rest/v1/checkout_leads?id=eq.${encodeURIComponent(lead.id)}`, {
     method: "PATCH",
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
+    headers: restHeaders(serviceKey),
     body: JSON.stringify({ tracking_sent: true, status: "approved" }),
   });
 
-  // Save to order_tracking
   await fetch(`${supabaseUrl}/rest/v1/order_tracking`, {
     method: "POST",
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
+    headers: restHeaders(serviceKey),
     body: JSON.stringify({
       order_id: lead.id,
       customer_name: payload.customer.name,
@@ -111,170 +269,221 @@ async function sendTracklyWebhook(supabaseUrl: string, supabaseKey: string, lead
       product_name: productName,
       zipcode: lead.cep || "",
       status: "enviado",
+      client_id: lead.client_id || null,
     }),
   });
 }
 
+async function handlePaidWebhook(
+  supabaseUrl: string,
+  serviceKey: string,
+  normalized: ReturnType<typeof normalizeWebhook>,
+) {
+  const transactionId = normalized.transactionId!;
+
+  const findRes = await fetch(
+    `${supabaseUrl}/rest/v1/checkout_leads?transaction_id=eq.${encodeURIComponent(transactionId)}&select=*`,
+    {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  const leads = await findRes.json();
+  const lead = Array.isArray(leads) ? leads[0] : null;
+
+  if (!lead) {
+    console.log("[hygros-webhook] No lead found for transaction_id:", transactionId);
+    await fetch(`${supabaseUrl}/rest/v1/tracker_event_log`, {
+      method: "POST",
+      headers: restHeaders(serviceKey),
+      body: JSON.stringify({
+        site_id: "mesa-dobravel",
+        event_name: "purchase",
+        source: "webhook",
+        success: false,
+        error_message: `No matching lead for transaction_id ${transactionId}`,
+        payload: { transaction_id: transactionId, amount: normalized.amount || 0 },
+      }),
+    });
+    return;
+  }
+
+  let metadata: Record<string, any> = {};
+  try {
+    metadata =
+      typeof lead.metadata === "string"
+        ? JSON.parse(lead.metadata)
+        : asObject(lead.metadata);
+  } catch {
+    metadata = {};
+  }
+
+  const eventData = {
+    visitor_id: metadata.visitor_id || "",
+    session_id: metadata.session_id || "",
+    click_id: metadata.click_id || "",
+    device: metadata.device || "",
+    referrer: metadata.referrer || "",
+    utm_source: metadata.utm_source || "",
+    utm_campaign: metadata.utm_campaign || "",
+    utm_content: metadata.utm_content || "",
+    transaction_id: transactionId,
+    value: (normalized.amount || 0) / 100,
+    method: "pix",
+    source: "webhook",
+  };
+
+  await fetch(`${supabaseUrl}/rest/v1/user_events`, {
+    method: "POST",
+    headers: restHeaders(serviceKey),
+    body: JSON.stringify({ event_type: "payment_confirmed", event_data: eventData }),
+  });
+
+  await fetch(`${supabaseUrl}/rest/v1/events`, {
+    method: "POST",
+    headers: restHeaders(serviceKey),
+    body: JSON.stringify({
+      visitor_id: metadata.visitor_id || "unknown",
+      session_id: metadata.session_id || null,
+      event_name: "purchase",
+      value: normalized.amount || 0,
+      source: "webhook",
+      campaign: metadata.utm_campaign || null,
+      event_data: { ...eventData, gateway: "hygros", payment_method: "pix" },
+      client_id: lead.client_id || null,
+      site_id: lead.site_id || null,
+    }),
+  });
+
+  await fetch(`${supabaseUrl}/rest/v1/tracker_event_log`, {
+    method: "POST",
+    headers: restHeaders(serviceKey),
+    body: JSON.stringify({
+      site_id: lead.site_id || "mesa-dobravel",
+      event_name: "purchase",
+      source: "webhook",
+      success: true,
+      payload: { transaction_id: transactionId, amount: normalized.amount || 0 },
+    }),
+  });
+
+  if (lead.id) {
+    await fetch(`${supabaseUrl}/rest/v1/orders?lead_id=eq.${encodeURIComponent(lead.id)}`, {
+      method: "PATCH",
+      headers: restHeaders(serviceKey),
+      body: JSON.stringify({ status: "paid" }),
+    });
+  }
+
+  if (metadata.visitor_id) {
+    await fetch(
+      `${supabaseUrl}/rest/v1/funnel_state?visitor_id=eq.${encodeURIComponent(metadata.visitor_id)}`,
+      {
+        method: "PATCH",
+        headers: restHeaders(serviceKey),
+        body: JSON.stringify({ stage: "purchase", updated_at: new Date().toISOString() }),
+      },
+    );
+  }
+
+  if (lead.tracking_sent) {
+    console.log("[Trackly] Already sent for this order, skipping");
+    return;
+  }
+
+  await sendTracklyWebhook(supabaseUrl, serviceKey, lead, normalized);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  if (req.method === "GET") {
+    const response = {
+      ok: true,
+      service: "hygros-webhook",
+      message: "Webhook online",
+      expected_statuses: [...PAID_STATUSES],
+      timestamp: new Date().toISOString(),
+    };
+
+    await insertApiLog(supabaseUrl, serviceKey, req.method, {}, response, 200);
+
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
-    const payload = await req.json();
-    console.log("Hygros webhook received:", JSON.stringify(payload));
+    const rawBody = await req.text();
+    const parsedPayload = parseRawPayload(rawBody);
+    const normalized = normalizeWebhook(parsedPayload);
 
-    const data = payload.data || payload;
-    const status = data.status;
+    const headersObj = Object.fromEntries(req.headers.entries());
+    console.log("[hygros-webhook] Received request", {
+      method: req.method,
+      url: req.url,
+      headers: headersObj,
+      parsedPayload,
+      normalized: {
+        status: normalized.status,
+        transactionId: normalized.transactionId,
+        amount: normalized.amount,
+      },
+    });
 
-    if (status !== "paid") {
-      console.log(`Status "${status}" ignored, not a paid event`);
-      return new Response(JSON.stringify({ message: "Status ignored" }), {
+    if (!normalized.status || !PAID_STATUSES.has(normalized.status)) {
+      const response = { message: `Status ignored: ${normalized.status || "unknown"}` };
+      await insertApiLog(supabaseUrl, serviceKey, req.method, parsedPayload, response, 200);
+
+      return new Response(JSON.stringify(response), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // --- UTMify DISABLED — FunnelIQ Tracking Hub is now the single source of events ---
-    // UTMify event dispatch removed to prevent duplicate conversions
-    console.log("UTMify event dispatch DISABLED — handled by FunnelIQ Tracking Hub");
+    if (!normalized.transactionId) {
+      const response = { message: "Missing transaction id, ignored" };
+      await insertApiLog(supabaseUrl, serviceKey, req.method, parsedPayload, response, 200);
 
-    // --- Trackly Webhook ---
-    try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-      const transactionId = String(data.id);
-      const findRes = await fetch(
-        `${supabaseUrl}/rest/v1/checkout_leads?transaction_id=eq.${transactionId}&select=*`,
-        {
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const leads = await findRes.json();
-      const lead = Array.isArray(leads) ? leads[0] : null;
-
-      // Record payment_confirmed event in user_events for funnel tracking
-      if (lead) {
-        const metadata = typeof lead.metadata === "string" ? JSON.parse(lead.metadata) : (lead.metadata || {});
-        const eventData = {
-          visitor_id: metadata.visitor_id || "",
-          session_id: metadata.session_id || "",
-          click_id: metadata.click_id || "",
-          device: metadata.device || "",
-          referrer: metadata.referrer || "",
-          utm_source: metadata.utm_source || "",
-          utm_campaign: metadata.utm_campaign || "",
-          utm_content: metadata.utm_content || "",
-          transaction_id: transactionId,
-          value: (data.amount || 0) / 100,
-          method: "pix",
-          source: "webhook",
-        };
-        await fetch(`${supabaseUrl}/rest/v1/user_events`, {
-          method: "POST",
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({ event_type: "payment_confirmed", event_data: eventData }),
-        });
-
-        // Dual-write: new events table — purchase event (server-side, reliable)
-        await fetch(`${supabaseUrl}/rest/v1/events`, {
-          method: "POST",
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            visitor_id: metadata.visitor_id || "unknown",
-            session_id: metadata.session_id || null,
-            event_name: "purchase",
-            value: data.amount || 0,
-            source: "webhook",
-            campaign: metadata.utm_campaign || null,
-            event_data: { ...eventData, gateway: "hygros", payment_method: "pix" },
-            client_id: lead.client_id || null,
-            site_id: lead.site_id || null,
-          }),
-        });
-
-        // Audit log
-        await fetch(`${supabaseUrl}/rest/v1/tracker_event_log`, {
-          method: "POST",
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            site_id: lead.site_id || "mesa-dobravel",
-            event_name: "purchase",
-            source: "webhook",
-            success: true,
-            payload: { transaction_id: transactionId, amount: data.amount || 0 },
-          }),
-        });
-
-        // Update order status to paid
-        if (lead.id) {
-          await fetch(`${supabaseUrl}/rest/v1/orders?lead_id=eq.${lead.id}`, {
-            method: "PATCH",
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`,
-              "Content-Type": "application/json",
-              Prefer: "return=minimal",
-            },
-            body: JSON.stringify({ status: "paid" }),
-          });
-        }
-
-        // Update funnel_state to purchase
-        if (metadata.visitor_id) {
-          await fetch(`${supabaseUrl}/rest/v1/funnel_state?visitor_id=eq.${metadata.visitor_id}`, {
-            method: "PATCH",
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`,
-              "Content-Type": "application/json",
-              Prefer: "return=minimal",
-            },
-            body: JSON.stringify({ stage: "purchase", updated_at: new Date().toISOString() }),
-          });
-        }
-
-        console.log("[Tracking] payment_confirmed event saved for visitor:", metadata.visitor_id);
-      }
-
-      if (lead && !lead.tracking_sent) {
-        await sendTracklyWebhook(supabaseUrl, supabaseKey, lead, data);
-      } else if (lead?.tracking_sent) {
-        console.log("[Trackly] Already sent for this order, skipping");
-      } else {
-        console.log("[Trackly] No matching lead found for transaction:", transactionId);
-      }
-    } catch (tracklyErr) {
-      console.error("[Trackly] Error sending webhook:", tracklyErr);
+      return new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    await handlePaidWebhook(supabaseUrl, serviceKey, normalized);
+
+    const response = { success: true, transaction_id: normalized.transactionId };
+    await insertApiLog(supabaseUrl, serviceKey, req.method, parsedPayload, response, 200);
+
+    return new Response(JSON.stringify(response), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Webhook error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[hygros-webhook] Error:", error);
+
+    await insertApiLog(
+      supabaseUrl,
+      serviceKey,
+      req.method,
+      {},
+      { error: message },
+      500,
+    );
+
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
