@@ -1,23 +1,11 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export function useClientId() {
-  const [clientId, setClientId] = useState<string | null>(null);
+  const { profile, isSuperAdmin, isAdmin } = useAuth();
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        supabase
-          .from("clients")
-          .select("id")
-          .eq("contact_email", data.user.email)
-          .single()
-          .then(({ data: client }) => {
-            if (client) setClientId(client.id);
-          });
-      }
-    });
-  }, []);
-
-  return clientId;
+  return {
+    clientId: profile?.client_id ?? null,
+    // superadmin and admin see everything — no client_id filter
+    shouldFilter: !isSuperAdmin && !isAdmin,
+  };
 }
