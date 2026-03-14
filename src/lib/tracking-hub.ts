@@ -18,16 +18,17 @@ import type { Json } from "@/integrations/supabase/types";
 const DEBUG = "[TrackingHub]";
 const db = supabase as any;
 
-// ── Canonical funnel events (in order) ──────────────────────────────────
+// ── Canonical funnel events (in strict order) ──────────────────────────
+// Maps to real page flow: / → /checkout → /pix → /obrigado
 export const FUNNEL_EVENTS = [
-  "page_view",
-  "view_content",
-  "click_buy",
-  "add_to_cart",
-  "checkout_start",
-  "add_payment_info",
-  "pix_generated",
-  "purchase",
+  "page_view",       // All pages
+  "view_content",    // / (Index)
+  "click_buy",       // / (Index) — user clicks buy button
+  "add_to_cart",     // / (Index) — user selects color/size
+  "checkout_start",  // /checkout — checkout page loaded
+  "add_payment_info",// /checkout — card info submitted OR pix selected
+  "pix_generated",   // /checkout — PIX QR code generated
+  "purchase",        // /pix — payment confirmed
 ] as const;
 
 export type FunnelEvent = typeof FUNNEL_EVENTS[number];

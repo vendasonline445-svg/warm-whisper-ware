@@ -99,23 +99,7 @@ const PixPayment = () => {
   }, [transactionId, checkPaymentStatus]);
 
   useEffect(() => {
-    trackFunnelEvent({
-      event: "add_payment_info",
-      value: total,
-      properties: {
-        content_type: "product",
-        content_id: "mesa-dobravel",
-        content_name: "Mesa Dobrável Retrátil",
-        contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
-        method: "pix",
-        transaction_id: transactionId,
-      },
-      userData: orderData?.customer ? {
-        email: orderData.customer.email,
-        phone: orderData.customer.phone,
-        externalId: orderData.customer.cpf,
-      } : undefined,
-    });
+    // add_payment_info already fired in Checkout — only track page view here
     trackPageViewOnce("/pix");
   }, []);
 
