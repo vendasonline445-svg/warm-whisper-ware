@@ -524,6 +524,10 @@ export default function AdminTikTokTab() {
                   { label: "Eventos", status: (diagnostics.hasEvents ? "ok" : "warn") as DiagStatus, detail: `${diagnostics.totalEvents}` },
                   { label: "Event ID", status: (diagnostics.eventIdCoverage > 80 ? "ok" : diagnostics.eventIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.eventIdCoverage}%` },
                   { label: "Advanced Matching", status: (diagnostics.extIdCoverage > 80 ? "ok" : diagnostics.extIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.extIdCoverage}%` },
+                  { label: "Currency BRL", status: (diagnostics.currencyCoverage > 90 ? "ok" : diagnostics.currencyCoverage > 50 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.currencyCoverage}%` },
+                  { label: "Contents", status: (diagnostics.contentsCoverage > 80 ? "ok" : diagnostics.contentsCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.contentsCoverage}%` },
+                  { label: "Duplicatas", status: (diagnostics.dupCount === 0 ? "ok" : diagnostics.dupCount < 3 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.dupCount}` },
+                  { label: "ttclid", status: (diagnostics.ttclidDetected ? "ok" : "warn") as DiagStatus, detail: diagnostics.ttclidDetected ? "Detectado" : "Sem ttclid" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
                     <div className="flex items-center gap-2"><StatusIcon status={item.status} /><span className="text-sm">{item.label}</span></div>
@@ -531,8 +535,13 @@ export default function AdminTikTokTab() {
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {[{ label: "Email", value: diagnostics.emailCoverage }, { label: "Telefone", value: diagnostics.phoneCoverage }, { label: "External ID", value: diagnostics.extIdCoverage }].map((item, i) => (
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: "Email", value: diagnostics.emailCoverage },
+                  { label: "Telefone", value: diagnostics.phoneCoverage },
+                  { label: "External ID", value: diagnostics.extIdCoverage },
+                  { label: "IP (server)", value: 100 },
+                ].map((item, i) => (
                   <div key={i} className="rounded-lg bg-muted/30 p-3 text-center">
                     <p className="text-xs text-muted-foreground">{item.label}</p>
                     <p className={`text-xl font-bold ${item.value >= 70 ? "text-emerald-500" : item.value >= 30 ? "text-amber-500" : "text-red-500"}`}>{item.value}%</p>
