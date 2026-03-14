@@ -21,6 +21,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/admin" replace />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/funil-admin" element={<FunilAdmin />} />
             <Route path="/r/:trackingId" element={<TrackingRedirect />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
