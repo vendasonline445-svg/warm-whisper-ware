@@ -22,7 +22,7 @@ export type AdminTab =
   | "campaigns" | "campaigns-creatives" | "campaigns-performance" | "campaigns-automation" | "campaigns-budgets"
   | "analytics" | "analytics-attribution" | "analytics-revenue" | "analytics-reports"
   | "ai" | "ai-insights"
-  | "clients" | "clients-bc" | "tiktok" | "tracking-pixels" | "settings-scripts" | "rastreios" | "logs" | "settings-csv"
+  | "clients" | "clients-bc" | "tiktok" | "tracking-pixels" | "tracking-config" | "settings-scripts" | "rastreios" | "logs" | "settings-csv"
   | "superadmin";
 
 interface NavItem {
