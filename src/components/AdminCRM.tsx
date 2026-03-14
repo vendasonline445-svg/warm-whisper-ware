@@ -2818,7 +2818,7 @@ export default function AdminCRM() {
                 <p className="text-xs text-muted-foreground">{selectedLead.email}</p>
                 {selectedLead.phone && <p className="text-xs text-muted-foreground">{selectedLead.phone}</p>}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <ScoreBadge level={selectedLead.level} score={selectedLead.score} />
+                  <ScoreBadge level={selectedLead.temperatureLevel} score={selectedLead.temperature} />
                   <StageBadge stage={selectedLead.stage} />
                   <span className="text-[10px] text-muted-foreground">{selectedLead.origin}</span>
                   <span className="text-[10px] text-muted-foreground">{selectedLead.device}</span>
