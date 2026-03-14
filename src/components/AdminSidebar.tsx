@@ -22,7 +22,7 @@ export type AdminTab =
   | "campaigns" | "campaigns-creatives" | "campaigns-performance" | "campaigns-automation" | "campaigns-budgets"
   | "analytics" | "analytics-attribution" | "analytics-revenue" | "analytics-reports"
   | "ai" | "ai-insights"
-  | "clients" | "clients-bc" | "tiktok" | "tracking-pixels" | "settings-scripts" | "rastreios" | "logs" | "settings-csv"
+  | "clients" | "clients-bc" | "tiktok" | "tracking-pixels" | "tracking-config" | "settings-scripts" | "rastreios" | "logs" | "settings-csv"
   | "superadmin";
 
 interface NavItem {
@@ -114,6 +114,7 @@ const NAV_GROUPS: NavGroup[] = [
       { tab: "clients-bc", label: "Business Centers", icon: <Globe className="h-3.5 w-3.5" /> },
       { tab: "tiktok", label: "Integrations", icon: <Plug className="h-3.5 w-3.5" /> },
       { tab: "tracking-pixels", label: "Pixels", icon: <Radio className="h-3.5 w-3.5" /> },
+      { tab: "tracking-config", label: "Tracking Config", icon: <Crosshair className="h-3.5 w-3.5" /> },
       { tab: "settings-scripts", label: "Scripts", icon: <Code2 className="h-3.5 w-3.5" /> },
       { tab: "rastreios", label: "Rastreios", icon: <Package className="h-3.5 w-3.5" /> },
       { tab: "logs", label: "API Logs", icon: <Server className="h-3.5 w-3.5" /> },

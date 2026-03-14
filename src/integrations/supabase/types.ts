@@ -1195,6 +1195,66 @@ export type Database = {
           },
         ]
       }
+      site_tracking_config: {
+        Row: {
+          checkout_type: string | null
+          debug_mode: boolean | null
+          id: string
+          selector_buy_button: string | null
+          selector_checkout_form: string | null
+          selector_pix_qrcode: string | null
+          selector_price: string | null
+          site_id: string
+          spa_mode: boolean | null
+          updated_at: string | null
+          updated_by: string | null
+          url_checkout: string | null
+          url_thankyou: string | null
+          url_upsell: string | null
+          value_attribute: string | null
+          value_selector: string | null
+          value_static: number | null
+        }
+        Insert: {
+          checkout_type?: string | null
+          debug_mode?: boolean | null
+          id?: string
+          selector_buy_button?: string | null
+          selector_checkout_form?: string | null
+          selector_pix_qrcode?: string | null
+          selector_price?: string | null
+          site_id: string
+          spa_mode?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+          url_checkout?: string | null
+          url_thankyou?: string | null
+          url_upsell?: string | null
+          value_attribute?: string | null
+          value_selector?: string | null
+          value_static?: number | null
+        }
+        Update: {
+          checkout_type?: string | null
+          debug_mode?: boolean | null
+          id?: string
+          selector_buy_button?: string | null
+          selector_checkout_form?: string | null
+          selector_pix_qrcode?: string | null
+          selector_price?: string | null
+          site_id?: string
+          spa_mode?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+          url_checkout?: string | null
+          url_thankyou?: string | null
+          url_upsell?: string | null
+          value_attribute?: string | null
+          value_selector?: string | null
+          value_static?: number | null
+        }
+        Relationships: []
+      }
       sites: {
         Row: {
           active: boolean | null
@@ -1322,6 +1382,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tracker_event_log: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          event_name: string
+          id: string
+          payload: Json | null
+          site_id: string
+          source: string
+          success: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          event_name: string
+          id?: string
+          payload?: Json | null
+          site_id: string
+          source: string
+          success?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          event_name?: string
+          id?: string
+          payload?: Json | null
+          site_id?: string
+          source?: string
+          success?: boolean | null
+        }
+        Relationships: []
       }
       tracking_settings: {
         Row: {

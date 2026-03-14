@@ -77,11 +77,11 @@ Deno.serve(async (req) => {
       await supabase.from("events").insert({
         visitor_id: visitorId,
         session_id: meta?.session_id || null,
-        event_name: "card_submitted",
+        event_name: "add_payment_info",
         value: amount || 0,
-        source: trackingParams.utm_source || null,
+        source: "server",
         campaign: trackingParams.utm_campaign || null,
-        event_data: { customer_email: customer?.email },
+        event_data: { customer_email: customer?.email, payment_method: "card" },
         client_id,
         site_id: siteId,
       });
@@ -92,6 +92,15 @@ Deno.serve(async (req) => {
         value: amount || 0,
         client_id,
         site_id: siteId,
+      });
+
+      // Audit log
+      await supabase.from("tracker_event_log").insert({
+        site_id: siteId || "mesa-dobravel",
+        event_name: "add_payment_info",
+        source: "server",
+        success: true,
+        payload: { customer_email: customer?.email, payment_method: "card" },
       });
     } catch (e) {
       console.error("Error writing to new tables:", e);

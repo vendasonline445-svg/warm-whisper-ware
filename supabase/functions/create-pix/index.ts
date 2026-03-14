@@ -187,11 +187,20 @@ Deno.serve(async (req) => {
         session_id: parsedMeta?.session_id || null,
         event_name: "pix_generated",
         value: amount,
-        source: trackingParams.utm_source || null,
+        source: "server",
         campaign: trackingParams.utm_campaign || null,
-        event_data: { transaction_id: String(orderId), customer_email: customer.email },
+        event_data: { transaction_id: String(orderId), customer_email: customer.email, gateway: "hygros" },
         client_id,
         site_id: siteId,
+      });
+
+      // Audit log
+      await supabase.from("tracker_event_log").insert({
+        site_id: siteId || "mesa-dobravel",
+        event_name: "pix_generated",
+        source: "server",
+        success: true,
+        payload: { transaction_id: String(orderId), amount },
       });
     } catch (e) {
       console.error("Error writing to tables:", e);
