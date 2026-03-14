@@ -50,16 +50,6 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    key: "crm",
-    label: "CRM",
-    icon: <Contact className="h-[18px] w-[18px]" />,
-    items: [
-      { tab: "crm", label: "Pipeline", icon: <Workflow className="h-3.5 w-3.5" /> },
-      { tab: "leads", label: "Leads", icon: <Users className="h-3.5 w-3.5" /> },
-      { tab: "crm-recovery", label: "Recovery", icon: <RefreshCcw className="h-3.5 w-3.5" /> },
-    ],
-  },
-  {
     key: "tracking",
     label: "Tracking",
     icon: <Activity className="h-[18px] w-[18px]" />,
