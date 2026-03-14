@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfDay, endOfDay, subDays, startOfMonth } from "date-fns";
-import AdminCRM from "@/components/AdminCRM";
+
 import AdminTikTokTab from "@/components/AdminTikTokTab";
 import AdminTrackingHub from "@/components/AdminTrackingHub";
 import AdminRastreiosTab from "@/components/AdminRastreiosTab";
