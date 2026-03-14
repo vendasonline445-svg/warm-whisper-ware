@@ -279,14 +279,13 @@ const Index = () => {
 
   // ViewContent event on mount + track page view + scroll depth
   useEffect(() => {
-    trackTikTokEvent({
-      event: "ViewContent",
+    trackFunnelEvent({
+      event: "view_content",
+      value: PRICE,
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
         content_name: "Mesa Dobrável 180x60cm",
-        value: PRICE,
-        currency: "BRL",
         contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
     });
