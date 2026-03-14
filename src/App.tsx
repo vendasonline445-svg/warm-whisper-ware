@@ -35,6 +35,7 @@ function TikTokSPATracker() {
 
 // Init tracking on app load
 initTikTokTracking();
+initSessionReplay();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
