@@ -271,10 +271,20 @@ export function trackEvent(event_type: string, event_data?: Record<string, strin
   }
 
   // Non-funnel events: write to events table (unified source of truth)
+  const siteId = (window as any).fiqSiteId
+    || localStorage.getItem('fiq_site_id')
+    || localStorage.getItem('mesalar_site_id')
+    || 'mesa-dobravel';
+  const safeVisitorId = context.visitor_id
+    || localStorage.getItem('fiq_visitor_id')
+    || localStorage.getItem('mesalar_visitor_id')
+    || 'visitor_unknown';
+
   supabase.from("events").insert({
-    event_name: event_type,
-    visitor_id: context.visitor_id || "unknown",
+    event_name: event_type || "unknown_event",
+    visitor_id: safeVisitorId,
     session_id: context.session_id || null,
     event_data: merged as Json,
+    site_id: siteId,
   }).then(() => {});
 }
