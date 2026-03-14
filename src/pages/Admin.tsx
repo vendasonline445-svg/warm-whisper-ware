@@ -491,7 +491,7 @@ export default function Admin() {
           <AdminLiveActivity />
         )}
 
-        {(tab === "dashboard" || tab === "alerts") && (
+        {tab === "dashboard" && (
           <div className="space-y-6">
             {/* Period Filter */}
             <div className="flex flex-wrap items-center gap-2">
