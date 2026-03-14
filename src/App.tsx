@@ -19,6 +19,7 @@ import Upsell1 from "./pages/Upsell1";
 import Obrigado from "./pages/Obrigado";
 import ObrigadoUpsell from "./pages/ObrigadoUpsell";
 import AdminRastreios from "./pages/AdminRastreios";
+import TrackingRedirect from "./pages/TrackingRedirect";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
           <Route path="/upsell1" element={<Upsell1 />} />
           <Route path="/obrigado" element={<Obrigado />} />
           <Route path="/obrigado-upsell" element={<ObrigadoUpsell />} />
+          <Route path="/r/:trackingId" element={<TrackingRedirect />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
