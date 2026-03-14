@@ -58,20 +58,16 @@ const PixPayment = () => {
         setPaid(true);
         const purchaseValue = orderData?.product?.total || pixData?.amount / 100 || 87.60;
         const orderId = transactionId || `order-${Date.now()}`;
-        trackEvent("payment_confirmed", {
-          transaction_id: transactionId,
+        trackFunnelEvent({
+          event: "purchase",
           value: purchaseValue,
-          method: "pix",
-        });
-        trackTikTokEvent({
-          event: "Purchase",
           properties: {
+            transaction_id: transactionId,
+            method: "pix",
+            order_id: orderId,
             content_type: "product",
             content_id: "mesa-dobravel",
             content_name: "Mesa Dobrável Retrátil",
-            value: purchaseValue,
-            currency: "BRL",
-            order_id: orderId,
             contents: [{ content_id: "mesa-dobravel", quantity: orderData?.product?.quantity || 1 }],
           },
           userData: orderData?.customer ? {
