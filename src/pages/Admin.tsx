@@ -692,6 +692,8 @@ export default function Admin() {
 
         {tab === "tiktok" && <AdminTikTokTab />}
 
+        {tab === "tracking" && <AdminTrackingHub />}
+
         {tab === "rastreios" && <AdminRastreiosTab />}
 
         {tab === "ai" && (
