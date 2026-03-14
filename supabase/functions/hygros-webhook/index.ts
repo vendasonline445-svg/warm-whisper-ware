@@ -135,75 +135,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- UTMify ---
-    const utmifyToken = Deno.env.get("UTMIFY_API_TOKEN");
-    if (!utmifyToken) {
-      console.log("UTMIFY_API_TOKEN not configured");
-    } else {
-      let tracking: Record<string, string | null> = {};
-      try {
-        const meta = typeof data.metadata === "string" ? JSON.parse(data.metadata) : data.metadata;
-        tracking = meta?.tracking || {};
-      } catch (_) {}
-
-      const now = new Date().toISOString().replace("T", " ").slice(0, 19);
-
-      const utmifyData = {
-        orderId: String(data.id),
-        platform: "Hygros",
-        paymentMethod: data.paymentMethod?.toLowerCase() || "pix",
-        status: "paid",
-        createdAt: data.createdAt ? new Date(data.createdAt).toISOString().replace("T", " ").slice(0, 19) : now,
-        approvedDate: data.paidAt ? new Date(data.paidAt).toISOString().replace("T", " ").slice(0, 19) : now,
-        refundedAt: null,
-        customer: {
-          name: data.customer?.name || "",
-          email: data.customer?.email || "",
-          phone: data.customer?.phone || null,
-          document: data.customer?.document || "",
-          country: "BR",
-          ip: "",
-        },
-        products: (data.items || []).map((item: any) => ({
-          id: item.externalRef || String(data.id),
-          name: item.title || "",
-          planId: null,
-          planName: null,
-          quantity: item.quantity || 1,
-          priceInCents: item.unitPrice || 0,
-        })),
-        trackingParameters: {
-          src: tracking.src || null,
-          sck: tracking.sck || null,
-          utm_source: tracking.utm_source || null,
-          utm_campaign: tracking.utm_campaign || null,
-          utm_medium: tracking.utm_medium || null,
-          utm_content: tracking.utm_content || null,
-          utm_term: tracking.utm_term || null,
-          xcod: tracking.xcod || null,
-          fbclid: tracking.fbclid || null,
-          gclid: tracking.gclid || null,
-          ttclid: tracking.ttclid || null,
-        },
-        commission: {
-          totalPriceInCents: data.amount || 0,
-          gatewayFeeInCents: data.fee?.estimatedFee || 0,
-          userCommissionInCents: data.fee?.netAmount || data.amount || 0,
-        },
-        isTest: false,
-      };
-
-      console.log("Sending UTMify paid event:", JSON.stringify(utmifyData));
-
-      const res = await fetch("https://api.utmify.com.br/api-credentials/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-token": utmifyToken },
-        body: JSON.stringify(utmifyData),
-      });
-
-      const resText = await res.text();
-      console.log(`UTMify response (${res.status}):`, resText);
-    }
+    // --- UTMify DISABLED — FunnelIQ Tracking Hub is now the single source of events ---
+    // UTMify event dispatch removed to prevent duplicate conversions
+    console.log("UTMify event dispatch DISABLED — handled by FunnelIQ Tracking Hub");
 
     // --- Trackly Webhook ---
     try {
