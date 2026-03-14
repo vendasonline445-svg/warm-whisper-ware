@@ -541,43 +541,81 @@ const Checkout = () => {
 
         {/* Product Info */}
         <div className="mt-4">
-          {cartItems.map((item, idx) => {
-            const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
-            const cl = item.color === "preta" ? "Preta" : "Branca";
-            const img = item.color === "preta" ? "/images/mesa-preta-popup.webp" : "/images/mesa-branca-popup.webp";
-            return (
-              <div key={`${item.color}-${item.size}`} className={`flex items-start gap-3 mt-3 ${idx > 0 ? "pt-3 border-t" : ""}`}>
-                <img src={img} alt="Mesa" className="w-20 h-20 object-contain rounded-md border" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta {item.size}</p>
-                  {/* Flash Sale badge + timer */}
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="relative inline-flex items-center whitespace-nowrap text-white text-[10px] font-bold pl-1.5 pr-2 py-0.5 rounded" style={{ background: 'linear-gradient(to right, #FF4D4D 80%, #FF6B35 100%)' }}>
-                      Oferta Relâmpago
-                      <span className="absolute -right-1.5 -top-1 text-sm drop-shadow-sm">⚡</span>
-                    </span>
-                    <span className="text-xs font-mono font-semibold" style={{ color: '#fe2b54' }}>{timer.display}</span>
+          {isStoreCheckout ? (
+            // Store products from /loja
+            storeItems.map((item, idx) => {
+              const pricePerItem = item.priceCents / 100;
+              return (
+                <div key={item.productId} className={`flex items-start gap-3 mt-3 ${idx > 0 ? "pt-3 border-t" : ""}`}>
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt={item.name} className="w-20 h-20 object-cover rounded-md border" />
+                  ) : (
+                    <div className="w-20 h-20 bg-muted rounded-md border flex items-center justify-center text-xs text-muted-foreground">Sem foto</div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium leading-snug line-clamp-2">{item.name}</p>
+                    {item.variant && Object.keys(item.variant).length > 0 && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {Object.entries(item.variant).map(([k, v]) => `${k}: ${v}`).join(' • ')}
+                      </p>
+                    )}
+                    {/* Flash Sale badge + timer */}
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="relative inline-flex items-center whitespace-nowrap text-white text-[10px] font-bold pl-1.5 pr-2 py-0.5 rounded" style={{ background: 'linear-gradient(to right, #FF4D4D 80%, #FF6B35 100%)' }}>
+                        Oferta Relâmpago
+                        <span className="absolute -right-1.5 -top-1 text-sm drop-shadow-sm">⚡</span>
+                      </span>
+                      <span className="text-xs font-mono font-semibold" style={{ color: '#fe2b54' }}>{timer.display}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">🔄 Devolução gratuita</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-base font-bold" style={{ color: '#fe2b54' }}>R$ {(pricePerItem * item.quantity).toFixed(2).replace(".", ",")}</span>
+                    </div>
                   </div>
-                  {/* Free return - subtle */}
-                  <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">
-                    🔄 Devolução gratuita
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-base font-bold" style={{ color: '#fe2b54' }}>R$ {(sp.price * item.quantity).toFixed(2).replace(".", ",")}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-muted-foreground line-through">R$ {sp.oldPrice.toFixed(2).replace(".", ",")}</span>
-                    <span className="text-[10px] font-semibold px-1 py-px rounded" style={{ backgroundColor: '#ffe3e8', color: '#fe2b54' }}>-{sp.discount}%</span>
+                  <div className="flex items-center gap-0 border rounded-lg h-9 bg-muted/30">
+                    <button onClick={() => updateCartItemQty(idx, item.quantity - 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Minus className="h-3.5 w-3.5" /></button>
+                    <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
+                    <button onClick={() => updateCartItemQty(idx, item.quantity + 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
                   </div>
                 </div>
-                <div className="flex items-center gap-0 border rounded-lg h-9 bg-muted/30">
-                  <button onClick={() => updateCartItemQty(idx, item.quantity - 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Minus className="h-3.5 w-3.5" /></button>
-                  <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
-                  <button onClick={() => updateCartItemQty(idx, item.quantity + 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
+              );
+            })
+          ) : (
+            // Mesa products (original flow)
+            cartItems.map((item, idx) => {
+              const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
+              const cl = item.color === "preta" ? "Preta" : "Branca";
+              const img = item.color === "preta" ? "/images/mesa-preta-popup.webp" : "/images/mesa-branca-popup.webp";
+              return (
+                <div key={`${item.color}-${item.size}`} className={`flex items-start gap-3 mt-3 ${idx > 0 ? "pt-3 border-t" : ""}`}>
+                  <img src={img} alt="Mesa" className="w-20 h-20 object-contain rounded-md border" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta {item.size}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="relative inline-flex items-center whitespace-nowrap text-white text-[10px] font-bold pl-1.5 pr-2 py-0.5 rounded" style={{ background: 'linear-gradient(to right, #FF4D4D 80%, #FF6B35 100%)' }}>
+                        Oferta Relâmpago
+                        <span className="absolute -right-1.5 -top-1 text-sm drop-shadow-sm">⚡</span>
+                      </span>
+                      <span className="text-xs font-mono font-semibold" style={{ color: '#fe2b54' }}>{timer.display}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">🔄 Devolução gratuita</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-base font-bold" style={{ color: '#fe2b54' }}>R$ {(sp.price * item.quantity).toFixed(2).replace(".", ",")}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground line-through">R$ {sp.oldPrice.toFixed(2).replace(".", ",")}</span>
+                      <span className="text-[10px] font-semibold px-1 py-px rounded" style={{ backgroundColor: '#ffe3e8', color: '#fe2b54' }}>-{sp.discount}%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-0 border rounded-lg h-9 bg-muted/30">
+                    <button onClick={() => updateCartItemQty(idx, item.quantity - 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Minus className="h-3.5 w-3.5" /></button>
+                    <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
+                    <button onClick={() => updateCartItemQty(idx, item.quantity + 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         {/* Shipping Options */}
