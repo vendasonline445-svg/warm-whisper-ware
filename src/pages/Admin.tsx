@@ -644,7 +644,7 @@ export default function Admin() {
           </div>
         )}
 
-        {(tab === "crm" || tab === "crm-sessions" || tab === "crm-recovery" || tab === "crm-checkout") && <AdminCRM />}
+        {(tab === "crm" || tab === "crm-recovery") && <AdminCRM />}
 
         {tab === "tiktok" && <AdminTikTokTab />}
 
