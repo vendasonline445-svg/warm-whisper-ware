@@ -21,6 +21,7 @@ export type AdminTab =
   | "campaigns" | "campaigns-creatives" | "campaigns-performance" | "campaigns-automation" | "campaigns-budgets"
   | "analytics" | "analytics-attribution" | "analytics-revenue" | "analytics-reports"
   | "ai" | "ai-insights"
+  | "settings-tracking" | "settings-pixels" | "settings-integrations" | "settings-admin"
   | "clients" | "clients-bc" | "tiktok" | "tracking-pixels" | "tracking-config" | "settings-scripts" | "logs" | "settings-csv"
   | "superadmin";
 
