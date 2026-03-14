@@ -15,13 +15,13 @@ import { useState, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export type AdminTab = 
-  | "dashboard" | "funnel-health" | "live-activity" | "alerts"
-  | "crm" | "leads" | "crm-sessions" | "crm-recovery" | "crm-checkout"
-  | "tracking" | "tracking-sessions" | "tracking-clicks" | "tracking-links" | "tracking-pixels" | "tracking-scripts" | "tracking-debug" | "rastreios"
-  | "ads" | "ads-creatives" | "ads-automation" | "ads-budgets" | "ads-performance"
-  | "analytics" | "analytics-campaigns" | "analytics-creatives" | "analytics-attribution" | "analytics-revenue" | "analytics-reports"
-  | "ai" | "ai-optimization" | "ai-alerts" | "ai-insights"
-  | "clients" | "clients-bc" | "tiktok" | "settings-scripts" | "logs" | "settings-csv";
+  | "dashboard" | "funnel-health" | "live-activity"
+  | "crm" | "leads" | "crm-recovery"
+  | "tracking" | "tracking-sessions" | "tracking-clicks" | "tracking-links" | "tracking-debug"
+  | "campaigns" | "campaigns-creatives" | "campaigns-performance" | "campaigns-automation" | "campaigns-budgets"
+  | "analytics" | "analytics-attribution" | "analytics-revenue" | "analytics-reports"
+  | "ai" | "ai-insights"
+  | "clients" | "clients-bc" | "tiktok" | "tracking-pixels" | "settings-scripts" | "rastreios" | "logs" | "settings-csv";
 
 interface NavItem {
   tab: AdminTab;
@@ -44,9 +44,8 @@ const NAV_GROUPS: NavGroup[] = [
     icon: <LayoutDashboard className="h-[18px] w-[18px]" />,
     items: [
       { tab: "dashboard", label: "Overview", icon: <Gauge className="h-3.5 w-3.5" /> },
-      { tab: "funnel-health", label: "Funnel Health", icon: <Heart className="h-3.5 w-3.5" /> },
       { tab: "live-activity", label: "Live Activity", icon: <Signal className="h-3.5 w-3.5" /> },
-      { tab: "alerts", label: "Alerts", icon: <Bell className="h-3.5 w-3.5" /> },
+      { tab: "funnel-health", label: "Funnel Health", icon: <Heart className="h-3.5 w-3.5" /> },
     ],
   },
   {
@@ -56,9 +55,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { tab: "crm", label: "Pipeline", icon: <Workflow className="h-3.5 w-3.5" /> },
       { tab: "leads", label: "Leads", icon: <Users className="h-3.5 w-3.5" /> },
-      { tab: "crm-sessions", label: "Sessions", icon: <Eye className="h-3.5 w-3.5" /> },
       { tab: "crm-recovery", label: "Recovery", icon: <RefreshCcw className="h-3.5 w-3.5" /> },
-      { tab: "crm-checkout", label: "Checkout Activity", icon: <ShoppingCart className="h-3.5 w-3.5" /> },
     ],
   },
   {
@@ -70,22 +67,19 @@ const NAV_GROUPS: NavGroup[] = [
       { tab: "tracking-sessions", label: "Sessions", icon: <Eye className="h-3.5 w-3.5" /> },
       { tab: "tracking-clicks", label: "Clicks", icon: <MousePointerClick className="h-3.5 w-3.5" /> },
       { tab: "tracking-links", label: "Tracked Links", icon: <Link2 className="h-3.5 w-3.5" /> },
-      { tab: "tracking-pixels", label: "Pixels", icon: <Radio className="h-3.5 w-3.5" /> },
-      { tab: "tracking-scripts", label: "Scripts Detected", icon: <Code2 className="h-3.5 w-3.5" /> },
       { tab: "tracking-debug", label: "Debug", icon: <Bug className="h-3.5 w-3.5" /> },
-      { tab: "rastreios", label: "Rastreios", icon: <Package className="h-3.5 w-3.5" /> },
     ],
   },
   {
-    key: "ads",
-    label: "Ads",
+    key: "campaigns",
+    label: "Campaigns",
     icon: <Megaphone className="h-[18px] w-[18px]" />,
     items: [
-      { tab: "ads", label: "Campaigns", icon: <Target className="h-3.5 w-3.5" /> },
-      { tab: "ads-creatives", label: "Creatives", icon: <Layers className="h-3.5 w-3.5" /> },
-      { tab: "ads-automation", label: "Automation Rules", icon: <Zap className="h-3.5 w-3.5" /> },
-      { tab: "ads-budgets", label: "Budgets", icon: <Wallet className="h-3.5 w-3.5" /> },
-      { tab: "ads-performance", label: "Performance", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+      { tab: "campaigns", label: "Campaigns", icon: <Target className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-creatives", label: "Creatives", icon: <Layers className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-performance", label: "Performance", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-automation", label: "Automation", icon: <Zap className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-budgets", label: "Budgets", icon: <Wallet className="h-3.5 w-3.5" /> },
     ],
   },
   {
@@ -94,10 +88,8 @@ const NAV_GROUPS: NavGroup[] = [
     icon: <BarChart3 className="h-[18px] w-[18px]" />,
     items: [
       { tab: "analytics", label: "Overview", icon: <PieChart className="h-3.5 w-3.5" /> },
-      { tab: "analytics-campaigns", label: "Campaign Perf.", icon: <LineChart className="h-3.5 w-3.5" /> },
-      { tab: "analytics-creatives", label: "Creative Perf.", icon: <Crosshair className="h-3.5 w-3.5" /> },
       { tab: "analytics-attribution", label: "Attribution", icon: <GitBranch className="h-3.5 w-3.5" /> },
-      { tab: "analytics-revenue", label: "Revenue Analytics", icon: <DollarSign className="h-3.5 w-3.5" /> },
+      { tab: "analytics-revenue", label: "Revenue", icon: <DollarSign className="h-3.5 w-3.5" /> },
       { tab: "analytics-reports", label: "Reports", icon: <ClipboardList className="h-3.5 w-3.5" /> },
     ],
   },
@@ -106,10 +98,8 @@ const NAV_GROUPS: NavGroup[] = [
     label: "AI",
     icon: <Sparkles className="h-[18px] w-[18px]" />,
     items: [
-      { tab: "ai", label: "Funnel Diagnosis", icon: <ScanSearch className="h-3.5 w-3.5" /> },
-      { tab: "ai-optimization", label: "Optimization", icon: <Lightbulb className="h-3.5 w-3.5" /> },
-      { tab: "ai-alerts", label: "Alerts", icon: <Bell className="h-3.5 w-3.5" /> },
-      { tab: "ai-insights", label: "Insights", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+      { tab: "ai", label: "Diagnosis", icon: <ScanSearch className="h-3.5 w-3.5" /> },
+      { tab: "ai-insights", label: "Insights", icon: <Lightbulb className="h-3.5 w-3.5" /> },
     ],
     separator: true,
   },
@@ -121,7 +111,9 @@ const NAV_GROUPS: NavGroup[] = [
       { tab: "clients", label: "Clients", icon: <Building2 className="h-3.5 w-3.5" /> },
       { tab: "clients-bc", label: "Business Centers", icon: <Globe className="h-3.5 w-3.5" /> },
       { tab: "tiktok", label: "Integrations", icon: <Plug className="h-3.5 w-3.5" /> },
+      { tab: "tracking-pixels", label: "Pixels", icon: <Radio className="h-3.5 w-3.5" /> },
       { tab: "settings-scripts", label: "Scripts", icon: <Code2 className="h-3.5 w-3.5" /> },
+      { tab: "rastreios", label: "Rastreios", icon: <Package className="h-3.5 w-3.5" /> },
       { tab: "logs", label: "API Logs", icon: <Server className="h-3.5 w-3.5" /> },
       { tab: "settings-csv", label: "CSV Import", icon: <Upload className="h-3.5 w-3.5" /> },
     ],
