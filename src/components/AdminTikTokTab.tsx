@@ -169,7 +169,8 @@ export default function AdminTikTokTab({ diagnosticsOnly = false }: { diagnostic
 
   const fetchRecentEvents = async () => {
     setEventsLoading(true);
-    const { data } = await supabase.from("user_events").select("*").order("created_at", { ascending: false }).limit(200);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await supabase.from("user_events").select("*").gte("created_at", sevenDaysAgo).order("created_at", { ascending: false }).limit(500);
     setEvents((data as UserEvent[]) || []);
     setEventsLoading(false);
   };
