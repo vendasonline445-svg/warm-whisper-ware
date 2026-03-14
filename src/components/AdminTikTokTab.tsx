@@ -372,6 +372,82 @@ export default function AdminTikTokTab({ diagnosticsOnly = false }: { diagnostic
   // RENDER
   // ═══════════════════════════════════════════════════════════════════
 
+  // ── Diagnostics-only mode (for embedding in Settings > Pixels) ────
+  if (diagnosticsOnly) {
+    return (
+      <div className="space-y-4">
+        {/* Health Score */}
+        <div className={`rounded-xl p-4 ${scoreBg} flex items-center gap-4 border ${diagnostics.score >= 80 ? "border-emerald-500/20" : diagnostics.score >= 50 ? "border-amber-500/20" : "border-red-500/20"}`}>
+          <Gauge className={`h-10 w-10 ${scoreColor}`} />
+          <div className="flex-1">
+            <p className="text-xs font-medium text-muted-foreground">Pixel Health Score</p>
+            <p className={`text-3xl font-black ${scoreColor}`}>{diagnostics.score} <span className="text-base font-medium text-muted-foreground">/ 100</span></p>
+          </div>
+          <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.totalEvents}</p><p>Eventos</p></div>
+            <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.extIdCoverage}%</p><p>Matching</p></div>
+            <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.dupCount}</p><p>Duplicados</p></div>
+          </div>
+        </div>
+
+        {/* Diagnostics grid */}
+        <div className="grid gap-2">
+          {[
+            { label: "Pixels ativos", status: (diagnostics.hasPixels ? "ok" : "error") as DiagStatus, detail: `${pixels.filter((p) => p.status === "active").length}` },
+            { label: "Event ID", status: (diagnostics.eventIdCoverage > 80 ? "ok" : diagnostics.eventIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.eventIdCoverage}%` },
+            { label: "Advanced Matching", status: (diagnostics.extIdCoverage > 80 ? "ok" : diagnostics.extIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.extIdCoverage}%` },
+            { label: "Currency BRL", status: (diagnostics.currencyCoverage > 90 ? "ok" : diagnostics.currencyCoverage > 50 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.currencyCoverage}%` },
+            { label: "Contents", status: (diagnostics.contentsCoverage > 80 ? "ok" : diagnostics.contentsCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.contentsCoverage}%` },
+            { label: "Duplicatas", status: (diagnostics.dupCount === 0 ? "ok" : diagnostics.dupCount < 3 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.dupCount}` },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
+              <div className="flex items-center gap-2"><StatusIcon status={item.status} /><span className="text-sm">{item.label}</span></div>
+              <span className="text-xs text-muted-foreground">{item.detail}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* EMQ Coverage */}
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: "Email", value: diagnostics.emailCoverage },
+            { label: "Telefone", value: diagnostics.phoneCoverage },
+            { label: "External ID", value: diagnostics.extIdCoverage },
+            { label: "IP (server)", value: 100 },
+          ].map((item, i) => (
+            <div key={i} className="rounded-lg bg-muted/30 p-3 text-center">
+              <p className="text-xs text-muted-foreground">{item.label}</p>
+              <p className={`text-xl font-bold ${item.value >= 70 ? "text-emerald-500" : item.value >= 30 ? "text-amber-500" : "text-red-500"}`}>{item.value}%</p>
+              <div className="w-full h-1.5 rounded-full bg-muted mt-1"><div className={`h-1.5 rounded-full ${item.value >= 70 ? "bg-emerald-500" : item.value >= 30 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${item.value}%` }} /></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent Events */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm flex items-center gap-2"><Search className="h-4 w-4" /> Eventos Recentes ({recentTikTokEvents.length})</h3>
+            <Button variant="ghost" size="sm" onClick={fetchRecentEvents}><RefreshCw className="h-3 w-3" /></Button>
+          </div>
+          {eventsLoading ? <p className="text-xs text-muted-foreground">Carregando...</p> : recentTikTokEvents.length === 0 ? <p className="text-xs text-muted-foreground">Nenhum evento.</p> : (
+            <div className="rounded-lg border overflow-hidden max-h-[200px] overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/50 sticky top-0"><tr><th className="text-left px-3 py-2 font-medium">Evento</th><th className="text-left px-3 py-2 font-medium">Visitor</th><th className="text-left px-3 py-2 font-medium">Hora</th></tr></thead>
+                <tbody>{recentTikTokEvents.map((ev, i) => (
+                  <tr key={i} className="border-t border-border/30 hover:bg-muted/20">
+                    <td className="px-3 py-1.5 font-mono">{ev.type}</td>
+                    <td className="px-3 py-1.5 text-muted-foreground">{String(ev.visitorId).slice(0, 18)}</td>
+                    <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">{new Date(ev.time).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
