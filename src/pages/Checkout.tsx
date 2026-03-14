@@ -39,13 +39,29 @@ function useCheckoutCountdown() {
 }
 
 type CartItem = { color: string; size: string; quantity: number };
+type StoreCartItem = { productId: string; slug: string; name: string; imageUrl: string; priceCents: number; quantity: number; variant?: Record<string, string> };
 
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Load cart items: from localStorage cart OR from URL params (single item)
+  // Detect store cart items (from /loja products)
+  const [storeItems, setStoreItems] = useState<StoreCartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('fiq_cart');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  const isStoreCheckout = storeItems.length > 0;
+
+  // Load mesa cart items: from localStorage cart OR from URL params (single item)
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    if (isStoreCheckout) return []; // Skip mesa cart if store items exist
     try {
       const saved = localStorage.getItem('mesalar_cart');
       if (saved) {
@@ -61,10 +77,27 @@ const Checkout = () => {
   });
 
   const updateCartItemQty = (index: number, qty: number) => {
+    if (isStoreCheckout) {
+      if (qty <= 0) {
+        const updated = storeItems.filter((_, i) => i !== index);
+        if (updated.length === 0) {
+          localStorage.removeItem('fiq_cart');
+          navigate('/loja');
+          return;
+        }
+        setStoreItems(updated);
+        localStorage.setItem('fiq_cart', JSON.stringify(updated));
+      } else {
+        const updated = [...storeItems];
+        updated[index] = { ...updated[index], quantity: qty };
+        setStoreItems(updated);
+        localStorage.setItem('fiq_cart', JSON.stringify(updated));
+      }
+      return;
+    }
     if (qty <= 0) {
       const updated = cartItems.filter((_, i) => i !== index);
       if (updated.length === 0) {
-        // Last item — navigate back
         localStorage.removeItem('mesalar_cart');
         navigate(getUrlWithUtm('/'));
         return;
@@ -87,10 +120,13 @@ const Checkout = () => {
       value: subtotalRaw,
       properties: {
         content_type: "product",
-        content_id: "mesa-dobravel",
-        content_name: "Mesa Dobrável Retrátil",
-        contents: cartItems.map(i => ({ content_id: `mesa-dobravel-${i.color}-${i.size}`, quantity: i.quantity })),
-        items: cartItems.length,
+        content_id: isStoreCheckout ? storeItems[0]?.slug : "mesa-dobravel",
+        content_name: isStoreCheckout ? storeItems[0]?.name : "Mesa Dobrável Retrátil",
+        contents: isStoreCheckout
+          ? storeItems.map(i => ({ content_id: i.slug, quantity: i.quantity }))
+          : cartItems.map(i => ({ content_id: `mesa-dobravel-${i.color}-${i.size}`, quantity: i.quantity })),
+        items: isStoreCheckout ? storeItems.length : cartItems.length,
+        source: isStoreCheckout ? 'loja' : 'mesa',
       },
     });
     trackPageViewOnce("/checkout");
@@ -159,16 +195,22 @@ const Checkout = () => {
     };
   });
 
-  // Derived totals from all cart items
-  const totalQty = cartItems.reduce((sum, i) => sum + i.quantity, 0);
-  const subtotalRaw = cartItems.reduce((sum, i) => {
-    const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
-    return sum + sp.price * i.quantity;
-  }, 0);
-  const totalOldPrice = cartItems.reduce((sum, i) => {
-    const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
-    return sum + sp.oldPrice * i.quantity;
-  }, 0);
+  // Derived totals - unified for both mesa and store products
+  const totalQty = isStoreCheckout
+    ? storeItems.reduce((sum, i) => sum + i.quantity, 0)
+    : cartItems.reduce((sum, i) => sum + i.quantity, 0);
+  const subtotalRaw = isStoreCheckout
+    ? storeItems.reduce((sum, i) => sum + (i.priceCents / 100) * i.quantity, 0)
+    : cartItems.reduce((sum, i) => {
+        const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
+        return sum + sp.price * i.quantity;
+      }, 0);
+  const totalOldPrice = isStoreCheckout
+    ? subtotalRaw // Store products don't have oldPrice in cart, discount already applied
+    : cartItems.reduce((sum, i) => {
+        const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
+        return sum + sp.oldPrice * i.quantity;
+      }, 0);
   const BASE_DISCOUNT_VALUE = totalOldPrice - subtotalRaw;
 
   const shippingCost = shipping === "express" ? 14.50 : 0;
@@ -328,17 +370,25 @@ const Checkout = () => {
           phone: form.phone.replace(/\D/g, ""),
           cpf: form.cpf.replace(/\D/g, ""),
         },
-        items: cartItems.map((item) => {
-            const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
-            const cl = item.color === "preta" ? "Preta" : "Branca";
-            return {
-              id: `mesa-dobravel-${item.color}-${item.size}`,
-              title: `Mesa Dobrável ${cl} ${item.size}`,
-              unitPrice: Math.round(sp.price * (1 - couponDiscount) * 100),
+        items: isStoreCheckout
+          ? storeItems.map((item) => ({
+              id: item.productId || item.slug,
+              title: item.name,
+              unitPrice: Math.round((item.priceCents / 100) * (1 - couponDiscount) * 100),
               quantity: item.quantity,
               tangible: true,
-            };
-          }),
+            }))
+          : cartItems.map((item) => {
+              const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
+              const cl = item.color === "preta" ? "Preta" : "Branca";
+              return {
+                id: `mesa-dobravel-${item.color}-${item.size}`,
+                title: `Mesa Dobrável ${cl} ${item.size}`,
+                unitPrice: Math.round(sp.price * (1 - couponDiscount) * 100),
+                quantity: item.quantity,
+                tangible: true,
+              };
+            }),
         shipping: {
           name: form.name,
           address: {
@@ -354,8 +404,9 @@ const Checkout = () => {
           fee: Math.round(shippingCost * 100),
         },
         metadata: JSON.stringify({
-          color: selectedColor,
-          size: selectedSize,
+          source: isStoreCheckout ? 'loja' : 'mesa',
+          color: isStoreCheckout ? undefined : selectedColor,
+          size: isStoreCheckout ? undefined : selectedSize,
           coupon: hasCoupon ? couponUpper : null,
           couponDiscount: couponAmount,
           ...getTrackingContext(),
@@ -413,9 +464,13 @@ const Checkout = () => {
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,
-        product: { items: cartItems, total, coupon: hasCoupon ? couponUpper : null, couponDiscount: couponAmount },
+        product: { items: isStoreCheckout ? storeItems : cartItems, total, coupon: hasCoupon ? couponUpper : null, couponDiscount: couponAmount },
         shipping: { type: shipping, cost: shippingCost },
       }));
+
+      if (isStoreCheckout) {
+        localStorage.removeItem('fiq_cart');
+      }
 
       if (hasCoupon && couponUpper === 'DESCULPA80') {
         localStorage.setItem('mesalar_coupon_used', 'true');
@@ -502,43 +557,81 @@ const Checkout = () => {
 
         {/* Product Info */}
         <div className="mt-4">
-          {cartItems.map((item, idx) => {
-            const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
-            const cl = item.color === "preta" ? "Preta" : "Branca";
-            const img = item.color === "preta" ? "/images/mesa-preta-popup.webp" : "/images/mesa-branca-popup.webp";
-            return (
-              <div key={`${item.color}-${item.size}`} className={`flex items-start gap-3 mt-3 ${idx > 0 ? "pt-3 border-t" : ""}`}>
-                <img src={img} alt="Mesa" className="w-20 h-20 object-contain rounded-md border" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta {item.size}</p>
-                  {/* Flash Sale badge + timer */}
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="relative inline-flex items-center whitespace-nowrap text-white text-[10px] font-bold pl-1.5 pr-2 py-0.5 rounded" style={{ background: 'linear-gradient(to right, #FF4D4D 80%, #FF6B35 100%)' }}>
-                      Oferta Relâmpago
-                      <span className="absolute -right-1.5 -top-1 text-sm drop-shadow-sm">⚡</span>
-                    </span>
-                    <span className="text-xs font-mono font-semibold" style={{ color: '#fe2b54' }}>{timer.display}</span>
+          {isStoreCheckout ? (
+            // Store products from /loja
+            storeItems.map((item, idx) => {
+              const pricePerItem = item.priceCents / 100;
+              return (
+                <div key={item.productId} className={`flex items-start gap-3 mt-3 ${idx > 0 ? "pt-3 border-t" : ""}`}>
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt={item.name} className="w-20 h-20 object-cover rounded-md border" />
+                  ) : (
+                    <div className="w-20 h-20 bg-muted rounded-md border flex items-center justify-center text-xs text-muted-foreground">Sem foto</div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium leading-snug line-clamp-2">{item.name}</p>
+                    {item.variant && Object.keys(item.variant).length > 0 && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {Object.entries(item.variant).map(([k, v]) => `${k}: ${v}`).join(' • ')}
+                      </p>
+                    )}
+                    {/* Flash Sale badge + timer */}
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="relative inline-flex items-center whitespace-nowrap text-white text-[10px] font-bold pl-1.5 pr-2 py-0.5 rounded" style={{ background: 'linear-gradient(to right, #FF4D4D 80%, #FF6B35 100%)' }}>
+                        Oferta Relâmpago
+                        <span className="absolute -right-1.5 -top-1 text-sm drop-shadow-sm">⚡</span>
+                      </span>
+                      <span className="text-xs font-mono font-semibold" style={{ color: '#fe2b54' }}>{timer.display}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">🔄 Devolução gratuita</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-base font-bold" style={{ color: '#fe2b54' }}>R$ {(pricePerItem * item.quantity).toFixed(2).replace(".", ",")}</span>
+                    </div>
                   </div>
-                  {/* Free return - subtle */}
-                  <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">
-                    🔄 Devolução gratuita
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-base font-bold" style={{ color: '#fe2b54' }}>R$ {(sp.price * item.quantity).toFixed(2).replace(".", ",")}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-muted-foreground line-through">R$ {sp.oldPrice.toFixed(2).replace(".", ",")}</span>
-                    <span className="text-[10px] font-semibold px-1 py-px rounded" style={{ backgroundColor: '#ffe3e8', color: '#fe2b54' }}>-{sp.discount}%</span>
+                  <div className="flex items-center gap-0 border rounded-lg h-9 bg-muted/30">
+                    <button onClick={() => updateCartItemQty(idx, item.quantity - 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Minus className="h-3.5 w-3.5" /></button>
+                    <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
+                    <button onClick={() => updateCartItemQty(idx, item.quantity + 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
                   </div>
                 </div>
-                <div className="flex items-center gap-0 border rounded-lg h-9 bg-muted/30">
-                  <button onClick={() => updateCartItemQty(idx, item.quantity - 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Minus className="h-3.5 w-3.5" /></button>
-                  <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
-                  <button onClick={() => updateCartItemQty(idx, item.quantity + 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
+              );
+            })
+          ) : (
+            // Mesa products (original flow)
+            cartItems.map((item, idx) => {
+              const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
+              const cl = item.color === "preta" ? "Preta" : "Branca";
+              const img = item.color === "preta" ? "/images/mesa-preta-popup.webp" : "/images/mesa-branca-popup.webp";
+              return (
+                <div key={`${item.color}-${item.size}`} className={`flex items-start gap-3 mt-3 ${idx > 0 ? "pt-3 border-t" : ""}`}>
+                  <img src={img} alt="Mesa" className="w-20 h-20 object-contain rounded-md border" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium leading-snug">Mesa Dobrável Tipo Maleta {item.size}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="relative inline-flex items-center whitespace-nowrap text-white text-[10px] font-bold pl-1.5 pr-2 py-0.5 rounded" style={{ background: 'linear-gradient(to right, #FF4D4D 80%, #FF6B35 100%)' }}>
+                        Oferta Relâmpago
+                        <span className="absolute -right-1.5 -top-1 text-sm drop-shadow-sm">⚡</span>
+                      </span>
+                      <span className="text-xs font-mono font-semibold" style={{ color: '#fe2b54' }}>{timer.display}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">🔄 Devolução gratuita</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-base font-bold" style={{ color: '#fe2b54' }}>R$ {(sp.price * item.quantity).toFixed(2).replace(".", ",")}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground line-through">R$ {sp.oldPrice.toFixed(2).replace(".", ",")}</span>
+                      <span className="text-[10px] font-semibold px-1 py-px rounded" style={{ backgroundColor: '#ffe3e8', color: '#fe2b54' }}>-{sp.discount}%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-0 border rounded-lg h-9 bg-muted/30">
+                    <button onClick={() => updateCartItemQty(idx, item.quantity - 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Minus className="h-3.5 w-3.5" /></button>
+                    <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
+                    <button onClick={() => updateCartItemQty(idx, item.quantity + 1)} className="px-2.5 h-full text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         {/* Shipping Options */}
