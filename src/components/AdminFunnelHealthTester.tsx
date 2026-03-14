@@ -33,6 +33,7 @@ interface StepResult {
 }
 
 export default function AdminFunnelHealthTester() {
+  const db = supabase as any;
   const [siteUrl, setSiteUrl] = useState("");
   const [siteId, setSiteId] = useState(() => {
     try { return localStorage.getItem("fiq_site_id") || ""; } catch { return ""; }
@@ -42,6 +43,7 @@ export default function AdminFunnelHealthTester() {
   const [score, setScore] = useState<number | null>(null);
   const [scriptCopied, setScriptCopied] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [serverLogs, setServerLogs] = useState<any[]>([]);
 
   // Generate site ID if empty
   useEffect(() => {
