@@ -13,6 +13,20 @@ import type { Json } from "@/integrations/supabase/types";
 
 const db = supabase as any;
 
+// ── Storage helpers with fiq_* prefix + mesalar_* fallback ──
+function getStore(storage: Storage, key: string): string | null {
+  try {
+    return storage.getItem(`fiq_${key}`) ?? storage.getItem(`mesalar_${key}`) ?? null;
+  } catch { return null; }
+}
+
+function setStore(storage: Storage, key: string, value: string): void {
+  try {
+    storage.setItem(`fiq_${key}`, value);
+    try { storage.removeItem(`mesalar_${key}`); } catch {}
+  } catch {}
+}
+
 // ── Bot Detection ──
 const BOT_UA = /bot|crawler|spider|headless|phantom|selenium|puppeteer|scrapy|slurp|wget|curl|scraper/i;
 function isBotUA(): boolean {
@@ -21,8 +35,7 @@ function isBotUA(): boolean {
 
 // ── Visitor ID — persistent via localStorage ──
 function getOrCreateVisitorId(): string {
-  const KEY = "mesalar_visitor_id";
-  let id = localStorage.getItem(KEY);
+  let id = getStore(localStorage, "visitor_id");
   if (!id) {
     const params = new URLSearchParams(window.location.search);
     const fromUrl = params.get("visitor_id");
@@ -32,25 +45,24 @@ function getOrCreateVisitorId(): string {
     const rand = Math.random().toString(36).slice(2, 7);
     id = `v_${rand}_${Date.now()}`;
   }
-  localStorage.setItem(KEY, id);
+  setStore(localStorage, "visitor_id", id);
   return id;
 }
 
 // ── Click ID ──
 function getOrCreateClickId(): string {
-  const KEY = "mesalar_click_id";
-  let id = sessionStorage.getItem(KEY);
+  let id = getStore(sessionStorage, "click_id");
   if (id) return id;
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get("click_id");
-  if (fromUrl) { sessionStorage.setItem(KEY, fromUrl); return fromUrl; }
+  if (fromUrl) { setStore(sessionStorage, "click_id", fromUrl); return fromUrl; }
   const hasAdParams = params.get("utm_source") || params.get("fbclid") || params.get("gclid") || params.get("ttclid") || params.get("xcod");
   if (hasAdParams) {
     id = `c_${Math.random().toString(36).slice(2, 7)}_${Date.now()}`;
   } else {
     id = "organic";
   }
-  sessionStorage.setItem(KEY, id);
+  setStore(sessionStorage, "click_id", id);
   return id;
 }
 
@@ -59,26 +71,24 @@ const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 const registeredPageViews = new Set<string>();
 
 function getOrCreateSessionId(): string {
-  const KEY = "mesalar_session_id";
-  const TS_KEY = "mesalar_session_ts";
   const now = Date.now();
-  const existing = sessionStorage.getItem(KEY);
-  const lastActivity = Number(sessionStorage.getItem(TS_KEY) || "0");
+  const existing = getStore(sessionStorage, "session_id");
+  const lastActivity = Number(getStore(sessionStorage, "session_ts") || "0");
 
   if (existing && (now - lastActivity) < SESSION_TIMEOUT_MS) {
-    sessionStorage.setItem(TS_KEY, String(now));
+    setStore(sessionStorage, "session_ts", String(now));
     return existing;
   }
 
   const id = `s_${Math.random().toString(36).slice(2, 7)}_${now}`;
-  sessionStorage.setItem(KEY, id);
-  sessionStorage.setItem(TS_KEY, String(now));
+  setStore(sessionStorage, "session_id", id);
+  setStore(sessionStorage, "session_ts", String(now));
 
   // Clear dedup flags for new session
   const keysToRemove: string[] = [];
   for (let i = 0; i < sessionStorage.length; i++) {
     const k = sessionStorage.key(i);
-    if (k && (k.startsWith("mesalar_pv_") || k === "crm_visit_sent" || k === "mesalar_click_id")) {
+    if (k && (k.startsWith("fiq_pv_") || k.startsWith("mesalar_pv_") || k === "crm_visit_sent" || k === "fiq_click_id" || k === "mesalar_click_id")) {
       keysToRemove.push(k);
     }
   }
@@ -89,7 +99,7 @@ function getOrCreateSessionId(): string {
 
 // Keep session alive
 if (typeof window !== "undefined") {
-  const touchSession = () => sessionStorage.setItem("mesalar_session_ts", String(Date.now()));
+  const touchSession = () => setStore(sessionStorage, "session_ts", String(Date.now()));
   window.addEventListener("click", touchSession, { passive: true });
   window.addEventListener("scroll", touchSession, { passive: true });
   window.addEventListener("keydown", touchSession, { passive: true });
@@ -97,8 +107,7 @@ if (typeof window !== "undefined") {
 
 // ── UTM Params ──
 function getUtmParams(): Record<string, string> {
-  const KEY = "mesalar_utm";
-  const cached = sessionStorage.getItem(KEY);
+  const cached = getStore(sessionStorage, "utm");
   if (cached) { try { return JSON.parse(cached); } catch {} }
 
   const params = new URLSearchParams(window.location.search);
@@ -121,7 +130,7 @@ function getUtmParams(): Record<string, string> {
     } catch {}
   }
 
-  if (Object.keys(utm).length > 0) sessionStorage.setItem(KEY, JSON.stringify(utm));
+  if (Object.keys(utm).length > 0) setStore(sessionStorage, "utm", JSON.stringify(utm));
   return utm;
 }
 
@@ -215,7 +224,7 @@ export function trackPageViewOnce(page: string): void {
   const sessionId = getOrCreateSessionId();
   const key = `${sessionId}::${page}`;
   if (registeredPageViews.has(key)) return;
-  const storageKey = `mesalar_pv_${page}`;
+  const storageKey = `fiq_pv_${page}`;
   if (sessionStorage.getItem(storageKey)) return;
 
   registeredPageViews.add(key);
@@ -227,7 +236,6 @@ export function trackPageViewOnce(page: string): void {
   // If tracker.js is loaded, skip internal page_view to avoid duplication
   const trackerLoaded = !!(window as any).__fiq_loaded;
   if (!trackerLoaded) {
-    // Delegate to unified tracking hub only when tracker.js is NOT present
     trackFunnelEvent({ event: "page_view", properties: { page } });
   }
 

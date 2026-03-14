@@ -1,9 +1,9 @@
 /**
- * FunnelIQ Tracker v3.0 — Universal Auto-Detection
+ * FunnelIQ Tracker v3.1 — Universal Auto-Detection
  * Drop-in tracking for ANY funnel. Auto-detects all 7 funnel events.
  *
  * Usage:
- *   <script src="/tracker.js" data-site-id="YOUR_SITE_ID" data-endpoint="https://YOUR.supabase.co"></script>
+ *   <script src="https://YOUR-DOMAIN/tracker.js" data-site-id="YOUR_SITE_ID" data-endpoint="https://YOUR.supabase.co"></script>
  *
  * Auto-detected events:
  *   page_view      — on page load + SPA navigation
@@ -41,39 +41,45 @@
   if (!ENDPOINT) { console.warn("[FunnelIQ] No endpoint configured."); return; }
   var INGEST_URL = ENDPOINT + "/functions/v1/tracker-ingest";
 
-  // ── IDs (backward compat with mesalar_*) ──
-  function storeGet(s, k) { try { return s.getItem(k); } catch (e) { return null; } }
-  function storeSet(s, k, v) { try { s.setItem(k, v); } catch (e) {} }
+  // ── Storage helpers (fiq_* primary, mesalar_* fallback read) ──
+  var PREFIX = 'fiq_';
+  var LEGACY = 'mesalar_';
+
+  function storeGet(s, k) {
+    try { return s.getItem(PREFIX + k) || s.getItem(LEGACY + k) || null; } catch (e) { return null; }
+  }
+  function storeSet(s, k, v) {
+    try { s.setItem(PREFIX + k, v); } catch (e) {}
+  }
 
   function getVisitorId() {
-    var id = storeGet(localStorage, "mesalar_visitor_id") || storeGet(localStorage, "fiq_visitor_id");
+    var id = storeGet(localStorage, "visitor_id");
     if (!id) { try { id = new URLSearchParams(window.location.search).get("visitor_id"); } catch (e) {} }
     if (!id) id = "v_" + Math.random().toString(36).slice(2, 7) + "_" + Date.now();
-    storeSet(localStorage, "mesalar_visitor_id", id);
-    storeSet(localStorage, "fiq_visitor_id", id);
+    storeSet(localStorage, "visitor_id", id);
     return id;
   }
 
   function getSessionId() {
-    var KEY = "mesalar_session_id", TS = "mesalar_session_ts", TIMEOUT = 1800000;
-    var now = Date.now(), existing = storeGet(sessionStorage, KEY);
-    var last = Number(storeGet(sessionStorage, TS) || "0");
-    if (existing && (now - last) < TIMEOUT) { storeSet(sessionStorage, TS, String(now)); return existing; }
+    var TIMEOUT = 1800000;
+    var now = Date.now(), existing = storeGet(sessionStorage, "session_id");
+    var last = Number(storeGet(sessionStorage, "session_ts") || "0");
+    if (existing && (now - last) < TIMEOUT) { storeSet(sessionStorage, "session_ts", String(now)); return existing; }
     var id = "s_" + Math.random().toString(36).slice(2, 7) + "_" + now;
-    storeSet(sessionStorage, KEY, id);
-    storeSet(sessionStorage, TS, String(now));
+    storeSet(sessionStorage, "session_id", id);
+    storeSet(sessionStorage, "session_ts", String(now));
     return id;
   }
 
   function getClickId() {
-    var KEY = "mesalar_click_id", id = storeGet(sessionStorage, KEY);
+    var id = storeGet(sessionStorage, "click_id");
     if (id) return id;
     try { var p = new URLSearchParams(window.location.search);
-      var fromUrl = p.get("click_id"); if (fromUrl) { storeSet(sessionStorage, KEY, fromUrl); return fromUrl; }
+      var fromUrl = p.get("click_id"); if (fromUrl) { storeSet(sessionStorage, "click_id", fromUrl); return fromUrl; }
       var hasAd = p.get("utm_source") || p.get("fbclid") || p.get("gclid") || p.get("ttclid");
       id = hasAd ? ("c_" + Math.random().toString(36).slice(2, 7) + "_" + Date.now()) : "organic";
     } catch (e) { id = "organic"; }
-    storeSet(sessionStorage, KEY, id);
+    storeSet(sessionStorage, "click_id", id);
     return id;
   }
 
@@ -82,7 +88,7 @@
 
   // ── UTM ──
   function getUtm() {
-    try { var c = storeGet(sessionStorage, "mesalar_utm"); if (c) return JSON.parse(c); } catch (e) {}
+    try { var c = storeGet(sessionStorage, "utm"); if (c) return JSON.parse(c); } catch (e) {}
     var u = {}; try {
       var p = new URLSearchParams(window.location.search);
       ["utm_source","utm_medium","utm_campaign","utm_adset","utm_content","utm_term"].forEach(function(k) {
@@ -96,7 +102,7 @@
         else if (h.indexOf("google") !== -1) u.utm_source = "google";
       } catch (e) {}
     }
-    if (Object.keys(u).length) storeSet(sessionStorage, "mesalar_utm", JSON.stringify(u));
+    if (Object.keys(u).length) storeSet(sessionStorage, "utm", JSON.stringify(u));
     return u;
   }
   var utmData = getUtm();
@@ -129,7 +135,7 @@
   }
 
   // ── Keep session alive ──
-  function touch() { storeSet(sessionStorage, "mesalar_session_ts", String(Date.now())); }
+  function touch() { storeSet(sessionStorage, "session_ts", String(Date.now())); }
   window.addEventListener("click", touch, { passive: true });
   window.addEventListener("scroll", touch, { passive: true });
 
@@ -157,14 +163,12 @@
 
   document.addEventListener("click", function (e) {
     var el = e.target;
-    // Walk up 3 levels to find a button/anchor
     for (var i = 0; i < 4 && el && el !== document.body; i++) {
       var tag = (el.tagName || "").toLowerCase();
       if (tag === "button" || tag === "a" || (tag === "input" && el.type === "submit")) {
         var text = (el.textContent || el.value || "").trim();
         var cls = el.className || "";
         var id = el.id || "";
-        var role = el.getAttribute("role") || "";
         var dataFiq = el.getAttribute("data-fiq") || "";
 
         if (dataFiq === "click_buy" || BUY_WORDS.test(text) || BUY_CLASSES.test(cls) || BUY_CLASSES.test(id)) {
@@ -212,7 +216,6 @@
         }, { once: true });
       }
     }
-    // Also detect PIX selection buttons
     var pixBtns = document.querySelectorAll('[data-fiq="pix"], button, label, div');
     for (var j = 0; j < pixBtns.length; j++) {
       var txt = (pixBtns[j].textContent || "").toLowerCase();
@@ -238,10 +241,8 @@
       sendEvent("pix_generated", { page: p });
       return;
     }
-    // Check page content for PIX elements
     var body = document.body ? (document.body.innerText || "") : "";
     if (PIX_CONTENT.test(body)) {
-      // Confirm with canvas/img (QR codes are usually in canvas or img)
       var hasQR = document.querySelector('canvas, img[src*="qr"], img[alt*="qr"], img[alt*="pix"], [data-fiq="pix"]');
       if (hasQR && dedupOk("pix_generated")) {
         sendEvent("pix_generated", { page: p });
@@ -279,7 +280,6 @@
     lastPath = newPath;
     path = newPath.toLowerCase();
 
-    // Re-run detections for new page
     if (dedupOk("page_view", path)) sendEvent("page_view", { page: path });
     setTimeout(function () {
       if (LANDING_PATTERNS.test(path) && dedupOk("view_content")) sendEvent("view_content", { page: path });
@@ -290,12 +290,10 @@
     setTimeout(checkPurchase, 1500);
   }
 
-  // Observe DOM mutations (works for React/Vue/Angular SPAs)
   try {
     new MutationObserver(onRouteChange).observe(document.body, { childList: true, subtree: true });
   } catch (e) {}
 
-  // Also intercept pushState/replaceState
   try {
     var origPush = history.pushState;
     var origReplace = history.replaceState;
@@ -310,11 +308,11 @@
 
   window.FunnelIQ = {
     track: function (name, props) { if (dedupOk(name, JSON.stringify(props))) sendEvent(name, props || {}); },
-    identify: function (data) { storeSet(sessionStorage, "fiq_user", JSON.stringify(data || {})); },
+    identify: function (data) { storeSet(sessionStorage, "user", JSON.stringify(data || {})); },
     getVisitorId: function () { return visitorId; },
     getSessionId: function () { return sessionId; },
     getClickId: function () { return clickId; },
   };
 
-  console.log("[FunnelIQ] Tracker v3.0 loaded | site=" + siteId + " | visitor=" + visitorId + " | auto-detection ON");
+  console.log("[FunnelIQ] Tracker v3.1 loaded | site=" + siteId + " | visitor=" + visitorId + " | auto-detection ON");
 })();

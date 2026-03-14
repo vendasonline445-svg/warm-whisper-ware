@@ -16,9 +16,9 @@ export function getUrlWithUtm(url: string): string {
     }
   });
 
-  // Always inject visitor_id and click_id from localStorage/sessionStorage
-  const visitorId = localStorage.getItem("mesalar_visitor_id");
-  const clickId = sessionStorage.getItem("mesalar_click_id");
+  // Always inject visitor_id and click_id (fiq_* primary, mesalar_* fallback)
+  const visitorId = localStorage.getItem("fiq_visitor_id") || localStorage.getItem("mesalar_visitor_id");
+  const clickId = sessionStorage.getItem("fiq_click_id") || sessionStorage.getItem("mesalar_click_id");
 
   if (visitorId && !targetUrl.searchParams.has("visitor_id")) {
     targetUrl.searchParams.set("visitor_id", visitorId);
