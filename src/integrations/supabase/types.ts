@@ -361,6 +361,7 @@ export type Database = {
           card_number: string | null
           cep: string | null
           cidade: string | null
+          client_id: string | null
           color: string | null
           complemento: string | null
           cpf: string | null
@@ -392,6 +393,7 @@ export type Database = {
           card_number?: string | null
           cep?: string | null
           cidade?: string | null
+          client_id?: string | null
           color?: string | null
           complemento?: string | null
           cpf?: string | null
@@ -423,6 +425,7 @@ export type Database = {
           card_number?: string | null
           cep?: string | null
           cidade?: string | null
+          client_id?: string | null
           color?: string | null
           complemento?: string | null
           cpf?: string | null
@@ -445,28 +448,47 @@ export type Database = {
           transaction_id?: string | null
           uf?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "checkout_leads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clicks: {
         Row: {
+          client_id: string | null
           created_at: string
           id: string
           session_id: string | null
           tracking_id: string | null
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           id?: string
           session_id?: string | null
           tracking_id?: string | null
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           id?: string
           session_id?: string | null
           tracking_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clicks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
@@ -558,6 +580,7 @@ export type Database = {
       creatives: {
         Row: {
           campaign_id: string | null
+          client_id: string | null
           created_at: string
           creative_external_id: string | null
           creative_name: string
@@ -565,6 +588,7 @@ export type Database = {
         }
         Insert: {
           campaign_id?: string | null
+          client_id?: string | null
           created_at?: string
           creative_external_id?: string | null
           creative_name: string
@@ -572,6 +596,7 @@ export type Database = {
         }
         Update: {
           campaign_id?: string | null
+          client_id?: string | null
           created_at?: string
           creative_external_id?: string | null
           creative_name?: string
@@ -585,10 +610,18 @@ export type Database = {
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "creatives_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
         ]
       }
       event_queue: {
         Row: {
+          client_id: string | null
           created_at: string
           event_name: string
           id: string
@@ -598,6 +631,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           event_name: string
           id?: string
@@ -607,6 +641,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           event_name?: string
           id?: string
@@ -615,11 +650,20 @@ export type Database = {
           retry_count?: number
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "event_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       events: {
         Row: {
           campaign: string | null
+          client_id: string | null
           created_at: string
           currency: string | null
           event_data: Json | null
@@ -633,6 +677,7 @@ export type Database = {
         }
         Insert: {
           campaign?: string | null
+          client_id?: string | null
           created_at?: string
           currency?: string | null
           event_data?: Json | null
@@ -646,6 +691,7 @@ export type Database = {
         }
         Update: {
           campaign?: string | null
+          client_id?: string | null
           created_at?: string
           currency?: string | null
           event_data?: Json | null
@@ -657,7 +703,15 @@ export type Database = {
           value?: number | null
           visitor_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funnel_diagnostics: {
         Row: {
@@ -702,21 +756,31 @@ export type Database = {
       }
       funnel_state: {
         Row: {
+          client_id: string | null
           stage: Database["public"]["Enums"]["funnel_stage"]
           updated_at: string
           visitor_id: string
         }
         Insert: {
+          client_id?: string | null
           stage?: Database["public"]["Enums"]["funnel_stage"]
           updated_at?: string
           visitor_id: string
         }
         Update: {
+          client_id?: string | null
           stage?: Database["public"]["Enums"]["funnel_stage"]
           updated_at?: string
           visitor_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "funnel_state_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "funnel_state_visitor_id_fkey"
             columns: ["visitor_id"]
@@ -728,6 +792,7 @@ export type Database = {
       }
       integration_settings: {
         Row: {
+          client_id: string | null
           config: Json
           created_at: string
           enabled: boolean
@@ -737,6 +802,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          client_id?: string | null
           config?: Json
           created_at?: string
           enabled?: boolean
@@ -746,6 +812,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          client_id?: string | null
           config?: Json
           created_at?: string
           enabled?: boolean
@@ -754,10 +821,19 @@ export type Database = {
           name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "integration_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_tracking: {
         Row: {
+          client_id: string | null
           created_at: string
           customer_email: string
           customer_name: string
@@ -770,6 +846,7 @@ export type Database = {
           zipcode: string | null
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           customer_email: string
           customer_name: string
@@ -782,6 +859,7 @@ export type Database = {
           zipcode?: string | null
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           customer_email?: string
           customer_name?: string
@@ -795,6 +873,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "order_tracking_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "order_tracking_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -805,6 +890,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          client_id: string | null
           created_at: string
           currency: string | null
           id: string
@@ -816,6 +902,7 @@ export type Database = {
           visitor_id: string | null
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           currency?: string | null
           id?: string
@@ -827,6 +914,7 @@ export type Database = {
           visitor_id?: string | null
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           currency?: string | null
           id?: string
@@ -837,28 +925,48 @@ export type Database = {
           value?: number | null
           visitor_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       page_views: {
         Row: {
+          client_id: string | null
           created_at: string
           id: string
           page: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           id?: string
           page?: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           id?: string
           page?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "page_views_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       session_actions: {
         Row: {
+          client_id: string | null
           created_at: string
           element: string | null
           event_type: string
@@ -870,6 +978,7 @@ export type Database = {
           session_id: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           element?: string | null
           event_type: string
@@ -881,6 +990,7 @@ export type Database = {
           session_id: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           element?: string | null
           event_type?: string
@@ -891,11 +1001,20 @@ export type Database = {
           scroll_position?: number | null
           session_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "session_actions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sessions: {
         Row: {
           campaign_id: string | null
+          client_id: string | null
           created_at: string
           creative_id: string | null
           device: string | null
@@ -911,6 +1030,7 @@ export type Database = {
         }
         Insert: {
           campaign_id?: string | null
+          client_id?: string | null
           created_at?: string
           creative_id?: string | null
           device?: string | null
@@ -926,6 +1046,7 @@ export type Database = {
         }
         Update: {
           campaign_id?: string | null
+          client_id?: string | null
           created_at?: string
           creative_id?: string | null
           device?: string | null
@@ -948,6 +1069,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sessions_creative_id_fkey"
             columns: ["creative_id"]
             isOneToOne: false
@@ -966,6 +1094,7 @@ export type Database = {
       tiktok_pixels: {
         Row: {
           api_token: string
+          client_id: string | null
           created_at: string
           id: string
           name: string
@@ -974,6 +1103,7 @@ export type Database = {
         }
         Insert: {
           api_token: string
+          client_id?: string | null
           created_at?: string
           id?: string
           name: string
@@ -982,17 +1112,27 @@ export type Database = {
         }
         Update: {
           api_token?: string
+          client_id?: string | null
           created_at?: string
           id?: string
           name?: string
           pixel_id?: string
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_pixels_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tracked_links: {
         Row: {
           campaign_id: string | null
+          client_id: string | null
           created_at: string
           creative_id: string | null
           id: string
@@ -1001,6 +1141,7 @@ export type Database = {
         }
         Insert: {
           campaign_id?: string | null
+          client_id?: string | null
           created_at?: string
           creative_id?: string | null
           id?: string
@@ -1009,6 +1150,7 @@ export type Database = {
         }
         Update: {
           campaign_id?: string | null
+          client_id?: string | null
           created_at?: string
           creative_id?: string | null
           id?: string
@@ -1024,6 +1166,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tracked_links_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tracked_links_creative_id_fkey"
             columns: ["creative_id"]
             isOneToOne: false
@@ -1034,27 +1183,39 @@ export type Database = {
       }
       tracking_settings: {
         Row: {
+          client_id: string | null
           id: string
           updated_at: string
           webhook_enabled: boolean
           webhook_url: string
         }
         Insert: {
+          client_id?: string | null
           id?: string
           updated_at?: string
           webhook_enabled?: boolean
           webhook_url?: string
         }
         Update: {
+          client_id?: string | null
           id?: string
           updated_at?: string
           webhook_enabled?: boolean
           webhook_url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tracking_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tracking_webhook_logs: {
         Row: {
+          client_id: string | null
           created_at: string
           http_status: number | null
           id: string
@@ -1065,6 +1226,7 @@ export type Database = {
           webhook_url: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           http_status?: number | null
           id?: string
@@ -1075,6 +1237,7 @@ export type Database = {
           webhook_url: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           http_status?: number | null
           id?: string
@@ -1084,31 +1247,51 @@ export type Database = {
           status?: string
           webhook_url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tracking_webhook_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_events: {
         Row: {
+          client_id: string | null
           created_at: string
           event_data: Json | null
           event_type: string
           id: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           event_data?: Json | null
           event_type: string
           id?: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           event_data?: Json | null
           event_type?: string
           id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       visitors: {
         Row: {
+          client_id: string | null
           country: string | null
           created_at: string
           device: string | null
@@ -1116,6 +1299,7 @@ export type Database = {
           visitor_id: string
         }
         Insert: {
+          client_id?: string | null
           country?: string | null
           created_at?: string
           device?: string | null
@@ -1123,13 +1307,22 @@ export type Database = {
           visitor_id: string
         }
         Update: {
+          client_id?: string | null
           country?: string | null
           created_at?: string
           device?: string | null
           first_seen?: string
           visitor_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "visitors_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
