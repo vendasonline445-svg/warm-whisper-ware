@@ -763,18 +763,21 @@ export type Database = {
       funnel_state: {
         Row: {
           client_id: string | null
+          site_id: string | null
           stage: Database["public"]["Enums"]["funnel_stage"]
           updated_at: string
           visitor_id: string
         }
         Insert: {
           client_id?: string | null
+          site_id?: string | null
           stage?: Database["public"]["Enums"]["funnel_stage"]
           updated_at?: string
           visitor_id: string
         }
         Update: {
           client_id?: string | null
+          site_id?: string | null
           stage?: Database["public"]["Enums"]["funnel_stage"]
           updated_at?: string
           visitor_id?: string

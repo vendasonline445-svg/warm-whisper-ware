@@ -1,0 +1,1 @@
+ALTER TABLE funnel_state ADD COLUMN IF NOT EXISTS site_id TEXT;
