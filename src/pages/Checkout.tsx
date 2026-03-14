@@ -468,6 +468,10 @@ const Checkout = () => {
         shipping: { type: shipping, cost: shippingCost },
       }));
 
+      if (isStoreCheckout) {
+        localStorage.removeItem('fiq_cart');
+      }
+
       if (hasCoupon && couponUpper === 'DESCULPA80') {
         localStorage.setItem('mesalar_coupon_used', 'true');
         localStorage.removeItem('mesalar_coupon');
