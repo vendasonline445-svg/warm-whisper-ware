@@ -159,7 +159,8 @@ export default function AdminSidebar({
         label: "Super Admin",
         icon: <ShieldCheck className="h-[18px] w-[18px]" />,
         items: [{ tab: "superadmin" as AdminTab, label: "Gerenciar Acessos", icon: <ShieldCheck className="h-3.5 w-3.5" /> }],
-      }]
+        separator: false,
+      } as NavGroup]
     : filteredGroups;
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
