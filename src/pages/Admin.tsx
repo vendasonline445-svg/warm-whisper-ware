@@ -565,7 +565,7 @@ function AdminContent() {
           } />
         )}
 
-        {tab === "rastreios" && <AdminRastreiosTab />}
+        
 
         {(tab === "settings-scripts" || tab === "tracking-pixels") && <AdminTrackingHub key={`settings-${tab}`} />}
 
