@@ -69,8 +69,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Build webhook URL
-    const postbackUrl = `${supabaseUrl}/functions/v1/hygros-webhook`;
+    // Build webhook URL (normalize trailing slash for safety)
+    const normalizedSupabaseUrl = supabaseUrl.replace(/\/$/, "");
+    const postbackUrl = `${normalizedSupabaseUrl}/functions/v1/hygros-webhook`;
+    console.log("[create-pix] postbackUrl:", postbackUrl);
 
     // Hygros API payload
     const body = {
