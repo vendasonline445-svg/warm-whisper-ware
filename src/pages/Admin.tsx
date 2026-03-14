@@ -590,6 +590,7 @@ function AdminContent() {
           />
         )}
 
+        {tab === "logs" && (
           <div className="space-y-6">
             {logsLoading ? (
               <p className="text-center text-muted-foreground py-8">Carregando logs...</p>
