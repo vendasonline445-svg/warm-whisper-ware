@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_logs: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          method: string
+          request_payload: Json | null
+          response_payload: Json | null
+          status_code: number | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          method?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status_code?: number | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          method?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status_code?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attributions: {
         Row: {
           attribution_model: string | null
@@ -92,6 +133,56 @@ export type Database = {
         }
         Relationships: []
       }
+      business_centers: {
+        Row: {
+          access_token: string | null
+          bc_external_id: string | null
+          bc_name: string
+          client_id: string
+          created_at: string
+          id: string
+          platform: string
+          refresh_token: string | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          bc_external_id?: string | null
+          bc_name: string
+          client_id: string
+          created_at?: string
+          id?: string
+          platform?: string
+          refresh_token?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          bc_external_id?: string | null
+          bc_name?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          platform?: string
+          refresh_token?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_centers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_costs: {
         Row: {
           campaign_id: string | null
@@ -140,6 +231,7 @@ export type Database = {
         Row: {
           campaign_external_id: string | null
           campaign_name: string
+          client_id: string | null
           created_at: string
           id: string
           platform: string
@@ -147,6 +239,7 @@ export type Database = {
         Insert: {
           campaign_external_id?: string | null
           campaign_name: string
+          client_id?: string | null
           created_at?: string
           id?: string
           platform?: string
@@ -154,11 +247,20 @@ export type Database = {
         Update: {
           campaign_external_id?: string | null
           campaign_name?: string
+          client_id?: string | null
           created_at?: string
           id?: string
           platform?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       checkout_leads: {
         Row: {
@@ -274,6 +376,39 @@ export type Database = {
           id?: string
           session_id?: string | null
           tracking_id?: string | null
+        }
+        Relationships: []
+      }
+      clients: {
+        Row: {
+          client_name: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_name: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
