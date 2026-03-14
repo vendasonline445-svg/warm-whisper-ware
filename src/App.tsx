@@ -3,11 +3,19 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Admin from "./pages/Admin";
 import FunilAdmin from "./pages/FunilAdmin";
 import TrackingRedirect from "./pages/TrackingRedirect";
 import NotFound from "./pages/NotFound";
+import Index from "./pages/Index";
+import Checkout from "./pages/Checkout";
+import PixPayment from "./pages/PixPayment";
+import Obrigado from "./pages/Obrigado";
+import ObrigadoUpsell from "./pages/ObrigadoUpsell";
+import Upsell1 from "./pages/Upsell1";
+import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
+import TermosDeUso from "./pages/TermosDeUso";
 
 const queryClient = new QueryClient();
 
@@ -19,11 +27,18 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/admin" replace />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/pix" element={<PixPayment />} />
+            <Route path="/obrigado" element={<Obrigado />} />
+            <Route path="/obrigado-upsell" element={<ObrigadoUpsell />} />
+            <Route path="/upsell1" element={<Upsell1 />} />
+            <Route path="/taxa-alfandega" element={<Upsell1 />} />
+            <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
+            <Route path="/termos-de-uso" element={<TermosDeUso />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/funil-admin" element={<FunilAdmin />} />
             <Route path="/r/:trackingId" element={<TrackingRedirect />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
