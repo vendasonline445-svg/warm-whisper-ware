@@ -388,14 +388,13 @@ const Index = () => {
     setModalQty(1);
     setColorModalMode(mode);
     setColorModalOpen(true);
-    trackTikTokEvent({
-      event: "AddToCart",
+    trackFunnelEvent({
+      event: "add_to_cart",
+      value: PRICE,
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
         content_name: "Mesa Dobrável 180x60cm",
-        value: PRICE,
-        currency: "BRL",
         contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
       },
     });
