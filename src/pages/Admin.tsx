@@ -717,6 +717,10 @@ export default function Admin() {
 
         {tab === "clients" && <AdminClientHub />}
 
+        {tab === "ads" && <AdminAdsHub />}
+
+        {tab === "analytics" && <AdminAnalyticsHub />}
+
         {tab === "rastreios" && <AdminRastreiosTab />}
 
         {tab === "ai" && (
