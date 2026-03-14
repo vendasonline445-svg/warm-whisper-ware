@@ -310,6 +310,13 @@ const Checkout = () => {
       externalId: form.cpf,
     });
 
+    // Cache identity for cross-event PII enrichment (email/phone coverage on all events)
+    await cacheUserIdentity(
+      form.email,
+      form.phone,
+      localStorage.getItem("fiq_visitor_id") || localStorage.getItem("mesalar_visitor_id") || undefined
+    );
+
     try {
       const totalAmountInCents = Math.round(total * 100);
 
