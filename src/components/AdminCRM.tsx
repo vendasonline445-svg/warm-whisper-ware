@@ -1109,7 +1109,7 @@ export default function AdminCRM() {
     );
   };
 
-  const StageBadge = ({ stage }: { stage: FunnelStage }) => (
+  const StageBadge = ({ stage }: { stage: PipelineStage }) => (
     <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${STAGE_COLORS[stage]}`}>
       {STAGE_LABELS[stage]}
     </span>
