@@ -7,12 +7,13 @@ import {
   Heart, ShoppingCart, Gauge, Bell, Signal, Lightbulb,
   PieChart, GitBranch, DollarSign, Crosshair, LayoutList,
   Workflow, RefreshCcw, Wallet, Target, LineChart, ClipboardList,
-  ScanSearch, Radio, MousePointer, Globe
+  ScanSearch, Radio, MousePointer, Globe, ShieldCheck
 } from "lucide-react";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/use-auth";
 
 export type AdminTab = 
   | "dashboard" | "funnel-health" | "live-activity"
@@ -21,7 +22,8 @@ export type AdminTab =
   | "campaigns" | "campaigns-creatives" | "campaigns-performance" | "campaigns-automation" | "campaigns-budgets"
   | "analytics" | "analytics-attribution" | "analytics-revenue" | "analytics-reports"
   | "ai" | "ai-insights"
-  | "clients" | "clients-bc" | "tiktok" | "tracking-pixels" | "settings-scripts" | "rastreios" | "logs" | "settings-csv";
+  | "clients" | "clients-bc" | "tiktok" | "tracking-pixels" | "settings-scripts" | "rastreios" | "logs" | "settings-csv"
+  | "superadmin";
 
 interface NavItem {
   tab: AdminTab;
@@ -121,6 +123,7 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 function getGroupForTab(tab: AdminTab): string {
+  if (tab === "superadmin") return "superadmin";
   for (const g of NAV_GROUPS) {
     if (g.items.some(i => i.tab === tab)) return g.key;
   }
@@ -141,6 +144,26 @@ interface AdminSidebarProps {
 export default function AdminSidebar({
   currentTab, onTabChange, onExportCSV, darkMode, onToggleDarkMode, onLogout, collapsed, onToggleCollapse
 }: AdminSidebarProps) {
+  const { isSuperAdmin, isAdmin, profile, signOut } = useAuth();
+  const isClient = profile?.role === "client";
+
+  // Build filtered nav groups based on role
+  const filteredGroups = NAV_GROUPS.filter(g => {
+    if (isClient && !["dashboard"].includes(g.key)) return false;
+    return true;
+  });
+
+  // Add Super Admin group for superadmins
+  const allGroups = isSuperAdmin
+    ? [...filteredGroups, {
+        key: "superadmin",
+        label: "Super Admin",
+        icon: <ShieldCheck className="h-[18px] w-[18px]" />,
+        items: [{ tab: "superadmin" as AdminTab, label: "Gerenciar Acessos", icon: <ShieldCheck className="h-3.5 w-3.5" /> }],
+        separator: false,
+      } as NavGroup]
+    : filteredGroups;
+
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
     return new Set([getGroupForTab(currentTab)]);
   });
@@ -166,9 +189,9 @@ export default function AdminSidebar({
     setExpandedGroups(prev => new Set(prev).add(groupKey));
   };
 
-  const separatorIdx = NAV_GROUPS.findIndex(g => g.separator);
-  const mainGroups = separatorIdx >= 0 ? NAV_GROUPS.slice(0, separatorIdx + 1) : NAV_GROUPS;
-  const settingsGroups = separatorIdx >= 0 ? NAV_GROUPS.slice(separatorIdx + 1) : [];
+  const separatorIdx = allGroups.findIndex(g => g.separator);
+  const mainGroups = separatorIdx >= 0 ? allGroups.slice(0, separatorIdx + 1) : allGroups;
+  const settingsGroups = separatorIdx >= 0 ? allGroups.slice(separatorIdx + 1) : [];
 
   const renderGroup = (group: NavGroup) => {
     const isExpanded = expandedGroups.has(group.key);
@@ -286,8 +309,21 @@ export default function AdminSidebar({
       {/* Footer */}
       <div className={cn(
         "border-t border-border/60 shrink-0",
-        collapsed ? "p-1 space-y-0.5" : "p-1.5 space-y-0.5"
+        collapsed ? "p-1 space-y-0.5" : "p-1.5 space-y-1.5"
       )}>
+        {/* User info */}
+        {!collapsed && profile && (
+          <div className="flex items-center gap-2 px-2 py-1">
+            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+              {profile.full_name?.[0] ?? profile.email?.[0]?.toUpperCase() ?? "?"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium truncate">{profile.full_name ?? "Usuário"}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{profile.email}</p>
+            </div>
+          </div>
+        )}
+
         <div className={cn("flex gap-0.5", collapsed ? "flex-col" : "")}>
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -325,7 +361,7 @@ export default function AdminSidebar({
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button
-                onClick={onLogout}
+                onClick={() => { signOut(); onLogout(); }}
                 className={cn(
                   "h-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
                   collapsed ? "w-full" : "flex-1"

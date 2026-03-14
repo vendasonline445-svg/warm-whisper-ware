@@ -13,9 +13,11 @@ import AdminAdsHub from "@/components/AdminAdsHub";
 import AdminAnalyticsHub from "@/components/AdminAnalyticsHub";
 import AdminFunnelHealthTester from "@/components/AdminFunnelHealthTester";
 import AdminLiveActivity from "@/components/AdminLiveActivity";
+import AdminSuperHub from "@/components/AdminSuperHub";
 import AdminSidebar, { type AdminTab } from "@/components/AdminSidebar";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useAuth } from "@/hooks/use-auth";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle2, TrendingUp, CreditCard, Webhook, Bug, Radio, CalendarIcon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -447,6 +449,10 @@ function AdminContent() {
 
       <main className="flex-1 min-w-0 overflow-auto">
         <div className="max-w-[1400px] mx-auto p-4">
+        {tab === "superadmin" && (
+          <AdminSuperHub />
+        )}
+
         {tab === "funnel-health" && (
           <AdminFunnelHealthTester />
         )}
