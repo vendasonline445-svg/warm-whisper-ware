@@ -123,6 +123,7 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 function getGroupForTab(tab: AdminTab): string {
+  if (tab === "superadmin") return "superadmin";
   for (const g of NAV_GROUPS) {
     if (g.items.some(i => i.tab === tab)) return g.key;
   }
