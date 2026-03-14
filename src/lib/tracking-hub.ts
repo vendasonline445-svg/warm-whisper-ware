@@ -1,10 +1,13 @@
 /**
  * FunnelIQ Tracking Hub — Single source of truth for all events.
  * 
- * Flow: User Action → trackFunnelEvent() → DB insert → Pixel distribution (TikTok)
+ * Flow: User Action → trackFunnelEvent() → Retry Queue → DB insert → Pixel distribution (TikTok)
  * 
- * Deduplication via event_id. Funnel order validation.
- * UTMify and xTracky are DISABLED — they remain as detected scripts only.
+ * Features:
+ * - Event retry queue with localStorage persistence
+ * - Auto-attribution on purchase (last_click model)
+ * - Deduplication via event_id
+ * - Funnel order validation
  */
 
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +15,7 @@ import { trackTikTokEvent, identifyTikTokUser, setUserData } from "@/lib/tiktok-
 import type { Json } from "@/integrations/supabase/types";
 
 const DEBUG = "[TrackingHub]";
+const db = supabase as any;
 
 // ── Canonical funnel events (in order) ──────────────────────────────────
 export const FUNNEL_EVENTS = [
@@ -56,6 +60,9 @@ const STAGE_PRIORITY: Record<string, number> = {
   visit: 1, view_content: 2, add_to_cart: 3, checkout: 4, pix_generated: 5, card_submitted: 5, purchase: 6,
 };
 
+// Critical events that must be retried
+const CRITICAL_EVENTS = new Set(["checkout_start", "pix_generated", "purchase"]);
+
 // ── Deduplication ───────────────────────────────────────────────────────
 const sentEventIds = new Set<string>();
 
@@ -65,7 +72,7 @@ function generateEventId(): string {
     : `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 }
 
-// ── Visitor / Session context (reuse from track-event) ──────────────────
+// ── Visitor / Session context ───────────────────────────────────────────
 function getVisitorId(): string {
   try { return localStorage.getItem("mesalar_visitor_id") || ""; } catch { return ""; }
 }
@@ -77,10 +84,7 @@ function getSessionId(): string {
 function getUtmSource(): string | null {
   try {
     const cached = sessionStorage.getItem("mesalar_utm");
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      return parsed.utm_source || null;
-    }
+    if (cached) return JSON.parse(cached).utm_source || null;
   } catch {}
   return null;
 }
@@ -88,10 +92,7 @@ function getUtmSource(): string | null {
 function getUtmCampaign(): string | null {
   try {
     const cached = sessionStorage.getItem("mesalar_utm");
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      return parsed.utm_campaign || null;
-    }
+    if (cached) return JSON.parse(cached).utm_campaign || null;
   } catch {}
   return null;
 }
@@ -106,6 +107,101 @@ function getLastFunnelIndex(): number {
 
 function setLastFunnelIndex(idx: number) {
   try { sessionStorage.setItem("funneliq_last_stage", String(idx)); } catch {}
+}
+
+// ── Event Retry Queue ───────────────────────────────────────────────────
+const RETRY_KEY = "funneliq_retry_queue";
+const MAX_RETRIES = 5;
+const RETRY_INTERVAL_MS = 5000;
+
+interface QueuedEvent {
+  dbPayload: Record<string, any>;
+  retries: number;
+  critical: boolean;
+  eventId: string;
+}
+
+function loadRetryQueue(): QueuedEvent[] {
+  try {
+    const raw = localStorage.getItem(RETRY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveRetryQueue(queue: QueuedEvent[]) {
+  try { localStorage.setItem(RETRY_KEY, JSON.stringify(queue)); } catch {}
+}
+
+async function processRetryQueue() {
+  const queue = loadRetryQueue();
+  if (queue.length === 0) return;
+
+  const remaining: QueuedEvent[] = [];
+  for (const item of queue) {
+    const { error } = await db.from("events").insert(item.dbPayload);
+    if (error) {
+      item.retries++;
+      if (item.retries < MAX_RETRIES || item.critical) {
+        remaining.push(item);
+      } else {
+        console.warn(`${DEBUG} Dropping event after ${MAX_RETRIES} retries: ${item.eventId}`);
+      }
+    } else {
+      console.log(`${DEBUG} ✓ Retry succeeded for ${item.eventId}`);
+    }
+  }
+  saveRetryQueue(remaining);
+}
+
+// Start retry loop
+if (typeof window !== "undefined") {
+  setInterval(processRetryQueue, RETRY_INTERVAL_MS);
+  // Also process on page load
+  setTimeout(processRetryQueue, 2000);
+}
+
+// ── Attribution Engine ──────────────────────────────────────────────────
+async function createAttribution(eventId: string, visitorId: string, sessionId: string, value: number) {
+  try {
+    // Look up session to find campaign_id and creative_id
+    const { data: session } = await db.from("sessions")
+      .select("campaign_id, creative_id")
+      .eq("session_id", sessionId)
+      .maybeSingle();
+
+    const campaignId = session?.campaign_id || null;
+    const creativeId = session?.creative_id || null;
+
+    // Also try to match campaign by utm_campaign name
+    let resolvedCampaignId = campaignId;
+    if (!resolvedCampaignId) {
+      const { data: sess } = await db.from("sessions")
+        .select("utm_campaign")
+        .eq("session_id", sessionId)
+        .maybeSingle();
+      if (sess?.utm_campaign) {
+        const { data: camp } = await db.from("campaigns")
+          .select("id")
+          .eq("campaign_name", sess.utm_campaign)
+          .maybeSingle();
+        if (camp) resolvedCampaignId = camp.id;
+      }
+    }
+
+    await db.from("attributions").insert({
+      event_id: eventId,
+      session_id: sessionId,
+      campaign_id: resolvedCampaignId,
+      creative_id: creativeId,
+      revenue: value,
+      currency: "BRL",
+      attribution_model: "last_click",
+    });
+
+    console.log(`${DEBUG} ✓ Attribution created for event ${eventId} → campaign ${resolvedCampaignId || "unknown"}`);
+  } catch (e) {
+    console.warn(`${DEBUG} Attribution error:`, e);
+  }
 }
 
 // ── Core: Track a funnel event ──────────────────────────────────────────
@@ -151,7 +247,7 @@ export async function trackFunnelEvent(options: TrackOptions) {
   const sessionId = getSessionId();
   const timestamp = new Date().toISOString();
 
-  // 3. Register in DB (events table) — single source of truth
+  // 3. Build DB payload
   const eventData: Record<string, any> = {
     ...properties,
     event_id: eventId,
@@ -169,20 +265,26 @@ export async function trackFunnelEvent(options: TrackOptions) {
     event_data: eventData as Json,
   };
 
-  // Fire-and-forget DB insert
-  (supabase as any).from("events").insert(dbPayload).then(() => {
+  // 4. Try DB insert with retry queue fallback
+  const { error } = await db.from("events").insert(dbPayload);
+  if (error) {
+    console.warn(`${DEBUG} DB insert failed, queuing for retry: ${eventId}`);
+    const queue = loadRetryQueue();
+    queue.push({ dbPayload, retries: 0, critical: CRITICAL_EVENTS.has(event), eventId });
+    saveRetryQueue(queue);
+  } else {
     console.log(`${DEBUG} ✓ ${event} saved to DB (event_id: ${eventId})`);
-  });
+  }
 
-  // 4. Update funnel_state
+  // 5. Update funnel_state
   const stage = FUNNEL_STAGE_MAP[event];
   if (stage && visitorId) {
     const priority = STAGE_PRIORITY[stage] || 0;
     try {
-      const { data } = await (supabase as any).from("funnel_state").select("stage").eq("visitor_id", visitorId).maybeSingle();
+      const { data } = await db.from("funnel_state").select("stage").eq("visitor_id", visitorId).maybeSingle();
       const currentPriority = data ? (STAGE_PRIORITY[data.stage] || 0) : 0;
       if (priority > currentPriority) {
-        await (supabase as any).from("funnel_state").upsert(
+        await db.from("funnel_state").upsert(
           { visitor_id: visitorId, stage, updated_at: timestamp },
           { onConflict: "visitor_id" }
         );
@@ -190,10 +292,15 @@ export async function trackFunnelEvent(options: TrackOptions) {
     } catch {}
   }
 
-  // 5. Distribute to TikTok (Browser + Server via existing module)
+  // 6. Attribution on purchase
+  if (event === "purchase" && visitorId) {
+    // Use the DB-generated UUID from insert or generate one
+    createAttribution(eventId, visitorId, sessionId, value);
+  }
+
+  // 7. Distribute to TikTok (Browser + Server)
   const tiktokEvent = TIKTOK_EVENT_MAP[event];
   if (tiktokEvent) {
-    // Set user data for better EMQ if available
     if (userData) {
       await setUserData(userData);
       await identifyTikTokUser(userData);
@@ -212,10 +319,10 @@ export async function trackFunnelEvent(options: TrackOptions) {
       userData,
     });
 
-    console.log(`${DEBUG} → TikTok ${tiktokEvent} dispatched (event_id shared: ${eventId})`);
+    console.log(`${DEBUG} → TikTok ${tiktokEvent} dispatched (event_id: ${eventId})`);
   }
 
-  // 6. Legacy dual-write to user_events (for backward compat)
+  // 8. Legacy dual-write to user_events
   supabase.from("user_events").insert({
     event_type: event,
     event_data: eventData as Json,

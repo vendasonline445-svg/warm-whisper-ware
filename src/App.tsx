@@ -19,6 +19,7 @@ import Upsell1 from "./pages/Upsell1";
 import Obrigado from "./pages/Obrigado";
 import ObrigadoUpsell from "./pages/ObrigadoUpsell";
 import AdminRastreios from "./pages/AdminRastreios";
+import TrackingRedirect from "./pages/TrackingRedirect";
 
 const queryClient = new QueryClient();
 
