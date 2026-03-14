@@ -1031,7 +1031,8 @@ export default function Admin() {
             )}
           </div>
         )}
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
