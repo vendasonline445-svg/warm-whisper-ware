@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      attributions: {
+        Row: {
+          attribution_model: string | null
+          campaign_id: string | null
+          created_at: string
+          creative_id: string | null
+          currency: string | null
+          event_id: string
+          id: string
+          revenue: number | null
+          session_id: string | null
+        }
+        Insert: {
+          attribution_model?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          creative_id?: string | null
+          currency?: string | null
+          event_id: string
+          id?: string
+          revenue?: number | null
+          session_id?: string | null
+        }
+        Update: {
+          attribution_model?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          creative_id?: string | null
+          currency?: string | null
+          event_id?: string
+          id?: string
+          revenue?: number | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attributions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attributions_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "creatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bin_cache: {
         Row: {
           bank_name: string | null
@@ -40,6 +91,50 @@ export type Database = {
           type?: string | null
         }
         Relationships: []
+      }
+      campaign_costs: {
+        Row: {
+          campaign_id: string | null
+          clicks: number | null
+          cpc: number | null
+          created_at: string
+          ctr: number | null
+          date: string
+          id: string
+          impressions: number | null
+          spend: number | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          clicks?: number | null
+          cpc?: number | null
+          created_at?: string
+          ctr?: number | null
+          date: string
+          id?: string
+          impressions?: number | null
+          spend?: number | null
+        }
+        Update: {
+          campaign_id?: string | null
+          clicks?: number | null
+          cpc?: number | null
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          spend?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_costs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaigns: {
         Row: {
