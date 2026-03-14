@@ -1,18 +1,29 @@
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FunilPedidos } from "@/components/funil/FunilPedidos";
 import { FunilLeads } from "@/components/funil/FunilLeads";
 import { FunilRastreios } from "@/components/funil/FunilRastreios";
 import { FunilMetricas } from "@/components/funil/FunilMetricas";
+import { supabase } from "@/integrations/supabase/client";
 
 type FunilTab = "pedidos" | "leads" | "rastreios" | "metricas";
 
 export default function FunilAdmin() {
   const [tab, setTab] = useState<FunilTab>("pedidos");
+  const [leadsCount, setLeadsCount] = useState<number | null>(null);
 
-  const tabs: { id: FunilTab; label: string }[] = [
+  useEffect(() => {
+    supabase
+      .from("checkout_leads")
+      .select("*", { count: "exact", head: true })
+      .eq("site_id", "mesa-dobravel")
+      .gte("created_at", new Date(Date.now() - 86400000).toISOString())
+      .then(({ count }) => setLeadsCount(count ?? 0));
+  }, []);
+
+  const tabs: { id: FunilTab; label: string; badge?: number | null }[] = [
     { id: "pedidos", label: "Pedidos" },
-    { id: "leads", label: "Leads" },
+    { id: "leads", label: "Leads", badge: leadsCount },
     { id: "rastreios", label: "Rastreios" },
     { id: "metricas", label: "Métricas" },
   ];
@@ -30,13 +41,20 @@ export default function FunilAdmin() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
                   tab === t.id
                     ? "bg-primary text-primary-foreground font-medium"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
                 {t.label}
+                {t.badge != null && t.badge > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    tab === t.id ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/15 text-primary"
+                  }`}>
+                    {t.badge}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
