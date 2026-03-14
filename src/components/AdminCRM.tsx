@@ -1116,8 +1116,8 @@ export default function AdminCRM() {
   );
 
   const LeadCard = ({ l, borderColor }: { l: EnrichedLead; borderColor?: string }) => {
-    const ScoreIcon = SCORE_CONFIG[l.level].icon;
-    const scoreColor = SCORE_CONFIG[l.level].colorClass;
+    const ScoreIcon = SCORE_CONFIG[l.temperatureLevel].icon;
+    const scoreColor = SCORE_CONFIG[l.temperatureLevel].colorClass;
     return (
       <div
         onClick={() => setSelectedLead(l)}
@@ -1125,9 +1125,9 @@ export default function AdminCRM() {
       >
         <div className="flex items-start justify-between mb-2">
           <p className="text-sm font-bold truncate flex-1 mr-2">{l.name}</p>
-          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${SCORE_CONFIG[l.level].bgClass} ${scoreColor}`}>
+          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${SCORE_CONFIG[l.temperatureLevel].bgClass} ${scoreColor}`}>
             <ScoreIcon className="h-3 w-3" />
-            {SCORE_CONFIG[l.level].label}
+            {SCORE_CONFIG[l.temperatureLevel].label}
           </div>
         </div>
         <p className="text-[11px] text-muted-foreground truncate">{l.email}</p>
