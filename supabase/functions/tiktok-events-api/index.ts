@@ -57,8 +57,7 @@ Deno.serve(async (req) => {
       supabase
         .from("tiktok_event_dedup")
         .insert({ event_id, pixel_id: pixel_code })
-        .then(() => {})
-        .catch((e: any) => console.warn("[TikTok Dedup] Insert error:", e));
+        .then(() => {});
     }
 
     // ── Capture real client IP ────────────────────────────────────────
