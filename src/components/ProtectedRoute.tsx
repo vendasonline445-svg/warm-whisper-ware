@@ -65,6 +65,28 @@ function AdminLogin() {
   );
 }
 
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="animate-pulse flex flex-col items-center gap-3">
+          <FunnelIQLogo size={48} />
+          <p className="text-sm text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!session) return <AdminLogin />;
   return <>{children}</>;
 }
