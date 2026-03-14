@@ -189,19 +189,19 @@ function AdminContent() {
 
     // Fetch leads + page views + events + alert data in parallel
     Promise.all([
+      // Fetch leads + events (unified — no more user_events/page_views)
       supabase.from("checkout_leads").select("*").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }),
-      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/").gte("created_at", rangeFrom).lte("created_at", rangeTo),
-      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout").gte("created_at", rangeFrom).lte("created_at", rangeTo),
-      // Fetch user_events for deduplication (same as CRM)
-      supabase.from("user_events").select("event_type, event_data, created_at").gte("created_at", rangeFrom).lte("created_at", rangeTo).in("event_type", [
-        "page_view", "visitor_session", "click_buy_button", "click_product_image", "scroll_depth",
-        "checkout_initiated", "pix_generated", "card_submitted", "payment_confirmed", "pix_paid", "payment_started"
-      ]).order("created_at", { ascending: false }).limit(2000),
+      // Visitors count from events
+      supabase.from("events").select("id", { count: "exact", head: true }).eq("event_name", "page_view").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      // Checkouts count from events
+      supabase.from("events").select("id", { count: "exact", head: true }).in("event_name", ["checkout_start", "checkout_started"]).gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      // Fetch events for metrics
+      supabase.from("events").select("event_name, event_data, created_at, visitor_id").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }).limit(2000),
       // Alert queries (always use fixed windows, not period)
       supabase.from("checkout_leads").select("id", { count: "exact", head: true }).neq("status", "paid").gte("created_at", oneHourAgo),
       supabase.from("tracking_webhook_logs").select("id", { count: "exact", head: true }).neq("status", "sent").gte("created_at", oneDayAgo),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "js_error").gte("created_at", oneDayAgo),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "tiktok_event").gte("created_at", oneHourAgo),
+      supabase.from("events").select("id", { count: "exact", head: true }).eq("event_name", "js_error").gte("created_at", oneDayAgo),
+      supabase.from("events").select("id", { count: "exact", head: true }).in("event_name", ["tiktok_event"]).gte("created_at", oneHourAgo),
     ]).then(([leadsRes, visitorsPageRes, checkoutsPageRes, eventsRes, declinedRes, webhookErrRes, jsErrRes, pixelEventsRes]) => {
       if (leadsRes.error) {
         console.error(leadsRes.error);
