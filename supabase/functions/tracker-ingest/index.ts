@@ -23,6 +23,38 @@ const STAGE_PRIORITY: Record<string, number> = {
   pix_generated: 5, card_submitted: 5, purchase: 6,
 };
 
+// Dispatch events to client's active TikTok pixels (server-side)
+async function dispatchToPixels(supabase: any, client_id: string, event_name: string, event_data: any) {
+  if (!client_id) return;
+  try {
+    const { data: tiktokPixels } = await supabase
+      .from("tiktok_pixels")
+      .select("pixel_id, api_token")
+      .eq("client_id", client_id)
+      .eq("status", "active");
+
+    for (const pixel of tiktokPixels ?? []) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      fetch(`${supabaseUrl}/functions/v1/tiktok-events-api`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          pixel_id: pixel.pixel_id,
+          api_token: pixel.api_token,
+          event_name,
+          event_data,
+        }),
+      }).catch(console.error);
+    }
+  } catch (e) {
+    console.error("[tracker-ingest] dispatchToPixels error:", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -56,9 +88,21 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // ── Resolve site_id → client_id ──
+    let client_id: string | null = null;
+    if (site_id) {
+      const { data: site } = await supabase
+        .from("sites")
+        .select("client_id")
+        .eq("site_id", site_id)
+        .eq("active", true)
+        .single();
+      client_id = site?.client_id ?? null;
+    }
+
     // 1. Ensure visitor exists
     await supabase.from("visitors").upsert(
-      { visitor_id, device: device || "Desktop", first_seen: timestamp || new Date().toISOString() },
+      { visitor_id, device: device || "Desktop", first_seen: timestamp || new Date().toISOString(), client_id, site_id: site_id || null },
       { onConflict: "visitor_id", ignoreDuplicates: true }
     );
 
@@ -83,6 +127,8 @@ Deno.serve(async (req) => {
           utm_content: utmContent,
           utm_term: utmTerm,
           ttclid,
+          client_id,
+          site_id: site_id || null,
         },
         { onConflict: "session_id", ignoreDuplicates: true }
       );
@@ -109,6 +155,8 @@ Deno.serve(async (req) => {
       source: properties?.utm_source || null,
       campaign: properties?.utm_campaign || null,
       value: properties?.value || 0,
+      client_id,
+      site_id: site_id || null,
     });
 
     if (evtErr) {
@@ -129,7 +177,7 @@ Deno.serve(async (req) => {
         const currentPriority = current ? (STAGE_PRIORITY[current.stage] || 0) : 0;
         if (priority > currentPriority) {
           await supabase.from("funnel_state").upsert(
-            { visitor_id, stage, updated_at: new Date().toISOString() },
+            { visitor_id, stage, updated_at: new Date().toISOString(), client_id },
             { onConflict: "visitor_id" }
           );
         }
@@ -141,6 +189,7 @@ Deno.serve(async (req) => {
     // 6. Also write to user_events for backward compat & health check monitoring
     await supabase.from("user_events").insert({
       event_type: is_health_check ? "health_check_event" : event_name,
+      client_id,
       event_data: {
         ...eventData,
         visitor_id,
@@ -149,6 +198,11 @@ Deno.serve(async (req) => {
         timestamp: timestamp || new Date().toISOString(),
       },
     });
+
+    // 7. Dispatch to client's server-side pixels (async, non-blocking)
+    if (client_id) {
+      dispatchToPixels(supabase, client_id, event_name, eventData);
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

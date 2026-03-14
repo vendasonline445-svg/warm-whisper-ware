@@ -377,6 +377,7 @@ export type Database = {
           quantity: number | null
           shipping_cost: number | null
           shipping_type: string | null
+          site_id: string | null
           size: string | null
           status: string | null
           total_amount: number | null
@@ -409,6 +410,7 @@ export type Database = {
           quantity?: number | null
           shipping_cost?: number | null
           shipping_type?: string | null
+          site_id?: string | null
           size?: string | null
           status?: string | null
           total_amount?: number | null
@@ -441,6 +443,7 @@ export type Database = {
           quantity?: number | null
           shipping_cost?: number | null
           shipping_type?: string | null
+          site_id?: string | null
           size?: string | null
           status?: string | null
           total_amount?: number | null
@@ -671,6 +674,7 @@ export type Database = {
           id: string
           product_id: string | null
           session_id: string | null
+          site_id: string | null
           source: string | null
           value: number | null
           visitor_id: string
@@ -685,6 +689,7 @@ export type Database = {
           id?: string
           product_id?: string | null
           session_id?: string | null
+          site_id?: string | null
           source?: string | null
           value?: number | null
           visitor_id: string
@@ -699,6 +704,7 @@ export type Database = {
           id?: string
           product_id?: string | null
           session_id?: string | null
+          site_id?: string | null
           source?: string | null
           value?: number | null
           visitor_id?: string
@@ -896,6 +902,7 @@ export type Database = {
           id: string
           lead_id: string | null
           payment_method: string
+          site_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           transaction_id: string | null
           value: number | null
@@ -908,6 +915,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           payment_method?: string
+          site_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           transaction_id?: string | null
           value?: number | null
@@ -920,6 +928,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           payment_method?: string
+          site_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           transaction_id?: string | null
           value?: number | null
@@ -960,6 +969,57 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_gateways: {
+        Row: {
+          active: boolean | null
+          api_key: string | null
+          client_id: string
+          company_id: string | null
+          created_at: string | null
+          id: string
+          provider: string
+          site_id: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          api_key?: string | null
+          client_id: string
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          provider: string
+          site_id?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          api_key?: string | null
+          client_id?: string
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          provider?: string
+          site_id?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_gateways_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_gateways_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
@@ -1058,6 +1118,7 @@ export type Database = {
           device: string | null
           referrer: string | null
           session_id: string
+          site_id: string | null
           ttclid: string | null
           utm_campaign: string | null
           utm_content: string | null
@@ -1074,6 +1135,7 @@ export type Database = {
           device?: string | null
           referrer?: string | null
           session_id: string
+          site_id?: string | null
           ttclid?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
@@ -1090,6 +1152,7 @@ export type Database = {
           device?: string | null
           referrer?: string | null
           session_id?: string
+          site_id?: string | null
           ttclid?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
@@ -1126,6 +1189,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "visitors"
             referencedColumns: ["visitor_id"]
+          },
+        ]
+      }
+      sites: {
+        Row: {
+          active: boolean | null
+          client_id: string
+          created_at: string | null
+          domain: string | null
+          id: string
+          name: string | null
+          site_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          client_id: string
+          created_at?: string | null
+          domain?: string | null
+          id?: string
+          name?: string | null
+          site_id: string
+        }
+        Update: {
+          active?: boolean | null
+          client_id?: string
+          created_at?: string | null
+          domain?: string | null
+          id?: string
+          name?: string | null
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1334,6 +1435,7 @@ export type Database = {
           created_at: string
           device: string | null
           first_seen: string
+          site_id: string | null
           visitor_id: string
         }
         Insert: {
@@ -1342,6 +1444,7 @@ export type Database = {
           created_at?: string
           device?: string | null
           first_seen?: string
+          site_id?: string | null
           visitor_id: string
         }
         Update: {
@@ -1350,6 +1453,7 @@ export type Database = {
           created_at?: string
           device?: string | null
           first_seen?: string
+          site_id?: string | null
           visitor_id?: string
         }
         Relationships: [
