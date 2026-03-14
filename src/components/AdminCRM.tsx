@@ -1730,7 +1730,7 @@ export default function AdminCRM() {
                                 const prevTime = i > 0 ? new Date(session.events[i - 1].created_at).getTime() : new Date(e.created_at).getTime();
                                 const currTime = new Date(e.created_at).getTime();
                                 const gap = Math.round((currTime - prevTime) / 1000);
-                                const Icon = cfg?.icon || Eye;
+                                const Icon = Eye;
                                 const colorCls = cfg?.color || "bg-muted text-muted-foreground";
 
                                 let detail = "";
