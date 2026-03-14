@@ -9,6 +9,8 @@ import AdminRastreiosTab from "@/components/AdminRastreiosTab";
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminAIAssistant from "@/components/AdminAIAssistant";
 import AdminClientHub from "@/components/AdminClientHub";
+import AdminAdsHub from "@/components/AdminAdsHub";
+import AdminAnalyticsHub from "@/components/AdminAnalyticsHub";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
 import { ptBR } from "date-fns/locale";
 import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Activity, Sparkles, LogOut } from "lucide-react";
@@ -49,7 +51,7 @@ interface Lead {
   transaction_id: string | null;
 }
 
-type Tab = "dashboard" | "leads" | "crm" | "logs" | "tiktok" | "tracking" | "rastreios" | "ai" | "clients";
+type Tab = "dashboard" | "leads" | "crm" | "logs" | "tiktok" | "tracking" | "rastreios" | "ai" | "clients" | "ads" | "analytics";
 
 type PeriodKey = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
 
@@ -509,6 +511,18 @@ export default function Admin() {
               <Users className="h-4 w-4" /> Client Hub
             </button>
             <button
+              onClick={() => setTab("ads")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "ads" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            >
+              <Megaphone className="h-4 w-4" /> Ads Hub
+            </button>
+            <button
+              onClick={() => setTab("analytics")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "analytics" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            >
+              <TrendingUp className="h-4 w-4" /> Analytics Hub
+            </button>
+            <button
               onClick={() => setTab("tiktok")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "tiktok" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
             >
@@ -702,6 +716,10 @@ export default function Admin() {
         {tab === "tracking" && <AdminTrackingHub />}
 
         {tab === "clients" && <AdminClientHub />}
+
+        {tab === "ads" && <AdminAdsHub />}
+
+        {tab === "analytics" && <AdminAnalyticsHub />}
 
         {tab === "rastreios" && <AdminRastreiosTab />}
 

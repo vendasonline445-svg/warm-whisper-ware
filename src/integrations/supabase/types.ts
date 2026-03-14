@@ -59,6 +59,7 @@ export type Database = {
         Row: {
           attribution_model: string | null
           campaign_id: string | null
+          client_id: string | null
           created_at: string
           creative_id: string | null
           currency: string | null
@@ -70,6 +71,7 @@ export type Database = {
         Insert: {
           attribution_model?: string | null
           campaign_id?: string | null
+          client_id?: string | null
           created_at?: string
           creative_id?: string | null
           currency?: string | null
@@ -81,6 +83,7 @@ export type Database = {
         Update: {
           attribution_model?: string | null
           campaign_id?: string | null
+          client_id?: string | null
           created_at?: string
           creative_id?: string | null
           currency?: string | null
@@ -98,10 +101,77 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "attributions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "attributions_creative_id_fkey"
             columns: ["creative_id"]
             isOneToOne: false
             referencedRelation: "creatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_rules: {
+        Row: {
+          action: string
+          campaign_id: string | null
+          client_id: string | null
+          condition_operator: string
+          condition_value: number
+          created_at: string
+          id: string
+          metric: string
+          rule_name: string
+          rule_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action?: string
+          campaign_id?: string | null
+          client_id?: string | null
+          condition_operator?: string
+          condition_value?: number
+          created_at?: string
+          id?: string
+          metric?: string
+          rule_name?: string
+          rule_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          campaign_id?: string | null
+          client_id?: string | null
+          condition_operator?: string
+          condition_value?: number
+          created_at?: string
+          id?: string
+          metric?: string
+          rule_name?: string
+          rule_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rules_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_rules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -187,6 +257,7 @@ export type Database = {
         Row: {
           campaign_id: string | null
           clicks: number | null
+          client_id: string | null
           cpc: number | null
           created_at: string
           ctr: number | null
@@ -198,6 +269,7 @@ export type Database = {
         Insert: {
           campaign_id?: string | null
           clicks?: number | null
+          client_id?: string | null
           cpc?: number | null
           created_at?: string
           ctr?: number | null
@@ -209,6 +281,7 @@ export type Database = {
         Update: {
           campaign_id?: string | null
           clicks?: number | null
+          client_id?: string | null
           cpc?: number | null
           created_at?: string
           ctr?: number | null
@@ -223,6 +296,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_costs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
