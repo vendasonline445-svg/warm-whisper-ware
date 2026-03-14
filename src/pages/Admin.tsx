@@ -1014,3 +1014,11 @@ function AdminContent() {
     </div>
   );
 }
+
+export default function Admin() {
+  return (
+    <ProtectedRoute>
+      <AdminContent />
+    </ProtectedRoute>
+  );
+}
