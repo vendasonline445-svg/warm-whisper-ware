@@ -52,6 +52,12 @@ export default function AdminFunnelHealthTester() {
       setSiteId(id);
       localStorage.setItem("fiq_site_id", id);
     }
+    // Load server-side event logs
+    db.from("tracker_event_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }: any) => setServerLogs(data ?? []));
   }, [siteId]);
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
