@@ -5,7 +5,7 @@ import { format, startOfDay, endOfDay, subDays, startOfMonth } from "date-fns";
 
 import AdminTikTokTab from "@/components/AdminTikTokTab";
 import AdminTrackingHub from "@/components/AdminTrackingHub";
-import AdminRastreiosTab from "@/components/AdminRastreiosTab";
+
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminAIAssistant from "@/components/AdminAIAssistant";
 import AdminClientHub from "@/components/AdminClientHub";
