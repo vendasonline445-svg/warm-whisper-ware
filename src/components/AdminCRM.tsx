@@ -963,15 +963,7 @@ export default function AdminCRM() {
 
   // ── Pipeline grouped ──
   const pipeline = useMemo(() => {
-    const groups: Record<FunnelStage, EnrichedLead[]> = {
-      visitante: [], engajado: [], clique_comprar: [],
-      checkout_iniciado: [], pagamento_iniciado: [],
-      cartao_enviado: [], pix_gerado: [], pago: [], abandonado: [],
-    };
-    filteredLeads.forEach(l => {
-      if (groups[l.stage]) groups[l.stage].push(l);
-    });
-    return groups;
+    return buildPipeline(filteredLeads);
   }, [filteredLeads]);
 
   // ── Recovery leads ──
