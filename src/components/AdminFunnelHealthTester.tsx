@@ -36,7 +36,7 @@ export default function AdminFunnelHealthTester() {
   const db = supabase as any;
   const [siteUrl, setSiteUrl] = useState("");
   const [siteId, setSiteId] = useState(() => {
-    try { return localStorage.getItem("fiq_site_id") || ""; } catch { return ""; }
+    try { return localStorage.getItem("fiq_site_id") || "mesa-dobravel"; } catch { return "mesa-dobravel"; }
   });
   const [testing, setTesting] = useState(false);
   const [steps, setSteps] = useState<StepResult[]>([]);
@@ -45,12 +45,11 @@ export default function AdminFunnelHealthTester() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [serverLogs, setServerLogs] = useState<any[]>([]);
 
-  // Generate site ID if empty
+  // Ensure site ID is set
   useEffect(() => {
     if (!siteId) {
-      const id = "site_" + Math.random().toString(36).slice(2, 8);
-      setSiteId(id);
-      localStorage.setItem("fiq_site_id", id);
+      setSiteId("mesa-dobravel");
+      localStorage.setItem("fiq_site_id", "mesa-dobravel");
     }
     // Load server-side event logs
     db.from("tracker_event_log")

@@ -287,6 +287,8 @@ export async function trackFunnelEvent(options: TrackOptions) {
   const timestamp = new Date().toISOString();
 
   // 3. Build DB payload
+  const siteId = (window as any).fiqSiteId || localStorage.getItem('fiq_site_id') || 'mesa-dobravel';
+
   const eventData: Record<string, any> = {
     ...properties,
     event_id: eventId,
@@ -302,6 +304,7 @@ export async function trackFunnelEvent(options: TrackOptions) {
     source: getUtmSource() || null,
     campaign: getUtmCampaign() || null,
     event_data: eventData as Json,
+    site_id: siteId,
   };
 
   // 4. Try DB insert with retry queue fallback
@@ -329,7 +332,7 @@ export async function trackFunnelEvent(options: TrackOptions) {
       const currentPriority = data ? (STAGE_PRIORITY[data.stage] || 0) : 0;
       if (priority > currentPriority) {
         await db.from("funnel_state").upsert(
-          { visitor_id: visitorId, stage, updated_at: timestamp },
+          { visitor_id: visitorId, stage, updated_at: timestamp, site_id: siteId },
           { onConflict: "visitor_id" }
         );
       }
