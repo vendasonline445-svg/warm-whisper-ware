@@ -39,13 +39,29 @@ function useCheckoutCountdown() {
 }
 
 type CartItem = { color: string; size: string; quantity: number };
+type StoreCartItem = { productId: string; slug: string; name: string; imageUrl: string; priceCents: number; quantity: number; variant?: Record<string, string> };
 
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Load cart items: from localStorage cart OR from URL params (single item)
+  // Detect store cart items (from /loja products)
+  const [storeItems, setStoreItems] = useState<StoreCartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('fiq_cart');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  const isStoreCheckout = storeItems.length > 0;
+
+  // Load mesa cart items: from localStorage cart OR from URL params (single item)
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    if (isStoreCheckout) return []; // Skip mesa cart if store items exist
     try {
       const saved = localStorage.getItem('mesalar_cart');
       if (saved) {
