@@ -367,17 +367,25 @@ const Checkout = () => {
           phone: form.phone.replace(/\D/g, ""),
           cpf: form.cpf.replace(/\D/g, ""),
         },
-        items: cartItems.map((item) => {
-            const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
-            const cl = item.color === "preta" ? "Preta" : "Branca";
-            return {
-              id: `mesa-dobravel-${item.color}-${item.size}`,
-              title: `Mesa Dobrável ${cl} ${item.size}`,
-              unitPrice: Math.round(sp.price * (1 - couponDiscount) * 100),
+        items: isStoreCheckout
+          ? storeItems.map((item) => ({
+              id: item.productId || item.slug,
+              title: item.name,
+              unitPrice: Math.round((item.priceCents / 100) * (1 - couponDiscount) * 100),
               quantity: item.quantity,
               tangible: true,
-            };
-          }),
+            }))
+          : cartItems.map((item) => {
+              const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
+              const cl = item.color === "preta" ? "Preta" : "Branca";
+              return {
+                id: `mesa-dobravel-${item.color}-${item.size}`,
+                title: `Mesa Dobrável ${cl} ${item.size}`,
+                unitPrice: Math.round(sp.price * (1 - couponDiscount) * 100),
+                quantity: item.quantity,
+                tangible: true,
+              };
+            }),
         shipping: {
           name: form.name,
           address: {
@@ -393,8 +401,9 @@ const Checkout = () => {
           fee: Math.round(shippingCost * 100),
         },
         metadata: JSON.stringify({
-          color: selectedColor,
-          size: selectedSize,
+          source: isStoreCheckout ? 'loja' : 'mesa',
+          color: isStoreCheckout ? undefined : selectedColor,
+          size: isStoreCheckout ? undefined : selectedSize,
           coupon: hasCoupon ? couponUpper : null,
           couponDiscount: couponAmount,
           ...getTrackingContext(),
