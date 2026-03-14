@@ -724,7 +724,7 @@ export default function AdminCRM() {
 
   // ── Traffic Quality Analysis ──
   const trafficAnalysis = useMemo(() => {
-    const scored = botAnalysis.scored;
+    const scored = trafficBotData;
     const total = scored.length || 1;
     const dist = {
       ruim: scored.filter(v => v.quality === "ruim").length,
