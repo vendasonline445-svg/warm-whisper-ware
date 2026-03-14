@@ -120,10 +120,13 @@ const Checkout = () => {
       value: subtotalRaw,
       properties: {
         content_type: "product",
-        content_id: "mesa-dobravel",
-        content_name: "Mesa Dobrável Retrátil",
-        contents: cartItems.map(i => ({ content_id: `mesa-dobravel-${i.color}-${i.size}`, quantity: i.quantity })),
-        items: cartItems.length,
+        content_id: isStoreCheckout ? storeItems[0]?.slug : "mesa-dobravel",
+        content_name: isStoreCheckout ? storeItems[0]?.name : "Mesa Dobrável Retrátil",
+        contents: isStoreCheckout
+          ? storeItems.map(i => ({ content_id: i.slug, quantity: i.quantity }))
+          : cartItems.map(i => ({ content_id: `mesa-dobravel-${i.color}-${i.size}`, quantity: i.quantity })),
+        items: isStoreCheckout ? storeItems.length : cartItems.length,
+        source: isStoreCheckout ? 'loja' : 'mesa',
       },
     });
     trackPageViewOnce("/checkout");
