@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Build event_data
+    // 3. Build event_data (includes identity fields from tracker.js payload)
     const eventData: Record<string, unknown> = {
       ...(properties || {}),
       page_url,
@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
       click_id,
       is_health_check: is_health_check || false,
       source: "tracker.js",
+      currency: properties?.currency || "BRL",
     };
 
     // 4. Insert into events table

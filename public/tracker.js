@@ -123,14 +123,32 @@
   }
 
   // ── Send ──
+  function getCachedIdentity() {
+    try {
+      var raw = localStorage.getItem('fiq_user_identity');
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      if (Date.now() - parsed.cached_at > 30 * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem('fiq_user_identity');
+        return {};
+      }
+      var result = {};
+      if (parsed.email_hash) result.email = parsed.email_hash;
+      if (parsed.phone_hash) result.phone_number = parsed.phone_hash;
+      if (parsed.external_id) result.external_id = parsed.external_id;
+      return result;
+    } catch (e) { return {}; }
+  }
+
   function sendEvent(name, props) {
+    var identity = getCachedIdentity();
     var payload = JSON.stringify({
       site_id: SITE_ID, event_name: name, visitor_id: visitorId,
       session_id: sessionId, click_id: clickId,
       page_url: window.location.href, referrer: document.referrer || "direct",
       device: device, user_agent: ua.slice(0, 200),
       timestamp: new Date().toISOString(),
-      properties: Object.assign({}, utmData, props || {}),
+      properties: Object.assign({}, utmData, props || {}, identity, { currency: "BRL" }),
       is_health_check: isHealthCheck,
     });
     try {
