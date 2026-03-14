@@ -652,7 +652,7 @@ export default function Admin() {
 
         {tab === "settings-csv" && <AdminClientHub />}
 
-        {tab === "ai" && (
+        {(tab === "ai" || tab === "ai-optimization" || tab === "ai-alerts" || tab === "ai-insights") && (
           <AdminAIAssistant
             visitors={visitorsCount}
             buyClicks={buyClicks}
