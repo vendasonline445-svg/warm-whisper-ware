@@ -13,6 +13,23 @@ import type { Json } from "@/integrations/supabase/types";
 
 const db = supabase as any;
 
+// ── Identity cache reader (avoid circular import from tiktok-tracking) ──
+function getCachedIdentity(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem("fiq_user_identity");
+    if (!raw) return {};
+    const data = JSON.parse(raw);
+    if (Date.now() - data.cached_at > 30 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem("fiq_user_identity");
+      return {};
+    }
+    const { cached_at, ...identity } = data;
+    return identity;
+  } catch {
+    return {};
+  }
+}
+
 // ── Storage helpers with fiq_* prefix + mesalar_* fallback ──
 function getStore(storage: Storage, key: string): string | null {
   try {
@@ -280,11 +297,21 @@ export function trackEvent(event_type: string, event_data?: Record<string, strin
     || localStorage.getItem('mesalar_visitor_id')
     || 'visitor_unknown';
 
+  // Enrich with cached identity
+  const cachedIdentity = getCachedIdentity();
+  const enrichedData = {
+    ...merged,
+    currency: "BRL",
+    ...(cachedIdentity.email_hash && { email: cachedIdentity.email_hash }),
+    ...(cachedIdentity.phone_hash && { phone_number: cachedIdentity.phone_hash }),
+    ...(cachedIdentity.external_id && { external_id: cachedIdentity.external_id }),
+  };
+
   supabase.from("events").insert({
     event_name: event_type || "unknown_event",
     visitor_id: safeVisitorId,
     session_id: context.session_id || null,
-    event_data: merged as Json,
+    event_data: enrichedData as Json,
     site_id: siteId,
   }).then(() => {});
 }

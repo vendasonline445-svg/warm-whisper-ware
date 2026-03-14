@@ -18,6 +18,23 @@ import type { Json } from "@/integrations/supabase/types";
 const DEBUG = "[TrackingHub]";
 const db = supabase as any;
 
+// ── Identity cache reader (avoid circular import from tiktok-tracking) ──
+function getCachedIdentity(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem("fiq_user_identity");
+    if (!raw) return {};
+    const data = JSON.parse(raw);
+    if (Date.now() - data.cached_at > 30 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem("fiq_user_identity");
+      return {};
+    }
+    const { cached_at, ...identity } = data;
+    return identity;
+  } catch {
+    return {};
+  }
+}
+
 // ── Site ID helper ─────────────────────────────────────────────────────
 function getSiteId(): string {
   try {
@@ -298,11 +315,18 @@ export async function trackFunnelEvent(options: TrackOptions) {
   // 3. Build DB payload
   const siteId = getSiteId();
 
+  // Enrich with cached identity for EMQ diagnostics
+  const identity = getCachedIdentity();
+
   const eventData: Record<string, any> = {
     ...properties,
     event_id: eventId,
     is_consistent: isConsistent,
     page_url: window.location.href,
+    currency: "BRL",
+    ...(identity.email_hash && { email: identity.email_hash }),
+    ...(identity.phone_hash && { phone_number: identity.phone_hash }),
+    ...(identity.external_id && { external_id: identity.external_id }),
   };
 
   const dbPayload = {
