@@ -57,8 +57,7 @@ Deno.serve(async (req) => {
       supabase
         .from("tiktok_event_dedup")
         .insert({ event_id, pixel_id: pixel_code })
-        .then(() => {})
-        .catch((e: any) => console.warn("[TikTok Dedup] Insert error:", e));
+        .then(() => {});
     }
 
     // ── Capture real client IP ────────────────────────────────────────
@@ -130,8 +129,7 @@ Deno.serve(async (req) => {
       .from("tiktok_event_dedup")
       .delete()
       .lt("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .then(() => {})
-      .catch(() => {});
+      .then(() => {});
 
     return new Response(
       JSON.stringify({ success: response.ok, tiktok_response: resData }),
@@ -140,10 +138,10 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("TikTok Events API error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

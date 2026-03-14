@@ -78,10 +78,10 @@ Deno.serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[Trackly] Error:", error);
     return new Response(
-      JSON.stringify({ status_http: 0, response_text: error.message, payload_enviado: "", webhook_url: "" }),
+      JSON.stringify({ status_http: 0, response_text: (error as Error).message, payload_enviado: "", webhook_url: "" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
