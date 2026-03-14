@@ -299,10 +299,16 @@ export async function trackFunnelEvent(options: TrackOptions) {
     } catch {}
   }
 
-  // 6. Attribution on purchase
+  // 6. Attribution on purchase (multi-model)
   if (event === "purchase" && visitorId) {
-    // Use the DB-generated UUID from insert or generate one
-    createAttribution(eventId, visitorId, sessionId, value);
+    createMultiModelAttribution({
+      eventId,
+      eventType: event,
+      visitorId,
+      sessionId,
+      revenue: value,
+      model: "last_click",
+    });
   }
 
   // 7. Distribute to TikTok (Browser + Server)
