@@ -449,6 +449,10 @@ function AdminContent() {
 
       <main className="flex-1 min-w-0 overflow-auto">
         <div className="max-w-[1400px] mx-auto p-4">
+        {tab === "superadmin" && (
+          <AdminSuperHub />
+        )}
+
         {tab === "funnel-health" && (
           <AdminFunnelHealthTester />
         )}
