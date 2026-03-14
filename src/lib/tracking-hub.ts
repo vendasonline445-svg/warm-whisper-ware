@@ -74,13 +74,42 @@ function generateEventId(): string {
     : `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 }
 
-// ── Visitor / Session context ───────────────────────────────────────────
-function getVisitorId(): string {
-  try { return localStorage.getItem("mesalar_visitor_id") || ""; } catch { return ""; }
+// ── Visitor / Session context (auto-create if missing) ──────────────────
+function getOrCreateVisitorId(): string {
+  try {
+    let id = localStorage.getItem("mesalar_visitor_id");
+    if (!id) {
+      // Accept from URL (cross-domain handoff)
+      const params = new URLSearchParams(window.location.search);
+      id = params.get("visitor_id") || null;
+    }
+    if (!id) {
+      id = `v_${Math.random().toString(36).slice(2, 7)}_${Date.now()}`;
+    }
+    localStorage.setItem("mesalar_visitor_id", id);
+    return id;
+  } catch { return ""; }
 }
 
-function getSessionId(): string {
-  try { return sessionStorage.getItem("mesalar_session_id") || ""; } catch { return ""; }
+function getOrCreateSessionId(): string {
+  try {
+    const KEY = "mesalar_session_id";
+    const TS_KEY = "mesalar_session_ts";
+    const now = Date.now();
+    const existing = sessionStorage.getItem(KEY);
+    const lastActivity = Number(sessionStorage.getItem(TS_KEY) || "0");
+    const TIMEOUT = 30 * 60 * 1000;
+
+    if (existing && (now - lastActivity) < TIMEOUT) {
+      sessionStorage.setItem(TS_KEY, String(now));
+      return existing;
+    }
+
+    const id = `s_${Math.random().toString(36).slice(2, 7)}_${now}`;
+    sessionStorage.setItem(KEY, id);
+    sessionStorage.setItem(TS_KEY, String(now));
+    return id;
+  } catch { return ""; }
 }
 
 function getUtmSource(): string | null {
@@ -245,8 +274,8 @@ export async function trackFunnelEvent(options: TrackOptions) {
     }
   }
 
-  const visitorId = getVisitorId();
-  const sessionId = getSessionId();
+  const visitorId = getOrCreateVisitorId();
+  const sessionId = getOrCreateSessionId();
   const timestamp = new Date().toISOString();
 
   // 3. Build DB payload
