@@ -415,32 +415,7 @@ function AdminContent() {
   const checkoutsAbandoned = Math.max(0, validCheckouts - leads.length);
   const conversionRate = validVisitors > 0 ? ((validPaidCount / validVisitors) * 100).toFixed(1) : "0.0";
 
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background admin-bg p-4">
-        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-6 glass-card p-8 rounded-2xl">
-          <div className="flex flex-col items-center gap-3">
-            <FunnelIQLogo size={48} />
-            <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-tight">FunnelIQ</h1>
-              <p className="text-xs text-muted-foreground mt-1">Inteligência para otimizar funis de conversão</p>
-            </div>
-          </div>
-          <input
-            type="password"
-            placeholder="Senha de acesso"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-          />
-          {error && <p className="text-destructive text-sm text-center">{error}</p>}
-          <button type="submit" className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-3 rounded-xl font-semibold transition-all hover:brightness-110 active:scale-[0.98]">
-            Entrar
-          </button>
-        </form>
-      </div>
-    );
-  }
+  // Auth is handled by ProtectedRoute wrapper
 
   const handleSetTab = (newTab: Tab) => {
     setTab(newTab);
