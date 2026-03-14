@@ -426,7 +426,7 @@ const Index = () => {
   };
 
   const handleBuyNow = () => {
-    trackEvent("click_buy_button");
+    trackFunnelEvent({ event: "click_buy" });
     if (cartItems.length > 0) {
       nav(getUrlWithUtm(`/checkout`));
     } else {

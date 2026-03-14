@@ -99,15 +99,16 @@ const PixPayment = () => {
   }, [transactionId, checkPaymentStatus]);
 
   useEffect(() => {
-    trackTikTokEvent({
-      event: "AddPaymentInfo",
+    trackFunnelEvent({
+      event: "add_payment_info",
+      value: total,
       properties: {
         content_type: "product",
         content_id: "mesa-dobravel",
         content_name: "Mesa Dobrável Retrátil",
-        value: total,
-        currency: "BRL",
         contents: [{ content_id: "mesa-dobravel", quantity: 1 }],
+        method: "pix",
+        transaction_id: transactionId,
       },
       userData: orderData?.customer ? {
         email: orderData.customer.email,
@@ -116,7 +117,6 @@ const PixPayment = () => {
       } : undefined,
     });
     trackPageViewOnce("/pix");
-    trackEvent("payment_started", { method: "pix", transaction_id: transactionId });
   }, []);
 
   const pixInfo = pixData?.pix || pixData?.pixQrCode || pixData?.qr_code_data || {};
