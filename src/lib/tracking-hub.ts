@@ -98,7 +98,9 @@ function generateEventId(): string {
 // ── Visitor / Session context (auto-create if missing) ──────────────────
 function getOrCreateVisitorId(): string {
   try {
-    let id = getStorageItem(localStorage, "visitor_id");
+    let id = (window as any).fiqVisitorId
+      || getStorageItem(localStorage, "visitor_id")
+      || null;
     if (!id) {
       const params = new URLSearchParams(window.location.search);
       id = params.get("visitor_id") || null;
@@ -108,7 +110,7 @@ function getOrCreateVisitorId(): string {
     }
     setStorageItem(localStorage, "visitor_id", id);
     return id;
-  } catch { return ""; }
+  } catch { return "visitor_unknown"; }
 }
 
 function getOrCreateSessionId(): string {
@@ -127,7 +129,7 @@ function getOrCreateSessionId(): string {
     setStorageItem(sessionStorage, "session_id", id);
     setStorageItem(sessionStorage, "session_ts", String(now));
     return id;
-  } catch { return ""; }
+  } catch { return `s_fallback_${Date.now()}`; }
 }
 
 function getUtmSource(): string | null {
@@ -289,8 +291,8 @@ export async function trackFunnelEvent(options: TrackOptions) {
     }
   }
 
-  const visitorId = getOrCreateVisitorId();
-  const sessionId = getOrCreateSessionId();
+  const visitorId = getOrCreateVisitorId() || "visitor_unknown";
+  const sessionId = getOrCreateSessionId() || `s_fallback_${Date.now()}`;
   const timestamp = new Date().toISOString();
 
   // 3. Build DB payload
@@ -305,8 +307,8 @@ export async function trackFunnelEvent(options: TrackOptions) {
 
   const dbPayload = {
     visitor_id: visitorId,
-    session_id: sessionId || null,
-    event_name: event,
+    session_id: sessionId,
+    event_name: event || "unknown_event",
     value: typeof value === "number" ? value : 0,
     source: getUtmSource() || null,
     campaign: getUtmCampaign() || null,
