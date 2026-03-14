@@ -69,7 +69,8 @@ export default function AdminFunnelHealthTester() {
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 
-  const trackingScript = `<script src="${window.location.origin}/tracker.js" data-site-id="${siteId}" data-endpoint="${supabaseUrl}"></script>`;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+  const trackingScript = `<script src="${window.location.origin}/tracker.js?v=4.0" data-site-id="${siteId}" data-endpoint="${supabaseUrl}" data-anon-key="${anonKey}" async></script>`;
 
   const copyScript = () => {
     navigator.clipboard.writeText(trackingScript);

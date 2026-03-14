@@ -51,18 +51,10 @@ function TrackerSnippet({ siteId }: { siteId: string }) {
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "slcuaijctwvmumgtpxgv";
   const endpoint = `https://${projectId}.supabase.co`;
 
-  const snippet = `<!-- FunnelIQ Tracker -->
-<script>
-  (function(f,i,q){
-    f.fiqSiteId = '${siteId}';
-    var s = i.createElement('script');
-    s.src = q + '/tracker.js?v=3.1.0';
-    s.setAttribute('data-site-id', '${siteId}');
-    s.setAttribute('data-endpoint', '${endpoint}');
-    s.async = true;
-    i.head.appendChild(s);
-  })(window, document, '${window.location.origin}');
-</script>`;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+
+  const snippet = `<!-- FunnelIQ Tracker v4.0 -->
+<script src="${window.location.origin}/tracker.js?v=4.0" data-site-id="${siteId}" data-endpoint="${endpoint}" data-anon-key="${anonKey}" async></script>`;
 
   return (
     <div className="space-y-2">
