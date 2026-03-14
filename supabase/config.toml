@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.aggregate-metrics]
 verify_jwt = false
+
+[functions.tracker-ingest]
+verify_jwt = false

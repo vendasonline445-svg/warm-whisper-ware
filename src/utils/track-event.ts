@@ -224,8 +224,12 @@ export function trackPageViewOnce(page: string): void {
   // Ensure visitor/session exist
   ensureSession();
 
-  // Delegate to unified tracking hub
-  trackFunnelEvent({ event: "page_view", properties: { page } });
+  // If tracker.js is loaded, skip internal page_view to avoid duplication
+  const trackerLoaded = !!(window as any).__fiq_loaded;
+  if (!trackerLoaded) {
+    // Delegate to unified tracking hub only when tracker.js is NOT present
+    trackFunnelEvent({ event: "page_view", properties: { page } });
+  }
 
   // Send visitor_session once per session
   if (!sessionStorage.getItem("crm_visit_sent")) {
