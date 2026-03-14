@@ -482,7 +482,11 @@ export default function Admin() {
 
       <main className="flex-1 min-w-0 overflow-auto">
         <div className="max-w-[1400px] mx-auto p-4">
-        {(tab === "dashboard" || tab === "funnel-health" || tab === "live-activity" || tab === "alerts") && (
+        {tab === "funnel-health" && (
+          <AdminFunnelHealthTester />
+        )}
+
+        {(tab === "dashboard" || tab === "live-activity" || tab === "alerts") && (
           <div className="space-y-6">
             {/* Period Filter */}
             <div className="flex flex-wrap items-center gap-2">
