@@ -332,7 +332,7 @@ export async function trackFunnelEvent(options: TrackOptions) {
       const currentPriority = data ? (STAGE_PRIORITY[data.stage] || 0) : 0;
       if (priority > currentPriority) {
         await db.from("funnel_state").upsert(
-          { visitor_id: visitorId, stage, updated_at: timestamp },
+          { visitor_id: visitorId, stage, updated_at: timestamp, site_id: siteId },
           { onConflict: "visitor_id" }
         );
       }
