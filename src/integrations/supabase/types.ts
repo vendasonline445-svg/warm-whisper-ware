@@ -1027,6 +1027,185 @@ export type Database = {
           },
         ]
       }
+      product_categories: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          icon: string | null
+          id: string
+          name: string
+          order_index: number | null
+          site_id: string | null
+          slug: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          order_index?: number | null
+          site_id?: string | null
+          slug: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          order_index?: number | null
+          site_id?: string | null
+          slug?: string
+        }
+        Relationships: []
+      }
+      product_category_items: {
+        Row: {
+          category_id: string
+          product_id: string
+        }
+        Insert: {
+          category_id: string
+          product_id: string
+        }
+        Update: {
+          category_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_category_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_category_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean | null
+          badge_text: string | null
+          buyers_days_window: number | null
+          buyers_last_days: number | null
+          checkout_path: string | null
+          client_id: string | null
+          countdown_minutes: number | null
+          created_at: string | null
+          description: string | null
+          featured: boolean | null
+          free_shipping: boolean | null
+          id: string
+          images: Json | null
+          installments: number | null
+          meta_description: string | null
+          meta_title: string | null
+          name: string
+          original_price_cents: number | null
+          price_cents: number
+          rating: number | null
+          rating_count: number | null
+          shipping_days_max: number | null
+          shipping_days_min: number | null
+          shipping_original_cents: number | null
+          short_description: string | null
+          site_id: string | null
+          slug: string
+          sold_count: number | null
+          updated_at: string | null
+          upsell_enabled: boolean | null
+          upsell_product_id: string | null
+          variants: Json | null
+          video_url: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          badge_text?: string | null
+          buyers_days_window?: number | null
+          buyers_last_days?: number | null
+          checkout_path?: string | null
+          client_id?: string | null
+          countdown_minutes?: number | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          free_shipping?: boolean | null
+          id?: string
+          images?: Json | null
+          installments?: number | null
+          meta_description?: string | null
+          meta_title?: string | null
+          name: string
+          original_price_cents?: number | null
+          price_cents: number
+          rating?: number | null
+          rating_count?: number | null
+          shipping_days_max?: number | null
+          shipping_days_min?: number | null
+          shipping_original_cents?: number | null
+          short_description?: string | null
+          site_id?: string | null
+          slug: string
+          sold_count?: number | null
+          updated_at?: string | null
+          upsell_enabled?: boolean | null
+          upsell_product_id?: string | null
+          variants?: Json | null
+          video_url?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          badge_text?: string | null
+          buyers_days_window?: number | null
+          buyers_last_days?: number | null
+          checkout_path?: string | null
+          client_id?: string | null
+          countdown_minutes?: number | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          free_shipping?: boolean | null
+          id?: string
+          images?: Json | null
+          installments?: number | null
+          meta_description?: string | null
+          meta_title?: string | null
+          name?: string
+          original_price_cents?: number | null
+          price_cents?: number
+          rating?: number | null
+          rating_count?: number | null
+          shipping_days_max?: number | null
+          shipping_days_min?: number | null
+          shipping_original_cents?: number | null
+          short_description?: string | null
+          site_id?: string | null
+          slug?: string
+          sold_count?: number | null
+          updated_at?: string | null
+          upsell_enabled?: boolean | null
+          upsell_product_id?: string | null
+          variants?: Json | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           client_id: string | null
