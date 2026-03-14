@@ -8,6 +8,7 @@ import AdminTrackingHub from "@/components/AdminTrackingHub";
 import AdminRastreiosTab from "@/components/AdminRastreiosTab";
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminAIAssistant from "@/components/AdminAIAssistant";
+import AdminClientHub from "@/components/AdminClientHub";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
 import { ptBR } from "date-fns/locale";
 import { LayoutDashboard, Users, Megaphone, Package, Download, Eye, ShoppingCart, QrCode, CheckCircle2, TrendingUp, MousePointerClick, Image, ArrowDownWideNarrow, XCircle, Wallet, AlertTriangle, Bug, Radio, CreditCard, Webhook, CalendarIcon, ChevronDown, Contact, Sun, Moon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Activity, Sparkles, LogOut } from "lucide-react";
@@ -48,7 +49,7 @@ interface Lead {
   transaction_id: string | null;
 }
 
-type Tab = "dashboard" | "leads" | "crm" | "logs" | "tiktok" | "tracking" | "rastreios" | "ai";
+type Tab = "dashboard" | "leads" | "crm" | "logs" | "tiktok" | "tracking" | "rastreios" | "ai" | "clients";
 
 type PeriodKey = "today" | "yesterday" | "7days" | "30days" | "month" | "custom";
 
@@ -502,6 +503,12 @@ export default function Admin() {
               <Activity className="h-4 w-4" /> Tracking Hub
             </button>
             <button
+              onClick={() => setTab("clients")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "clients" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            >
+              <Users className="h-4 w-4" /> Client Hub
+            </button>
+            <button
               onClick={() => setTab("tiktok")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "tiktok" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
             >
@@ -693,6 +700,8 @@ export default function Admin() {
         {tab === "tiktok" && <AdminTikTokTab />}
 
         {tab === "tracking" && <AdminTrackingHub />}
+
+        {tab === "clients" && <AdminClientHub />}
 
         {tab === "rastreios" && <AdminRastreiosTab />}
 
