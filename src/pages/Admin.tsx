@@ -481,7 +481,7 @@ export default function Admin() {
 
       <main className="flex-1 min-w-0 overflow-auto">
         <div className="max-w-[1400px] mx-auto p-4">
-        {tab === "dashboard" && (
+        {(tab === "dashboard" || tab === "funnel-health" || tab === "live-activity" || tab === "alerts") && (
           <div className="space-y-6">
             {/* Period Filter */}
             <div className="flex flex-wrap items-center gap-2">
@@ -634,21 +634,25 @@ export default function Admin() {
           </div>
         )}
 
-        {tab === "crm" && <AdminCRM />}
+        {(tab === "crm" || tab === "crm-sessions" || tab === "crm-recovery" || tab === "crm-checkout") && <AdminCRM />}
 
         {tab === "tiktok" && <AdminTikTokTab />}
 
-        {tab === "tracking" && <AdminTrackingHub />}
+        {(tab === "tracking" || tab === "tracking-sessions" || tab === "tracking-clicks" || tab === "tracking-links" || tab === "tracking-pixels" || tab === "tracking-scripts" || tab === "tracking-debug") && <AdminTrackingHub />}
 
-        {tab === "clients" && <AdminClientHub />}
+        {(tab === "clients" || tab === "clients-bc") && <AdminClientHub />}
 
-        {tab === "ads" && <AdminAdsHub />}
+        {(tab === "ads" || tab === "ads-creatives" || tab === "ads-automation" || tab === "ads-budgets" || tab === "ads-performance") && <AdminAdsHub />}
 
-        {tab === "analytics" && <AdminAnalyticsHub />}
+        {(tab === "analytics" || tab === "analytics-campaigns" || tab === "analytics-creatives" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && <AdminAnalyticsHub />}
 
         {tab === "rastreios" && <AdminRastreiosTab />}
 
-        {tab === "ai" && (
+        {tab === "settings-scripts" && <AdminTrackingHub />}
+
+        {tab === "settings-csv" && <AdminClientHub />}
+
+        {(tab === "ai" || tab === "ai-optimization" || tab === "ai-alerts" || tab === "ai-insights") && (
           <AdminAIAssistant
             visitors={visitorsCount}
             buyClicks={buyClicks}
