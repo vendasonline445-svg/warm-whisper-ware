@@ -58,6 +58,7 @@ const Checkout = () => {
   });
 
   const isStoreCheckout = storeItems.length > 0;
+  const storeProduct = isStoreCheckout ? storeItems[0] : null;
 
   // Load mesa cart items: from localStorage cart OR from URL params (single item)
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -371,13 +372,18 @@ const Checkout = () => {
           cpf: form.cpf.replace(/\D/g, ""),
         },
         items: isStoreCheckout
-          ? storeItems.map((item) => ({
-              id: item.productId || item.slug,
-              title: item.name,
-              unitPrice: Math.round((item.priceCents / 100) * (1 - couponDiscount) * 100),
-              quantity: item.quantity,
-              tangible: true,
-            }))
+          ? storeItems.map((item) => {
+              const variantStr = item.variant && Object.keys(item.variant).length > 0
+                ? ` - ${Object.values(item.variant).join('/')}`
+                : '';
+              return {
+                id: item.productId || item.slug,
+                title: `${item.name}${variantStr}`,
+                unitPrice: Math.round(item.priceCents * (1 - couponDiscount)),
+                quantity: item.quantity,
+                tangible: true,
+              };
+            })
           : cartItems.map((item) => {
               const sp = SIZE_PRICES[item.size] || SIZE_PRICES["180x60cm"];
               const cl = item.color === "preta" ? "Preta" : "Branca";
@@ -405,6 +411,8 @@ const Checkout = () => {
         },
         metadata: JSON.stringify({
           source: isStoreCheckout ? 'loja' : 'mesa',
+          productName: isStoreCheckout ? storeProduct?.name : "Mesa Dobrável Retrátil",
+          variant: isStoreCheckout ? (storeProduct?.variant ?? null) : null,
           color: isStoreCheckout ? undefined : selectedColor,
           size: isStoreCheckout ? undefined : selectedSize,
           coupon: hasCoupon ? couponUpper : null,
