@@ -177,16 +177,7 @@ function AdminContent() {
     setBinCache(prev => ({ ...prev, ...result }));
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      sessionStorage.setItem("admin_auth", "true");
-      setAuthenticated(true);
-      setError("");
-    } else {
-      setError("Senha incorreta");
-    }
-  };
+  // Auth handled by ProtectedRoute — no manual login needed
 
   const fetchData = useCallback(() => {
     if (!authenticated) return;
