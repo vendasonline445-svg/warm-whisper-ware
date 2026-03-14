@@ -113,6 +113,20 @@ export function normalizePhone(phone: string): string {
   return "+55" + digits;
 }
 
+// ── Safe TTQ instance accessor ────────────────────────────────────────
+
+function getTTQInstance(pixelId: string): any | null {
+  const ttq = (window as any).ttq;
+  if (!ttq) return null;
+  try {
+    const instance = ttq.instance(pixelId);
+    return instance || null;
+  } catch (e) {
+    console.warn(`${DEBUG} Pixel not ready: ${pixelId}`, e);
+    return null;
+  }
+}
+
 // ── Identify user (browser-side, called per pixel) ────────────────────
 
 export async function identifyTikTokUser(data: {
@@ -120,9 +134,6 @@ export async function identifyTikTokUser(data: {
   phone?: string;
   externalId?: string;
 }) {
-  const ttq = (window as any).ttq;
-  if (!ttq) return;
-
   const identifyData: Record<string, string> = {};
 
   // Hash email with SHA256 (TikTok SDK accepts pre-hashed values)
@@ -146,14 +157,14 @@ export async function identifyTikTokUser(data: {
 
   const pixels = await loadPixels();
   pixels.forEach((px) => {
-    try {
-      const instance = ttq.instance(px.pixel_id);
-      if (instance) {
+    const instance = getTTQInstance(px.pixel_id);
+    if (instance) {
+      try {
         instance.identify(identifyData);
         console.log(`${DEBUG} identify() on pixel ${px.pixel_id} (hashed)`);
+      } catch (e) {
+        console.warn(`${DEBUG} identify error for ${px.pixel_id}:`, e);
       }
-    } catch (e) {
-      console.warn(`${DEBUG} identify error for ${px.pixel_id}:`, e);
     }
   });
 }
@@ -261,17 +272,14 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
     return;
   }
 
-  const ttq = (window as any).ttq;
 
   // Browser-side: fire on each pixel instance
   pixels.forEach((px) => {
-    if (ttq) {
+    const instance = getTTQInstance(px.pixel_id);
+    if (instance) {
       try {
-        const instance = ttq.instance(px.pixel_id);
-        if (instance) {
-          instance.track(event, properties, { event_id: eventId });
-          console.log(`${DEBUG} ${event} fired (browser) — pixel ${px.pixel_id}, event_id: ${eventId}`);
-        }
+        instance.track(event, properties, { event_id: eventId });
+        console.log(`${DEBUG} ${event} fired (browser) — pixel ${px.pixel_id}, event_id: ${eventId}`);
       } catch (e) {
         console.warn(`${DEBUG} Pixel error for ${px.pixel_id}:`, e);
       }
@@ -320,17 +328,15 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
 
 export async function trackPageView() {
   const pixels = await loadPixels();
-  const ttq = (window as any).ttq;
-  if (!ttq) return;
 
   pixels.forEach((px) => {
-    try {
-      const instance = ttq.instance(px.pixel_id);
-      if (instance) {
+    const instance = getTTQInstance(px.pixel_id);
+    if (instance) {
+      try {
         instance.page();
+      } catch (e) {
+        console.warn(`${DEBUG} page() error for ${px.pixel_id}:`, e);
       }
-    } catch (e) {
-      console.warn(`${DEBUG} page() error for ${px.pixel_id}:`, e);
     }
   });
   console.log(`${DEBUG} page() fired on ${pixels.length} pixel(s)`);

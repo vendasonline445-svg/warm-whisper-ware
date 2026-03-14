@@ -35,9 +35,7 @@ interface StepResult {
 export default function AdminFunnelHealthTester() {
   const db = supabase as any;
   const [siteUrl, setSiteUrl] = useState("");
-  const [siteId, setSiteId] = useState(() => {
-    try { return localStorage.getItem("fiq_site_id") || "mesa-dobravel"; } catch { return "mesa-dobravel"; }
-  });
+  const [siteId, setSiteId] = useState("mesa-dobravel");
   const [testing, setTesting] = useState(false);
   const [steps, setSteps] = useState<StepResult[]>([]);
   const [score, setScore] = useState<number | null>(null);
@@ -45,12 +43,22 @@ export default function AdminFunnelHealthTester() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [serverLogs, setServerLogs] = useState<any[]>([]);
 
-  // Ensure site ID is set
+  // Load correct site_id from DB and server logs
   useEffect(() => {
-    if (!siteId) {
-      setSiteId("mesa-dobravel");
-      localStorage.setItem("fiq_site_id", "mesa-dobravel");
-    }
+    (async () => {
+      try {
+        const { data: sites } = await db.from("sites")
+          .select("site_id, name")
+          .eq("active", true)
+          .order("created_at", { ascending: true })
+          .limit(1);
+        if (sites && sites[0]?.site_id) {
+          setSiteId(sites[0].site_id);
+          localStorage.setItem("fiq_site_id", sites[0].site_id);
+        }
+      } catch {}
+    })();
+
     // Load server-side event logs
     db.from("tracker_event_log")
       .select("*")
@@ -153,33 +161,63 @@ export default function AdminFunnelHealthTester() {
     setScore(null);
     setSteps(FUNNEL_STEPS.map(s => ({ event: s.event, status: "pending" })));
 
-    // Query real events from last 24h — both events table AND user_events table
-    const [eventsRes, userEventsRes] = await Promise.all([
-      supabase
-        .from("events")
-        .select("event_name, created_at")
-        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .order("created_at", { ascending: false })
-        .limit(500),
-      supabase
-        .from("user_events")
-        .select("event_type, created_at")
-        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .order("created_at", { ascending: false })
-        .limit(500),
-    ]);
+    // Query real events from last 24h filtered by site_id — with 10s timeout
+    const timeoutMs = 10000;
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const fetchWithTimeout = <T,>(promise: Promise<T>): Promise<T> =>
+      Promise.race([
+        promise,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), timeoutMs)),
+      ]);
+
+    let eventsData: any[] = [];
+    let userEventsData: any[] = [];
+    let timedOut = false;
+
+    try {
+      const [eventsRes, userEventsRes] = await fetchWithTimeout(Promise.all([
+        supabase
+          .from("events")
+          .select("event_name, created_at")
+          .eq("site_id", siteId)
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .limit(500),
+        supabase
+          .from("user_events")
+          .select("event_type, created_at")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .limit(500),
+      ]));
+      eventsData = eventsRes.data || [];
+      userEventsData = userEventsRes.data || [];
+    } catch {
+      timedOut = true;
+    }
+
+    if (timedOut || (eventsData.length === 0 && userEventsData.length === 0)) {
+      setSteps(FUNNEL_STEPS.map(s => ({
+        event: s.event,
+        status: "fail" as StepStatus,
+        detail: `Nenhum evento encontrado nas últimas 24h para site_id "${siteId}"`,
+      })));
+      setScore(0);
+      setTesting(false);
+      toast.error(`Nenhum evento encontrado nas últimas 24h para site_id "${siteId}"`);
+      return;
+    }
 
     const allEventNames = new Set<string>();
     const eventTimestamps: Record<string, string> = {};
 
-    // Collect from events table
-    (eventsRes.data || []).forEach((e: any) => {
+    eventsData.forEach((e: any) => {
       allEventNames.add(e.event_name);
       if (!eventTimestamps[e.event_name]) eventTimestamps[e.event_name] = e.created_at;
     });
 
-    // Collect from user_events table (legacy names)
-    (userEventsRes.data || []).forEach((e: any) => {
+    userEventsData.forEach((e: any) => {
       allEventNames.add(e.event_type);
       if (!eventTimestamps[e.event_type]) eventTimestamps[e.event_type] = e.created_at;
     });
@@ -194,7 +232,6 @@ export default function AdminFunnelHealthTester() {
 
       await new Promise(r => setTimeout(r, 400));
 
-      // Check if ANY alias for this step was detected
       const matchedAlias = step.aliases.find(alias => allEventNames.has(alias));
       const found = !!matchedAlias;
       const timestamp = matchedAlias ? eventTimestamps[matchedAlias] : undefined;
