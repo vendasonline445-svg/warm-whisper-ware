@@ -192,16 +192,22 @@ const Checkout = () => {
     };
   });
 
-  // Derived totals from all cart items
-  const totalQty = cartItems.reduce((sum, i) => sum + i.quantity, 0);
-  const subtotalRaw = cartItems.reduce((sum, i) => {
-    const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
-    return sum + sp.price * i.quantity;
-  }, 0);
-  const totalOldPrice = cartItems.reduce((sum, i) => {
-    const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
-    return sum + sp.oldPrice * i.quantity;
-  }, 0);
+  // Derived totals - unified for both mesa and store products
+  const totalQty = isStoreCheckout
+    ? storeItems.reduce((sum, i) => sum + i.quantity, 0)
+    : cartItems.reduce((sum, i) => sum + i.quantity, 0);
+  const subtotalRaw = isStoreCheckout
+    ? storeItems.reduce((sum, i) => sum + (i.priceCents / 100) * i.quantity, 0)
+    : cartItems.reduce((sum, i) => {
+        const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
+        return sum + sp.price * i.quantity;
+      }, 0);
+  const totalOldPrice = isStoreCheckout
+    ? subtotalRaw // Store products don't have oldPrice in cart, discount already applied
+    : cartItems.reduce((sum, i) => {
+        const sp = SIZE_PRICES[i.size] || SIZE_PRICES["180x60cm"];
+        return sum + sp.oldPrice * i.quantity;
+      }, 0);
   const BASE_DISCOUNT_VALUE = totalOldPrice - subtotalRaw;
 
   const shippingCost = shipping === "express" ? 14.50 : 0;
