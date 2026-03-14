@@ -129,7 +129,7 @@ function getOrCreateSessionId(): string {
     setStorageItem(sessionStorage, "session_id", id);
     setStorageItem(sessionStorage, "session_ts", String(now));
     return id;
-  } catch { return ""; }
+  } catch { return `s_fallback_${Date.now()}`; }
 }
 
 function getUtmSource(): string | null {
