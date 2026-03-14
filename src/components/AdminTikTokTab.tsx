@@ -147,6 +147,9 @@ export default function AdminTikTokTab() {
   // Detail dialog
   const [selectedDetected, setSelectedDetected] = useState<DetectedIntegration | null>(null);
 
+  // TikTok module expanded
+  const [tiktokExpanded, setTiktokExpanded] = useState(false);
+
   // Testing
   const [testing, setTesting] = useState(false);
   const [testResults, setTestResults] = useState<{ event: string; status: DiagStatus; msg: string }[]>([]);
@@ -360,100 +363,215 @@ export default function AdminTikTokTab() {
         </div>
       </div>
 
-      {/* Health Score */}
-      <div className={`rounded-xl p-4 ${scoreBg} flex items-center gap-4 border ${diagnostics.score >= 80 ? "border-emerald-500/20" : diagnostics.score >= 50 ? "border-amber-500/20" : "border-red-500/20"}`}>
-        <Gauge className={`h-10 w-10 ${scoreColor}`} />
-        <div className="flex-1">
-          <p className="text-xs font-medium text-muted-foreground">Pixel Health Score</p>
-          <p className={`text-3xl font-black ${scoreColor}`}>{diagnostics.score} <span className="text-base font-medium text-muted-foreground">/ 100</span></p>
-        </div>
-        <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.totalEvents}</p><p>Eventos</p></div>
-          <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.extIdCoverage}%</p><p>Matching</p></div>
-          <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.dupCount}</p><p>Duplicados</p></div>
-        </div>
-      </div>
+      {/* ═══════════ TIKTOK MODULE (collapsible) ═══════════ */}
+      <Card className="overflow-hidden">
+        <button
+          onClick={() => setTiktokExpanded(!tiktokExpanded)}
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors text-left"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🎵</span>
+            <div>
+              <p className="font-bold text-sm">TikTok Pixel + Events API</p>
+              <p className="text-xs text-muted-foreground">
+                {pixels.filter((p) => p.status === "active").length} pixel(s) ativo(s) · {diagnostics.totalEvents} eventos · Score: {diagnostics.score}/100
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge className={diagnostics.score >= 80 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : diagnostics.score >= 50 ? "bg-amber-500/15 text-amber-600 border-amber-500/30" : "bg-red-500/15 text-red-600 border-red-500/30"}>
+              {diagnostics.score >= 80 ? "Saudável" : diagnostics.score >= 50 ? "Atenção" : "Crítico"}
+            </Badge>
+            <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${tiktokExpanded ? "rotate-90" : ""}`} />
+          </div>
+        </button>
 
-      {/* ═══════════ TIKTOK PIXELS SECTION ═══════════ */}
-      <div className="space-y-3">
-        <h2 className="font-bold text-sm flex items-center gap-2">
-          <span className="text-lg">🎵</span> TikTok Pixels
-          <Badge variant="secondary" className="ml-1">{pixels.length}</Badge>
-        </h2>
+        {tiktokExpanded && (
+          <div className="border-t border-border/50 p-4 space-y-5">
+            {/* Health Score */}
+            <div className={`rounded-xl p-4 ${scoreBg} flex items-center gap-4 border ${diagnostics.score >= 80 ? "border-emerald-500/20" : diagnostics.score >= 50 ? "border-amber-500/20" : "border-red-500/20"}`}>
+              <Gauge className={`h-10 w-10 ${scoreColor}`} />
+              <div className="flex-1">
+                <p className="text-xs font-medium text-muted-foreground">Pixel Health Score</p>
+                <p className={`text-3xl font-black ${scoreColor}`}>{diagnostics.score} <span className="text-base font-medium text-muted-foreground">/ 100</span></p>
+              </div>
+              <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.totalEvents}</p><p>Eventos</p></div>
+                <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.extIdCoverage}%</p><p>Matching</p></div>
+                <div className="text-center"><p className="text-lg font-bold text-foreground">{diagnostics.dupCount}</p><p>Duplicados</p></div>
+              </div>
+            </div>
 
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Carregando...</p>
-        ) : pixels.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="p-6 text-center text-sm text-muted-foreground">
-              Nenhum pixel TikTok cadastrado. Clique em "Novo Pixel" para adicionar.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 gap-3">
-            {pixels.map((px) => {
-              const isEditing = editingId === px.id;
-              return (
-                <Card key={px.id} className={!isEditing && px.status !== "active" ? "opacity-50" : ""}>
-                  <CardContent className="p-4">
-                    {isEditing ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase">Editando Pixel</p>
-                          <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}><X className="h-3.5 w-3.5" /></Button>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground">Nome</label>
-                          <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background mt-1" />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground">Pixel ID</label>
-                          <input value={editForm.pixel_id} onChange={(e) => setEditForm({ ...editForm, pixel_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background font-mono mt-1" />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground">Events API Access Token</label>
-                          <input value={editForm.api_token} onChange={(e) => setEditForm({ ...editForm, api_token: e.target.value })} type="password" className="w-full border rounded-lg px-3 py-2 text-sm bg-background mt-1" />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => saveEdit(px.id)} disabled={saving} className="flex-1">
-                            <Save className="h-3.5 w-3.5 mr-1" /> {saving ? "Salvando..." : "Salvar alterações"}
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={() => deletePixel(px.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">🎵</span>
-                            <div>
-                              <p className="font-semibold text-sm">{px.name}</p>
-                              <p className="text-xs text-muted-foreground font-mono mt-0.5">{px.pixel_id}</p>
+            {/* Pixel Cards */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  Pixels Cadastrados <Badge variant="secondary">{pixels.length}</Badge>
+                </h3>
+                <Button size="sm" variant="outline" onClick={() => setShowAddForm(true)}>
+                  <Plus className="h-3 w-3 mr-1" /> Adicionar
+                </Button>
+              </div>
+
+              {loading ? (
+                <p className="text-sm text-muted-foreground">Carregando...</p>
+              ) : pixels.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  Nenhum pixel cadastrado.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {pixels.map((px) => {
+                    const isEditing = editingId === px.id;
+                    return (
+                      <div key={px.id} className={`rounded-lg border p-4 ${!isEditing && px.status !== "active" ? "opacity-50" : ""}`}>
+                        {isEditing ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-xs font-semibold text-muted-foreground uppercase">Editando Pixel</p>
+                              <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}><X className="h-3.5 w-3.5" /></Button>
+                            </div>
+                            <div><label className="text-xs font-medium text-muted-foreground">Nome</label><input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background mt-1" /></div>
+                            <div><label className="text-xs font-medium text-muted-foreground">Pixel ID</label><input value={editForm.pixel_id} onChange={(e) => setEditForm({ ...editForm, pixel_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background font-mono mt-1" /></div>
+                            <div><label className="text-xs font-medium text-muted-foreground">Events API Access Token</label><input value={editForm.api_token} onChange={(e) => setEditForm({ ...editForm, api_token: e.target.value })} type="password" className="w-full border rounded-lg px-3 py-2 text-sm bg-background mt-1" /></div>
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={() => saveEdit(px.id)} disabled={saving} className="flex-1"><Save className="h-3.5 w-3.5 mr-1" /> {saving ? "Salvando..." : "Salvar alterações"}</Button>
+                              <Button variant="destructive" size="sm" onClick={() => deletePixel(px.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => startEdit(px)}><Pencil className="h-3.5 w-3.5" /></Button>
-                            <Switch checked={px.status === "active"} onCheckedChange={() => toggleStatus(px)} />
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
-                          <StatusBadge active={px.status === "active"} detected={typeof window !== "undefined" && !!(window as any).ttq} />
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> {events24hCount} eventos/24h</span>
-                            <span className="text-muted-foreground/50">Token: {px.api_token.slice(0, 8)}...</span>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                        ) : (
+                          <>
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className="text-xl">🎵</span>
+                                <div>
+                                  <p className="font-semibold text-sm">{px.name}</p>
+                                  <p className="text-xs text-muted-foreground font-mono mt-0.5">{px.pixel_id}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => startEdit(px)}><Pencil className="h-3.5 w-3.5" /></Button>
+                                <Switch checked={px.status === "active"} onCheckedChange={() => toggleStatus(px)} />
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                              <StatusBadge active={px.status === "active"} detected={typeof window !== "undefined" && !!(window as any).ttq} />
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> {events24hCount} eventos/24h</span>
+                                <span className="text-muted-foreground/50">Token: {px.api_token.slice(0, 8)}...</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Diagnostics */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Diagnóstico Avançado</h3>
+              <div className="grid gap-2">
+                {[
+                  { label: "Pixels ativos", status: (diagnostics.hasPixels ? "ok" : "error") as DiagStatus, detail: `${pixels.filter((p) => p.status === "active").length} pixel(s)` },
+                  { label: "SDK ttq carregado", status: (diagnostics.ttqLoaded ? "ok" : "warn") as DiagStatus, detail: diagnostics.ttqLoaded ? "Sim" : "Não detectado (normal no admin)" },
+                  { label: "Eventos recebidos", status: (diagnostics.hasEvents ? "ok" : "warn") as DiagStatus, detail: `${diagnostics.totalEvents} eventos` },
+                  { label: "Event ID", status: (diagnostics.eventIdCoverage > 80 ? "ok" : diagnostics.eventIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.eventIdCoverage}%` },
+                  { label: "Advanced Matching", status: (diagnostics.extIdCoverage > 80 ? "ok" : diagnostics.extIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.extIdCoverage}%` },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
+                    <div className="flex items-center gap-2"><StatusIcon status={item.status} /><span className="text-sm font-medium">{item.label}</span></div>
+                    <span className="text-xs text-muted-foreground">{item.detail}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "Email", value: diagnostics.emailCoverage },
+                  { label: "Telefone", value: diagnostics.phoneCoverage },
+                  { label: "External ID", value: diagnostics.extIdCoverage },
+                ].map((item, i) => (
+                  <div key={i} className="rounded-lg bg-muted/30 p-3 text-center">
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className={`text-xl font-bold ${item.value >= 70 ? "text-emerald-500" : item.value >= 30 ? "text-amber-500" : "text-red-500"}`}>{item.value}%</p>
+                    <div className="w-full h-1.5 rounded-full bg-muted mt-1">
+                      <div className={`h-1.5 rounded-full transition-all ${item.value >= 70 ? "bg-emerald-500" : item.value >= 30 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${item.value}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-muted/30 p-3">
+                  <div className="flex items-center gap-2 mb-1"><StatusIcon status={diagnostics.dupCount === 0 ? "ok" : "warn"} /><span className="text-sm font-medium">Deduplicação</span></div>
+                  <p className="text-xs text-muted-foreground">{diagnostics.dupCount === 0 ? "Nenhuma duplicação" : `${diagnostics.dupCount} duplicação(ões)`}</p>
+                </div>
+                <div className="rounded-lg bg-muted/30 p-3">
+                  <div className="flex items-center gap-2 mb-1"><StatusIcon status={diagnostics.ttclidDetected ? "ok" : "warn"} /><span className="text-sm font-medium">Click ID</span></div>
+                  <p className="text-xs text-muted-foreground">{diagnostics.ttclidDetected ? "Detectado" : "Não detectado"}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="default" size="sm" onClick={runPixelTest} disabled={testing} className="flex-1">
+                  <Play className="h-3.5 w-3.5 mr-1" /> {testing ? "Testando..." : "Testar Pixel"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={simulateConversion} disabled={simulating} className="flex-1">
+                  <Link2 className="h-3.5 w-3.5 mr-1" /> {simulating ? "Simulando..." : "Simular Conversão"}
+                </Button>
+              </div>
+
+              {testResults.length > 0 && (
+                <div className="rounded-lg bg-muted/30 p-3 space-y-1">
+                  {testResults.map((r, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs"><StatusIcon status={r.status} /><span className="font-mono">{r.event}</span><span className="text-muted-foreground">— {r.msg}</span></div>
+                  ))}
+                </div>
+              )}
+              {simResults.length > 0 && (
+                <div className="rounded-lg bg-muted/30 p-3 font-mono text-xs space-y-0.5 max-h-[200px] overflow-y-auto">
+                  {simResults.map((line, i) => <p key={i} className={line.startsWith("❌") ? "text-red-500" : "text-foreground"}>{line}</p>)}
+                </div>
+              )}
+            </div>
+
+            {/* Recent Events */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm flex items-center gap-2"><Search className="h-4 w-4" /> Eventos Recentes ({recentTikTokEvents.length})</h3>
+                <Button variant="ghost" size="sm" onClick={fetchRecentEvents}><RefreshCw className="h-3 w-3" /></Button>
+              </div>
+              {eventsLoading ? <p className="text-xs text-muted-foreground">Carregando...</p> : recentTikTokEvents.length === 0 ? <p className="text-xs text-muted-foreground">Nenhum evento.</p> : (
+                <div className="rounded-lg border overflow-hidden max-h-[280px] overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/50 sticky top-0">
+                      <tr>
+                        <th className="text-left px-3 py-2 font-medium">Evento</th>
+                        <th className="text-left px-3 py-2 font-medium">Visitor ID</th>
+                        <th className="text-left px-3 py-2 font-medium">Campanha</th>
+                        <th className="text-left px-3 py-2 font-medium">Hora</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentTikTokEvents.map((ev, i) => (
+                        <tr key={i} className="border-t border-border/30 hover:bg-muted/20">
+                          <td className="px-3 py-1.5 font-mono">{ev.type}</td>
+                          <td className="px-3 py-1.5 text-muted-foreground">{String(ev.visitorId).slice(0, 18)}</td>
+                          <td className="px-3 py-1.5 text-muted-foreground">{String(ev.campaign).slice(0, 25)}</td>
+                          <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">{new Date(ev.time).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ═══════════ OTHER INTEGRATIONS BY GROUP ═══════════ */}
       {(Object.entries(GROUPS) as [string, { label: string; icon: string }][])
@@ -490,115 +608,6 @@ export default function AdminTikTokTab() {
             </div>
           );
         })}
-
-      {/* ═══════════ DIAGNOSTICS ═══════════ */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Diagnóstico Avançado</CardTitle>
-          <CardDescription>Advanced Matching, deduplicação e cobertura</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2">
-            {[
-              { label: "Pixels ativos", status: (diagnostics.hasPixels ? "ok" : "error") as DiagStatus, detail: `${pixels.filter((p) => p.status === "active").length} pixel(s)` },
-              { label: "SDK ttq carregado", status: (diagnostics.ttqLoaded ? "ok" : "warn") as DiagStatus, detail: diagnostics.ttqLoaded ? "Sim" : "Não detectado (normal no admin)" },
-              { label: "Eventos recebidos", status: (diagnostics.hasEvents ? "ok" : "warn") as DiagStatus, detail: `${diagnostics.totalEvents} eventos` },
-              { label: "Event ID", status: (diagnostics.eventIdCoverage > 80 ? "ok" : diagnostics.eventIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.eventIdCoverage}%` },
-              { label: "Advanced Matching", status: (diagnostics.extIdCoverage > 80 ? "ok" : diagnostics.extIdCoverage > 30 ? "warn" : "error") as DiagStatus, detail: `${diagnostics.extIdCoverage}%` },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
-                <div className="flex items-center gap-2"><StatusIcon status={item.status} /><span className="text-sm font-medium">{item.label}</span></div>
-                <span className="text-xs text-muted-foreground">{item.detail}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: "Email", value: diagnostics.emailCoverage },
-              { label: "Telefone", value: diagnostics.phoneCoverage },
-              { label: "External ID", value: diagnostics.extIdCoverage },
-            ].map((item, i) => (
-              <div key={i} className="rounded-lg bg-muted/30 p-3 text-center">
-                <p className="text-xs text-muted-foreground">{item.label}</p>
-                <p className={`text-xl font-bold ${item.value >= 70 ? "text-emerald-500" : item.value >= 30 ? "text-amber-500" : "text-red-500"}`}>{item.value}%</p>
-                <div className="w-full h-1.5 rounded-full bg-muted mt-1">
-                  <div className={`h-1.5 rounded-full transition-all ${item.value >= 70 ? "bg-emerald-500" : item.value >= 30 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${item.value}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-muted/30 p-3">
-              <div className="flex items-center gap-2 mb-1"><StatusIcon status={diagnostics.dupCount === 0 ? "ok" : "warn"} /><span className="text-sm font-medium">Deduplicação</span></div>
-              <p className="text-xs text-muted-foreground">{diagnostics.dupCount === 0 ? "Nenhuma duplicação" : `${diagnostics.dupCount} duplicação(ões)`}</p>
-            </div>
-            <div className="rounded-lg bg-muted/30 p-3">
-              <div className="flex items-center gap-2 mb-1"><StatusIcon status={diagnostics.ttclidDetected ? "ok" : "warn"} /><span className="text-sm font-medium">Click ID</span></div>
-              <p className="text-xs text-muted-foreground">{diagnostics.ttclidDetected ? "Detectado" : "Não detectado"}</p>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="default" size="sm" onClick={runPixelTest} disabled={testing} className="flex-1">
-              <Play className="h-3.5 w-3.5 mr-1" /> {testing ? "Testando..." : "Testar Pixel"}
-            </Button>
-            <Button variant="outline" size="sm" onClick={simulateConversion} disabled={simulating} className="flex-1">
-              <Link2 className="h-3.5 w-3.5 mr-1" /> {simulating ? "Simulando..." : "Simular Conversão"}
-            </Button>
-          </div>
-
-          {testResults.length > 0 && (
-            <div className="rounded-lg bg-muted/30 p-3 space-y-1">
-              {testResults.map((r, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs"><StatusIcon status={r.status} /><span className="font-mono">{r.event}</span><span className="text-muted-foreground">— {r.msg}</span></div>
-              ))}
-            </div>
-          )}
-          {simResults.length > 0 && (
-            <div className="rounded-lg bg-muted/30 p-3 font-mono text-xs space-y-0.5 max-h-[200px] overflow-y-auto">
-              {simResults.map((line, i) => <p key={i} className={line.startsWith("❌") ? "text-red-500" : "text-foreground"}>{line}</p>)}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Recent Events */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2"><Search className="h-4 w-4" /> Eventos Recentes ({recentTikTokEvents.length})</CardTitle>
-            <Button variant="ghost" size="sm" onClick={fetchRecentEvents}><RefreshCw className="h-3 w-3" /></Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {eventsLoading ? <p className="text-xs text-muted-foreground">Carregando...</p> : recentTikTokEvents.length === 0 ? <p className="text-xs text-muted-foreground">Nenhum evento.</p> : (
-            <div className="rounded-lg border overflow-hidden max-h-[280px] overflow-y-auto">
-              <table className="w-full text-xs">
-                <thead className="bg-muted/50 sticky top-0">
-                  <tr>
-                    <th className="text-left px-3 py-2 font-medium">Evento</th>
-                    <th className="text-left px-3 py-2 font-medium">Visitor ID</th>
-                    <th className="text-left px-3 py-2 font-medium">Campanha</th>
-                    <th className="text-left px-3 py-2 font-medium">Hora</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentTikTokEvents.map((ev, i) => (
-                    <tr key={i} className="border-t border-border/30 hover:bg-muted/20">
-                      <td className="px-3 py-1.5 font-mono">{ev.type}</td>
-                      <td className="px-3 py-1.5 text-muted-foreground">{String(ev.visitorId).slice(0, 18)}</td>
-                      <td className="px-3 py-1.5 text-muted-foreground">{String(ev.campaign).slice(0, 25)}</td>
-                      <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">{new Date(ev.time).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* ═══════════ ADD PIXEL DIALOG ═══════════ */}
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
