@@ -508,6 +508,8 @@ export default function Admin() {
             >
               <Users className="h-4 w-4" /> Client Hub
             </button>
+            <button
+              onClick={() => setTab("tiktok")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "tiktok" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
             >
               <Megaphone className="h-4 w-4" /> Integrações
