@@ -107,8 +107,9 @@ export default function SettingsIntegrations() {
     if (clientId) query.eq("client_id", clientId);
     
     const { data } = await query.maybeSingle();
-    if (data?.config?.api_key_hint) {
-      setAnthropicHint(data.config.api_key_hint);
+    const config = data?.config as Record<string, any> | null;
+    if (config?.api_key_hint) {
+      setAnthropicHint(config.api_key_hint);
     }
   };
 
