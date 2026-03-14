@@ -461,7 +461,7 @@ const Checkout = () => {
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,
-        product: { items: cartItems, total, coupon: hasCoupon ? couponUpper : null, couponDiscount: couponAmount },
+        product: { items: isStoreCheckout ? storeItems : cartItems, total, coupon: hasCoupon ? couponUpper : null, couponDiscount: couponAmount },
         shipping: { type: shipping, cost: shippingCost },
       }));
 
