@@ -143,6 +143,25 @@ interface AdminSidebarProps {
 export default function AdminSidebar({
   currentTab, onTabChange, onExportCSV, darkMode, onToggleDarkMode, onLogout, collapsed, onToggleCollapse
 }: AdminSidebarProps) {
+  const { isSuperAdmin, isAdmin, profile, signOut } = useAuth();
+  const isClient = profile?.role === "client";
+
+  // Build filtered nav groups based on role
+  const filteredGroups = NAV_GROUPS.filter(g => {
+    if (isClient && !["dashboard"].includes(g.key)) return false;
+    return true;
+  });
+
+  // Add Super Admin group for superadmins
+  const allGroups = isSuperAdmin
+    ? [...filteredGroups, {
+        key: "superadmin",
+        label: "Super Admin",
+        icon: <ShieldCheck className="h-[18px] w-[18px]" />,
+        items: [{ tab: "superadmin" as AdminTab, label: "Gerenciar Acessos", icon: <ShieldCheck className="h-3.5 w-3.5" /> }],
+      }]
+    : filteredGroups;
+
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
     return new Set([getGroupForTab(currentTab)]);
   });
@@ -168,9 +187,9 @@ export default function AdminSidebar({
     setExpandedGroups(prev => new Set(prev).add(groupKey));
   };
 
-  const separatorIdx = NAV_GROUPS.findIndex(g => g.separator);
-  const mainGroups = separatorIdx >= 0 ? NAV_GROUPS.slice(0, separatorIdx + 1) : NAV_GROUPS;
-  const settingsGroups = separatorIdx >= 0 ? NAV_GROUPS.slice(separatorIdx + 1) : [];
+  const separatorIdx = allGroups.findIndex(g => g.separator);
+  const mainGroups = separatorIdx >= 0 ? allGroups.slice(0, separatorIdx + 1) : allGroups;
+  const settingsGroups = separatorIdx >= 0 ? allGroups.slice(separatorIdx + 1) : [];
 
   const renderGroup = (group: NavGroup) => {
     const isExpanded = expandedGroups.has(group.key);
