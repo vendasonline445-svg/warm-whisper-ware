@@ -23,8 +23,8 @@ const SUB_TABS: { key: SubTab; label: string; icon: React.ReactNode }[] = [
 
 const fmtMoney = (v: number) => `R$ ${(v / 100).toFixed(2)}`;
 
-export default function AdminAdsHub() {
-  const [subTab, setSubTab] = useState<SubTab>("campaigns");
+export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
+  const [subTab, setSubTab] = useState<SubTab>(defaultTab ?? "campaigns");
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [creatives, setCreatives] = useState<any[]>([]);
   const [rules, setRules] = useState<any[]>([]);

@@ -25,8 +25,8 @@ function fmtDate(d: string) {
   try { return new Date(d).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch { return d; }
 }
 
-export default function AdminClientHub() {
-  const [subTab, setSubTab] = useState<SubTab>("clientes");
+export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) {
+  const [subTab, setSubTab] = useState<SubTab>(defaultTab ?? "clientes");
   const [loading, setLoading] = useState(false);
 
   const [clients, setClients] = useState<any[]>([]);
