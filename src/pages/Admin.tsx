@@ -104,6 +104,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [visitorsCount, setVisitorsCount] = useState(0);
   const [checkoutsCount, setCheckoutsCount] = useState(0);
   const [buyClicks, setBuyClicks] = useState(0);
