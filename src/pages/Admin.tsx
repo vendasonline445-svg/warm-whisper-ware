@@ -496,6 +496,12 @@ export default function Admin() {
               <Sparkles className="h-4 w-4" /> AI
             </button>
             <button
+              onClick={() => setTab("tracking")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "tracking" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            >
+              <Activity className="h-4 w-4" /> Tracking Hub
+            </button>
+            <button
               onClick={() => setTab("tiktok")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === "tiktok" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
             >
