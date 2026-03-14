@@ -47,11 +47,12 @@ Deno.serve(async (req) => {
     const { data: clients } = await db.from("clients").select("id");
     if (clients?.length) {
       for (const client of clients) {
-        const { count: visitors } = await db.from("visitors").select("*", { count: "exact", head: true });
-        const { count: clickCount } = await db.from("clicks").select("*", { count: "exact", head: true });
-        const { count: checkouts } = await db.from("events").select("*", { count: "exact", head: true }).eq("event_name", "checkout_start");
-        const { count: payments } = await db.from("events").select("*", { count: "exact", head: true }).eq("event_name", "pix_generated");
-        const { count: purchases } = await db.from("events").select("*", { count: "exact", head: true }).eq("event_name", "purchase");
+        const cid = client.id;
+        const { count: visitors } = await db.from("visitors").select("*", { count: "exact", head: true }).eq("client_id", cid);
+        const { count: clickCount } = await db.from("clicks").select("*", { count: "exact", head: true }).eq("client_id", cid);
+        const { count: checkouts } = await db.from("events").select("*", { count: "exact", head: true }).eq("event_name", "checkout_start").eq("client_id", cid);
+        const { count: payments } = await db.from("events").select("*", { count: "exact", head: true }).eq("event_name", "pix_generated").eq("client_id", cid);
+        const { count: purchases } = await db.from("events").select("*", { count: "exact", head: true }).eq("event_name", "purchase").eq("client_id", cid);
 
         const v = visitors || 1;
         const vtc = (clickCount || 0) / v;
@@ -64,7 +65,7 @@ Deno.serve(async (req) => {
         else if (vtc < 0.03 || ctch < 0.1 || ptp < 0.3) status = "warning";
 
         await db.from("funnel_diagnostics").upsert({
-          client_id: client.id,
+          client_id: cid,
           visitor_to_click_rate: Math.round(vtc * 10000) / 100,
           click_to_checkout_rate: Math.round(ctch * 10000) / 100,
           checkout_to_payment_rate: Math.round(chtp * 10000) / 100,
@@ -76,18 +77,41 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 3. Process Event Queue (retry failed events) ──
+    // ── 3. Process Event Queue (retry failed events with deduplication) ──
     const { data: pendingEvents } = await db.from("event_queue")
       .select("*")
       .in("status", ["pending", "failed"])
       .lte("next_retry_at", new Date().toISOString())
       .lt("retry_count", 5)
-      .limit(50);
+      .order("created_at", { ascending: true })
+      .limit(100);
 
     if (pendingEvents?.length) {
       for (const evt of pendingEvents) {
         try {
-          const { error } = await db.from("events").insert(evt.payload);
+          // Deduplication: check if event already exists
+          const payload = evt.payload as Record<string, any>;
+          const visitorId = payload?.visitor_id;
+          const eventName = evt.event_name;
+
+          if (visitorId && eventName) {
+            const { data: existing } = await db
+              .from("events")
+              .select("id")
+              .eq("visitor_id", visitorId)
+              .eq("event_name", eventName)
+              .eq("created_at", evt.created_at)
+              .maybeSingle();
+
+            if (existing) {
+              // Already exists — mark as processed without inserting
+              await db.from("event_queue").update({ status: "sent" }).eq("id", evt.id);
+              results.event_queue++;
+              continue;
+            }
+          }
+
+          const { error } = await db.from("events").insert(payload);
           if (error) throw error;
           await db.from("event_queue").update({ status: "sent" }).eq("id", evt.id);
         } catch {

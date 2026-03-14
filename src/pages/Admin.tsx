@@ -15,14 +15,13 @@ import AdminFunnelHealthTester from "@/components/AdminFunnelHealthTester";
 import AdminLiveActivity from "@/components/AdminLiveActivity";
 import AdminSidebar, { type AdminTab } from "@/components/AdminSidebar";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle2, TrendingUp, CreditCard, Webhook, Bug, Radio, CalendarIcon, Filter, Globe, Bot, Server, Plug, HelpCircle, ShieldCheck, RotateCcw, History, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-
-const ADMIN_PASSWORD = "12345";
 
 interface Lead {
   id: string;
@@ -98,10 +97,10 @@ interface SystemAlert {
   description: string;
 }
 
-export default function Admin() {
+function AdminContent() {
   const navigate = useNavigate();
-  const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem("admin_auth") === "true");
-  const [password, setPassword] = useState("");
+  const [authenticated] = useState(true); // Auth handled by ProtectedRoute
+  const [_password, _setPassword] = useState(""); // unused, kept for type compat
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -178,16 +177,7 @@ export default function Admin() {
     setBinCache(prev => ({ ...prev, ...result }));
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      sessionStorage.setItem("admin_auth", "true");
-      setAuthenticated(true);
-      setError("");
-    } else {
-      setError("Senha incorreta");
-    }
-  };
+  // Auth handled by ProtectedRoute — no manual login needed
 
   const fetchData = useCallback(() => {
     if (!authenticated) return;
@@ -199,19 +189,19 @@ export default function Admin() {
 
     // Fetch leads + page views + events + alert data in parallel
     Promise.all([
+      // Fetch leads + events (unified — no more user_events/page_views)
       supabase.from("checkout_leads").select("*").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }),
-      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/").gte("created_at", rangeFrom).lte("created_at", rangeTo),
-      supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page", "/checkout").gte("created_at", rangeFrom).lte("created_at", rangeTo),
-      // Fetch user_events for deduplication (same as CRM)
-      supabase.from("user_events").select("event_type, event_data, created_at").gte("created_at", rangeFrom).lte("created_at", rangeTo).in("event_type", [
-        "page_view", "visitor_session", "click_buy_button", "click_product_image", "scroll_depth",
-        "checkout_initiated", "pix_generated", "card_submitted", "payment_confirmed", "pix_paid", "payment_started"
-      ]).order("created_at", { ascending: false }).limit(2000),
+      // Visitors count from events
+      supabase.from("events").select("id", { count: "exact", head: true }).eq("event_name", "page_view").gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      // Checkouts count from events
+      supabase.from("events").select("id", { count: "exact", head: true }).in("event_name", ["checkout_start", "checkout_started"]).gte("created_at", rangeFrom).lte("created_at", rangeTo),
+      // Fetch events for metrics
+      supabase.from("events").select("event_name, event_data, created_at, visitor_id").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }).limit(2000),
       // Alert queries (always use fixed windows, not period)
       supabase.from("checkout_leads").select("id", { count: "exact", head: true }).neq("status", "paid").gte("created_at", oneHourAgo),
       supabase.from("tracking_webhook_logs").select("id", { count: "exact", head: true }).neq("status", "sent").gte("created_at", oneDayAgo),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "js_error").gte("created_at", oneDayAgo),
-      supabase.from("user_events").select("id", { count: "exact", head: true }).eq("event_type", "tiktok_event").gte("created_at", oneHourAgo),
+      supabase.from("events").select("id", { count: "exact", head: true }).eq("event_name", "js_error").gte("created_at", oneDayAgo),
+      supabase.from("events").select("id", { count: "exact", head: true }).in("event_name", ["tiktok_event"]).gte("created_at", oneHourAgo),
     ]).then(([leadsRes, visitorsPageRes, checkoutsPageRes, eventsRes, declinedRes, webhookErrRes, jsErrRes, pixelEventsRes]) => {
       if (leadsRes.error) {
         console.error(leadsRes.error);
@@ -223,8 +213,8 @@ export default function Admin() {
         if (cardLeads.length > 0) lookupBins(cardLeads);
       }
 
-      // Deduplicate events by visitor_id (same logic as CRM)
-      const allEvents = (eventsRes.data || []) as { event_type: string; event_data: any; created_at: string }[];
+      // Deduplicate events by visitor_id (unified events table)
+      const allEvents = (eventsRes.data || []) as { event_name: string; event_data: any; created_at: string; visitor_id: string }[];
       const visitorIds = new Set<string>();
       const buyClickIds = new Set<string>();
       const imgClickIds = new Set<string>();
@@ -237,27 +227,26 @@ export default function Admin() {
       const activeIds = new Set<string>();
 
       allEvents.forEach(e => {
-        const vid = e.event_data?.visitor_id || e.event_data?.session_id || "";
+        const vid = e.visitor_id || e.event_data?.visitor_id || "";
         const key = String(vid);
         
-        if (e.event_type === "page_view" || e.event_type === "visitor_session") {
+        if (e.event_name === "page_view" || e.event_name === "view_content") {
           if (key) visitorIds.add(key);
         }
-        if (e.event_type === "click_buy_button" && key) buyClickIds.add(key);
-        if (e.event_type === "click_product_image" && key) imgClickIds.add(key);
-        if (e.event_type === "checkout_initiated" && key) checkoutIds.add(key);
-        if ((e.event_type === "pix_generated" || e.event_type === "payment_started") && key) pixGenIds.add(key);
-        if ((e.event_type === "payment_confirmed" || e.event_type === "pix_paid") && key) paidIds.add(key);
-        if (e.event_type === "scroll_depth") {
+        if ((e.event_name === "click_buy" || e.event_name === "add_to_cart") && key) buyClickIds.add(key);
+        if (e.event_name === "view_content" && key) imgClickIds.add(key);
+        if ((e.event_name === "checkout_start" || e.event_name === "checkout_started") && key) checkoutIds.add(key);
+        if ((e.event_name === "pix_generated" || e.event_name === "add_payment_info") && key) pixGenIds.add(key);
+        if ((e.event_name === "purchase" || e.event_name === "payment_confirmed" || e.event_name === "pix_paid") && key) paidIds.add(key);
+        if (e.event_name === "view_content") {
           const pct = typeof e.event_data === "object" && e.event_data !== null ? Number(e.event_data.percent || 0) : 0;
-          scrollTotal += pct;
-          scrollCount++;
+          if (pct > 0) { scrollTotal += pct; scrollCount++; }
         }
         // Active in last hour
         if (key && new Date(e.created_at).getTime() > recentOneHour) activeIds.add(key);
       });
 
-      // Use max between page_views count and deduped visitor_ids for consistency
+      // Use events-based counts
       const dedupedVisitors = Math.max(visitorsPageRes.count || 0, visitorIds.size);
       const dedupedCheckouts = Math.max(checkoutsPageRes.count || 0, checkoutIds.size);
 
@@ -426,39 +415,14 @@ export default function Admin() {
   const checkoutsAbandoned = Math.max(0, validCheckouts - leads.length);
   const conversionRate = validVisitors > 0 ? ((validPaidCount / validVisitors) * 100).toFixed(1) : "0.0";
 
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background admin-bg p-4">
-        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-6 glass-card p-8 rounded-2xl">
-          <div className="flex flex-col items-center gap-3">
-            <FunnelIQLogo size={48} />
-            <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-tight">FunnelIQ</h1>
-              <p className="text-xs text-muted-foreground mt-1">Inteligência para otimizar funis de conversão</p>
-            </div>
-          </div>
-          <input
-            type="password"
-            placeholder="Senha de acesso"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-          />
-          {error && <p className="text-destructive text-sm text-center">{error}</p>}
-          <button type="submit" className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-3 rounded-xl font-semibold transition-all hover:brightness-110 active:scale-[0.98]">
-            Entrar
-          </button>
-        </form>
-      </div>
-    );
-  }
+  // Auth is handled by ProtectedRoute wrapper
 
   const handleSetTab = (newTab: Tab) => {
     setTab(newTab);
     if (newTab === "logs") {
       setLogsLoading(true);
       Promise.all([
-        supabase.from("user_events").select("*").eq("event_type", "js_error").order("created_at", { ascending: false }).limit(50),
+        supabase.from("events").select("*").eq("event_name", "js_error").order("created_at", { ascending: false }).limit(50),
         supabase.from("tracking_webhook_logs").select("*").order("created_at", { ascending: false }).limit(50),
       ]).then(([errRes, whRes]) => {
         setErrorLogs(errRes.data || []);
@@ -476,7 +440,7 @@ export default function Admin() {
         onExportCSV={exportCSV}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(d => !d)}
-        onLogout={() => { sessionStorage.removeItem("admin_auth"); setAuthenticated(false); }}
+        onLogout={() => { supabase.auth.signOut(); }}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(c => !c)}
       />
@@ -1048,5 +1012,13 @@ export default function Admin() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function Admin() {
+  return (
+    <ProtectedRoute>
+      <AdminContent />
+    </ProtectedRoute>
   );
 }

@@ -365,11 +365,7 @@ export async function trackFunnelEvent(options: TrackOptions) {
     console.log(`${DEBUG} → TikTok ${tiktokEvent} dispatched (event_id: ${eventId})`);
   }
 
-  // 8. Legacy dual-write to user_events
-  supabase.from("user_events").insert({
-    event_type: event,
-    event_data: eventData as Json,
-  }).then(() => {});
+  // 8. Legacy dual-write removed — events table is the single source of truth
 
   console.log(`${DEBUG} ✓ ${event} complete | consistent: ${isConsistent} | event_id: ${eventId}`);
 }
