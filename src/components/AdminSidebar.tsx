@@ -7,12 +7,13 @@ import {
   Heart, ShoppingCart, Gauge, Bell, Signal, Lightbulb,
   PieChart, GitBranch, DollarSign, Crosshair, LayoutList,
   Workflow, RefreshCcw, Wallet, Target, LineChart, ClipboardList,
-  ScanSearch, Radio, MousePointer, Globe
+  ScanSearch, Radio, MousePointer, Globe, ShieldCheck
 } from "lucide-react";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/use-auth";
 
 export type AdminTab = 
   | "dashboard" | "funnel-health" | "live-activity"
