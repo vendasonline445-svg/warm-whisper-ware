@@ -658,7 +658,7 @@ export default function Admin() {
 
         {tab === "rastreios" && <AdminRastreiosTab />}
 
-        {tab === "settings-scripts" && <AdminTrackingHub />}
+        {(tab === "settings-scripts" || tab === "tracking-pixels") && <AdminTrackingHub />}
 
         {tab === "settings-csv" && <AdminClientHub />}
 
