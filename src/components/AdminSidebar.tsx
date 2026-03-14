@@ -319,7 +319,7 @@ export default function AdminSidebar({
             href="/funil-admin"
             className="block text-xs text-muted-foreground hover:text-foreground transition-colors px-2 mb-2"
           >
-            Painel Mesa Dobrável →
+            Painel Operacional Mesa Dobrável →
           </a>
         )}
 
