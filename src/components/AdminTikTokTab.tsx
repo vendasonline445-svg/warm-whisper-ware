@@ -141,8 +141,8 @@ export default function AdminTikTokTab() {
   const [editForm, setEditForm] = useState({ name: "", pixel_id: "", api_token: "" });
   const [saving, setSaving] = useState(false);
 
-  // TikTok module expanded
-  const [tiktokExpanded, setTiktokExpanded] = useState(false);
+  // TikTok hub dialog
+  const [tiktokHubOpen, setTiktokHubOpen] = useState(false);
 
   // Integration hub dialog
   const [hubKey, setHubKey] = useState<string | null>(null);
