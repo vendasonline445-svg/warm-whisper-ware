@@ -147,6 +147,9 @@ export default function AdminTikTokTab() {
   // Detail dialog
   const [selectedDetected, setSelectedDetected] = useState<DetectedIntegration | null>(null);
 
+  // TikTok module expanded
+  const [tiktokExpanded, setTiktokExpanded] = useState(false);
+
   // Testing
   const [testing, setTesting] = useState(false);
   const [testResults, setTestResults] = useState<{ event: string; status: DiagStatus; msg: string }[]>([]);
