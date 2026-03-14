@@ -12,6 +12,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { trackTikTokEvent, identifyTikTokUser, setUserData } from "@/lib/tiktok-tracking";
+import { createMultiModelAttribution } from "@/lib/attribution-engine";
 import type { Json } from "@/integrations/supabase/types";
 
 const DEBUG = "[TrackingHub]";
