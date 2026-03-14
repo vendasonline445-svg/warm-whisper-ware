@@ -11,6 +11,7 @@ import AdminAIAssistant from "@/components/AdminAIAssistant";
 import AdminClientHub from "@/components/AdminClientHub";
 import AdminAdsHub from "@/components/AdminAdsHub";
 import AdminAnalyticsHub from "@/components/AdminAnalyticsHub";
+import AdminFunnelHealthTester from "@/components/AdminFunnelHealthTester";
 import AdminSidebar, { type AdminTab } from "@/components/AdminSidebar";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
 import { ptBR } from "date-fns/locale";
