@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Admin from "./pages/Admin";
+import FunilAdmin from "./pages/FunilAdmin";
 import TrackingRedirect from "./pages/TrackingRedirect";
 import NotFound from "./pages/NotFound";
 
