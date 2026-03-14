@@ -17,7 +17,6 @@ import { useAuth } from "@/hooks/use-auth";
 
 export type AdminTab = 
   | "dashboard" | "funnel-health" | "live-activity"
-  | "crm" | "leads" | "crm-recovery"
   | "tracking" | "tracking-sessions" | "tracking-clicks" | "tracking-links" | "tracking-debug"
   | "campaigns" | "campaigns-creatives" | "campaigns-performance" | "campaigns-automation" | "campaigns-budgets"
   | "analytics" | "analytics-attribution" | "analytics-revenue" | "analytics-reports"
@@ -48,16 +47,6 @@ const NAV_GROUPS: NavGroup[] = [
       { tab: "dashboard", label: "Overview", icon: <Gauge className="h-3.5 w-3.5" /> },
       { tab: "live-activity", label: "Live Activity", icon: <Signal className="h-3.5 w-3.5" /> },
       { tab: "funnel-health", label: "Funnel Health", icon: <Heart className="h-3.5 w-3.5" /> },
-    ],
-  },
-  {
-    key: "crm",
-    label: "CRM",
-    icon: <Contact className="h-[18px] w-[18px]" />,
-    items: [
-      { tab: "crm", label: "Pipeline", icon: <Workflow className="h-3.5 w-3.5" /> },
-      { tab: "leads", label: "Leads", icon: <Users className="h-3.5 w-3.5" /> },
-      { tab: "crm-recovery", label: "Recovery", icon: <RefreshCcw className="h-3.5 w-3.5" /> },
     ],
   },
   {
@@ -330,7 +319,7 @@ export default function AdminSidebar({
             href="/funil-admin"
             className="block text-xs text-muted-foreground hover:text-foreground transition-colors px-2 mb-2"
           >
-            Painel Mesa Dobrável →
+            Painel Operacional Mesa Dobrável →
           </a>
         )}
 
