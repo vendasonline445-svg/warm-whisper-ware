@@ -648,7 +648,7 @@ export default function Admin() {
 
         {tab === "tiktok" && <AdminTikTokTab />}
 
-        {(tab === "tracking" || tab === "tracking-sessions" || tab === "tracking-clicks" || tab === "tracking-links" || tab === "tracking-pixels" || tab === "tracking-scripts" || tab === "tracking-debug") && <AdminTrackingHub />}
+        {(tab === "tracking" || tab === "tracking-sessions" || tab === "tracking-clicks" || tab === "tracking-links" || tab === "tracking-debug") && <AdminTrackingHub />}
 
         {(tab === "clients" || tab === "clients-bc") && <AdminClientHub />}
 
