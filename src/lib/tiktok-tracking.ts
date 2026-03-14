@@ -276,13 +276,11 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
 
   // Browser-side: fire on each pixel instance
   pixels.forEach((px) => {
-    if (ttq) {
+    const instance = getTTQInstance(px.pixel_id);
+    if (instance) {
       try {
-        const instance = ttq.instance(px.pixel_id);
-        if (instance) {
-          instance.track(event, properties, { event_id: eventId });
-          console.log(`${DEBUG} ${event} fired (browser) — pixel ${px.pixel_id}, event_id: ${eventId}`);
-        }
+        instance.track(event, properties, { event_id: eventId });
+        console.log(`${DEBUG} ${event} fired (browser) — pixel ${px.pixel_id}, event_id: ${eventId}`);
       } catch (e) {
         console.warn(`${DEBUG} Pixel error for ${px.pixel_id}:`, e);
       }
