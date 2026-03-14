@@ -262,9 +262,11 @@ export function trackEvent(event_type: string, event_data?: Record<string, strin
     return;
   }
 
-  // Non-funnel events: write directly to user_events only (no duplication)
-  supabase.from("user_events").insert({
-    event_type,
+  // Non-funnel events: write to events table (unified source of truth)
+  supabase.from("events").insert({
+    event_name: event_type,
+    visitor_id: context.visitor_id || "unknown",
+    session_id: context.session_id || null,
     event_data: merged as Json,
   }).then(() => {});
 }
