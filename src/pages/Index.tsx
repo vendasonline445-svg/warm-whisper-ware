@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { trackTikTokEvent } from "@/lib/tiktok-tracking";
+import { trackFunnelEvent } from "@/lib/tracking-hub";
 import { getUrlWithUtm } from "@/utils/utm";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent, trackPageViewOnce } from "@/utils/track-event";
