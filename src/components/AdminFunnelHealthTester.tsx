@@ -145,19 +145,39 @@ export default function AdminFunnelHealthTester() {
     setScore(null);
     setSteps(FUNNEL_STEPS.map(s => ({ event: s.event, status: "pending" })));
 
-    const testStart = new Date().toISOString();
+    // Query real events from last 24h — both events table AND user_events table
+    const [eventsRes, userEventsRes] = await Promise.all([
+      supabase
+        .from("events")
+        .select("event_name, created_at")
+        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order("created_at", { ascending: false })
+        .limit(500),
+      supabase
+        .from("user_events")
+        .select("event_type, created_at")
+        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ]);
 
-    // Query real events from last 24h for this domain
-    const { data: recentEvents } = await supabase
-      .from("events")
-      .select("event_name, created_at")
-      .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .order("created_at", { ascending: false })
-      .limit(500);
+    const allEventNames = new Set<string>();
+    const eventTimestamps: Record<string, string> = {};
 
-    const detectedSet = new Set((recentEvents || []).map((e: any) => e.event_name));
+    // Collect from events table
+    (eventsRes.data || []).forEach((e: any) => {
+      allEventNames.add(e.event_name);
+      if (!eventTimestamps[e.event_name]) eventTimestamps[e.event_name] = e.created_at;
+    });
+
+    // Collect from user_events table (legacy names)
+    (userEventsRes.data || []).forEach((e: any) => {
+      allEventNames.add(e.event_type);
+      if (!eventTimestamps[e.event_type]) eventTimestamps[e.event_type] = e.created_at;
+    });
 
     // Map with slight delay for visual effect
+    let detectedCount = 0;
     for (let i = 0; i < FUNNEL_STEPS.length; i++) {
       const step = FUNNEL_STEPS[i];
       setSteps(prev => prev.map((s, idx) => 
@@ -166,20 +186,21 @@ export default function AdminFunnelHealthTester() {
 
       await new Promise(r => setTimeout(r, 400));
 
-      const found = detectedSet.has(step.event);
-      const match = found
-        ? (recentEvents || []).find((e: any) => e.event_name === step.event)
-        : null;
+      // Check if ANY alias for this step was detected
+      const matchedAlias = step.aliases.find(alias => allEventNames.has(alias));
+      const found = !!matchedAlias;
+      const timestamp = matchedAlias ? eventTimestamps[matchedAlias] : undefined;
+
+      if (found) detectedCount++;
 
       setSteps(prev => prev.map((s, idx) =>
         idx === i
-          ? { ...s, status: found ? "ok" : "fail", timestamp: match?.created_at, detail: !found ? "Nenhum evento nas últimas 24h" : undefined }
+          ? { ...s, status: found ? "ok" : "fail", timestamp, detail: !found ? "Nenhum evento nas últimas 24h" : `via ${matchedAlias}` }
           : s
       ));
     }
 
-    const detected = FUNNEL_STEPS.filter(s => detectedSet.has(s.event)).length;
-    setScore(Math.round((detected / FUNNEL_STEPS.length) * 100));
+    setScore(Math.round((detectedCount / FUNNEL_STEPS.length) * 100));
     setTesting(false);
   };
 
