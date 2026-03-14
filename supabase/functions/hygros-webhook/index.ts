@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ event_type: "payment_confirmed", event_data: eventData }),
         });
 
-        // Dual-write: new events table
+        // Dual-write: new events table — purchase event (server-side, reliable)
         await fetch(`${supabaseUrl}/rest/v1/events`, {
           method: "POST",
           headers: {
@@ -198,11 +198,31 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             visitor_id: metadata.visitor_id || "unknown",
             session_id: metadata.session_id || null,
-            event_name: "payment_confirmed",
+            event_name: "purchase",
             value: data.amount || 0,
-            source: metadata.utm_source || null,
+            source: "webhook",
             campaign: metadata.utm_campaign || null,
-            event_data: eventData,
+            event_data: { ...eventData, gateway: "hygros", payment_method: "pix" },
+            client_id: lead.client_id || null,
+            site_id: lead.site_id || null,
+          }),
+        });
+
+        // Audit log
+        await fetch(`${supabaseUrl}/rest/v1/tracker_event_log`, {
+          method: "POST",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            site_id: lead.site_id || "mesa-dobravel",
+            event_name: "purchase",
+            source: "webhook",
+            success: true,
+            payload: { transaction_id: transactionId, amount: data.amount || 0 },
           }),
         });
 
