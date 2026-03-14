@@ -631,6 +631,8 @@ function AdminContent() {
 
         {(tab === "settings-scripts" || tab === "tracking-pixels") && <AdminTrackingHub />}
 
+        {tab === "tracking-config" && <AdminTrackingConfig />}
+
         {tab === "settings-csv" && <AdminClientHub />}
 
         {(tab === "ai" || tab === "ai-insights") && (
