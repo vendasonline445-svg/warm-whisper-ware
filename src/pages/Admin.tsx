@@ -634,19 +634,23 @@ export default function Admin() {
           </div>
         )}
 
-        {tab === "crm" && <AdminCRM />}
+        {(tab === "crm" || tab === "crm-sessions" || tab === "crm-recovery" || tab === "crm-checkout") && <AdminCRM />}
 
         {tab === "tiktok" && <AdminTikTokTab />}
 
-        {tab === "tracking" && <AdminTrackingHub />}
+        {(tab === "tracking" || tab === "tracking-sessions" || tab === "tracking-clicks" || tab === "tracking-links" || tab === "tracking-pixels" || tab === "tracking-scripts" || tab === "tracking-debug") && <AdminTrackingHub />}
 
-        {tab === "clients" && <AdminClientHub />}
+        {(tab === "clients" || tab === "clients-bc") && <AdminClientHub />}
 
-        {tab === "ads" && <AdminAdsHub />}
+        {(tab === "ads" || tab === "ads-creatives" || tab === "ads-automation" || tab === "ads-budgets" || tab === "ads-performance") && <AdminAdsHub />}
 
-        {tab === "analytics" && <AdminAnalyticsHub />}
+        {(tab === "analytics" || tab === "analytics-campaigns" || tab === "analytics-creatives" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && <AdminAnalyticsHub />}
 
         {tab === "rastreios" && <AdminRastreiosTab />}
+
+        {tab === "settings-scripts" && <AdminTrackingHub />}
+
+        {tab === "settings-csv" && <AdminClientHub />}
 
         {tab === "ai" && (
           <AdminAIAssistant
