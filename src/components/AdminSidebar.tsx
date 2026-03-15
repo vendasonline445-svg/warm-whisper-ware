@@ -60,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
       { tab: "tracking-clicks", label: "Clicks", icon: <MousePointerClick className="h-3.5 w-3.5" /> },
       { tab: "tracking-links", label: "Tracked Links", icon: <Link2 className="h-3.5 w-3.5" /> },
       { tab: "tracking-debug", label: "Debug", icon: <Bug className="h-3.5 w-3.5" /> },
+      { tab: "settings-tracking", label: "Configuração", icon: <Settings className="h-3.5 w-3.5" /> },
     ],
   },
   {
@@ -72,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
       { tab: "campaigns-performance", label: "Performance", icon: <TrendingUp className="h-3.5 w-3.5" /> },
       { tab: "campaigns-automation", label: "Automation", icon: <Zap className="h-3.5 w-3.5" /> },
       { tab: "campaigns-budgets", label: "Budgets", icon: <Wallet className="h-3.5 w-3.5" /> },
+      { tab: "settings-admin", label: "Business Centers", icon: <Building2 className="h-3.5 w-3.5" /> },
     ],
   },
   {
@@ -96,14 +98,12 @@ const NAV_GROUPS: NavGroup[] = [
     separator: true,
   },
   {
-    key: "settings",
-    label: "Settings",
-    icon: <Settings className="h-[18px] w-[18px]" />,
+    key: "integrations",
+    label: "Integrações",
+    icon: <Plug className="h-[18px] w-[18px]" />,
     items: [
-      { tab: "settings-tracking", label: "Tracking", icon: <Activity className="h-3.5 w-3.5" /> },
       { tab: "settings-pixels", label: "Pixels", icon: <Radio className="h-3.5 w-3.5" /> },
-      { tab: "settings-integrations", label: "Integrações", icon: <Plug className="h-3.5 w-3.5" /> },
-      { tab: "settings-admin", label: "Administração", icon: <Building2 className="h-3.5 w-3.5" /> },
+      { tab: "settings-integrations", label: "Ferramentas", icon: <Plug className="h-3.5 w-3.5" /> },
     ],
   },
 ];
