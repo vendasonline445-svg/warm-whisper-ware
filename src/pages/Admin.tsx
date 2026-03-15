@@ -18,6 +18,7 @@ import AdminAnalyticsHub from "@/components/AdminAnalyticsHub";
 import AdminFunnelHealthTester from "@/components/AdminFunnelHealthTester";
 import AdminLiveActivity from "@/components/AdminLiveActivity";
 import AdminSuperHub from "@/components/AdminSuperHub";
+import AdminClientSiteManager from "@/components/AdminClientSiteManager";
 import AdminTrackingConfig from "@/components/AdminTrackingConfig";
 import AdminSidebar, { type AdminTab } from "@/components/AdminSidebar";
 import FunnelIQLogo from "@/components/FunnelIQLogo";
@@ -456,6 +457,10 @@ function AdminContent() {
         <div className="max-w-[1400px] mx-auto p-4">
         {tab === "superadmin" && (
           <AdminSuperHub />
+        )}
+
+        {tab === "my-sites" && (
+          <AdminClientSiteManager />
         )}
 
         {tab === "funnel-health" && (
