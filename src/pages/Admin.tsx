@@ -560,6 +560,8 @@ function AdminContent() {
           } />
         )}
 
+        {tab === "settings-admin" && <SettingsAdmin defaultTab="business_centers" />}
+
         {(tab === "analytics" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && (
           <AdminAnalyticsHub key={tab} defaultTab={
             tab === "analytics-attribution" ? "campaign_perf" :
@@ -569,13 +571,12 @@ function AdminContent() {
           } />
         )}
 
-        {/* New Settings tabs */}
+        {/* Settings tabs */}
         {tab === "settings-tracking" && <SettingsTracking />}
         {tab === "settings-pixels" && <SettingsPixels />}
         {tab === "settings-integrations" && <SettingsIntegrations />}
-        {tab === "settings-admin" && <SettingsAdmin />}
 
-        {/* Legacy settings tabs - redirect to new ones */}
+        {/* Legacy redirects */}
         {tab === "tracking-config" && <SettingsTracking />}
         {tab === "tracking-pixels" && <SettingsPixels />}
         {tab === "settings-scripts" && <SettingsTracking />}
