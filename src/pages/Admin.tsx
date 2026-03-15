@@ -571,13 +571,12 @@ function AdminContent() {
           } />
         )}
 
-        {/* New Settings tabs */}
+        {/* Settings tabs */}
         {tab === "settings-tracking" && <SettingsTracking />}
         {tab === "settings-pixels" && <SettingsPixels />}
         {tab === "settings-integrations" && <SettingsIntegrations />}
-        {tab === "settings-admin" && <SettingsAdmin />}
 
-        {/* Legacy settings tabs - redirect to new ones */}
+        {/* Legacy redirects */}
         {tab === "tracking-config" && <SettingsTracking />}
         {tab === "tracking-pixels" && <SettingsPixels />}
         {tab === "settings-scripts" && <SettingsTracking />}
