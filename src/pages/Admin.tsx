@@ -560,6 +560,8 @@ function AdminContent() {
           } />
         )}
 
+        {tab === "settings-admin" && <SettingsAdmin defaultTab="business_centers" />}
+
         {(tab === "analytics" || tab === "analytics-attribution" || tab === "analytics-revenue" || tab === "analytics-reports") && (
           <AdminAnalyticsHub key={tab} defaultTab={
             tab === "analytics-attribution" ? "campaign_perf" :
