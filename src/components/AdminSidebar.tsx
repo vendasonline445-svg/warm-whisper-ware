@@ -310,14 +310,6 @@ export default function AdminSidebar({
           </div>
         )}
 
-        {!collapsed && (
-          <a
-            href="/funil-admin"
-            className="block text-xs text-muted-foreground hover:text-foreground transition-colors px-2 mb-2"
-          >
-            Painel Operacional Mesa Dobrável →
-          </a>
-        )}
 
         <div className={cn("flex gap-0.5", collapsed ? "flex-col" : "")}>
           <Tooltip delayDuration={0}>
