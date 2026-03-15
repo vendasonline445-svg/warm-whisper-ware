@@ -65,12 +65,7 @@ export default function FunilAdmin() {
             ))}
           </nav>
           <div className="p-3 border-t border-border">
-            <a
-              href="/admin"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              ← Voltar ao FunnelIQ
-            </a>
+            <p className="text-[10px] text-muted-foreground">Powered by FunnelIQ</p>
           </div>
         </aside>
 
