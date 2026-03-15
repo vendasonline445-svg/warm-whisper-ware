@@ -51,6 +51,19 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    key: "campaigns",
+    label: "Campaigns",
+    icon: <Megaphone className="h-[18px] w-[18px]" />,
+    items: [
+      { tab: "campaigns", label: "Campaigns", icon: <Target className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-creatives", label: "Creatives", icon: <Layers className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-performance", label: "Performance", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-automation", label: "Automation", icon: <Zap className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-budgets", label: "Budgets", icon: <Wallet className="h-3.5 w-3.5" /> },
+      { tab: "settings-admin", label: "Business Centers", icon: <Building2 className="h-3.5 w-3.5" /> },
+    ],
+  },
+  {
     key: "tracking",
     label: "Tracking",
     icon: <Activity className="h-[18px] w-[18px]" />,
@@ -64,16 +77,12 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    key: "campaigns",
-    label: "Campaigns",
-    icon: <Megaphone className="h-[18px] w-[18px]" />,
+    key: "integrations",
+    label: "Integrações",
+    icon: <Plug className="h-[18px] w-[18px]" />,
     items: [
-      { tab: "campaigns", label: "Campaigns", icon: <Target className="h-3.5 w-3.5" /> },
-      { tab: "campaigns-creatives", label: "Creatives", icon: <Layers className="h-3.5 w-3.5" /> },
-      { tab: "campaigns-performance", label: "Performance", icon: <TrendingUp className="h-3.5 w-3.5" /> },
-      { tab: "campaigns-automation", label: "Automation", icon: <Zap className="h-3.5 w-3.5" /> },
-      { tab: "campaigns-budgets", label: "Budgets", icon: <Wallet className="h-3.5 w-3.5" /> },
-      { tab: "settings-admin", label: "Business Centers", icon: <Building2 className="h-3.5 w-3.5" /> },
+      { tab: "settings-pixels", label: "Pixels", icon: <Radio className="h-3.5 w-3.5" /> },
+      { tab: "settings-integrations", label: "Ferramentas", icon: <Plug className="h-3.5 w-3.5" /> },
     ],
   },
   {
@@ -94,16 +103,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { tab: "ai", label: "Diagnosis", icon: <ScanSearch className="h-3.5 w-3.5" /> },
       { tab: "ai-insights", label: "Insights", icon: <Lightbulb className="h-3.5 w-3.5" /> },
-    ],
-    separator: true,
-  },
-  {
-    key: "integrations",
-    label: "Integrações",
-    icon: <Plug className="h-[18px] w-[18px]" />,
-    items: [
-      { tab: "settings-pixels", label: "Pixels", icon: <Radio className="h-3.5 w-3.5" /> },
-      { tab: "settings-integrations", label: "Ferramentas", icon: <Plug className="h-3.5 w-3.5" /> },
     ],
   },
 ];
@@ -146,7 +145,7 @@ export default function AdminSidebar({
         label: "Super Admin",
         icon: <ShieldCheck className="h-[18px] w-[18px]" />,
         items: [{ tab: "superadmin" as AdminTab, label: "Gerenciar Acessos", icon: <ShieldCheck className="h-3.5 w-3.5" /> }],
-        separator: false,
+        separator: true,
       } as NavGroup]
     : filteredGroups;
 
@@ -175,9 +174,9 @@ export default function AdminSidebar({
     setExpandedGroups(prev => new Set(prev).add(groupKey));
   };
 
-  const separatorIdx = allGroups.findIndex(g => g.separator);
-  const mainGroups = separatorIdx >= 0 ? allGroups.slice(0, separatorIdx + 1) : allGroups;
-  const settingsGroups = separatorIdx >= 0 ? allGroups.slice(separatorIdx + 1) : [];
+  // Groups with separator=true go below the divider
+  const mainGroups = allGroups.filter(g => !g.separator);
+  const settingsGroups = allGroups.filter(g => g.separator);
 
   const renderGroup = (group: NavGroup) => {
     const isExpanded = expandedGroups.has(group.key);
