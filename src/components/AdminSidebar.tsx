@@ -51,6 +51,19 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    key: "campaigns",
+    label: "Campaigns",
+    icon: <Megaphone className="h-[18px] w-[18px]" />,
+    items: [
+      { tab: "campaigns", label: "Campaigns", icon: <Target className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-creatives", label: "Creatives", icon: <Layers className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-performance", label: "Performance", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-automation", label: "Automation", icon: <Zap className="h-3.5 w-3.5" /> },
+      { tab: "campaigns-budgets", label: "Budgets", icon: <Wallet className="h-3.5 w-3.5" /> },
+      { tab: "settings-admin", label: "Business Centers", icon: <Building2 className="h-3.5 w-3.5" /> },
+    ],
+  },
+  {
     key: "tracking",
     label: "Tracking",
     icon: <Activity className="h-[18px] w-[18px]" />,
@@ -64,16 +77,12 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    key: "campaigns",
-    label: "Campaigns",
-    icon: <Megaphone className="h-[18px] w-[18px]" />,
+    key: "integrations",
+    label: "Integrações",
+    icon: <Plug className="h-[18px] w-[18px]" />,
     items: [
-      { tab: "campaigns", label: "Campaigns", icon: <Target className="h-3.5 w-3.5" /> },
-      { tab: "campaigns-creatives", label: "Creatives", icon: <Layers className="h-3.5 w-3.5" /> },
-      { tab: "campaigns-performance", label: "Performance", icon: <TrendingUp className="h-3.5 w-3.5" /> },
-      { tab: "campaigns-automation", label: "Automation", icon: <Zap className="h-3.5 w-3.5" /> },
-      { tab: "campaigns-budgets", label: "Budgets", icon: <Wallet className="h-3.5 w-3.5" /> },
-      { tab: "settings-admin", label: "Business Centers", icon: <Building2 className="h-3.5 w-3.5" /> },
+      { tab: "settings-pixels", label: "Pixels", icon: <Radio className="h-3.5 w-3.5" /> },
+      { tab: "settings-integrations", label: "Ferramentas", icon: <Plug className="h-3.5 w-3.5" /> },
     ],
   },
   {
@@ -94,16 +103,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { tab: "ai", label: "Diagnosis", icon: <ScanSearch className="h-3.5 w-3.5" /> },
       { tab: "ai-insights", label: "Insights", icon: <Lightbulb className="h-3.5 w-3.5" /> },
-    ],
-    separator: true,
-  },
-  {
-    key: "integrations",
-    label: "Integrações",
-    icon: <Plug className="h-[18px] w-[18px]" />,
-    items: [
-      { tab: "settings-pixels", label: "Pixels", icon: <Radio className="h-3.5 w-3.5" /> },
-      { tab: "settings-integrations", label: "Ferramentas", icon: <Plug className="h-3.5 w-3.5" /> },
     ],
   },
 ];
