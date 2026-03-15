@@ -145,7 +145,7 @@ export default function AdminSidebar({
         label: "Super Admin",
         icon: <ShieldCheck className="h-[18px] w-[18px]" />,
         items: [{ tab: "superadmin" as AdminTab, label: "Gerenciar Acessos", icon: <ShieldCheck className="h-3.5 w-3.5" /> }],
-        separator: false,
+        separator: true,
       } as NavGroup]
     : filteredGroups;
 
@@ -174,9 +174,9 @@ export default function AdminSidebar({
     setExpandedGroups(prev => new Set(prev).add(groupKey));
   };
 
-  const separatorIdx = allGroups.findIndex(g => g.separator);
-  const mainGroups = separatorIdx >= 0 ? allGroups.slice(0, separatorIdx + 1) : allGroups;
-  const settingsGroups = separatorIdx >= 0 ? allGroups.slice(separatorIdx + 1) : [];
+  // Groups with separator=true go below the divider
+  const mainGroups = allGroups.filter(g => !g.separator);
+  const settingsGroups = allGroups.filter(g => g.separator);
 
   const renderGroup = (group: NavGroup) => {
     const isExpanded = expandedGroups.has(group.key);
