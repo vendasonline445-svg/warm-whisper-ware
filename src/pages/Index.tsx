@@ -718,20 +718,20 @@ const Index = () => {
         {/* Gray Divider */}
         <div className="mt-4 h-2 bg-muted/60" />
 
-        <div className="px-4">
+        <div className="px-3">
           {/* Size Selection */}
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold">Tamanho</p>
-              <span className="text-muted-foreground text-sm">23 disponíveis</span>
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[13px] font-semibold">Tamanho</p>
+              <span className="text-muted-foreground text-[13px]">23 disponíveis</span>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {sizes.map((s) => {
                 return (
                   <button
                     key={s}
                     onClick={() => setSelectedSize(s)}
-                    className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+                    className={`rounded-full border px-3 py-1 text-[13px] font-medium transition-all ${
                       selectedSize === s
                       ? "border-cta bg-cta/5 text-cta"
                       : "border-border text-foreground hover:border-foreground/40"
