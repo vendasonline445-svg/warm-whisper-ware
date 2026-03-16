@@ -136,7 +136,7 @@ const Index = () => {
   const DISCOUNT = currentSizeData.discount;
   const [colorModalOpen, setColorModalOpen] = useState(false);
   const [colorModalClosing, setColorModalClosing] = useState(false);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>("branca");
   const [colorModalMode, setColorModalMode] = useState<'cart' | 'buy'>('cart');
   const [modalQty, setModalQty] = useState(1);
   const [flyingDot, setFlyingDot] = useState(false);
@@ -208,7 +208,7 @@ const Index = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatClosing, setChatClosing] = useState(false);
   const [chatMessages, setChatMessages] = useState<{role: 'bot' | 'user', text: string}[]>([
-    { role: 'bot', text: 'Olá! Como posso te ajudar com informações sobre a Mesa Dobrável Mesalar?' }
+    { role: 'bot', text: 'Olá! Como posso te ajudar com informações sobre a Mesa Dobrável?' }
   ]);
   const [chatTyping, setChatTyping] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -384,7 +384,7 @@ const Index = () => {
   }, [exitShown]);
 
   const openColorModal = (mode: 'cart' | 'buy') => {
-    setSelectedColor(null);
+    setSelectedColor("branca");
     setModalQty(1);
     setColorModalMode(mode);
     setColorModalOpen(true);
@@ -948,7 +948,7 @@ const Index = () => {
             <div className="flex items-center gap-3 px-5 pb-4">
               <img src="/images/mesa-branca-popup.webp" alt="Mesa Dobrável" className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1" />
               <div>
-                <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
                 <p className="text-cta font-extrabold text-lg">R$ {PRICE.toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {OLD_PRICE.toFixed(2).replace('.', ',')}</p>
                 <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">Economize {DISCOUNT}%</span>
@@ -1161,7 +1161,7 @@ const Index = () => {
                 <div className="px-5 py-4 flex items-center gap-3 border-b border-border">
                   <img src="/images/mesa-branca-principal.webp" alt="Produto" className="h-14 w-14 rounded-lg object-contain border bg-muted/30 p-1" />
                   <div>
-                    <p className="text-sm font-medium line-clamp-1">Mesa Dobrável Portátil Mesalar</p>
+                    <p className="text-sm font-medium line-clamp-1">Mesa Dobrável Portátil</p>
                     <p className="text-xs text-muted-foreground">Mesalar-BR</p>
                   </div>
                 </div>
@@ -1395,7 +1395,7 @@ const Index = () => {
                 className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1"
               />
               <div>
-                <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
                 <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.75).toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}</p>
                 <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">+25% OFF com cupom</span>
@@ -1520,7 +1520,7 @@ const Index = () => {
                 className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1"
               />
               <div>
-                <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
                 <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.50).toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}</p>
                 <span className="inline-block mt-0.5 rounded bg-destructive/10 text-destructive text-[10px] font-bold px-1.5 py-0.5">+50% OFF com cupom</span>
@@ -1829,7 +1829,7 @@ const Index = () => {
                       className="h-20 w-20 rounded-lg object-contain border bg-muted/30 p-1 flex-shrink-0"
                     />
                     <div className="flex-1">
-                      <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                      <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
                       <p className="text-xs text-muted-foreground">Cor: {item.color === 'preta' ? 'Preta' : 'Branca'} · {item.size}</p>
                       <p className="text-cta font-extrabold text-base mt-1">R$ {((SIZE_PRICES[item.size]?.price || PRICE) * item.quantity).toFixed(2).replace('.', ',')}</p>
                       <div className="flex items-center gap-3 mt-2">
