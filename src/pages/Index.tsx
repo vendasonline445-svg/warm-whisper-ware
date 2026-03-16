@@ -384,7 +384,7 @@ const Index = () => {
   }, [exitShown]);
 
   const openColorModal = (mode: 'cart' | 'buy') => {
-    setSelectedColor(null);
+    setSelectedColor("branca");
     setModalQty(1);
     setColorModalMode(mode);
     setColorModalOpen(true);
