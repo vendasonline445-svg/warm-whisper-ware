@@ -333,7 +333,7 @@ export async function trackFunnelEvent(options: TrackOptions) {
     visitor_id: visitorId,
     session_id: sessionId,
     event_name: event || "unknown_event",
-    value: typeof value === "number" ? value : 0,
+    value: typeof value === "number" ? Math.round(value) : 0,
     source: getUtmSource() || null,
     campaign: getUtmCampaign() || null,
     event_data: eventData as Json,
