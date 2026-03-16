@@ -681,21 +681,21 @@ const Index = () => {
           </div>
 
           {/* Customer Protection */}
-          <div className="mt-4 rounded-xl border bg-card p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-                <span className="font-semibold text-sm">Proteção do cliente</span>
+          <div className="mt-3 rounded-xl border bg-card p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-[13px]">Proteção do cliente</span>
               </div>
-              <span className="text-xs font-bold text-success">100% Protegido</span>
+              <span className="text-[11px] font-bold text-success">100% Protegido</span>
             </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
+            <div className="space-y-2 text-[13px]">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                 <span>Devolução gratuita em até 7 dias</span>
               </div>
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 text-blue-500 flex-shrink-0" />
+              <div className="flex items-center gap-2.5">
+                <CreditCard className="h-4 w-4 text-blue-500 flex-shrink-0" />
                 <span>Reembolso automático por danos</span>
               </div>
               <div className="flex items-center gap-3">
