@@ -573,6 +573,7 @@ const Index = () => {
 
               if (Math.abs(dx) > dy && Math.abs(dx) > 8) {
                 swiping.current = true;
+                if (!isDragging) setIsDragging(true);
                 e.preventDefault();
 
                 const containerWidth = galleryRef.current?.offsetWidth || 1;
