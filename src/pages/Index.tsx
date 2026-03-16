@@ -530,7 +530,7 @@ const Index = () => {
             <div
               className="flex h-full"
               style={{
-                transform: `translateX(calc(-${currentImage * 100}% + ${dragOffset}px))`,
+                transform: `translateX(calc(-${currentImage * (100 / productImages.length)}% + ${dragOffset}px))`,
                 transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 1, 0.5, 1)',
                 width: `${productImages.length * 100}%`,
               }}
