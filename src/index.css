@@ -240,28 +240,22 @@
   background-color: hsl(var(--muted) / 0.3);
 }
 
-/* Spinning dashed border for coupon boxes — marching ants */
+/* Marching dashed border for coupon boxes */
 .coupon-spin-border {
-  border: 2px dashed var(--coupon-dash-color, hsl(142 71% 45%)) !important;
-  background-size: 100% 100%;
-  animation: marching-ants 12s linear infinite;
-  background-origin: border-box;
+  position: relative;
+  border: none !important;
 }
-@property --dash-offset {
-  syntax: '<length>';
-  initial-value: 0px;
-  inherits: false;
+.coupon-spin-border > svg.marching-border {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
-.coupon-spin-border {
-  --dash-offset: 0px;
-  border-image: repeating-linear-gradient(
-    90deg,
-    var(--coupon-dash-color, hsl(142 71% 45%)) 0 6px,
-    transparent 6px 12px
-  ) 2 / 2px / 0 round;
-  animation: none;
+.coupon-spin-border > svg.marching-border rect {
+  animation: march 1.5s linear infinite;
 }
-/* Use outline-offset trick for marching effect */
-@keyframes marching-ants {
-  to { --dash-offset: 24px; }
+@keyframes march {
+  to { stroke-dashoffset: -24; }
 }
