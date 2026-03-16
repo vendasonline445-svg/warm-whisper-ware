@@ -129,6 +129,9 @@ const Index = () => {
   const touchEndX = useRef(0);
   const swiping = useRef(false);
   const [currentImage, setCurrentImage] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const galleryRef = useRef<HTMLDivElement>(null);
   const [selectedSize, setSelectedSize] = useState("180x60cm");
   const currentSizeData = SIZE_PRICES[selectedSize] || SIZE_PRICES["180x60cm"];
   const PRICE = currentSizeData.price;
@@ -485,36 +488,63 @@ const Index = () => {
       </header>
 
       <div className="mx-auto max-w-[480px]">
-        {/* Product Gallery */}
+        {/* Product Gallery - Fluid Drag Carousel */}
         <section className="bg-card">
           <div
-            className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-pointer"
-            onClick={() => { if (!swiping.current) { trackEvent("click_product_image"); setZoomOpen(true); } }}
-            onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; swiping.current = false; }}
+            ref={galleryRef}
+            className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-grab active:cursor-grabbing"
+            onTouchStart={(e) => {
+              touchStartX.current = e.touches[0].clientX;
+              touchStartY.current = e.touches[0].clientY;
+              swiping.current = false;
+              setIsDragging(true);
+              setDragOffset(0);
+            }}
             onTouchMove={(e) => {
-              const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+              const dx = e.touches[0].clientX - touchStartX.current;
               const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
-              if (dx > dy && dx > 10) { swiping.current = true; e.preventDefault(); }
+              if (Math.abs(dx) > dy && Math.abs(dx) > 8) {
+                swiping.current = true;
+                e.preventDefault();
+                // Apply rubber-band resistance at edges
+                const atEdge = (currentImage === 0 && dx > 0) || (currentImage === productImages.length - 1 && dx < 0);
+                setDragOffset(atEdge ? dx * 0.3 : dx);
+              }
               touchEndX.current = e.touches[0].clientX;
             }}
             onTouchEnd={(e) => {
+              setIsDragging(false);
               const diff = touchStartX.current - touchEndX.current;
-              if (swiping.current && Math.abs(diff) > 50) {
+              const containerWidth = galleryRef.current?.offsetWidth || 300;
+              const threshold = containerWidth * 0.2;
+              if (swiping.current && Math.abs(diff) > threshold) {
                 e.preventDefault();
                 if (diff > 0) nextImage();
                 else prevImage();
               }
+              setDragOffset(0);
+              swiping.current = false;
             }}
+            onClick={() => { if (!swiping.current) { trackEvent("click_product_image"); setZoomOpen(true); } }}
           >
-            <img
-              src={productImages[currentImage]}
-              alt="Mesa dobrável"
-              className="h-full w-full object-contain transition-opacity duration-300"
-            />
-            <button onClick={prevImage} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-foreground/10 backdrop-blur-sm" aria-label="Anterior">
+            <div
+              className="flex h-full"
+              style={{
+                transform: `translateX(calc(-${currentImage * 100}% + ${dragOffset}px))`,
+                transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.25, 1, 0.5, 1)',
+                width: `${productImages.length * 100}%`,
+              }}
+            >
+              {productImages.map((img, i) => (
+                <div key={i} className="h-full flex-shrink-0" style={{ width: `${100 / productImages.length}%` }}>
+                  <img src={img} alt={`Produto ${i + 1}`} className="h-full w-full object-contain" loading={i === 0 ? "eager" : "lazy"} />
+                </div>
+              ))}
+            </div>
+            <button onClick={(e) => { e.stopPropagation(); prevImage(); }} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-foreground/10 backdrop-blur-sm" aria-label="Anterior">
               <ChevronLeft className="h-5 w-5 text-foreground/70" />
             </button>
-            <button onClick={nextImage} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-foreground/10 backdrop-blur-sm" aria-label="Próxima">
+            <button onClick={(e) => { e.stopPropagation(); nextImage(); }} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-foreground/10 backdrop-blur-sm" aria-label="Próxima">
               <ChevronRight className="h-5 w-5 text-foreground/70" />
             </button>
             <span className="absolute bottom-3 right-3 rounded-full bg-foreground/60 px-2.5 py-1 text-xs font-medium text-card">
