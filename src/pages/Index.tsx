@@ -880,9 +880,9 @@ const Index = () => {
           </section>
 
           {/* Specs */}
-          <section className="mt-6">
-            <h2 className="text-base font-bold mb-3">Especificações Técnicas:</h2>
-            <ul className="space-y-1.5 text-sm text-foreground/90 list-disc pl-5">
+          <section className="mt-5">
+            <h2 className="text-[15px] font-bold mb-2">Especificações Técnicas:</h2>
+            <ul className="space-y-1 text-[13px] text-foreground/90 list-disc pl-5">
               <li><strong>Dimensões aberta:</strong> 180 x 60 x 74 cm</li>
               <li><strong>Dimensões fechada:</strong> 90 x 60 x 9 cm</li>
               <li><strong>Peso:</strong> aproximadamente 8 kg</li>
