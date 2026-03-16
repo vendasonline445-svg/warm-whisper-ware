@@ -527,7 +527,7 @@ const Index = () => {
       {/* Top bar */}
        <header className="sticky top-0 z-40 border-b bg-card">
         <div className="mx-auto max-w-[480px] flex items-center justify-between px-3 py-2.5">
-          <X className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setExitModalOpen(true); setExitShown(true); }} />
+          <X className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setExitModalOpen(true); setExitShown(true); fireCelebration(); }} />
           <div className="flex items-center gap-5">
             <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => setShareOpen(true)} />
             <div className="relative cursor-pointer" onClick={() => setCartOpen(true)}>
