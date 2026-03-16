@@ -42,6 +42,13 @@ const colorImages = {
   preta: "/images/mesa-preta-popup.webp",
 };
 
+const modalImagesToPreload = [
+  colorImages.branca,
+  colorImages.preta,
+  "/images/mesa-branca-principal.webp",
+  "/images/mesa-preta-principal.webp",
+];
+
 const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
 
 const reviews = [
