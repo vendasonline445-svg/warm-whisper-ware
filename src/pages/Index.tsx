@@ -468,6 +468,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white pb-[72px]">
+      <div className="hidden" aria-hidden="true">
+        <img src={colorImages.branca} alt="" loading="eager" fetchPriority="high" decoding="async" />
+        <img src={colorImages.preta} alt="" loading="eager" fetchPriority="high" decoding="async" />
+      </div>
       {/* Flying dot animation */}
       {flyingDot && (
         <div className="fixed z-[100] pointer-events-none" style={{
