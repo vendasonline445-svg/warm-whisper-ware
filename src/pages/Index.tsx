@@ -902,35 +902,35 @@ const Index = () => {
             <h2 className="text-[15px] font-bold mb-2">Envio e Entrega</h2>
             <div className="space-y-0">
               {/* Frete Grátis - highlighted */}
-              <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 p-4 mb-4">
-                <Truck className="h-5 w-5 mt-0.5 flex-shrink-0 text-cta" />
+              <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-200 p-3 mb-3">
+                <Truck className="h-4 w-4 mt-0.5 flex-shrink-0 text-cta" />
                 <div>
-                  <p className="font-semibold text-sm">Frete Grátis para todo o Brasil!</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Economize <strong>R$ 29,90</strong> no frete — promoção por tempo limitado.</p>
+                  <p className="font-semibold text-[13px]">Frete Grátis para todo o Brasil!</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Economize <strong>R$ 29,90</strong> no frete — promoção por tempo limitado.</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4">
-                <Clock className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+              <div className="flex items-start gap-2.5 p-3">
+                <Clock className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="font-semibold text-sm">Prazo de entrega</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Receba em <strong>5 a 8 dias úteis</strong> após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia.</p>
+                  <p className="font-semibold text-[13px]">Prazo de entrega</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Receba em <strong>5 a 8 dias úteis</strong> após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia.</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4">
-                <Package className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+              <div className="flex items-start gap-2.5 p-3">
+                <Package className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="font-semibold text-sm">Rastreamento completo</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Acompanhe seu pedido em tempo real pelo código de rastreio enviado por e-mail e WhatsApp logo após o despacho.</p>
+                  <p className="font-semibold text-[13px]">Rastreamento completo</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Acompanhe seu pedido em tempo real pelo código de rastreio enviado por e-mail e WhatsApp logo após o despacho.</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4">
-                <Shield className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+              <div className="flex items-start gap-2.5 p-3">
+                <Shield className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="font-semibold text-sm">Entrega garantida</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Entrega garantida e segurada pelos Correios®. Em caso de extravio ou dano no transporte, reenviamos o produto ou devolvemos o valor integral sem custo.</p>
+                  <p className="font-semibold text-[13px]">Entrega garantida</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Entrega garantida e segurada pelos Correios®. Em caso de extravio ou dano no transporte, reenviamos o produto ou devolvemos o valor integral sem custo.</p>
                 </div>
               </div>
 
