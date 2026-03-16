@@ -1829,7 +1829,7 @@ const Index = () => {
                       className="h-20 w-20 rounded-lg object-contain border bg-muted/30 p-1 flex-shrink-0"
                     />
                     <div className="flex-1">
-                      <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                      <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
                       <p className="text-xs text-muted-foreground">Cor: {item.color === 'preta' ? 'Preta' : 'Branca'} · {item.size}</p>
                       <p className="text-cta font-extrabold text-base mt-1">R$ {((SIZE_PRICES[item.size]?.price || PRICE) * item.quantity).toFixed(2).replace('.', ',')}</p>
                       <div className="flex items-center gap-3 mt-2">
