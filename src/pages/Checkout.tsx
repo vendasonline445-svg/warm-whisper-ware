@@ -766,8 +766,31 @@ const Checkout = () => {
         <div className="mt-4 border-t pt-4">
           <p className="font-semibold text-sm mb-4">Forma de pagamento</p>
 
-          {/* Credit Card Option */}
+          {/* PIX Option */}
           <div className={`rounded-lg border-2 mb-3 transition-colors ${
+            paymentMethod === "pix" ? "border-cta" : "border-border"
+          }`}>
+            <button
+              onClick={() => setPaymentMethod("pix")}
+              className="w-full flex items-center justify-between p-3"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#E0F7F5] flex items-center justify-center">
+                  <img src="/images/pix-icon-new.png" alt="Pix" className="w-6 h-6" />
+                </div>
+                <div className="text-left">
+                  <span className="text-sm font-semibold">Pix</span>
+                  <p className="text-xs text-muted-foreground">Pague em até 24h e confirme na hora.</p>
+                </div>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "pix" ? "border-cta" : "border-muted-foreground/40"}`}>
+                {paymentMethod === "pix" && <div className="w-2.5 h-2.5 rounded-full bg-cta" />}
+              </div>
+            </button>
+          </div>
+
+          {/* Credit Card Option */}
+          <div className={`rounded-lg border-2 transition-colors ${
             paymentMethod === "credit_card" ? "border-cta" : "border-border"
           }`}>
             <button
@@ -889,29 +912,6 @@ const Checkout = () => {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* PIX Option */}
-          <div className={`rounded-lg border-2 transition-colors ${
-            paymentMethod === "pix" ? "border-cta" : "border-border"
-          }`}>
-            <button
-              onClick={() => setPaymentMethod("pix")}
-              className="w-full flex items-center justify-between p-3"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#E0F7F5] flex items-center justify-center">
-                  <img src="/images/pix-icon-new.png" alt="Pix" className="w-6 h-6" />
-                </div>
-                <div className="text-left">
-                  <span className="text-sm font-semibold">Pix</span>
-                  <p className="text-xs text-muted-foreground">Pague em até 24h e confirme na hora.</p>
-                </div>
-              </div>
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "pix" ? "border-cta" : "border-muted-foreground/40"}`}>
-                {paymentMethod === "pix" && <div className="w-2.5 h-2.5 rounded-full bg-cta" />}
-              </div>
-            </button>
           </div>
         </div>
 
