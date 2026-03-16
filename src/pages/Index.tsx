@@ -1498,8 +1498,9 @@ const Index = () => {
               />
               <div>
                 <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
-                <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.75).toFixed(2).replace('.', ',')}</p>
+                <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.oldPrice ?? 199.90).toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}</p>
+                <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.75).toFixed(2).replace('.', ',')}</p>
                 <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">+25% OFF com cupom</span>
               </div>
             </div>
