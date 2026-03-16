@@ -812,13 +812,13 @@ const Index = () => {
                   </div>
                   <p className="text-[13px] leading-relaxed text-foreground/90">{r.text}</p>
                   {r.photos.length > 0 && (
-                    <div className="mt-3 flex gap-2 overflow-x-auto">
+                    <div className="mt-2 flex gap-1.5 overflow-x-auto">
                       {r.photos.map((p, i) => (
                         <img
                           key={i}
                           src={p}
                           alt={`Foto ${i + 1}`}
-                          className="h-16 w-16 rounded-lg object-cover flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
+                          className="h-14 w-14 rounded-lg object-cover flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
                           loading="lazy"
                           onClick={() => { setReviewZoomPhotos(r.photos); setReviewZoomIndex(i); setReviewZoomOpen(true); }}
                         />
