@@ -657,19 +657,19 @@ const Index = () => {
           </h1>
 
           {/* Rating */}
-          <div className="mt-2 flex items-center gap-1.5 text-sm">
-            <Star className="h-4 w-4 fill-primary text-primary" />
+          <div className="mt-1.5 flex items-center gap-1.5 text-[13px]">
+            <Star className="h-3.5 w-3.5 fill-primary text-primary" />
             <span className="font-bold">4.8</span>
             <span className="text-muted-foreground">(207)</span>
             <span className="text-muted-foreground mx-0.5">•</span>
             <span className="text-muted-foreground">4.473 vendidos</span>
           </div>
-          <p className="mt-1 text-xs font-medium text-cta">1.2K+ pessoas compraram nos últimos 3 dias</p>
+          <p className="mt-0.5 text-[11px] font-medium text-cta">1.2K+ pessoas compraram nos últimos 3 dias</p>
 
           {/* Shipping */}
-          <div className="mt-4 flex items-center gap-3 rounded-xl border p-3">
-            <span className="rounded bg-badge-green px-2.5 py-1 text-xs font-bold text-badge-green-foreground flex items-center gap-1">
-              <Truck className="h-3.5 w-3.5" /> Frete grátis
+          <div className="mt-3 flex items-center gap-2.5 rounded-xl border p-2.5">
+            <span className="rounded bg-badge-green px-2 py-0.5 text-[11px] font-bold text-badge-green-foreground flex items-center gap-1">
+              <Truck className="h-3 w-3" /> Frete grátis
             </span>
             <div className="text-sm">
               <span>Receba em <strong>5 - 8 dias úteis</strong></span>
