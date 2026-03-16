@@ -493,8 +493,10 @@ const Index = () => {
           <div
             ref={galleryRef}
             className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-card cursor-grab active:cursor-grabbing"
+            onDragStart={(e) => e.preventDefault()}
             onTouchStart={(e) => {
               touchStartX.current = e.touches[0].clientX;
+              touchEndX.current = e.touches[0].clientX;
               touchStartY.current = e.touches[0].clientY;
               swiping.current = false;
               setIsDragging(true);
@@ -503,25 +505,46 @@ const Index = () => {
             onTouchMove={(e) => {
               const dx = e.touches[0].clientX - touchStartX.current;
               const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+              touchEndX.current = e.touches[0].clientX;
+
               if (Math.abs(dx) > dy && Math.abs(dx) > 8) {
                 swiping.current = true;
                 e.preventDefault();
-                // Apply rubber-band resistance at edges
-                const atEdge = (currentImage === 0 && dx > 0) || (currentImage === productImages.length - 1 && dx < 0);
-                setDragOffset(atEdge ? dx * 0.3 : dx);
+
+                const containerWidth = galleryRef.current?.offsetWidth || 1;
+                const baseOffsetPx = -currentImage * containerWidth;
+                const minOffsetPx = -((productImages.length - 1) * containerWidth);
+                const maxOffsetPx = 0;
+
+                let nextOffsetPx = baseOffsetPx + dx;
+
+                if (nextOffsetPx > maxOffsetPx) {
+                  nextOffsetPx = maxOffsetPx + (nextOffsetPx - maxOffsetPx) * 0.25;
+                } else if (nextOffsetPx < minOffsetPx) {
+                  nextOffsetPx = minOffsetPx + (nextOffsetPx - minOffsetPx) * 0.25;
+                }
+
+                setDragOffset(nextOffsetPx - baseOffsetPx);
               }
-              touchEndX.current = e.touches[0].clientX;
             }}
             onTouchEnd={(e) => {
               setIsDragging(false);
-              const diff = touchStartX.current - touchEndX.current;
+              const endX = touchEndX.current || touchStartX.current;
+              const diff = touchStartX.current - endX;
               const containerWidth = galleryRef.current?.offsetWidth || 300;
               const threshold = containerWidth * 0.2;
+
               if (swiping.current && Math.abs(diff) > threshold) {
                 e.preventDefault();
                 if (diff > 0) nextImage();
                 else prevImage();
               }
+
+              setDragOffset(0);
+              swiping.current = false;
+            }}
+            onTouchCancel={() => {
+              setIsDragging(false);
               setDragOffset(0);
               swiping.current = false;
             }}
@@ -537,7 +560,7 @@ const Index = () => {
             >
               {productImages.map((img, i) => (
                 <div key={i} className="h-full flex-shrink-0" style={{ width: `${100 / productImages.length}%` }}>
-                  <img src={img} alt={`Produto ${i + 1}`} className="h-full w-full object-contain" loading={i === 0 ? "eager" : "lazy"} />
+                  <img src={img} alt={`Produto ${i + 1}`} className="h-full w-full select-none object-contain" loading={i === 0 ? "eager" : "lazy"} draggable={false} onDragStart={(e) => e.preventDefault()} />
                 </div>
               ))}
             </div>
