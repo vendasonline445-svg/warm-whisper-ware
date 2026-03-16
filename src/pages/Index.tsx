@@ -751,8 +751,8 @@ const Index = () => {
         {belowFoldReady ? (<>
 
         {/* Video Carousel Section */}
-        <div className="px-4 mt-4">
-          <h2 className="text-base font-bold mb-3">Vídeos do Produto</h2>
+        <div className="px-3 mt-3">
+          <h2 className="text-[15px] font-bold mb-2">Vídeos do Produto</h2>
           <div
             ref={videoScrollRef}
             className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
