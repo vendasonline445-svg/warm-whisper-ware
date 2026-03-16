@@ -1626,7 +1626,7 @@ const Index = () => {
                       </div>
                     )}
                     <div className="aspect-[4/3] bg-muted/30 p-3">
-                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
+                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" loading="eager" decoding="async" draggable={false} />
                     </div>
                     <p className="py-2 text-center text-sm font-medium">{color.name}</p>
                   </button>
