@@ -1930,6 +1930,12 @@ const Index = () => {
                         >
                           <span className="text-sm font-bold">+</span>
                         </button>
+                        <button
+                          onClick={() => saveCart(cartItems.filter((_, i) => i !== idx))}
+                          className="ml-auto h-7 w-7 rounded-full flex items-center justify-center text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
