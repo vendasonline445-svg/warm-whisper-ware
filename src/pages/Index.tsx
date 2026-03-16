@@ -490,8 +490,8 @@ const Index = () => {
         }
       `}</style>
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b bg-card">
-        <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 py-3">
+       <header className="sticky top-0 z-40 border-b bg-card">
+        <div className="mx-auto max-w-[480px] flex items-center justify-between px-3 py-2.5">
           <X className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setExitModalOpen(true); setExitShown(true); }} />
           <div className="flex items-center gap-5">
             <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => setShareOpen(true)} />
@@ -594,12 +594,12 @@ const Index = () => {
             </span>
           </div>
           {/* Thumbnails */}
-          <div className="flex gap-2 overflow-x-auto px-4 py-3">
+          <div className="flex gap-1.5 overflow-x-auto px-3 py-2">
             {productImages.map((img, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentImage(i)}
-                className={`h-[52px] w-[52px] flex-shrink-0 overflow-hidden rounded border-2 transition-all ${
+                className={`h-[44px] w-[44px] flex-shrink-0 overflow-hidden rounded border-2 transition-all ${
                   i === currentImage ? "border-cta" : "border-transparent"
                 }`}
               >
@@ -610,11 +610,11 @@ const Index = () => {
         </section>
 
         {/* Price Banner */}
-        <section className="bg-gradient-to-r from-primary to-[hsl(25,80%,55%)] px-4 py-5 text-primary-foreground relative">
-          <div className="flex items-end gap-2">
-            <span className="text-xl font-black leading-none">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
-            <span className="text-xs line-through opacity-60">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
-            <span className="rounded-md bg-white px-2 py-0.5 text-xs font-extrabold text-cta">-{DISCOUNT}%</span>
+        <section className="bg-gradient-to-r from-primary to-[hsl(25,80%,55%)] px-3 py-3.5 text-primary-foreground relative">
+          <div className="flex items-end gap-1.5">
+            <span className="text-lg font-black leading-none">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
+            <span className="text-[11px] line-through opacity-60">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
+            <span className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-extrabold text-cta">-{DISCOUNT}%</span>
           </div>
           <div className="absolute bottom-2 right-4 text-right">
             <div className="flex items-center gap-1 justify-end mb-2">
@@ -635,45 +635,45 @@ const Index = () => {
           </div>
         </section>
 
-        <div className="px-4">
+        <div className="px-3">
           {/* Installments */}
-          <div className="mt-3 flex items-center gap-2 text-sm text-foreground">
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          <div className="mt-2 flex items-center gap-1.5 text-[13px] text-foreground">
+            <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
             <span>6x de <strong>R$ 18,57</strong> sem juros no cartão</span>
           </div>
 
           {/* Coupon badge */}
-          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-badge-green px-3 py-1 text-xs font-semibold text-badge-green-foreground">
-            <Tag className="h-3.5 w-3.5" />
+          <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-badge-green px-2.5 py-0.5 text-[11px] font-semibold text-badge-green-foreground">
+            <Tag className="h-3 w-3" />
             Cupom Aplicado
           </div>
 
           {/* Title */}
           <h1
-            className="mt-4 text-base font-bold leading-snug text-foreground cursor-pointer active:opacity-70"
+            className="mt-3 text-[15px] font-bold leading-snug text-foreground cursor-pointer active:opacity-70"
             onClick={() => document.getElementById("buy-bar")?.scrollIntoView({ behavior: "smooth" })}
           >
             Mesa Dobrável Tipo Maleta Prática e Durável 180x60cm — Portátil, Resistente, Fácil de Montar e Guardar
           </h1>
 
           {/* Rating */}
-          <div className="mt-2 flex items-center gap-1.5 text-sm">
-            <Star className="h-4 w-4 fill-primary text-primary" />
+          <div className="mt-1.5 flex items-center gap-1.5 text-[13px]">
+            <Star className="h-3.5 w-3.5 fill-primary text-primary" />
             <span className="font-bold">4.8</span>
             <span className="text-muted-foreground">(207)</span>
             <span className="text-muted-foreground mx-0.5">•</span>
             <span className="text-muted-foreground">4.473 vendidos</span>
           </div>
-          <p className="mt-1 text-xs font-medium text-cta">1.2K+ pessoas compraram nos últimos 3 dias</p>
+          <p className="mt-0.5 text-[11px] font-medium text-cta">1.2K+ pessoas compraram nos últimos 3 dias</p>
 
           {/* Shipping */}
-          <div className="mt-4 flex items-center gap-3 rounded-xl border p-3">
-            <span className="rounded bg-badge-green px-2.5 py-1 text-xs font-bold text-badge-green-foreground flex items-center gap-1">
-              <Truck className="h-3.5 w-3.5" /> Frete grátis
+          <div className="mt-3 flex items-center gap-2.5 rounded-xl border p-2.5">
+            <span className="rounded bg-badge-green px-2 py-0.5 text-[11px] font-bold text-badge-green-foreground flex items-center gap-1">
+              <Truck className="h-3 w-3" /> Frete grátis
             </span>
-            <div className="text-sm">
+            <div className="text-[13px]">
               <span>Receba em <strong>5 - 8 dias úteis</strong></span>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-[11px] text-muted-foreground">
                 Taxa de envio: <span className="line-through">R$ 29,90</span>{" "}
                 <span className="font-semibold text-success">Grátis</span>
               </div>
@@ -681,34 +681,34 @@ const Index = () => {
           </div>
 
           {/* Customer Protection */}
-          <div className="mt-4 rounded-xl border bg-card p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-                <span className="font-semibold text-sm">Proteção do cliente</span>
+          <div className="mt-3 rounded-xl border bg-card p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-[13px]">Proteção do cliente</span>
               </div>
-              <span className="text-xs font-bold text-success">100% Protegido</span>
+              <span className="text-[11px] font-bold text-success">100% Protegido</span>
             </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
+            <div className="space-y-2 text-[13px]">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                 <span>Devolução gratuita em até 7 dias</span>
               </div>
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 text-blue-500 flex-shrink-0" />
+              <div className="flex items-center gap-2.5">
+                <CreditCard className="h-4 w-4 text-blue-500 flex-shrink-0" />
                 <span>Reembolso automático por danos</span>
               </div>
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 text-success flex-shrink-0" />
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="h-4 w-4 text-success flex-shrink-0" />
                 <span>Pagamento seguro e criptografado</span>
               </div>
-              <div className="flex items-center gap-3">
-                <Ticket className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-2.5">
+                <Ticket className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span>Cupom por atraso na entrega</span>
               </div>
             </div>
-            <div className="mt-4 rounded-lg bg-success/10 p-3 text-center">
-              <p className="text-xs text-foreground/80">
+            <div className="mt-3 rounded-lg bg-success/10 p-2.5 text-center">
+              <p className="text-[11px] text-foreground/80">
                 Sua compra é <strong className="text-success">100% protegida</strong>. Garantimos devolução do valor integral caso o produto não corresponda à descrição.
               </p>
             </div>
@@ -718,20 +718,20 @@ const Index = () => {
         {/* Gray Divider */}
         <div className="mt-4 h-2 bg-muted/60" />
 
-        <div className="px-4">
+        <div className="px-3">
           {/* Size Selection */}
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold">Tamanho</p>
-              <span className="text-muted-foreground text-sm">23 disponíveis</span>
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[13px] font-semibold">Tamanho</p>
+              <span className="text-muted-foreground text-[13px]">23 disponíveis</span>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {sizes.map((s) => {
                 return (
                   <button
                     key={s}
                     onClick={() => setSelectedSize(s)}
-                    className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+                    className={`rounded-full border px-3 py-1 text-[13px] font-medium transition-all ${
                       selectedSize === s
                       ? "border-cta bg-cta/5 text-cta"
                       : "border-border text-foreground hover:border-foreground/40"
@@ -751,8 +751,8 @@ const Index = () => {
         {belowFoldReady ? (<>
 
         {/* Video Carousel Section */}
-        <div className="px-4 mt-4">
-          <h2 className="text-base font-bold mb-3">Vídeos do Produto</h2>
+        <div className="px-3 mt-3">
+          <h2 className="text-[15px] font-bold mb-2">Vídeos do Produto</h2>
           <div
             ref={videoScrollRef}
             className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
@@ -761,7 +761,7 @@ const Index = () => {
             {["/videos/video-0.mp4", "/videos/video-3.mp4", "/videos/video-2.mp4", "/videos/video-1.mp4"].map((src, i) => (
               <div
                 key={i}
-                className="flex-shrink-0 w-[45vw] max-w-[200px] snap-start cursor-pointer relative rounded-xl overflow-hidden bg-muted aspect-[9/16] active:scale-95 transition-transform"
+                className="flex-shrink-0 w-[40vw] max-w-[180px] snap-start cursor-pointer relative rounded-xl overflow-hidden bg-muted aspect-[9/16] active:scale-95 transition-transform"
                 onClick={() => { setVideoZoomSrc(src); setVideoZoomOpen(true); }}
               >
                 <video
@@ -784,13 +784,13 @@ const Index = () => {
         {/* Gray Divider */}
         <div className="mt-4 h-2 bg-muted/60" />
 
-        <div className="px-4">
+        <div className="px-3">
           {/* Reviews */}
-          <section className="mt-4">
-            <h2 className="text-base font-bold mb-1">Avaliações dos clientes (207)</h2>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl font-black">4.8</span>
-              <span className="text-muted-foreground text-sm">/5</span>
+          <section className="mt-3">
+            <h2 className="text-[15px] font-bold mb-1">Avaliações dos clientes (207)</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl font-black">4.8</span>
+              <span className="text-muted-foreground text-[13px]">/5</span>
               <div className="flex gap-0.5 ml-1">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -800,25 +800,25 @@ const Index = () => {
 
             <div className="divide-y">
               {reviews.map((r, idx) => (
-                <div key={idx} className="py-5 first:pt-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <img src={r.avatar} alt={r.name} className="h-10 w-10 rounded-full object-cover" loading="lazy" />
-                    <span className="font-semibold text-sm">{r.name}</span>
+                <div key={idx} className="py-4 first:pt-0">
+                  <div className="flex items-center gap-2.5 mb-1.5">
+                    <img src={r.avatar} alt={r.name} className="h-8 w-8 rounded-full object-cover" loading="lazy" />
+                    <span className="font-semibold text-[13px]">{r.name}</span>
                   </div>
-                  <div className="flex gap-0.5 mb-2">
+                  <div className="flex gap-0.5 mb-1.5">
                     {Array.from({ length: r.rating }).map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <Star key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  <p className="text-sm leading-relaxed text-foreground/90">{r.text}</p>
+                  <p className="text-[13px] leading-relaxed text-foreground/90">{r.text}</p>
                   {r.photos.length > 0 && (
-                    <div className="mt-3 flex gap-2 overflow-x-auto">
+                    <div className="mt-2 flex gap-1.5 overflow-x-auto">
                       {r.photos.map((p, i) => (
                         <img
                           key={i}
                           src={p}
                           alt={`Foto ${i + 1}`}
-                          className="h-16 w-16 rounded-lg object-cover flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
+                          className="h-14 w-14 rounded-lg object-cover flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
                           loading="lazy"
                           onClick={() => { setReviewZoomPhotos(r.photos); setReviewZoomIndex(i); setReviewZoomOpen(true); }}
                         />
@@ -858,9 +858,9 @@ const Index = () => {
           </section>
 
           {/* Product Description */}
-          <section className="mt-6">
-            <h2 className="text-base font-bold mb-3">Descrição do produto</h2>
-            <div className="space-y-4 text-sm leading-relaxed text-foreground/90">
+          <section className="mt-5">
+            <h2 className="text-[15px] font-bold mb-2">Descrição do produto</h2>
+            <div className="space-y-3 text-[13px] leading-relaxed text-foreground/90">
               <p>
                 A <strong>Mesa Dobrável Tipo Maleta 180x60cm da MesaLar</strong> é 2 em 1: Mesa de apoio com a portabilidade de uma maleta. Você pode montar, usar e guardar em segundos, sem nenhuma ferramenta! A capacidade total de 180cm permite acomodar até 8 pessoas confortavelmente.
               </p>
@@ -880,9 +880,9 @@ const Index = () => {
           </section>
 
           {/* Specs */}
-          <section className="mt-6">
-            <h2 className="text-base font-bold mb-3">Especificações Técnicas:</h2>
-            <ul className="space-y-1.5 text-sm text-foreground/90 list-disc pl-5">
+          <section className="mt-5">
+            <h2 className="text-[15px] font-bold mb-2">Especificações Técnicas:</h2>
+            <ul className="space-y-1 text-[13px] text-foreground/90 list-disc pl-5">
               <li><strong>Dimensões aberta:</strong> 180 x 60 x 74 cm</li>
               <li><strong>Dimensões fechada:</strong> 90 x 60 x 9 cm</li>
               <li><strong>Peso:</strong> aproximadamente 8 kg</li>
@@ -892,45 +892,45 @@ const Index = () => {
               <li><strong>Cor:</strong> Branco / Cinza Escuro</li>
               <li><strong>Pés:</strong> Antiderrapantes em borracha</li>
             </ul>
-            <p className="mt-4 text-sm leading-relaxed text-foreground/90">
+            <p className="mt-3 text-[13px] leading-relaxed text-foreground/90">
               <strong>GARANTIA DE 1 ANO:</strong> A MesaLar é a escolha de milhares de consumidores. Com mais de 4.000 unidades vendidas e nota 4.8 de satisfação, a MesaLar é sinônimo de qualidade e confiança. MesaLar, a escolha inteligente!
             </p>
           </section>
 
           {/* Shipping Details */}
-          <section className="mt-6">
-            <h2 className="text-base font-bold mb-3">Envio e Entrega</h2>
+          <section className="mt-5">
+            <h2 className="text-[15px] font-bold mb-2">Envio e Entrega</h2>
             <div className="space-y-0">
               {/* Frete Grátis - highlighted */}
-              <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 p-4 mb-4">
-                <Truck className="h-5 w-5 mt-0.5 flex-shrink-0 text-cta" />
+              <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-200 p-3 mb-3">
+                <Truck className="h-4 w-4 mt-0.5 flex-shrink-0 text-cta" />
                 <div>
-                  <p className="font-semibold text-sm">Frete Grátis para todo o Brasil!</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Economize <strong>R$ 29,90</strong> no frete — promoção por tempo limitado.</p>
+                  <p className="font-semibold text-[13px]">Frete Grátis para todo o Brasil!</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Economize <strong>R$ 29,90</strong> no frete — promoção por tempo limitado.</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4">
-                <Clock className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+              <div className="flex items-start gap-2.5 p-3">
+                <Clock className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="font-semibold text-sm">Prazo de entrega</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Receba em <strong>5 a 8 dias úteis</strong> após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia.</p>
+                  <p className="font-semibold text-[13px]">Prazo de entrega</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Receba em <strong>5 a 8 dias úteis</strong> após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia.</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4">
-                <Package className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+              <div className="flex items-start gap-2.5 p-3">
+                <Package className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="font-semibold text-sm">Rastreamento completo</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Acompanhe seu pedido em tempo real pelo código de rastreio enviado por e-mail e WhatsApp logo após o despacho.</p>
+                  <p className="font-semibold text-[13px]">Rastreamento completo</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Acompanhe seu pedido em tempo real pelo código de rastreio enviado por e-mail e WhatsApp logo após o despacho.</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4">
-                <Shield className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+              <div className="flex items-start gap-2.5 p-3">
+                <Shield className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="font-semibold text-sm">Entrega garantida</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Entrega garantida e segurada pelos Correios®. Em caso de extravio ou dano no transporte, reenviamos o produto ou devolvemos o valor integral sem custo.</p>
+                  <p className="font-semibold text-[13px]">Entrega garantida</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Entrega garantida e segurada pelos Correios®. Em caso de extravio ou dano no transporte, reenviamos o produto ou devolvemos o valor integral sem custo.</p>
                 </div>
               </div>
 
@@ -944,13 +944,13 @@ const Index = () => {
           </section>
 
           {/* FAQ */}
-          <section className="mt-6 mb-6">
-            <h2 className="text-base font-bold mb-3">Perguntas Frequentes</h2>
+          <section className="mt-5 mb-5">
+            <h2 className="text-[15px] font-bold mb-2">Perguntas Frequentes</h2>
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, i) => (
                 <AccordionItem key={i} value={`faq-${i}`}>
-                  <AccordionTrigger className="text-left text-sm font-semibold">{faq.q}</AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground">{faq.a}</AccordionContent>
+                  <AccordionTrigger className="text-left text-[13px] font-semibold">{faq.q}</AccordionTrigger>
+                  <AccordionContent className="text-[13px] text-muted-foreground">{faq.a}</AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
