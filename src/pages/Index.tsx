@@ -671,9 +671,9 @@ const Index = () => {
             <span className="rounded bg-badge-green px-2 py-0.5 text-[11px] font-bold text-badge-green-foreground flex items-center gap-1">
               <Truck className="h-3 w-3" /> Frete grátis
             </span>
-            <div className="text-sm">
+            <div className="text-[13px]">
               <span>Receba em <strong>5 - 8 dias úteis</strong></span>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-[11px] text-muted-foreground">
                 Taxa de envio: <span className="line-through">R$ 29,90</span>{" "}
                 <span className="font-semibold text-success">Grátis</span>
               </div>
