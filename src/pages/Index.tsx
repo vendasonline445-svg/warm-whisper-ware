@@ -898,8 +898,8 @@ const Index = () => {
           </section>
 
           {/* Shipping Details */}
-          <section className="mt-6">
-            <h2 className="text-base font-bold mb-3">Envio e Entrega</h2>
+          <section className="mt-5">
+            <h2 className="text-[15px] font-bold mb-2">Envio e Entrega</h2>
             <div className="space-y-0">
               {/* Frete Grátis - highlighted */}
               <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 p-4 mb-4">
