@@ -948,7 +948,7 @@ const Index = () => {
             <div className="flex items-center gap-3 px-5 pb-4">
               <img src="/images/mesa-branca-popup.webp" alt="Mesa Dobrável" className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1" />
               <div>
-                <p className="font-bold text-sm">Mesa Dobrável Portátil Mesalar</p>
+                <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
                 <p className="text-cta font-extrabold text-lg">R$ {PRICE.toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {OLD_PRICE.toFixed(2).replace('.', ',')}</p>
                 <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">Economize {DISCOUNT}%</span>
