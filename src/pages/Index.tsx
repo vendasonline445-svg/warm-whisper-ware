@@ -406,7 +406,8 @@ const Index = () => {
     } catch (_) { /* audio not supported */ }
   }, []);
 
-
+  useEffect(() => {
+    if (exitShown) return;
 
     // Desktop: detect mouse leaving viewport from the top (exit intent)
     const handleMouseLeave = (e: MouseEvent) => {
