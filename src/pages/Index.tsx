@@ -1626,7 +1626,7 @@ const Index = () => {
             </div>
 
             {/* 50% OFF Coupon Box */}
-            <div className="mx-5 rounded-lg border-2 border-dashed border-destructive bg-destructive/5 p-3 mb-4">
+            <div className="mx-5 rounded-lg bg-destructive/5 p-3 mb-4 coupon-spin-border" style={{ '--coupon-dash-color': 'hsl(0 84% 60%)' } as React.CSSProperties}>
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Oferta Final Exclusiva</p>
               <p className="text-2xl font-black tracking-wider text-destructive mb-0.5">ULTIMA50</p>
               <p className="text-xs"><strong>50% OFF</strong> — só agora!</p>
