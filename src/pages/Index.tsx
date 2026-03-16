@@ -635,22 +635,22 @@ const Index = () => {
           </div>
         </section>
 
-        <div className="px-4">
+        <div className="px-3">
           {/* Installments */}
-          <div className="mt-3 flex items-center gap-2 text-sm text-foreground">
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          <div className="mt-2 flex items-center gap-1.5 text-[13px] text-foreground">
+            <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
             <span>6x de <strong>R$ 18,57</strong> sem juros no cartão</span>
           </div>
 
           {/* Coupon badge */}
-          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-badge-green px-3 py-1 text-xs font-semibold text-badge-green-foreground">
-            <Tag className="h-3.5 w-3.5" />
+          <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-badge-green px-2.5 py-0.5 text-[11px] font-semibold text-badge-green-foreground">
+            <Tag className="h-3 w-3" />
             Cupom Aplicado
           </div>
 
           {/* Title */}
           <h1
-            className="mt-4 text-base font-bold leading-snug text-foreground cursor-pointer active:opacity-70"
+            className="mt-3 text-[15px] font-bold leading-snug text-foreground cursor-pointer active:opacity-70"
             onClick={() => document.getElementById("buy-bar")?.scrollIntoView({ behavior: "smooth" })}
           >
             Mesa Dobrável Tipo Maleta Prática e Durável 180x60cm — Portátil, Resistente, Fácil de Montar e Guardar
