@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import confetti from "canvas-confetti";
 import { useNavigate } from "react-router-dom";
 import { trackFunnelEvent } from "@/lib/tracking-hub";
 import { getUrlWithUtm } from "@/utils/utm";
@@ -362,6 +363,38 @@ const Index = () => {
     return () => { document.body.style.overflow = ''; };
   }, [storeOpen, chatOpen, exitModalOpen, exit2Open, colorModalOpen, cartOpen]);
 
+  const fireCelebration = useCallback(() => {
+    // 🎉 Confetti fireworks
+    const duration = 2500;
+    const end = Date.now() + duration;
+    const colors = ["#ff4c6a", "#ff9f43", "#ffd700", "#44bd32", "#00d2d3", "#e056fd"];
+    const frame = () => {
+      confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors });
+      confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    };
+    frame();
+    // Big center burst
+    confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 }, colors });
+
+    // 🔊 Celebration sound (short fanfare)
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+      notes.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.18, audioCtx.currentTime + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.12 + 0.5);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + i * 0.12);
+        osc.stop(audioCtx.currentTime + i * 0.12 + 0.5);
+      });
+    } catch (_) { /* audio not supported */ }
+  }, []);
+
   useEffect(() => {
     if (exitShown) return; // Stop intercepting once popup was shown
 
@@ -370,6 +403,7 @@ const Index = () => {
       if (e.clientY <= 0 && e.relatedTarget === null) {
         setExitModalOpen(true);
         setExitShown(true);
+        fireCelebration();
       }
     };
 
@@ -387,6 +421,7 @@ const Index = () => {
       window.history.pushState(null, "", window.location.href);
       setExitModalOpen(true);
       setExitShown(true);
+      fireCelebration();
     };
 
     window.history.pushState(null, "", window.location.href);
@@ -399,7 +434,7 @@ const Index = () => {
       window.removeEventListener("popstate", handlePopState);
       clearTimeout(popstateReadyTimer);
     };
-  }, [exitShown]);
+  }, [exitShown, fireCelebration]);
 
   const openColorModal = (mode: 'cart' | 'buy') => {
     setSelectedColor("branca");
@@ -492,7 +527,7 @@ const Index = () => {
       {/* Top bar */}
        <header className="sticky top-0 z-40 border-b bg-card">
         <div className="mx-auto max-w-[480px] flex items-center justify-between px-3 py-2.5">
-          <X className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setExitModalOpen(true); setExitShown(true); }} />
+          <X className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setExitModalOpen(true); setExitShown(true); fireCelebration(); }} />
           <div className="flex items-center gap-5">
             <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => setShareOpen(true)} />
             <div className="relative cursor-pointer" onClick={() => setCartOpen(true)}>
