@@ -892,7 +892,7 @@ const Index = () => {
               <li><strong>Cor:</strong> Branco / Cinza Escuro</li>
               <li><strong>Pés:</strong> Antiderrapantes em borracha</li>
             </ul>
-            <p className="mt-4 text-sm leading-relaxed text-foreground/90">
+            <p className="mt-3 text-[13px] leading-relaxed text-foreground/90">
               <strong>GARANTIA DE 1 ANO:</strong> A MesaLar é a escolha de milhares de consumidores. Com mais de 4.000 unidades vendidas e nota 4.8 de satisfação, a MesaLar é sinônimo de qualidade e confiança. MesaLar, a escolha inteligente!
             </p>
           </section>
