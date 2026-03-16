@@ -1495,7 +1495,8 @@ const Index = () => {
             </div>
 
             {/* Coupon Box */}
-            <div className="mx-5 rounded-lg bg-coupon-bg p-3 mb-4 coupon-spin-border" style={{ '--coupon-dash-color': 'hsl(142 71% 45%)' } as React.CSSProperties}>
+            <div className="mx-5 rounded-lg bg-coupon-bg p-3 mb-4 coupon-spin-border">
+              <svg className="marching-border" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" rx="7" ry="7" width="calc(100% - 2px)" height="calc(100% - 2px)" fill="none" stroke="hsl(142 71% 45%)" strokeWidth="2" strokeDasharray="8 6" /></svg>
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Cupom de Desconto</p>
               <p className="text-2xl font-black tracking-wider text-destructive mb-0.5">VOLTA25</p>
               <p className="text-xs"><strong>25% OFF</strong> na sua compra</p>
