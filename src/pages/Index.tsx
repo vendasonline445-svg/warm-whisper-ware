@@ -594,12 +594,12 @@ const Index = () => {
             </span>
           </div>
           {/* Thumbnails */}
-          <div className="flex gap-2 overflow-x-auto px-4 py-3">
+          <div className="flex gap-1.5 overflow-x-auto px-3 py-2">
             {productImages.map((img, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentImage(i)}
-                className={`h-[52px] w-[52px] flex-shrink-0 overflow-hidden rounded border-2 transition-all ${
+                className={`h-[44px] w-[44px] flex-shrink-0 overflow-hidden rounded border-2 transition-all ${
                   i === currentImage ? "border-cta" : "border-transparent"
                 }`}
               >
