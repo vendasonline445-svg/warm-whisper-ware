@@ -386,8 +386,28 @@ const Index = () => {
     } catch (_) { /* audio not supported */ }
   }, []);
 
+  const fireAlertSiren = useCallback(() => {
+    // 🔊 Short siren/alert sound
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(900, audioCtx.currentTime + 0.15);
+      osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.3);
+      osc.frequency.linearRampToValueAtTime(900, audioCtx.currentTime + 0.45);
+      osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.6);
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.7);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.7);
+    } catch (_) { /* audio not supported */ }
+  }, []);
+
   useEffect(() => {
-    if (exitShown) return; // Stop intercepting once popup was shown
+    if (exitShown) return;
 
     // Desktop: detect mouse leaving viewport from the top (exit intent)
     const handleMouseLeave = (e: MouseEvent) => {
@@ -1452,7 +1472,7 @@ const Index = () => {
       </Dialog>
 
       {exitModalOpen && (
-        <div className="fixed inset-0 z-[60]" onClick={() => { setExitModalOpen(false); if (!exit2Shown) { setExit2Open(true); setExit2Shown(true); } }}>
+        <div className="fixed inset-0 z-[60]" onClick={() => { setExitModalOpen(false); if (!exit2Shown) { setExit2Open(true); setExit2Shown(true); fireAlertSiren(); } }}>
           <div className="absolute inset-0 bg-black/60 animate-in fade-in-0" />
           <div
             className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl transition-transform duration-300 mx-auto sm:max-w-md animate-in slide-in-from-bottom max-h-[90vh] overflow-y-auto"
@@ -1464,7 +1484,7 @@ const Index = () => {
             </div>
             {/* Close button */}
             <button
-              onClick={() => { setExitModalOpen(false); if (!exit2Shown) { setExit2Open(true); setExit2Shown(true); } }}
+              onClick={() => { setExitModalOpen(false); if (!exit2Shown) { setExit2Open(true); setExit2Shown(true); fireAlertSiren(); } }}
               className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="h-3.5 w-3.5" />
@@ -1498,8 +1518,9 @@ const Index = () => {
               />
               <div>
                 <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
-                <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.75).toFixed(2).replace('.', ',')}</p>
+                <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.oldPrice ?? 199.90).toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}</p>
+                <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.75).toFixed(2).replace('.', ',')}</p>
                 <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">+25% OFF com cupom</span>
               </div>
             </div>
@@ -1584,6 +1605,7 @@ const Index = () => {
       {exit2Open && (
         <div className="fixed inset-0 z-[60]" onClick={() => setExit2Open(false)}>
           <div className="absolute inset-0 bg-black/60 animate-in fade-in-0" />
+          <div className="absolute inset-0 bg-destructive/20 animate-[pulse-red_1.5s_ease-in-out_infinite] pointer-events-none" />
           <div
             className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl transition-transform duration-300 mx-auto sm:max-w-md animate-in slide-in-from-bottom max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
@@ -1627,8 +1649,9 @@ const Index = () => {
               />
               <div>
                 <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
-                <p className="text-cta font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.50).toFixed(2).replace('.', ',')}</p>
+                <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.oldPrice ?? 199.90).toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {(SIZE_PRICES[selectedSize]?.price ?? 69.90).toFixed(2).replace('.', ',')}</p>
+                <p className="text-destructive font-extrabold text-lg">R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.50).toFixed(2).replace('.', ',')}</p>
                 <span className="inline-block mt-0.5 rounded bg-destructive/10 text-destructive text-[10px] font-bold px-1.5 py-0.5">+50% OFF com cupom</span>
               </div>
             </div>
@@ -1695,13 +1718,13 @@ const Index = () => {
                   }
                 }}
                 disabled={!selectedColor}
-                className={`w-full font-bold text-base py-4 rounded-2xl transition-all ${
+                className={`w-full font-bold text-base py-4 rounded-2xl transition-all animate-[bounce-soft_2s_ease-in-out_infinite] ${
                   selectedColor
                     ? 'bg-destructive text-white hover:bg-destructive/90'
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                Garantir com 50% OFF 🔥 - R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.50).toFixed(2).replace('.', ',')}
+                Garantir com 50% OFF <span className="inline-block animate-[wiggle_1s_ease-in-out_infinite]">🔥</span> - R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.50).toFixed(2).replace('.', ',')}
               </button>
               <p className="text-[10px] text-muted-foreground mt-2 text-center">Última oferta. Após fechar, o desconto será perdido!</p>
             </div>

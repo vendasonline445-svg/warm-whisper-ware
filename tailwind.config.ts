@@ -106,6 +106,10 @@ export default {
           "25%": { transform: "rotate(-8deg) scale(1.15)" },
           "75%": { transform: "rotate(8deg) scale(1.15)" },
         },
+        "pulse-red": {
+          "0%, 100%": { opacity: "0" },
+          "50%": { opacity: "0.15" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
