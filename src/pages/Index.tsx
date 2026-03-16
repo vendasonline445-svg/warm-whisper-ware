@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import confetti from "canvas-confetti";
 import { useNavigate } from "react-router-dom";
 import { trackFunnelEvent } from "@/lib/tracking-hub";
 import { getUrlWithUtm } from "@/utils/utm";
