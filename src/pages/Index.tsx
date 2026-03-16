@@ -1566,13 +1566,13 @@ const Index = () => {
                   }
                 }}
                 disabled={!selectedColor}
-                className={`w-full font-bold text-base py-4 rounded-2xl transition-all ${
+                className={`w-full font-bold text-base py-4 rounded-2xl transition-all animate-[bounce-soft_2s_ease-in-out_infinite] ${
                   selectedColor
                     ? 'bg-cta text-white hover:bg-cta-hover'
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 }`}
               >
-                Aproveitar desconto 🔥 - R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.75).toFixed(2).replace('.', ',')}
+                Aproveitar desconto <span className="inline-block animate-[wiggle_1s_ease-in-out_infinite]">🔥</span> - R$ {((SIZE_PRICES[selectedSize]?.price ?? 69.90) * 0.75).toFixed(2).replace('.', ',')}
               </button>
               <p className="text-[10px] text-muted-foreground mt-2 text-center">Válido por tempo limitado. Não perca!</p>
             </div>
