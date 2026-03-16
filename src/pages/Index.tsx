@@ -136,7 +136,7 @@ const Index = () => {
   const DISCOUNT = currentSizeData.discount;
   const [colorModalOpen, setColorModalOpen] = useState(false);
   const [colorModalClosing, setColorModalClosing] = useState(false);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>("branca");
   const [colorModalMode, setColorModalMode] = useState<'cart' | 'buy'>('cart');
   const [modalQty, setModalQty] = useState(1);
   const [flyingDot, setFlyingDot] = useState(false);
