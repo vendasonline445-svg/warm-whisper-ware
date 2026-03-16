@@ -1161,7 +1161,7 @@ const Index = () => {
                 <div className="px-5 py-4 flex items-center gap-3 border-b border-border">
                   <img src="/images/mesa-branca-principal.webp" alt="Produto" className="h-14 w-14 rounded-lg object-contain border bg-muted/30 p-1" />
                   <div>
-                    <p className="text-sm font-medium line-clamp-1">Mesa Dobrável Portátil Mesalar</p>
+                    <p className="text-sm font-medium line-clamp-1">Mesa Dobrável Portátil</p>
                     <p className="text-xs text-muted-foreground">Mesalar-BR</p>
                   </div>
                 </div>
