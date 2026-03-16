@@ -564,7 +564,6 @@ const Index = () => {
               touchEndX.current = e.touches[0].clientX;
               touchStartY.current = e.touches[0].clientY;
               swiping.current = false;
-              setIsDragging(true);
               setDragOffset(0);
             }}
             onTouchMove={(e) => {
