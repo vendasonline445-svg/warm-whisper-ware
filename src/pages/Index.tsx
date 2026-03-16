@@ -560,7 +560,7 @@ const Index = () => {
             >
               {productImages.map((img, i) => (
                 <div key={i} className="h-full flex-shrink-0" style={{ width: `${100 / productImages.length}%` }}>
-                  <img src={img} alt={`Produto ${i + 1}`} className="h-full w-full object-contain" loading={i === 0 ? "eager" : "lazy"} />
+                  <img src={img} alt={`Produto ${i + 1}`} className="h-full w-full select-none object-contain" loading={i === 0 ? "eager" : "lazy"} draggable={false} onDragStart={(e) => e.preventDefault()} />
                 </div>
               ))}
             </div>
