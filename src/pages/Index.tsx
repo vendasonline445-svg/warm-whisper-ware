@@ -1900,9 +1900,13 @@ const Index = () => {
                 {cartItems.map((item, idx) => (
                   <div key={`${item.color}-${item.size}`} className="flex gap-3 pb-4 border-b mb-4 last:mb-0">
                     <img
-                      src={item.color === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
+                      src={item.color === 'preta' ? colorImages.preta : colorImages.branca}
                       alt="Mesa Dobrável"
                       className="h-20 w-20 rounded-lg object-contain border bg-muted/30 p-1 flex-shrink-0"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                      draggable={false}
                     />
                     <div className="flex-1">
                       <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
