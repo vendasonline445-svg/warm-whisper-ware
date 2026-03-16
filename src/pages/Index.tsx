@@ -1458,9 +1458,13 @@ const Index = () => {
             {/* Product header */}
             <div className="flex items-center gap-3 px-5 pb-4">
               <img
-                src={selectedColor === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
+                src={selectedColor === 'preta' ? colorImages.preta : colorImages.branca}
                 alt="Mesa Dobrável"
                 className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                draggable={false}
               />
               <div>
                 <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
