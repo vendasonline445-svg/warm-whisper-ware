@@ -949,8 +949,8 @@ const Index = () => {
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, i) => (
                 <AccordionItem key={i} value={`faq-${i}`}>
-                  <AccordionTrigger className="text-left text-sm font-semibold">{faq.q}</AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground">{faq.a}</AccordionContent>
+                  <AccordionTrigger className="text-left text-[13px] font-semibold">{faq.q}</AccordionTrigger>
+                  <AccordionContent className="text-[13px] text-muted-foreground">{faq.a}</AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
