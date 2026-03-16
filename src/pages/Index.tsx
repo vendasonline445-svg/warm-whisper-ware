@@ -1495,7 +1495,7 @@ const Index = () => {
             </div>
 
             {/* Coupon Box */}
-            <div className="mx-5 rounded-lg border-2 border-dashed border-coupon-border bg-coupon-bg p-3 mb-4">
+            <div className="mx-5 rounded-lg bg-coupon-bg p-3 mb-4 coupon-spin-border" style={{ '--coupon-dash-color': 'hsl(142 71% 45%)' } as React.CSSProperties}>
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Cupom de Desconto</p>
               <p className="text-2xl font-black tracking-wider text-destructive mb-0.5">VOLTA25</p>
               <p className="text-xs"><strong>25% OFF</strong> na sua compra</p>
