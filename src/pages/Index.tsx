@@ -364,33 +364,24 @@ const Index = () => {
   }, [storeOpen, chatOpen, exitModalOpen, exit2Open, colorModalOpen, cartOpen]);
 
   const fireCelebration = useCallback(() => {
-    // 🎉 Confetti fireworks
-    const duration = 2500;
-    const end = Date.now() + duration;
     const colors = ["#ff4c6a", "#ff9f43", "#ffd700", "#44bd32", "#00d2d3", "#e056fd"];
-    const frame = () => {
-      confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors });
-      confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors });
-      if (Date.now() < end) requestAnimationFrame(frame);
-    };
-    frame();
-    // Big center burst
-    confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 }, colors });
+    // Single gentle burst
+    confetti({ particleCount: 40, spread: 70, origin: { y: 0.55 }, colors, gravity: 1.2 });
 
     // 🔊 Celebration sound (short fanfare)
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+      const notes = [523.25, 659.25, 783.99, 1046.5];
       notes.forEach((freq, i) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = "triangle";
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.18, audioCtx.currentTime + i * 0.12);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.12 + 0.5);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.12 + 0.4);
         osc.connect(gain).connect(audioCtx.destination);
         osc.start(audioCtx.currentTime + i * 0.12);
-        osc.stop(audioCtx.currentTime + i * 0.12 + 0.5);
+        osc.stop(audioCtx.currentTime + i * 0.12 + 0.4);
       });
     } catch (_) { /* audio not supported */ }
   }, []);
