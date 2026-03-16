@@ -698,17 +698,17 @@ const Index = () => {
                 <CreditCard className="h-4 w-4 text-blue-500 flex-shrink-0" />
                 <span>Reembolso automático por danos</span>
               </div>
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 text-success flex-shrink-0" />
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="h-4 w-4 text-success flex-shrink-0" />
                 <span>Pagamento seguro e criptografado</span>
               </div>
-              <div className="flex items-center gap-3">
-                <Ticket className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-2.5">
+                <Ticket className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span>Cupom por atraso na entrega</span>
               </div>
             </div>
-            <div className="mt-4 rounded-lg bg-success/10 p-3 text-center">
-              <p className="text-xs text-foreground/80">
+            <div className="mt-3 rounded-lg bg-success/10 p-2.5 text-center">
+              <p className="text-[11px] text-foreground/80">
                 Sua compra é <strong className="text-success">100% protegida</strong>. Garantimos devolução do valor integral caso o produto não corresponda à descrição.
               </p>
             </div>
