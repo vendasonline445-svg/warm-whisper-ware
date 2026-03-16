@@ -858,9 +858,9 @@ const Index = () => {
           </section>
 
           {/* Product Description */}
-          <section className="mt-6">
-            <h2 className="text-base font-bold mb-3">Descrição do produto</h2>
-            <div className="space-y-4 text-sm leading-relaxed text-foreground/90">
+          <section className="mt-5">
+            <h2 className="text-[15px] font-bold mb-2">Descrição do produto</h2>
+            <div className="space-y-3 text-[13px] leading-relaxed text-foreground/90">
               <p>
                 A <strong>Mesa Dobrável Tipo Maleta 180x60cm da MesaLar</strong> é 2 em 1: Mesa de apoio com a portabilidade de uma maleta. Você pode montar, usar e guardar em segundos, sem nenhuma ferramenta! A capacidade total de 180cm permite acomodar até 8 pessoas confortavelmente.
               </p>
