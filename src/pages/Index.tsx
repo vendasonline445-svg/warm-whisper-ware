@@ -228,6 +228,14 @@ const Index = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, chatTyping]);
 
+  useEffect(() => {
+    modalImagesToPreload.forEach((src) => {
+      const image = new Image();
+      image.src = src;
+      image.decoding = "async";
+    });
+  }, []);
+
   const closeStore = () => {
     setStoreClosing(true);
     setTimeout(() => { setStoreOpen(false); setStoreClosing(false); }, 300);
