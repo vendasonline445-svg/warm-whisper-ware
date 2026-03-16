@@ -208,7 +208,7 @@ const Index = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatClosing, setChatClosing] = useState(false);
   const [chatMessages, setChatMessages] = useState<{role: 'bot' | 'user', text: string}[]>([
-    { role: 'bot', text: 'Olá! Como posso te ajudar com informações sobre a Mesa Dobrável Mesalar?' }
+    { role: 'bot', text: 'Olá! Como posso te ajudar com informações sobre a Mesa Dobrável?' }
   ]);
   const [chatTyping, setChatTyping] = useState(false);
   const [chatInput, setChatInput] = useState('');
