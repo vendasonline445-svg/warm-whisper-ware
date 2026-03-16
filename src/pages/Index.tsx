@@ -784,13 +784,13 @@ const Index = () => {
         {/* Gray Divider */}
         <div className="mt-4 h-2 bg-muted/60" />
 
-        <div className="px-4">
+        <div className="px-3">
           {/* Reviews */}
-          <section className="mt-4">
-            <h2 className="text-base font-bold mb-1">Avaliações dos clientes (207)</h2>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl font-black">4.8</span>
-              <span className="text-muted-foreground text-sm">/5</span>
+          <section className="mt-3">
+            <h2 className="text-[15px] font-bold mb-1">Avaliações dos clientes (207)</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl font-black">4.8</span>
+              <span className="text-muted-foreground text-[13px]">/5</span>
               <div className="flex gap-0.5 ml-1">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
