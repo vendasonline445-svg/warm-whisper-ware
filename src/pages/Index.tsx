@@ -386,8 +386,27 @@ const Index = () => {
     } catch (_) { /* audio not supported */ }
   }, []);
 
-  useEffect(() => {
-    if (exitShown) return; // Stop intercepting once popup was shown
+  const fireAlertSiren = useCallback(() => {
+    // 🔊 Short siren/alert sound
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(900, audioCtx.currentTime + 0.15);
+      osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.3);
+      osc.frequency.linearRampToValueAtTime(900, audioCtx.currentTime + 0.45);
+      osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.6);
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.7);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.7);
+    } catch (_) { /* audio not supported */ }
+  }, []);
+
+
 
     // Desktop: detect mouse leaving viewport from the top (exit intent)
     const handleMouseLeave = (e: MouseEvent) => {
