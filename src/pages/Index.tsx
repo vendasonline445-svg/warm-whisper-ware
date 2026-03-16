@@ -42,6 +42,13 @@ const colorImages = {
   preta: "/images/mesa-preta-popup.webp",
 };
 
+const modalImagesToPreload = [
+  colorImages.branca,
+  colorImages.preta,
+  "/images/mesa-branca-principal.webp",
+  "/images/mesa-preta-principal.webp",
+];
+
 const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
 
 const reviews = [
@@ -220,6 +227,14 @@ const Index = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, chatTyping]);
+
+  useEffect(() => {
+    modalImagesToPreload.forEach((src) => {
+      const image = new Image();
+      image.src = src;
+      image.decoding = "async";
+    });
+  }, []);
 
   const closeStore = () => {
     setStoreClosing(true);
@@ -453,6 +468,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white pb-[72px]">
+      <div className="hidden" aria-hidden="true">
+        <img src={colorImages.branca} alt="" loading="eager" fetchPriority="high" decoding="async" />
+        <img src={colorImages.preta} alt="" loading="eager" fetchPriority="high" decoding="async" />
+      </div>
       {/* Flying dot animation */}
       {flyingDot && (
         <div className="fixed z-[100] pointer-events-none" style={{
@@ -999,7 +1018,7 @@ const Index = () => {
 
             {/* Product header */}
             <div className="flex items-center gap-3 px-5 pb-4">
-              <img src="/images/mesa-branca-popup.webp" alt="Mesa Dobrável" className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1" />
+              <img src={colorImages.branca} alt="Mesa Dobrável" className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1" loading="eager" fetchPriority="high" decoding="async" draggable={false} />
               <div>
                 <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
                 <p className="text-cta font-extrabold text-lg">R$ {PRICE.toFixed(2).replace('.', ',')}</p>
@@ -1031,7 +1050,7 @@ const Index = () => {
                       </div>
                     )}
                     <div className="aspect-[4/3] bg-muted/30 p-3">
-                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
+                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" loading="eager" decoding="async" draggable={false} />
                     </div>
                     <p className="py-2 text-center text-sm font-medium">{color.name}</p>
                   </button>
@@ -1443,9 +1462,13 @@ const Index = () => {
             {/* Product header */}
             <div className="flex items-center gap-3 px-5 pb-4">
               <img
-                src={selectedColor === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
+                src={selectedColor === 'preta' ? colorImages.preta : colorImages.branca}
                 alt="Mesa Dobrável"
                 className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                draggable={false}
               />
               <div>
                 <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
@@ -1478,7 +1501,7 @@ const Index = () => {
                       </div>
                     )}
                     <div className="aspect-[4/3] bg-muted/30 p-3">
-                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
+                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" loading="eager" decoding="async" draggable={false} />
                     </div>
                     <p className="py-2 text-center text-sm font-medium">{color.name}</p>
                   </button>
@@ -1568,9 +1591,13 @@ const Index = () => {
             {/* Product header with 50% price */}
             <div className="flex items-center gap-3 px-5 pb-4">
               <img
-                src={selectedColor === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
+                src={selectedColor === 'preta' ? colorImages.preta : colorImages.branca}
                 alt="Mesa Dobrável"
                 className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                draggable={false}
               />
               <div>
                 <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
@@ -1603,7 +1630,7 @@ const Index = () => {
                       </div>
                     )}
                     <div className="aspect-[4/3] bg-muted/30 p-3">
-                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" />
+                      <img src={color.img} alt={color.name} className="h-full w-full object-contain" loading="eager" decoding="async" draggable={false} />
                     </div>
                     <p className="py-2 text-center text-sm font-medium">{color.name}</p>
                   </button>
@@ -1877,9 +1904,13 @@ const Index = () => {
                 {cartItems.map((item, idx) => (
                   <div key={`${item.color}-${item.size}`} className="flex gap-3 pb-4 border-b mb-4 last:mb-0">
                     <img
-                      src={item.color === 'preta' ? '/images/mesa-preta-popup.webp' : '/images/mesa-branca-popup.webp'}
+                      src={item.color === 'preta' ? colorImages.preta : colorImages.branca}
                       alt="Mesa Dobrável"
                       className="h-20 w-20 rounded-lg object-contain border bg-muted/30 p-1 flex-shrink-0"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                      draggable={false}
                     />
                     <div className="flex-1">
                       <p className="font-bold text-sm">Mesa Dobrável Portátil</p>
