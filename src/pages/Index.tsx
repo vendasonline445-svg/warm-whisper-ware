@@ -944,8 +944,8 @@ const Index = () => {
           </section>
 
           {/* FAQ */}
-          <section className="mt-6 mb-6">
-            <h2 className="text-base font-bold mb-3">Perguntas Frequentes</h2>
+          <section className="mt-5 mb-5">
+            <h2 className="text-[15px] font-bold mb-2">Perguntas Frequentes</h2>
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, i) => (
                 <AccordionItem key={i} value={`faq-${i}`}>
