@@ -805,12 +805,12 @@ const Index = () => {
                     <img src={r.avatar} alt={r.name} className="h-8 w-8 rounded-full object-cover" loading="lazy" />
                     <span className="font-semibold text-[13px]">{r.name}</span>
                   </div>
-                  <div className="flex gap-0.5 mb-2">
+                  <div className="flex gap-0.5 mb-1.5">
                     {Array.from({ length: r.rating }).map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <Star key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  <p className="text-sm leading-relaxed text-foreground/90">{r.text}</p>
+                  <p className="text-[13px] leading-relaxed text-foreground/90">{r.text}</p>
                   {r.photos.length > 0 && (
                     <div className="mt-3 flex gap-2 overflow-x-auto">
                       {r.photos.map((p, i) => (
