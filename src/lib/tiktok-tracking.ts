@@ -225,26 +225,72 @@ const NEEDS_CONTENTS = [
   "AddToCart", "InitiateCheckout", "AddPaymentInfo", "CompletePayment", "Purchase",
 ];
 
+function parseTikTokNumber(raw: unknown): number {
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : 0;
+  if (typeof raw !== "string") return 0;
+
+  const cleaned = raw.trim().replace(/[^\d,.-]/g, "");
+  if (!cleaned) return 0;
+
+  const hasComma = cleaned.includes(",");
+  const hasDot = cleaned.includes(".");
+
+  let normalized = cleaned;
+  if (hasComma && hasDot) {
+    normalized = cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")
+      ? cleaned.replace(/\./g, "").replace(",", ".")
+      : cleaned.replace(/,/g, "");
+  } else if (hasComma) {
+    normalized = cleaned.replace(/\./g, "").replace(",", ".");
+  } else {
+    normalized = cleaned.replace(/,/g, "");
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseQuantity(raw: unknown): number {
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 1;
+  return Math.max(1, Math.round(parsed));
+}
+
 function buildTikTokProperties(eventName: string, data: Record<string, any>): Record<string, any> {
+  const normalizedValue = parseTikTokNumber(data.value ?? data.amount ?? 0);
+
   const props: Record<string, any> = {
-    currency: "BRL",
-    value: Number(data.value ?? data.amount ?? 0),
     ...data,
+    currency: "BRL",
+    value: normalizedValue,
   };
 
-  // Always set currency to BRL
-  props.currency = "BRL";
-
   if (NEEDS_CONTENTS.includes(eventName)) {
-    props.contents = data.contents ?? [{
-      content_id: data.product_id ?? data.content_id ?? "mesa-dobravel",
-      content_name: data.product_name ?? data.content_name ?? "Mesa Dobrável",
-      content_type: "product",
-      quantity: Number(data.quantity ?? 1),
-      price: Number(data.value ?? data.amount ?? 0),
-    }];
+    const fallbackQuantity = parseQuantity(data.quantity);
+    const baseContents = Array.isArray(data.contents) && data.contents.length > 0
+      ? data.contents
+      : [{
+          content_id: data.product_id ?? data.content_id ?? "mesa-dobravel",
+          content_name: data.product_name ?? data.content_name ?? "Mesa Dobrável",
+          content_type: "product",
+          quantity: fallbackQuantity,
+          price: normalizedValue,
+        }];
+
+    props.contents = baseContents.map((item: any) => ({
+      ...item,
+      content_id: item?.content_id ?? data.product_id ?? data.content_id ?? "mesa-dobravel",
+      content_name: item?.content_name ?? data.product_name ?? data.content_name ?? "Mesa Dobrável",
+      content_type: item?.content_type ?? "product",
+      quantity: parseQuantity(item?.quantity ?? fallbackQuantity),
+      price: parseTikTokNumber(item?.price ?? item?.item_price ?? normalizedValue),
+    }));
+
     props.content_type = "product";
-    props.num_items = Number(data.quantity ?? 1);
+    props.num_items = props.contents.reduce(
+      (sum: number, item: any) => sum + parseQuantity(item?.quantity),
+      0,
+    ) || fallbackQuantity;
   }
 
   return props;
