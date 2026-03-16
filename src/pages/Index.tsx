@@ -5,7 +5,7 @@ import { getUrlWithUtm } from "@/utils/utm";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent, trackPageViewOnce } from "@/utils/track-event";
 import {
-  Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
+  Star, ChevronLeft, ChevronRight, ShoppingCart, Check, Trash2,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
   Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera, MapPin,
   CreditCard, Tag, ShieldCheck, Ticket, Flag, Link,
@@ -1929,6 +1929,12 @@ const Index = () => {
                           className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"
                         >
                           <span className="text-sm font-bold">+</span>
+                        </button>
+                        <button
+                          onClick={() => saveCart(cartItems.filter((_, i) => i !== idx))}
+                          className="ml-auto h-7 w-7 rounded-full flex items-center justify-center text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
