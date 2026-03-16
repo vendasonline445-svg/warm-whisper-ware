@@ -240,50 +240,28 @@
   background-color: hsl(var(--muted) / 0.3);
 }
 
-/* Spinning dashed border for coupon boxes */
+/* Spinning dashed border for coupon boxes — marching ants */
 .coupon-spin-border {
-  position: relative;
-  border: none !important;
-  overflow: hidden;
-  isolation: isolate;
+  border: 2px dashed var(--coupon-dash-color, hsl(142 71% 45%)) !important;
+  background-size: 100% 100%;
+  animation: marching-ants 12s linear infinite;
+  background-origin: border-box;
 }
-.coupon-spin-border::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg, transparent 20deg,
-    var(--coupon-dash-color, hsl(142 71% 45%)) 20deg, var(--coupon-dash-color, hsl(142 71% 45%)) 40deg,
-    transparent 40deg, transparent 60deg,
-    var(--coupon-dash-color, hsl(142 71% 45%)) 60deg, var(--coupon-dash-color, hsl(142 71% 45%)) 80deg,
-    transparent 80deg, transparent 100deg,
-    var(--coupon-dash-color, hsl(142 71% 45%)) 100deg, var(--coupon-dash-color, hsl(142 71% 45%)) 120deg,
-    transparent 120deg, transparent 140deg,
-    var(--coupon-dash-color, hsl(142 71% 45%)) 140deg, var(--coupon-dash-color, hsl(142 71% 45%)) 160deg,
-    transparent 160deg, transparent 180deg,
-    var(--coupon-dash-color, hsl(142 71% 45%)) 180deg, var(--coupon-dash-color, hsl(142 71% 45%)) 200deg,
-    transparent 200deg, transparent 220deg,
-    var(--coupon-dash-color, hsl(142 71% 45%)) 220deg, var(--coupon-dash-color, hsl(142 71% 45%)) 240deg,
-    transparent 240deg, transparent 260deg,
-    var(--coupon-dash-color, hsl(142 71% 45%)) 260deg, var(--coupon-dash-color, hsl(142 71% 45%)) 280deg,
-    transparent 280deg, transparent 300deg,
-    var(--coupon-dash-color, hsl(142 71% 45%)) 300deg, var(--coupon-dash-color, hsl(142 71% 45%)) 320deg,
-    transparent 320deg, transparent 340deg,
-    var(--coupon-dash-color, hsl(142 71% 45%)) 340deg, var(--coupon-dash-color, hsl(142 71% 45%)) 360deg
-  );
-  animation: spin-border 8s linear infinite;
-  z-index: -2;
+@property --dash-offset {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
 }
-.coupon-spin-border::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
-  border-radius: inherit;
-  background: inherit;
-  z-index: -1;
+.coupon-spin-border {
+  --dash-offset: 0px;
+  border-image: repeating-linear-gradient(
+    90deg,
+    var(--coupon-dash-color, hsl(142 71% 45%)) 0 6px,
+    transparent 6px 12px
+  ) 2 / 2px / 0 round;
+  animation: none;
 }
-@keyframes spin-border {
-  to { transform: rotate(360deg); }
+/* Use outline-offset trick for marching effect */
+@keyframes marching-ants {
+  to { --dash-offset: 24px; }
 }
