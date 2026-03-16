@@ -564,7 +564,6 @@ const Index = () => {
               touchEndX.current = e.touches[0].clientX;
               touchStartY.current = e.touches[0].clientY;
               swiping.current = false;
-              setIsDragging(true);
               setDragOffset(0);
             }}
             onTouchMove={(e) => {
@@ -574,6 +573,7 @@ const Index = () => {
 
               if (Math.abs(dx) > dy && Math.abs(dx) > 8) {
                 swiping.current = true;
+                if (!isDragging) setIsDragging(true);
                 e.preventDefault();
 
                 const containerWidth = galleryRef.current?.offsetWidth || 1;
