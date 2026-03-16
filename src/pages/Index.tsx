@@ -129,6 +129,9 @@ const Index = () => {
   const touchEndX = useRef(0);
   const swiping = useRef(false);
   const [currentImage, setCurrentImage] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const galleryRef = useRef<HTMLDivElement>(null);
   const [selectedSize, setSelectedSize] = useState("180x60cm");
   const currentSizeData = SIZE_PRICES[selectedSize] || SIZE_PRICES["180x60cm"];
   const PRICE = currentSizeData.price;
