@@ -5,7 +5,7 @@ import { getUrlWithUtm } from "@/utils/utm";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent, trackPageViewOnce } from "@/utils/track-event";
 import {
-  Star, ChevronLeft, ChevronRight, ShoppingCart, Check,
+  Star, ChevronLeft, ChevronRight, ShoppingCart, Check, Trash2,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
   Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera, MapPin,
   CreditCard, Tag, ShieldCheck, Ticket, Flag, Link,
