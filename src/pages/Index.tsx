@@ -840,32 +840,42 @@ const Index = () => {
         <div className="mt-4 h-2 bg-muted/60" />
 
         <div className="px-3">
-          {/* Reviews */}
-          <section className="mt-3">
-            <h2 className="text-[15px] font-bold mb-1">Avaliações dos clientes (207)</h2>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl font-black">4.8</span>
-              <span className="text-muted-foreground text-[13px]">/5</span>
-              <div className="flex gap-0.5 ml-1">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                ))}
+          {/* Reviews — with schema.org microdata for TikTok in-app browser detection */}
+          <section className="mt-3" itemScope itemType="https://schema.org/Product">
+            <meta itemProp="name" content="Mesa Dobrável Tipo Maleta 180x60cm" />
+            <div itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
+              <meta itemProp="ratingValue" content="4.8" />
+              <meta itemProp="reviewCount" content="207" />
+              <meta itemProp="bestRating" content="5" />
+              <h2 className="text-[15px] font-bold mb-1">Avaliações dos clientes (<span itemProp="ratingCount">207</span>)</h2>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xl font-black">4.8</span>
+                <span className="text-muted-foreground text-[13px]">/5</span>
+                <div className="flex gap-0.5 ml-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
               </div>
             </div>
 
             <div className="divide-y">
               {reviews.map((r, idx) => (
-                <div key={idx} className="py-4 first:pt-0">
+                <div key={idx} className="py-4 first:pt-0" itemProp="review" itemScope itemType="https://schema.org/Review">
                   <div className="flex items-center gap-2.5 mb-1.5">
                     <img src={r.avatar} alt={r.name} className="h-8 w-8 rounded-full object-cover" loading="lazy" />
-                    <span className="font-semibold text-[13px]">{r.name}</span>
+                    <span className="font-semibold text-[13px]" itemProp="author" itemScope itemType="https://schema.org/Person">
+                      <span itemProp="name">{r.name}</span>
+                    </span>
                   </div>
-                  <div className="flex gap-0.5 mb-1.5">
+                  <div className="flex gap-0.5 mb-1.5" itemProp="reviewRating" itemScope itemType="https://schema.org/Rating">
+                    <meta itemProp="ratingValue" content={String(r.rating)} />
+                    <meta itemProp="bestRating" content="5" />
                     {Array.from({ length: r.rating }).map((_, i) => (
                       <Star key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  <p className="text-[13px] leading-relaxed text-foreground/90">{r.text}</p>
+                  <p className="text-[13px] leading-relaxed text-foreground/90" itemProp="reviewBody">{r.text}</p>
                   {r.photos.length > 0 && (
                     <div className="mt-2 flex gap-1.5 overflow-x-auto">
                       {r.photos.map((p, i) => (
@@ -890,6 +900,28 @@ const Index = () => {
               <span className="flex items-center gap-1">4 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (22)</span>
             </div>
           </section>
+
+          {/* JSON-LD structured data for TikTok and search engines */}
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": "Mesa Dobrável Tipo Maleta 180x60cm",
+            "image": "https://mesa-dobravel-shop.lovable.app/images/mesa-branca-principal.webp",
+            "description": "Mesa Dobrável Tipo Maleta Prática e Durável 180x60cm — Portátil, Resistente, Fácil de Montar e Guardar",
+            "brand": { "@type": "Brand", "name": "Mesa Lar" },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.8",
+              "reviewCount": "207",
+              "bestRating": "5"
+            },
+            "review": reviews.map(r => ({
+              "@type": "Review",
+              "author": { "@type": "Person", "name": r.name },
+              "reviewRating": { "@type": "Rating", "ratingValue": String(r.rating), "bestRating": "5" },
+              "reviewBody": r.text
+            }))
+          })}} />
 
           {/* Store Info */}
           <section className="mt-6 border-y py-5">
