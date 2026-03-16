@@ -926,7 +926,7 @@ const Checkout = () => {
       </div>
 
       {/* Sticky Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto max-w-[480px]">
           {/* Savings banner - full width, no rounding */}
           <div className="w-full py-1.5 px-4" style={{ backgroundColor: '#fff0f3', borderTop: '1px solid #ffe0e6' }}>
