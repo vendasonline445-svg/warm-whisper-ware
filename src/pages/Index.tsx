@@ -800,10 +800,10 @@ const Index = () => {
 
             <div className="divide-y">
               {reviews.map((r, idx) => (
-                <div key={idx} className="py-5 first:pt-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <img src={r.avatar} alt={r.name} className="h-10 w-10 rounded-full object-cover" loading="lazy" />
-                    <span className="font-semibold text-sm">{r.name}</span>
+                <div key={idx} className="py-4 first:pt-0">
+                  <div className="flex items-center gap-2.5 mb-1.5">
+                    <img src={r.avatar} alt={r.name} className="h-8 w-8 rounded-full object-cover" loading="lazy" />
+                    <span className="font-semibold text-[13px]">{r.name}</span>
                   </div>
                   <div className="flex gap-0.5 mb-2">
                     {Array.from({ length: r.rating }).map((_, i) => (
