@@ -658,7 +658,7 @@ const Index = () => {
                   i === currentImage ? "border-cta" : "border-transparent"
                 }`}
               >
-                <img src={img} alt="" className="h-full w-full object-cover" />
+                <img src={img} alt="" className="h-full w-full object-cover" loading="eager" decoding="async" />
               </button>
             ))}
           </div>
