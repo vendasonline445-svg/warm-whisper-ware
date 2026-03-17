@@ -519,7 +519,7 @@ const Index = () => {
   const handleBuyNow = () => {
     trackFunnelEvent({ event: "click_buy" });
     if (cartItems.length > 0) {
-      nav(getUrlWithUtm(`/checkout`));
+      setCartOpen(true);
     } else {
       openColorModal('buy');
     }
