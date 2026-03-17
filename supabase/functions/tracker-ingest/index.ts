@@ -256,15 +256,10 @@ Deno.serve(async (req) => {
       },
     });
 
-    // 7. Dispatch to client's server-side pixels (async, non-blocking)
-    if (client_id) {
-      dispatchToPixels(supabase, client_id, event_name, eventData, {
-        ip: clientIp,
-        user_agent: user_agent || "",
-        visitor_id,
-        ttclid: properties?.ttclid || null,
-      });
-    }
+    // 7. TikTok pixel dispatch removed — React app handles both browser (ttq.track)
+    // and server (CAPI) TikTok events with matching event_ids for proper deduplication.
+    // Dispatching from here created a THIRD server event with a different event_id,
+    // causing TikTok's "Event ID mismatch" warning (~35% affected events).
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
