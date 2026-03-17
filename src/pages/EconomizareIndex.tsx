@@ -815,7 +815,7 @@ const EconomizareIndex = () => {
               <p><strong>✅ ECONOMIA REAL:</strong> Reduza sua conta de água em até 50%! O ar presente na tubulação é contabilizado como água pelo hidrômetro. O Economizare elimina esse problema de forma definitiva.</p>
 
               {/* Produto + embalagem */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-embalagem-combo.webp" alt="Economizare com embalagem" className="w-full" loading="lazy" />
               </div>
               <p className="text-[11px] text-center text-muted-foreground">Nova embalagem — 100% Original desde 2004 · Patente INPI requerida</p>
