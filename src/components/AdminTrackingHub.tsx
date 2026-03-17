@@ -884,10 +884,10 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
           {/* Summary cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             {[
-              { label: "Sessões", value: sessions.length, icon: <Monitor className="h-4 w-4" /> },
-              { label: "Eventos", value: events.length, icon: <Activity className="h-4 w-4" /> },
+             { label: "Sessões", value: sessions.length, icon: <Monitor className="h-4 w-4" /> },
+              { label: "Eventos", value: debugEvents.length, icon: <Activity className="h-4 w-4" /> },
               { label: "Com ttclid", value: sessions.filter(s => s.ttclid).length, icon: <Globe className="h-4 w-4" /> },
-              { label: "Purchases", value: events.filter(e => e.event_name === "purchase").length, icon: <CheckCircle2 className="h-4 w-4" /> },
+              { label: "Purchases", value: debugEvents.filter(e => e.event_name === "purchase").length, icon: <CheckCircle2 className="h-4 w-4" /> },
               { label: "Atribuições", value: attributions.length, icon: <Target className="h-4 w-4" /> },
             ].map((m, i) => (
               <Card key={i} className="p-3 text-center">
