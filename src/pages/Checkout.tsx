@@ -20,7 +20,7 @@ const SIZE_PRICES: Record<string, { price: number; oldPrice: number; discount: n
 };
 
 function useCheckoutCountdown() {
-  const [time, setTime] = useState({ h: 0, m: 5, s: 0 });
+  const [time, setTime] = useState({ h: 0, m: 30, s: 0 });
   useEffect(() => {
     const interval = setInterval(() => {
       setTime((prev) => {
