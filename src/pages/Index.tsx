@@ -722,7 +722,7 @@ const Index = () => {
               <Truck className="h-3 w-3" /> Frete grátis
             </span>
             <div className="text-[13px]">
-              <span>Receba em <strong>5 - 8 dias úteis</strong></span>
+              <span>Receba em <strong>1 - 3 dias úteis</strong></span>
               <div className="text-[11px] text-muted-foreground">
                 Taxa de envio: <span className="line-through">R$ 29,90</span>{" "}
                 <span className="font-semibold text-success">Grátis</span>
