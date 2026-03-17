@@ -765,33 +765,74 @@ const EconomizareIndex = () => {
               <p>
                 O <strong>Economizare — Eliminador de Ar para Hidrômetro</strong> é a solução definitiva para reduzir sua conta de água. Ele impede que o ar presente na rede de abastecimento passe pelo seu hidrômetro e seja contabilizado como consumo de água.
               </p>
-              <img src="/images/eco/eco-inovacao.png" alt="Tecnologia inovadora" className="w-full rounded-xl" loading="lazy" />
+
+              {/* Você sabia? */}
+              <div className="rounded-xl overflow-hidden border">
+                <img src="/images/eco/eco-hidrometro.webp" alt="Ar contabiliza na conta de água" className="w-full" loading="lazy" />
+              </div>
+              <p className="text-sm font-bold text-center text-[#0f7b3f]">Você sabia que o ar que passa pelo hidrômetro contabiliza na sua conta de água?</p>
+
               <p><strong>✅ ECONOMIA REAL:</strong> Reduza sua conta de água em até 50%! O ar presente na tubulação é contabilizado como água pelo hidrômetro. O Economizare elimina esse problema de forma definitiva.</p>
-              <img src="/images/eco/eco-produto-3.png" alt="Produto Economizare" className="w-full rounded-xl" loading="lazy" />
-              <p><strong>✅ INSTALAÇÃO SIMPLES:</strong> Não precisa de encanador! Qualquer pessoa consegue instalar seguindo o manual ilustrado incluso. Sem obras, sem complicações.</p>
-              <img src="/images/eco/eco-sustentabilidade.png" alt="Sustentabilidade" className="w-full rounded-xl" loading="lazy" />
+
+              {/* Produto + embalagem */}
+              <div className="rounded-xl overflow-hidden border">
+                <img src="/images/eco/eco-embalagem-combo.webp" alt="Economizare com embalagem" className="w-full" loading="lazy" />
+              </div>
+              <p className="text-[11px] text-center text-muted-foreground">Nova embalagem — 100% Original desde 2004 · Patente INPI requerida</p>
+
+              <p><strong>✅ BLOQUEADOR DE AR COM REGULAÇÃO DE PRESSÃO:</strong> O único eliminador de ar com controle de vazão da água. Diferencial exclusivo que protege sua rede hidráulica e otimiza o funcionamento.</p>
+
+              <div className="rounded-xl overflow-hidden border">
+                <img src="/images/eco/eco-produto-lateral.webp" alt="Economizare bloqueador de ar com regulação de pressão" className="w-full" loading="lazy" />
+              </div>
+
+              <p><strong>✅ INSTALAÇÃO SIMPLES:</strong> Não precisa de encanador! Instale você mesmo direto na caixa d'água ou após o hidrômetro. Qualquer pessoa consegue seguindo o manual ilustrado.</p>
+
+              {/* Guia de instalação - Hidrômetro */}
+              <div className="rounded-xl overflow-hidden border">
+                <img src="/images/eco/eco-instalacao-hidrometro.webp" alt="Instalação após hidrômetro em 3 passos" className="w-full" loading="lazy" />
+              </div>
+
+              {/* Guia de instalação - Caixa d'água */}
+              <div className="rounded-xl overflow-hidden border">
+                <img src="/images/eco/eco-instalacao-caixa.webp" alt="Instalação na caixa d'água em 3 passos" className="w-full" loading="lazy" />
+              </div>
+
               <p><strong>✅ CERTIFICAÇÃO INMETRO:</strong> Produto atestado pelo SICAL do Brasil, laboratório acreditado pelo INMETRO. Marca e patente registrados junto ao INPI.</p>
-              <img src="/images/eco/eco-produto-4.png" alt="Regulador de pressão" className="w-full rounded-xl" loading="lazy" />
-              <p><strong>✅ REGULADOR DE PRESSÃO:</strong> Diferencial exclusivo! O regulador integrado protege sua rede hidráulica e otimiza o funcionamento do eliminador de ar.</p>
+
+              {/* Legalidade */}
+              <div className="rounded-xl overflow-hidden border">
+                <img src="/images/eco/eco-legalidade.webp" alt="Produto 100% legalizado - decisão do STJ" className="w-full" loading="lazy" />
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">Segundo o STJ, a responsabilidade da concessionária termina no hidrômetro. Após o relógio medidor, a instalação fica a critério do cliente. <strong>Produto 100% legalizado.</strong></p>
+
               <p><strong>✅ PARA TODOS OS AMBIENTES:</strong> Funciona em residências, apartamentos, comércios, condomínios e indústrias. Compatível com qualquer rede hidráulica.</p>
+
+              {/* Embalagem frontal */}
+              <div className="rounded-xl overflow-hidden border">
+                <img src="/images/eco/eco-embalagem-front.webp" alt="Embalagem frontal Economizare" className="w-full" loading="lazy" />
+              </div>
+              <p className="text-[11px] text-center text-muted-foreground">Pague apenas pela água que consome · Redutor de conta de água</p>
             </div>
           </section>
 
           {/* Specs */}
           <section className="mt-5">
-            <h2 className="text-[15px] font-bold mb-2">Especificações Técnicas:</h2>
+            <h2 className="text-[15px] font-bold mb-2">Especificações Técnicas</h2>
             <ul className="space-y-1 text-[13px] text-foreground/90 list-disc pl-5">
               <li><strong>Material:</strong> Latão cromado de alta resistência</li>
               <li><strong>Conexão:</strong> ¾" (padrão brasileiro)</li>
               <li><strong>Pressão máxima:</strong> 10 bar</li>
-              <li><strong>Regulador de pressão:</strong> Integrado</li>
+              <li><strong>Regulador de pressão:</strong> Integrado (exclusivo)</li>
               <li><strong>Garantia:</strong> 1 ano contra defeitos</li>
               <li><strong>Validade:</strong> 5 anos</li>
-              <li><strong>Certificação:</strong> SICAL/INMETRO</li>
-              <li><strong>Marca registrada:</strong> INPI</li>
+              <li><strong>Certificação:</strong> SICAL / INMETRO</li>
+              <li><strong>Patente:</strong> INPI requerida</li>
+              <li><strong>Instalação:</strong> Após hidrômetro ou na caixa d'água</li>
+              <li><strong>Obs:</strong> Nunca instale no cavalete</li>
             </ul>
             <p className="mt-3 text-[13px] leading-relaxed text-foreground/90">
-              <strong>GARANTIA DE 1 ANO:</strong> A Economizare é líder em soluções de economia de água. Com mais de 8.000 unidades vendidas e nota 4.8 de satisfação, a Economizare é sinônimo de qualidade e economia. Participe do Shark Tank Brasil!
+              <strong>GARANTIA DE 1 ANO + 5 ANOS DE VALIDADE:</strong> A Economizare é líder em soluções de economia de água desde 2004. Com mais de 8.000 unidades vendidas e nota 4.8 de satisfação. Participante do Shark Tank Brasil!
             </p>
           </section>
 
