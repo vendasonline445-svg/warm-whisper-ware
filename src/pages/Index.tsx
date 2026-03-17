@@ -52,59 +52,37 @@ const modalImagesToPreload = [
 
 const sizes = ["120x60cm", "150x60cm", "180x60cm", "240x60cm"];
 
+// Each review gets a stable "days ago" offset (1 or 2) that rotates by index
 const reviews = [
-  {
-    name: "Carla S.",
-    avatar: "/images/avatar-carla.webp",
-    text: "A mesa é bem grande, boa demais! Espaçosa e super prática — montei em segundos e usei para o churrasco com a família toda. Muito resistente, suporta bastante peso sem tremer!",
-    rating: 5,
-    photos: ["/images/review-carla-1.webp", "/images/review-carla-2.webp"],
-  },
-  {
-    name: "Patrícia F.",
-    avatar: "/images/avatar-patricia.webp",
-    text: "Ela é muito prática. Material bom, custo muito bom. Amei, pretendo comprar outra!",
-    rating: 5,
-    photos: ["/images/review-patricia-1.webp", "/images/review-patricia-2.webp"],
-  },
-  {
-    name: "Raquel M.",
-    avatar: "/images/avatar-raquel.webp",
-    text: "Ela é linda, bem resistente. Me surpreendi com a qualidade, vou usar muito! Chegou no dia certinho.",
-    rating: 5,
-    photos: ["/images/review-raquel-1.webp", "/images/review-raquel-2.webp", "/images/review-raquel-3.webp"],
-  },
-  {
-    name: "Karine Porto",
-    avatar: "/images/avatar-karine.webp",
-    text: "Muito boa, bem reforçada. Veio bem embalada na caixa, sem avarias. Gostei muito da mesa!",
-    rating: 5,
-    photos: ["/images/review-karine-1.webp", "/images/review-karine-2.webp", "/images/review-karine-3.webp"],
-  },
-  {
-    name: "Juliana P.",
-    avatar: "/images/avatar-juliana.webp",
-    text: "Adorei a minha compra! Chegou no prazo, veio bem embalada. A mesa é linda e muito resistente. Ideal para quem tem pouco espaço, ela é bem fácil para montar. Gosteiii muitoooooo! 😍",
-    rating: 5,
-    photos: ["/images/review-juliana-1.webp", "/images/review-juliana-2.webp"],
-  },
-  // --- Extra reviews (sem foto) para maximizar detecção do TikTok ---
-  { name: "Fernanda L.", avatar: "/images/avatar-carla.webp", text: "Mesa maravilhosa! Usei no aniversário do meu filho e coube tudo. Super estável, não balança nada. Recomendo demais!", rating: 5, photos: [] },
-  { name: "Lucas R.", avatar: "/images/avatar-karine.webp", text: "Comprei para usar no apartamento pequeno. Quando não preciso, fecho e guardo atrás do armário. Perfeita!", rating: 5, photos: [] },
-  { name: "Amanda Costa", avatar: "/images/avatar-patricia.webp", text: "Entrega super rápida! A mesa veio muito bem embalada. Qualidade excelente pelo preço. Já indiquei pra minha vizinha.", rating: 5, photos: [] },
-  { name: "Roberto S.", avatar: "/images/avatar-karine.webp", text: "Surpreendeu demais! Achei que ia ser frágil mas é muito resistente. Coloquei um monte de coisa em cima e ficou firme.", rating: 5, photos: [] },
-  { name: "Mariana Oliveira", avatar: "/images/avatar-raquel.webp", text: "Já é a segunda que compro! A primeira durou 3 anos de uso pesado. Qualidade top. Nota 10!", rating: 5, photos: [] },
-  { name: "Sandra B.", avatar: "/images/avatar-juliana.webp", text: "Usei pra montar minha barraquinha de feira e foi perfeita. Leve pra carregar e monta rapidinho. Amei! ❤️", rating: 5, photos: [] },
-  { name: "Thiago M.", avatar: "/images/avatar-karine.webp", text: "Mesa com ótimo custo-benefício. Superfície lisa, fácil de limpar. Pés bem firmes no chão.", rating: 5, photos: [] },
-  { name: "Camila Souza", avatar: "/images/avatar-carla.webp", text: "Comprei pro escritório em casa e ficou ótima! Espaçosa, bonita e muito prática de guardar.", rating: 4, photos: [] },
-  { name: "Diego F.", avatar: "/images/avatar-karine.webp", text: "Produto excelente! Usei em um evento e todo mundo perguntou onde comprei. Muito bonita e resistente.", rating: 5, photos: [] },
-  { name: "Beatriz Almeida", avatar: "/images/avatar-patricia.webp", text: "Chegou antes do prazo! A mesa é exatamente como nas fotos. Montagem super fácil, fiz sozinha.", rating: 5, photos: [] },
-  { name: "Carlos H.", avatar: "/images/avatar-karine.webp", text: "Comprei a branca e ficou linda na varanda. Material de qualidade, não enferruja. Muito satisfeito!", rating: 5, photos: [] },
-  { name: "Priscila N.", avatar: "/images/avatar-raquel.webp", text: "Mesa perfeita pro dia a dia! Uso pra tudo: refeições, trabalho, artesanato. Super versátil.", rating: 5, photos: [] },
-  { name: "Ana Paula G.", avatar: "/images/avatar-juliana.webp", text: "Melhor compra que fiz esse ano! A mesa é incrível, muito prática e o acabamento é lindo. Super recomendo! 🌟", rating: 5, photos: [] },
-  { name: "Marcos Vinícius", avatar: "/images/avatar-karine.webp", text: "Levei pro acampamento e foi show! Leve, fácil de transportar na maleta. Cabe no porta-malas tranquilo.", rating: 5, photos: [] },
-  { name: "Gabriela T.", avatar: "/images/avatar-carla.webp", text: "Nota 1000! A mesa é linda, resistente e super prática. Minha família toda adorou. Vou comprar outra pro sítio!", rating: 5, photos: [] },
+  { name: "Carla S.", avatar: "/images/avatar-carla.webp", text: "A mesa é bem grande, boa demais! Espaçosa e super prática — montei em segundos e usei para o churrasco com a família toda. Muito resistente, suporta bastante peso sem tremer!", rating: 5, photos: ["/images/review-carla-1.webp", "/images/review-carla-2.webp"], daysAgo: 1 },
+  { name: "Patrícia F.", avatar: "/images/avatar-patricia.webp", text: "Ela é muito prática. Material bom, custo muito bom. Amei, pretendo comprar outra!", rating: 5, photos: ["/images/review-patricia-1.webp", "/images/review-patricia-2.webp"], daysAgo: 2 },
+  { name: "Raquel M.", avatar: "/images/avatar-raquel.webp", text: "Ela é linda, bem resistente. Me surpreendi com a qualidade, vou usar muito! Chegou no dia certinho.", rating: 5, photos: ["/images/review-raquel-1.webp", "/images/review-raquel-2.webp", "/images/review-raquel-3.webp"], daysAgo: 1 },
+  { name: "Karine Porto", avatar: "/images/avatar-karine.webp", text: "Muito boa, bem reforçada. Veio bem embalada na caixa, sem avarias. Gostei muito da mesa!", rating: 5, photos: ["/images/review-karine-1.webp", "/images/review-karine-2.webp", "/images/review-karine-3.webp"], daysAgo: 2 },
+  { name: "Juliana P.", avatar: "/images/avatar-juliana.webp", text: "Adorei a minha compra! Chegou no prazo, veio bem embalada. A mesa é linda e muito resistente. Ideal para quem tem pouco espaço, ela é bem fácil para montar. Gosteiii muitoooooo! 😍", rating: 5, photos: ["/images/review-juliana-1.webp", "/images/review-juliana-2.webp"], daysAgo: 1 },
+  { name: "Fernanda L.", avatar: "/images/avatar-carla.webp", text: "Mesa maravilhosa! Usei no aniversário do meu filho e coube tudo. Super estável, não balança nada. Recomendo demais!", rating: 5, photos: [], daysAgo: 2 },
+  { name: "Lucas R.", avatar: "/images/avatar-karine.webp", text: "Comprei para usar no apartamento pequeno. Quando não preciso, fecho e guardo atrás do armário. Perfeita!", rating: 5, photos: [], daysAgo: 1 },
+  { name: "Amanda Costa", avatar: "/images/avatar-patricia.webp", text: "Entrega super rápida! A mesa veio muito bem embalada. Qualidade excelente pelo preço. Já indiquei pra minha vizinha.", rating: 5, photos: [], daysAgo: 2 },
+  { name: "Roberto S.", avatar: "/images/avatar-karine.webp", text: "Surpreendeu demais! Achei que ia ser frágil mas é muito resistente. Coloquei um monte de coisa em cima e ficou firme.", rating: 5, photos: [], daysAgo: 1 },
+  { name: "Mariana Oliveira", avatar: "/images/avatar-raquel.webp", text: "Já é a segunda que compro! A primeira durou 3 anos de uso pesado. Qualidade top. Nota 10!", rating: 5, photos: [], daysAgo: 2 },
+  { name: "Sandra B.", avatar: "/images/avatar-juliana.webp", text: "Usei pra montar minha barraquinha de feira e foi perfeita. Leve pra carregar e monta rapidinho. Amei! ❤️", rating: 5, photos: [], daysAgo: 1 },
+  { name: "Thiago M.", avatar: "/images/avatar-karine.webp", text: "Mesa com ótimo custo-benefício. Superfície lisa, fácil de limpar. Pés bem firmes no chão.", rating: 5, photos: [], daysAgo: 2 },
+  { name: "Camila Souza", avatar: "/images/avatar-carla.webp", text: "Comprei pro escritório em casa e ficou ótima! Espaçosa, bonita e muito prática de guardar.", rating: 4, photos: [], daysAgo: 1 },
+  { name: "Diego F.", avatar: "/images/avatar-karine.webp", text: "Produto excelente! Usei em um evento e todo mundo perguntou onde comprei. Muito bonita e resistente.", rating: 5, photos: [], daysAgo: 2 },
+  { name: "Beatriz Almeida", avatar: "/images/avatar-patricia.webp", text: "Chegou antes do prazo! A mesa é exatamente como nas fotos. Montagem super fácil, fiz sozinha.", rating: 5, photos: [], daysAgo: 1 },
+  { name: "Carlos H.", avatar: "/images/avatar-karine.webp", text: "Comprei a branca e ficou linda na varanda. Material de qualidade, não enferruja. Muito satisfeito!", rating: 5, photos: [], daysAgo: 2 },
+  { name: "Priscila N.", avatar: "/images/avatar-raquel.webp", text: "Mesa perfeita pro dia a dia! Uso pra tudo: refeições, trabalho, artesanato. Super versátil.", rating: 5, photos: [], daysAgo: 1 },
+  { name: "Ana Paula G.", avatar: "/images/avatar-juliana.webp", text: "Melhor compra que fiz esse ano! A mesa é incrível, muito prática e o acabamento é lindo. Super recomendo! 🌟", rating: 5, photos: [], daysAgo: 2 },
+  { name: "Marcos Vinícius", avatar: "/images/avatar-karine.webp", text: "Levei pro acampamento e foi show! Leve, fácil de transportar na maleta. Cabe no porta-malas tranquilo.", rating: 5, photos: [], daysAgo: 1 },
+  { name: "Gabriela T.", avatar: "/images/avatar-carla.webp", text: "Nota 1000! A mesa é linda, resistente e super prática. Minha família toda adorou. Vou comprar outra pro sítio!", rating: 5, photos: [], daysAgo: 2 },
 ];
+
+/** Returns a formatted date string like "15 mar. 2026" for N days ago */
+function getReviewDate(daysAgo: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  const months = ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 const faqs = [
   { q: "Qual o peso que a mesa suporta?", a: "A mesa suporta até 100kg de peso distribuído sobre o tampo, com total segurança e estabilidade." },
@@ -881,9 +859,12 @@ const Index = () => {
                 <div key={idx} className="py-4 first:pt-0" itemProp="review" itemScope itemType="https://schema.org/Review">
                   <div className="flex items-center gap-2.5 mb-1.5">
                     <img src={r.avatar} alt={r.name} className="h-8 w-8 rounded-full object-cover" loading="lazy" />
-                    <span className="font-semibold text-[13px]" itemProp="author" itemScope itemType="https://schema.org/Person">
-                      <span itemProp="name">{r.name}</span>
-                    </span>
+                    <div className="flex-1">
+                      <span className="font-semibold text-[13px]" itemProp="author" itemScope itemType="https://schema.org/Person">
+                        <span itemProp="name">{r.name}</span>
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground">{getReviewDate(r.daysAgo)}</span>
+                    </div>
                   </div>
                   <div className="flex gap-0.5 mb-1.5" itemProp="reviewRating" itemScope itemType="https://schema.org/Rating">
                     <meta itemProp="ratingValue" content={String(r.rating)} />
@@ -946,7 +927,8 @@ const Index = () => {
               "@type": "Review",
               "author": { "@type": "Person", "name": r.name },
               "reviewRating": { "@type": "Rating", "ratingValue": String(r.rating), "bestRating": "5" },
-              "reviewBody": r.text
+              "reviewBody": r.text,
+              "datePublished": (() => { const d = new Date(); d.setDate(d.getDate() - r.daysAgo); return d.toISOString().split('T')[0]; })()
             }))
           })}} />
 
