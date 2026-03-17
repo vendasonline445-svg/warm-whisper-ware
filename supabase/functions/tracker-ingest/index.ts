@@ -237,7 +237,12 @@ Deno.serve(async (req) => {
 
     // 7. Dispatch to client's server-side pixels (async, non-blocking)
     if (client_id) {
-      dispatchToPixels(supabase, client_id, event_name, eventData);
+      dispatchToPixels(supabase, client_id, event_name, eventData, {
+        ip: clientIp,
+        user_agent: user_agent || "",
+        visitor_id,
+        ttclid: properties?.ttclid || null,
+      });
     }
 
     return new Response(JSON.stringify({ ok: true }), {
