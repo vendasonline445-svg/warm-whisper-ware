@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAuth } from "@/hooks/use-auth";
 
 export type AdminTab =
+  | "leads"
   | "dashboard" | "funnel-health" | "live-activity"
   | "tracking" | "tracking-sessions" | "tracking-clicks" | "tracking-links" | "tracking-debug"
   | "campaigns" | "campaigns-creatives" | "campaigns-performance" | "campaigns-automation" | "campaigns-budgets"
