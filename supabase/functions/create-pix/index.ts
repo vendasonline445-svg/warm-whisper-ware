@@ -208,52 +208,29 @@ Deno.serve(async (req) => {
       console.error("Error writing to tables:", e);
     }
 
-    // Pushcut: venda pendente (PIX)
+    // Dynamic Pushcut notifications from DB
     try {
-      const valorReais = (amount / 100).toFixed(2).replace(".", ",");
-      await fetch("https://api.pushcut.io/SpzDS98J4ESuSNvFb2HbR/notifications/Society%20Pendente%20", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "⏳ Venda Pendente (PIX)",
-          text: `R$ ${valorReais}`,
-        }),
-      });
-      console.log("[Pushcut] Pending PIX notification sent");
-    } catch (e) {
-      console.error("[Pushcut] Error sending pending notification:", e);
-    }
+      const { data: destinations } = await supabase
+        .from("pushcut_destinations")
+        .select("api_key, notification_name, events")
+        .eq("enabled", true);
 
-    // Pushcut: venda pendente (op1)
-    try {
-      const valorReais2 = (amount / 100).toFixed(2).replace(".", ",");
-      await fetch("https://api.pushcut.io/hP4zcE1aQp4T4j61a5rwa/notifications/Gerado%20op1", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "⏳ PIX Gerado",
-          text: `R$ ${valorReais2}`,
-        }),
-      });
-      console.log("[Pushcut] Pending PIX op1 notification sent");
+      if (destinations && destinations.length > 0) {
+        const valorReais = (amount / 100).toFixed(2).replace(".", ",");
+        const pendingDests = destinations.filter((d: any) => d.events?.includes("pending"));
+        await Promise.allSettled(
+          pendingDests.map((d: any) =>
+            fetch(`https://api.pushcut.io/${d.api_key}/notifications/${encodeURIComponent(d.notification_name)}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ title: "⏳ Venda Pendente (PIX)", text: `R$ ${valorReais}` }),
+            })
+          )
+        );
+        console.log(`[Pushcut] Sent pending PIX to ${pendingDests.length} destinations`);
+      }
     } catch (e) {
-      console.error("[Pushcut] Error op1:", e);
-    }
-
-    // Pushcut: venda pendente (novo endpoint)
-    try {
-      const valorReais3 = (amount / 100).toFixed(2).replace(".", ",");
-      await fetch("https://api.pushcut.io/W0ax72ltE-yyzA7RKNGg-/notifications/MinhaNotifica%C3%A7%C3%A3o", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "⏳ Venda Pendente (PIX)",
-          text: `R$ ${valorReais3}`,
-        }),
-      });
-      console.log("[Pushcut] Pending PIX new endpoint notification sent");
-    } catch (e) {
-      console.error("[Pushcut] Error new endpoint:", e);
+      console.error("[Pushcut] Error:", e);
     }
 
     return new Response(JSON.stringify(data), {

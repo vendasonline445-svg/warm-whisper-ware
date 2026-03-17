@@ -338,6 +338,9 @@ export default function SettingsIntegrations() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Pushcut Notifications */}
+          <SettingsPushcut />
         </div>
       )}
 

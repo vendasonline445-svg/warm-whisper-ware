@@ -590,52 +590,29 @@ async function handlePaidWebhook(
     requestMeta,
   );
 
-  // Pushcut: venda aprovada
+  // Dynamic Pushcut notifications from DB
   try {
-    const valorReais = lead.total_amount ? (lead.total_amount / 100).toFixed(2).replace(".", ",") : "?";
-    await fetch("https://api.pushcut.io/SpzDS98J4ESuSNvFb2HbR/notifications/MinhaNotifica%C3%A7%C3%A3o1", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: "✅ Venda Aprovada!",
-        text: `R$ ${valorReais}`,
-      }),
-    });
-    console.log("[Pushcut] Approved notification sent via webhook");
+    const destRes = await fetch(
+      `${supabaseUrl}/rest/v1/pushcut_destinations?enabled=eq.true&select=api_key,notification_name,events`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    const destinations = await destRes.json();
+    if (Array.isArray(destinations) && destinations.length > 0) {
+      const valorReais = lead.total_amount ? (lead.total_amount / 100).toFixed(2).replace(".", ",") : "?";
+      const approvedDests = destinations.filter((d: any) => d.events?.includes("approved"));
+      await Promise.allSettled(
+        approvedDests.map((d: any) =>
+          fetch(`https://api.pushcut.io/${d.api_key}/notifications/${encodeURIComponent(d.notification_name)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: "✅ Venda Aprovada!", text: `R$ ${valorReais}` }),
+          })
+        )
+      );
+      console.log(`[Pushcut] Sent approved to ${approvedDests.length} destinations`);
+    }
   } catch (e) {
     console.error("[Pushcut] Error:", e);
-  }
-
-  // Pushcut: venda aprovada (op1)
-  try {
-    const valorReais2 = lead.total_amount ? (lead.total_amount / 100).toFixed(2).replace(".", ",") : "?";
-    await fetch("https://api.pushcut.io/hP4zcE1aQp4T4j61a5rwa/notifications/Paga%20op1", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: "✅ Venda Aprovada!",
-        text: `R$ ${valorReais2}`,
-      }),
-    });
-    console.log("[Pushcut] Approved op1 notification sent");
-  } catch (e) {
-    console.error("[Pushcut] Error op1:", e);
-  }
-
-  // Pushcut: venda aprovada (novo endpoint)
-  try {
-    const valorReais3 = lead.total_amount ? (lead.total_amount / 100).toFixed(2).replace(".", ",") : "?";
-    await fetch("https://api.pushcut.io/W0ax72ltE-yyzA7RKNGg-/notifications/MinhaNotifica%C3%A7%C3%A3o", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: "✅ Venda Aprovada!",
-        text: `R$ ${valorReais3}`,
-      }),
-    });
-    console.log("[Pushcut] Approved new endpoint notification sent");
-  } catch (e) {
-    console.error("[Pushcut] Error new endpoint:", e);
   }
 
   if (lead.tracking_sent) {
