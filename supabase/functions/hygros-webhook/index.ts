@@ -566,7 +566,7 @@ async function handlePaidWebhook(
   // Pushcut: venda aprovada
   try {
     const valorReais = lead.total_amount ? (lead.total_amount / 100).toFixed(2).replace(".", ",") : "?";
-    await fetch("https://api.pushcut.io/SpzDS98J4ESuSNvFb2HbR/notifications/MinhaNotifica%C3%A7%C3%A3o", {
+    await fetch("https://api.pushcut.io/SpzDS98J4ESuSNvFb2HbR/notifications/MinhaNotifica%C3%A7%C3%A3o1", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
