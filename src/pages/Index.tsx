@@ -89,7 +89,7 @@ const faqs = [
   { q: "De que material é feita?", a: "Tampo em HDPE (plástico de alta densidade) e estrutura em aço tubular com pintura epóxi anticorrosiva." },
   { q: "Como funciona o sistema de maleta?", a: "A mesa dobra ao meio e possui uma alça ergonômica, transformando-se em uma maleta compacta fácil de transportar." },
   { q: "Posso usar ao ar livre na chuva?", a: "Sim! O material HDPE é resistente a sol, chuva e umidade. A estrutura possui pintura anticorrosiva." },
-  { q: "Qual o prazo de entrega?", a: "Receba em 5 a 8 dias úteis após confirmação do pagamento. Pedidos até 14h são despachados no mesmo dia." },
+  { q: "Qual o prazo de entrega?", a: "Receba em 1 a 3 dias úteis após confirmação do pagamento. Pedidos até 14h são despachados no mesmo dia." },
   { q: "Tem garantia?", a: "Sim! 1 ano de garantia contra defeitos de fabricação." },
 ];
 
