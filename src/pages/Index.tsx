@@ -862,7 +862,7 @@ const Index = () => {
                 </div>
             </div>
 
-            <div className="divide-y">
+            <div className="divide-y mt-4">
               {(showAllReviews ? reviews : reviews.slice(0, 3)).map((r, idx) => (
                 <div key={idx} className="py-4 first:pt-0" itemProp="review" itemScope itemType="https://schema.org/Review">
                   <div className="flex items-center gap-2.5 mb-1.5">
