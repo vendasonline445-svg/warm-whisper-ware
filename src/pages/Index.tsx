@@ -1063,6 +1063,23 @@ const Index = () => {
 
           {/* Footer */}
           <footer className="mt-8 border-t pt-6 pb-24">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-w-[280px] mx-auto mb-4">
+              {[
+                { icon: "🛡️", text: "Compra Segura" },
+                { icon: "👤", text: "Proteção ao Cliente" },
+                { icon: "💳", text: "Pagamento Seguro" },
+                { icon: "🔒", text: "Criptografia SSL" },
+                { icon: "📋", text: "LGPD" },
+              ].map((item) => (
+                <span key={item.text} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span className="text-[10px] opacity-60">{item.icon}</span>
+                  {item.text}
+                </span>
+              ))}
+            </div>
+            <p className="text-center text-[10px] text-muted-foreground/70 leading-relaxed max-w-[300px] mx-auto mb-4">
+              Seus dados são protegidos com criptografia SSL. Estamos em conformidade com a LGPD (Lei nº 13.709/2018).
+            </p>
             <div className="text-center text-xs text-muted-foreground space-y-2">
               <p className="font-semibold text-foreground text-[13px]">Mesa Lar LTA</p>
               <p>CNPJ: 43.721.021/0001-09</p>
