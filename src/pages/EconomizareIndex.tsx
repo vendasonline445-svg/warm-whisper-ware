@@ -563,7 +563,7 @@ const EconomizareIndex = () => {
           <div className="flex gap-1.5 overflow-x-auto px-3 py-2">
             {productImages.map((img, i) => (
               <button key={i} onClick={() => setCurrentImage(i)} className={`h-[44px] w-[44px] flex-shrink-0 overflow-hidden rounded border-2 transition-all ${i === currentImage ? "border-cta" : "border-transparent"}`}>
-                <img src={img} alt="" className="h-full w-full object-cover" loading="eager" decoding="async" />
+                <img src={img} alt="" className="h-full w-full object-cover" loading={i === 0 ? "eager" : "lazy"} decoding="async" />
               </button>
             ))}
           </div>
