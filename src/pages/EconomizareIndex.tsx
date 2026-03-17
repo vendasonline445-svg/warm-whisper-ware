@@ -1440,7 +1440,7 @@ const EconomizareIndex = () => {
 
                 <div className="flex justify-between items-center py-3 border-b">
                   <span className="text-sm font-semibold">Total</span>
-                  <span className="text-lg font-extrabold text-[#0f7b3f]">R$ {cartTotal.toFixed(2).replace('.', ',')}</span>
+                  <span className="text-lg font-extrabold text-cta">R$ {cartTotal.toFixed(2).replace('.', ',')}</span>
                 </div>
 
                 <button onClick={handleCartCheckout} className="w-full bg-cta text-white font-bold text-base py-3.5 rounded-2xl mt-4 hover:bg-cta-hover transition-colors">Finalizar compra</button>
