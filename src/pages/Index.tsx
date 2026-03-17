@@ -937,21 +937,16 @@ const Index = () => {
           {/* Store Info */}
           <section className="mt-6 border-y py-5">
             <div className="flex items-center gap-3">
-              <img src="/images/logo-mesalar.webp" alt="MesaLar" className="h-10 w-10 rounded-lg object-contain" />
+              <img src="/images/logo-mesalar.webp" alt="Mesalar" className="h-11 w-11 rounded-full object-contain border" />
               <div className="flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="rounded-full bg-badge-green px-2 py-0.5 text-[10px] font-semibold text-badge-green-foreground flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" /> Loja Verificada
-                  </span>
+                <p className="font-bold text-[14px]">Mesalar</p>
+                <p className="text-[11px] text-muted-foreground">Loja Oficial de Móveis</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                  <span className="text-[12px] font-semibold">4.9</span>
+                  <span className="text-[11px] text-muted-foreground">(15.234 avaliações)</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">• 706 produtos • 100% recomenda</p>
               </div>
-            </div>
-            <div className="mt-3 flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Confiança:</span>
-              <div className="h-3 flex-1 rounded-full overflow-hidden" style={{ background: 'linear-gradient(90deg, hsl(0, 80%, 50%) 0%, hsl(25, 90%, 50%) 50%, hsl(40, 90%, 50%) 100%)' }}>
-              </div>
-              <span className="font-bold text-success">100%</span>
             </div>
           </section>
 
