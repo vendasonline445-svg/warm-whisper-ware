@@ -1298,7 +1298,7 @@ export default function AdminCRM() {
               <div className="flex gap-4 min-w-max">
                 {(["checkout_iniciado", "pagamento_iniciado", "pix_gerado", "cartao_enviado", "pago"] as PipelineStage[]).map(stage => {
                   const items = pipeline[stage];
-                  const stageRevenue = items.reduce((sum, l) => sum + (l.status === "paid" ? (l.total_amount || 0) / 100 : 0), 0);
+                  const stageRevenue = items.reduce((sum, l) => sum + ((l.status === "paid" || l.status === "approved") ? (l.total_amount || 0) / 100 : 0), 0);
                   return (
                     <div key={stage} className="w-[280px] flex-shrink-0">
                       {/* Column Header */}
@@ -2972,7 +2972,7 @@ export default function AdminCRM() {
               }
               const entry = campaignMap.get(key)!;
               entry.allLeads.push(lead);
-              if (lead.status === "paid") entry.paidLeads.push(lead);
+              if (lead.status === "paid" || lead.status === "approved") entry.paidLeads.push(lead);
             });
 
             const campaignRows = Array.from(campaignMap.values())

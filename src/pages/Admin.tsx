@@ -282,7 +282,7 @@ function AdminContent() {
 
       // Conversion drop: compare last 24h leads vs visitors
       const allLeads = (leadsRes.data as Lead[]) || [];
-      const recentPaid = allLeads.filter(l => l.status === "paid" && new Date(l.created_at) >= new Date(oneDayAgo)).length;
+      const recentPaid = allLeads.filter(l => (l.status === "paid" || l.status === "approved") && new Date(l.created_at) >= new Date(oneDayAgo)).length;
       const totalVisitors = dedupedVisitors;
       const currentConv = totalVisitors > 0 ? (recentPaid / totalVisitors) * 100 : 0;
       if (totalVisitors > 20 && currentConv < 1) {
@@ -399,10 +399,11 @@ function AdminContent() {
     URL.revokeObjectURL(url);
   };
 
-  const paidCount = Math.max(leads.filter(l => l.status === "paid").length, paidFromEvents);
-  const pendingCount = leads.filter(l => l.status !== "paid" && l.payment_method === "pix").length;
-  const totalRevenue = leads.filter(l => l.status === "paid").reduce((sum, l) => sum + (l.total_amount || 0), 0);
-  const pixPaidCount = leads.filter(l => l.payment_method === "pix" && l.status === "paid").length;
+  const isPaid = (s: string | null) => s === "paid" || s === "approved";
+  const paidCount = Math.max(leads.filter(l => isPaid(l.status)).length, paidFromEvents);
+  const pendingCount = leads.filter(l => !isPaid(l.status) && l.payment_method === "pix").length;
+  const totalRevenue = leads.filter(l => isPaid(l.status)).reduce((sum, l) => sum + (l.total_amount || 0), 0);
+  const pixPaidCount = leads.filter(l => l.payment_method === "pix" && isPaid(l.status)).length;
 
   // ─── FUNNEL MONOTONIC ENFORCEMENT ───
   // Each step must be ≤ the previous step to avoid impossible conversions
