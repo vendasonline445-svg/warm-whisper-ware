@@ -765,18 +765,13 @@ const EconomizareIndex = () => {
           {/* Product Description */}
           <section className="mt-5">
             <h2 className="text-[15px] font-bold mb-2">Descrição do produto</h2>
-            <div className="space-y-3 text-[13px] leading-relaxed text-foreground/90">
-              <p>
-                O <strong>Economizare — Eliminador de Ar para Hidrômetro</strong> é a solução definitiva para reduzir sua conta de água. Ele impede que o ar presente na rede de abastecimento passe pelo seu hidrômetro e seja contabilizado como consumo de água.
-              </p>
 
               {/* Vídeo do produto */}
-              <div className="rounded-xl overflow-hidden border relative bg-muted cursor-pointer mx-auto max-w-[65%]" onClick={() => {
+              <div className="rounded-xl overflow-hidden border relative bg-muted cursor-pointer mx-auto max-w-[65%] mb-3" onClick={() => {
                 const container = document.getElementById('eco-video-container') as HTMLElement;
                 const poster = container?.querySelector('.video-poster') as HTMLElement;
                 let vid = document.getElementById('eco-video-inline') as HTMLVideoElement;
                 if (!vid) {
-                  // Lazy load: create video element on first click
                   vid = document.createElement('video');
                   vid.id = 'eco-video-inline';
                   vid.src = '/videos/eco-produto.mp4';
@@ -808,6 +803,11 @@ const EconomizareIndex = () => {
                   </div>
                 </div>
               </div>
+
+            <div className="space-y-3 text-[13px] leading-relaxed text-foreground/90">
+              <p>
+                O <strong>Economizare — Eliminador de Ar para Hidrômetro</strong> é a solução definitiva para reduzir sua conta de água. Ele impede que o ar presente na rede de abastecimento passe pelo seu hidrômetro e seja contabilizado como consumo de água.
+              </p>
 
               {/* Você sabia? */}
               <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
