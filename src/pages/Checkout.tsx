@@ -512,10 +512,18 @@ const Checkout = () => {
       </header>
 
       <div className="mx-auto max-w-[480px] px-4">
+        {/* Receiver info - shown when address is complete */}
+        {isAddressComplete && form.name && (
+          <div className="mt-4 flex items-center justify-between py-2 border-b">
+            <span className="text-sm text-muted-foreground">Recebedor</span>
+            <span className="text-sm font-semibold">{form.name}</span>
+          </div>
+        )}
+
         {/* Address Section - Collapsible */}
         <button
           onClick={() => setAddressOpen((v) => !v)}
-          className="mt-4 w-full flex items-center justify-between"
+          className={`${isAddressComplete && form.name ? 'mt-2' : 'mt-4'} w-full flex items-center justify-between`}
         >
           <div className="flex items-center gap-2 text-sm font-semibold">
             <MapPin className="h-4 w-4 text-muted-foreground" />
