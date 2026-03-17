@@ -1011,7 +1011,7 @@ const Index = () => {
                 <Clock className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                 <div>
                   <p className="font-semibold text-[13px]">Prazo de entrega</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Receba em <strong>5 a 8 dias úteis</strong> após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia.</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Receba em <strong>1 a 3 dias úteis</strong> após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia.</p>
                 </div>
               </div>
 
