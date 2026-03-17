@@ -42,7 +42,7 @@ const EconomizarePix = () => {
       if (data?.status === "approved" || data?.status === "paid") {
         setPaid(true);
         if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-        trackFunnelEvent({ event: "purchase", value: orderData?.product?.total || 0, properties: { transaction_id: transactionId, payment_method: "pix" } });
+        trackFunnelEvent({ event: "purchase", value: orderData?.product?.total || 0, properties: { transaction_id: transactionId, payment_method: "pix" }, userData: orderData?.customer ? { email: orderData.customer.email, phone: orderData.customer.phone, externalId: orderData.customer.cpf } : undefined });
         setTimeout(() => navigate(getUrlWithUtm("/economizare/obrigado")), 2000);
       }
     } catch {} finally { setChecking(false); }
