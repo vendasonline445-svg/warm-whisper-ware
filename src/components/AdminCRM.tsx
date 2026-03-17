@@ -2972,7 +2972,7 @@ export default function AdminCRM() {
               }
               const entry = campaignMap.get(key)!;
               entry.allLeads.push(lead);
-              if (lead.status === "paid") entry.paidLeads.push(lead);
+              if (lead.status === "paid" || lead.status === "approved") entry.paidLeads.push(lead);
             });
 
             const campaignRows = Array.from(campaignMap.values())
