@@ -829,7 +829,7 @@ const EconomizareIndex = () => {
               <p><strong>✅ INSTALAÇÃO SIMPLES:</strong> Não precisa de encanador! Instale você mesmo direto na caixa d'água ou após o hidrômetro. Qualquer pessoa consegue seguindo o manual ilustrado.</p>
 
               {/* Guia de instalação - Hidrômetro */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-instalacao-hidrometro.webp" alt="Instalação após hidrômetro em 3 passos" className="w-full" loading="lazy" />
               </div>
 
