@@ -963,9 +963,10 @@ const Checkout = () => {
             <Button
               onClick={handleSubmit}
               disabled={!canSubmit || isSubmitting}
-              className={`w-full font-bold text-base py-4 h-auto rounded-xl mb-3 transition-all duration-300 shadow-lg ${!canSubmit || isSubmitting ? 'bg-[#F23D6B]/40 text-white/60 cursor-not-allowed' : 'bg-[#F23D6B] hover:bg-[#e0335f] text-white'}`}
+              className={`w-full font-bold text-base py-3 h-auto rounded-xl mb-3 transition-all duration-300 shadow-lg flex flex-col items-center gap-0.5 ${!canSubmit || isSubmitting ? 'bg-[#F23D6B]/40 text-white/60 cursor-not-allowed' : 'bg-[#F23D6B] hover:bg-[#e0335f] text-white'}`}
             >
-              {isSubmitting ? "Processando..." : "Fazer pedido"}
+              <span>{isSubmitting ? "Processando..." : "Fazer pedido"}</span>
+              {!isSubmitting && <span className="text-[11px] font-normal opacity-80">Oferta relâmpago encerra em {timer.display}</span>}
             </Button>
 
             {/* Elegant processing overlay */}
