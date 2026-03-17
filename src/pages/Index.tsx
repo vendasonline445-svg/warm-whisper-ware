@@ -919,7 +919,7 @@ const Index = () => {
             "brand": { "@type": "Brand", "name": "Mesa Lar" },
             "aggregateRating": {
               "@type": "AggregateRating",
-              "ratingValue": "4.8",
+              "ratingValue": "4.9",
               "reviewCount": "1163",
               "bestRating": "5"
             },
