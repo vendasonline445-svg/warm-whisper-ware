@@ -272,6 +272,9 @@ const EconomizareIndex = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => setBelowFoldReady(true), 50);
+    // Preload first product image for cart/modal/back screens
+    const preload = new Image();
+    preload.src = productImages[0];
     return () => clearTimeout(timer);
   }, []);
 
