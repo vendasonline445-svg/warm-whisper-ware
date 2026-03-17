@@ -841,7 +841,7 @@ const EconomizareIndex = () => {
               <p><strong>✅ CERTIFICAÇÃO INMETRO:</strong> Produto atestado pelo SICAL do Brasil, laboratório acreditado pelo INMETRO. Marca e patente registrados junto ao INPI.</p>
 
               {/* Legalidade */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-legalidade.webp" alt="Produto 100% legalizado - decisão do STJ" className="w-full" loading="lazy" />
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">Segundo o STJ, a responsabilidade da concessionária termina no hidrômetro. Após o relógio medidor, a instalação fica a critério do cliente. <strong>Produto 100% legalizado.</strong></p>
