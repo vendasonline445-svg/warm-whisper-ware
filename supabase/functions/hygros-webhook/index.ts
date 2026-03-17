@@ -475,18 +475,32 @@ async function handlePaidWebhook(
     return;
   }
 
-  // --- DEDUP: Skip if this lead was already approved ---
-  if (lead.status === "approved") {
-    console.log(`[hygros-webhook] DEDUP: Lead ${lead.id} already approved, skipping duplicate webhook`);
+  // --- DEDUP ATÔMICO: apenas a primeira requisição consegue aprovar ---
+  const approveRes = await fetch(
+    `${supabaseUrl}/rest/v1/checkout_leads?id=eq.${encodeURIComponent(lead.id)}&status=neq.approved&select=*`,
+    {
+      method: "PATCH",
+      headers: {
+        ...restHeaders(serviceKey),
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({ status: "approved" }),
+    },
+  );
+
+  if (!approveRes.ok) {
+    const approveError = await approveRes.text();
+    console.error(`[hygros-webhook] Failed to atomically approve lead ${lead.id}:`, approveError);
     return;
   }
 
-  // Mark as approved immediately to block concurrent duplicates
-  await fetch(`${supabaseUrl}/rest/v1/checkout_leads?id=eq.${encodeURIComponent(lead.id)}`, {
-    method: "PATCH",
-    headers: restHeaders(serviceKey),
-    body: JSON.stringify({ status: "approved" }),
-  });
+  const approvedRows = await approveRes.json();
+  if (!Array.isArray(approvedRows) || approvedRows.length === 0) {
+    console.log(`[hygros-webhook] DEDUP: Lead ${lead.id} already processed by another request, skipping duplicate webhook`);
+    return;
+  }
+
+  lead = approvedRows[0];
 
   let metadata: Record<string, any> = {};
   try {
