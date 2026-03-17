@@ -146,6 +146,7 @@ const EconomizareIndex = () => {
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [reviewZoomOpen, setReviewZoomOpen] = useState(false);
+  const [videoZoomOpen, setVideoZoomOpen] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [reviewZoomPhotos, setReviewZoomPhotos] = useState<string[]>([]);
   const [reviewZoomIndex, setReviewZoomIndex] = useState(0);
