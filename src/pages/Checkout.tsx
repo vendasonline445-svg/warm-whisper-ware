@@ -320,10 +320,10 @@ const Checkout = () => {
   useEffect(() => {
     if (isAddressComplete && form.name && form.phone && form.email && isCpfValid) {
       setAddressOpen(false);
-      // Scroll to product/shipping section after closing address
+      // Always scroll to top after auto-collapsing address
       setTimeout(() => {
-        productSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }, 50);
     }
   }, [form.cpf, isAddressComplete, isCpfValid]);
 
