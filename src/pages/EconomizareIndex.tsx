@@ -275,7 +275,15 @@ const EconomizareIndex = () => {
     // Preload first product image for cart/modal/back screens
     const preload = new Image();
     preload.src = productImages[0];
-    return () => clearTimeout(timer);
+    // Preload video in background (second priority, after carousel)
+    const preloadVideo = setTimeout(() => {
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.as = 'video';
+      link.href = '/videos/eco-produto.mp4';
+      document.head.appendChild(link);
+    }, 2000);
+    return () => { clearTimeout(timer); clearTimeout(preloadVideo); };
   }, []);
 
   useEffect(() => {
