@@ -709,7 +709,7 @@ const Index = () => {
           {/* Rating */}
           <div className="mt-1.5 flex items-center gap-1.5 text-[13px]">
             <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-            <span className="font-bold">4.8</span>
+            <span className="font-bold">4.9</span>
             <span className="text-muted-foreground">(1.163)</span>
             <span className="text-muted-foreground mx-0.5">•</span>
             <span className="text-muted-foreground">4.473 vendidos</span>
@@ -839,12 +839,12 @@ const Index = () => {
           <section className="mt-3" itemScope itemType="https://schema.org/Product">
             <meta itemProp="name" content="Mesa Dobrável Tipo Maleta 180x60cm" />
             <div itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
-              <meta itemProp="ratingValue" content="4.8" />
+              <meta itemProp="ratingValue" content="4.9" />
               <meta itemProp="reviewCount" content="1163" />
               <meta itemProp="bestRating" content="5" />
               <h2 className="text-[15px] font-bold mb-1">Avaliações dos clientes (<span itemProp="ratingCount">1.163</span>)</h2>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-xl font-black">4.8</span>
+                <span className="text-xl font-black">4.9</span>
                 <span className="text-muted-foreground text-[13px]">/5</span>
                 <div className="flex gap-0.5 ml-1">
                   {[1, 2, 3, 4, 5].map((i) => (
@@ -919,7 +919,7 @@ const Index = () => {
             "brand": { "@type": "Brand", "name": "Mesa Lar" },
             "aggregateRating": {
               "@type": "AggregateRating",
-              "ratingValue": "4.8",
+              "ratingValue": "4.9",
               "reviewCount": "1163",
               "bestRating": "5"
             },
@@ -990,7 +990,7 @@ const Index = () => {
               <li><strong>Pés:</strong> Antiderrapantes em borracha</li>
             </ul>
             <p className="mt-3 text-[13px] leading-relaxed text-foreground/90">
-              <strong>GARANTIA DE 1 ANO:</strong> A MesaLar é a escolha de milhares de consumidores. Com mais de 4.000 unidades vendidas e nota 4.8 de satisfação, a MesaLar é sinônimo de qualidade e confiança. MesaLar, a escolha inteligente!
+              <strong>GARANTIA DE 1 ANO:</strong> A MesaLar é a escolha de milhares de consumidores. Com mais de 4.000 unidades vendidas e nota 4.9 de satisfação, a MesaLar é sinônimo de qualidade e confiança. MesaLar, a escolha inteligente!
             </p>
           </section>
 
