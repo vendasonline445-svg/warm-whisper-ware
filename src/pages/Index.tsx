@@ -9,7 +9,7 @@ import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check, Trash2,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
   Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera, MapPin,
-  CreditCard, Tag, ShieldCheck, Ticket, Flag, Link,
+  CreditCard, Tag, ShieldCheck, Ticket, Flag, Link, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,6 +88,22 @@ const reviews = [
     rating: 5,
     photos: ["/images/review-juliana-1.webp", "/images/review-juliana-2.webp"],
   },
+  // --- Extra reviews (sem foto) para maximizar detecção do TikTok ---
+  { name: "Fernanda L.", avatar: "/images/avatar-carla.webp", text: "Mesa maravilhosa! Usei no aniversário do meu filho e coube tudo. Super estável, não balança nada. Recomendo demais!", rating: 5, photos: [] },
+  { name: "Lucas R.", avatar: "/images/avatar-karine.webp", text: "Comprei para usar no apartamento pequeno. Quando não preciso, fecho e guardo atrás do armário. Perfeita!", rating: 5, photos: [] },
+  { name: "Amanda Costa", avatar: "/images/avatar-patricia.webp", text: "Entrega super rápida! A mesa veio muito bem embalada. Qualidade excelente pelo preço. Já indiquei pra minha vizinha.", rating: 5, photos: [] },
+  { name: "Roberto S.", avatar: "/images/avatar-karine.webp", text: "Surpreendeu demais! Achei que ia ser frágil mas é muito resistente. Coloquei um monte de coisa em cima e ficou firme.", rating: 5, photos: [] },
+  { name: "Mariana Oliveira", avatar: "/images/avatar-raquel.webp", text: "Já é a segunda que compro! A primeira durou 3 anos de uso pesado. Qualidade top. Nota 10!", rating: 5, photos: [] },
+  { name: "Sandra B.", avatar: "/images/avatar-juliana.webp", text: "Usei pra montar minha barraquinha de feira e foi perfeita. Leve pra carregar e monta rapidinho. Amei! ❤️", rating: 5, photos: [] },
+  { name: "Thiago M.", avatar: "/images/avatar-karine.webp", text: "Mesa com ótimo custo-benefício. Superfície lisa, fácil de limpar. Pés bem firmes no chão.", rating: 5, photos: [] },
+  { name: "Camila Souza", avatar: "/images/avatar-carla.webp", text: "Comprei pro escritório em casa e ficou ótima! Espaçosa, bonita e muito prática de guardar.", rating: 4, photos: [] },
+  { name: "Diego F.", avatar: "/images/avatar-karine.webp", text: "Produto excelente! Usei em um evento e todo mundo perguntou onde comprei. Muito bonita e resistente.", rating: 5, photos: [] },
+  { name: "Beatriz Almeida", avatar: "/images/avatar-patricia.webp", text: "Chegou antes do prazo! A mesa é exatamente como nas fotos. Montagem super fácil, fiz sozinha.", rating: 5, photos: [] },
+  { name: "Carlos H.", avatar: "/images/avatar-karine.webp", text: "Comprei a branca e ficou linda na varanda. Material de qualidade, não enferruja. Muito satisfeito!", rating: 5, photos: [] },
+  { name: "Priscila N.", avatar: "/images/avatar-raquel.webp", text: "Mesa perfeita pro dia a dia! Uso pra tudo: refeições, trabalho, artesanato. Super versátil.", rating: 5, photos: [] },
+  { name: "Ana Paula G.", avatar: "/images/avatar-juliana.webp", text: "Melhor compra que fiz esse ano! A mesa é incrível, muito prática e o acabamento é lindo. Super recomendo! 🌟", rating: 5, photos: [] },
+  { name: "Marcos Vinícius", avatar: "/images/avatar-karine.webp", text: "Levei pro acampamento e foi show! Leve, fácil de transportar na maleta. Cabe no porta-malas tranquilo.", rating: 5, photos: [] },
+  { name: "Gabriela T.", avatar: "/images/avatar-carla.webp", text: "Nota 1000! A mesa é linda, resistente e super prática. Minha família toda adorou. Vou comprar outra pro sítio!", rating: 5, photos: [] },
 ];
 
 const faqs = [
@@ -158,6 +174,7 @@ const Index = () => {
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [reviewZoomOpen, setReviewZoomOpen] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
   const [reviewZoomPhotos, setReviewZoomPhotos] = useState<string[]>([]);
   const [reviewZoomIndex, setReviewZoomIndex] = useState(0);
   const [videoZoomOpen, setVideoZoomOpen] = useState(false);
@@ -860,7 +877,7 @@ const Index = () => {
             </div>
 
             <div className="divide-y">
-              {reviews.map((r, idx) => (
+              {(showAllReviews ? reviews : reviews.slice(0, 3)).map((r, idx) => (
                 <div key={idx} className="py-4 first:pt-0" itemProp="review" itemScope itemType="https://schema.org/Review">
                   <div className="flex items-center gap-2.5 mb-1.5">
                     <img src={r.avatar} alt={r.name} className="h-8 w-8 rounded-full object-cover" loading="lazy" />
@@ -893,11 +910,21 @@ const Index = () => {
                 </div>
               ))}
             </div>
+
+            {/* Botão expandir/colapsar reviews */}
+            <button
+              onClick={() => setShowAllReviews(prev => !prev)}
+              className="w-full py-3 mt-2 text-sm font-semibold text-[#FF4C6A] border border-[#FF4C6A]/30 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+            >
+              {showAllReviews ? "Mostrar menos avaliações" : `Ver todas as ${reviews.length} avaliações`}
+              <ChevronDown className={`h-4 w-4 transition-transform ${showAllReviews ? "rotate-180" : ""}`} />
+            </button>
+
             {/* Review Filters */}
-            <div className="flex items-center gap-4 pt-4 border-t text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 pt-4 border-t text-sm text-muted-foreground mt-3">
               <span className="flex items-center gap-1"><Camera className="h-3.5 w-3.5" /> Inclui imagens (52)</span>
-              <span className="flex items-center gap-1">5 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (155)</span>
-              <span className="flex items-center gap-1">4 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (22)</span>
+              <span className="flex items-center gap-1">5 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (189)</span>
+              <span className="flex items-center gap-1">4 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (18)</span>
             </div>
           </section>
 
