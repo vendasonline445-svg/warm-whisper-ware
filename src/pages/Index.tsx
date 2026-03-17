@@ -1959,8 +1959,11 @@ const Index = () => {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-[300px] max-h-[60vh]">
               {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2`}>
+                  {msg.role === 'assistant' && (
+                    <img src="/images/logo-mesalar.webp" alt="Mesalar" className="w-7 h-7 rounded-full object-contain flex-shrink-0 border border-border" />
+                  )}
+                  <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
                     msg.role === 'user'
                       ? 'bg-cta text-white rounded-br-sm'
                       : 'bg-muted text-foreground rounded-bl-sm'
@@ -1970,7 +1973,8 @@ const Index = () => {
                 </div>
               ))}
               {chatTyping && (
-                <div className="flex justify-start">
+                <div className="flex justify-start items-end gap-2">
+                  <img src="/images/logo-mesalar.webp" alt="Mesalar" className="w-7 h-7 rounded-full object-contain flex-shrink-0 border border-border" />
                   <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
                     <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:0ms]" />
                     <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:150ms]" />
