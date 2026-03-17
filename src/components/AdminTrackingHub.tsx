@@ -255,6 +255,9 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
   const [newLink, setNewLink] = useState({ url: "", tracking_id: "", campaign_id: "", creative_id: "" });
   const [newCost, setNewCost] = useState({ campaign_id: "", date: "", spend: "", impressions: "", clicks: "" });
   const [debugVisitorId, setDebugVisitorId] = useState("");
+  const [debugBaseline, setDebugBaseline] = useState<string | null>(() => {
+    try { return localStorage.getItem("fiq_debug_baseline"); } catch { return null; }
+  });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
