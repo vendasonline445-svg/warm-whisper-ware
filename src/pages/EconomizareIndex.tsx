@@ -146,6 +146,7 @@ const EconomizareIndex = () => {
   const [couponCopied, setCouponCopied] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [reviewZoomOpen, setReviewZoomOpen] = useState(false);
+  const [videoZoomOpen, setVideoZoomOpen] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [reviewZoomPhotos, setReviewZoomPhotos] = useState<string[]>([]);
   const [reviewZoomIndex, setReviewZoomIndex] = useState(0);
@@ -766,6 +767,17 @@ const EconomizareIndex = () => {
                 O <strong>Economizare — Eliminador de Ar para Hidrômetro</strong> é a solução definitiva para reduzir sua conta de água. Ele impede que o ar presente na rede de abastecimento passe pelo seu hidrômetro e seja contabilizado como consumo de água.
               </p>
 
+              {/* Vídeo do produto */}
+              <div className="rounded-xl overflow-hidden border cursor-pointer relative bg-muted" onClick={() => setVideoZoomOpen(true)}>
+                <video src="/videos/eco-produto.mp4#t=0.1" className="w-full" muted playsInline preload="metadata" />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <div className="h-14 w-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                    <svg viewBox="0 0 24 24" className="h-7 w-7 text-foreground ml-1" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[11px] text-center text-muted-foreground">▶ Toque para assistir o vídeo completo</p>
+
               {/* Você sabia? */}
               <div className="rounded-xl overflow-hidden border">
                 <img src="/images/eco/eco-hidrometro.webp" alt="Ar contabiliza na conta de água" className="w-full" loading="lazy" />
@@ -1158,7 +1170,25 @@ const EconomizareIndex = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Exit Modal 1 - 25% OFF */}
+      {/* Video Zoom Modal */}
+      <Dialog open={videoZoomOpen} onOpenChange={(open) => { setVideoZoomOpen(open); }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 border-0 bg-black shadow-none outline-none ring-0 [&>button]:hidden">
+          <DialogDescription className="sr-only">Vídeo do produto ampliado</DialogDescription>
+          <DialogTitle className="sr-only">Vídeo do produto</DialogTitle>
+          <button onClick={() => setVideoZoomOpen(false)} className="absolute top-3 right-3 z-50 h-10 w-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+            <X className="h-6 w-6 text-white" />
+          </button>
+          <div
+            onTouchStart={(e) => { touchStartY.current = e.touches[0].clientY; }}
+            onTouchEnd={(e) => { const diffY = e.changedTouches[0].clientY - touchStartY.current; if (diffY > 100) setVideoZoomOpen(false); }}
+          >
+            {videoZoomOpen && (
+              <video src="/videos/eco-produto.mp4" className="w-full h-auto max-h-[85vh] rounded-lg" controls autoPlay playsInline />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {exitModalOpen && (
         <div className="fixed inset-0 z-[60]" onClick={() => { setExitModalOpen(false); if (!exit2Shown) { setExit2Open(true); setExit2Shown(true); fireAlertSiren(); } }}>
           <div className="absolute inset-0 bg-black/60 animate-in fade-in-0" />
