@@ -331,7 +331,7 @@ const EconomizareIndex = () => {
   }, [storeOpen, chatOpen, exitModalOpen, exit2Open, modalOpen, cartOpen]);
 
   const fireCelebration = useCallback(() => {
-    const colors = ["#0f7b3f", "#1a9d5c", "#22c55e", "#ffd700", "#00d2d3", "#34d399"];
+    const colors = ["#fe2b54", "#f23d6b", "#ff6b8a", "#ffd700", "#ff4757", "#ff6348"];
     confetti({ particleCount: 40, spread: 70, origin: { y: 0.55 }, colors, gravity: 1.2 });
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
