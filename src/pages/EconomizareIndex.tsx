@@ -849,7 +849,7 @@ const EconomizareIndex = () => {
               <p><strong>✅ PARA TODOS OS AMBIENTES:</strong> Funciona em residências, apartamentos, comércios, condomínios e indústrias. Compatível com qualquer rede hidráulica.</p>
 
               {/* Embalagem frontal */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-embalagem-front.webp" alt="Embalagem frontal Economizare" className="w-full" loading="lazy" />
               </div>
               <p className="text-[11px] text-center text-muted-foreground">Pague apenas pela água que consome · Redutor de conta de água</p>
