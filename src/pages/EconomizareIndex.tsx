@@ -782,7 +782,7 @@ const EconomizareIndex = () => {
               <div className="rounded-xl overflow-hidden border">
                 <img src="/images/eco/eco-hidrometro.webp" alt="Ar contabiliza na conta de água" className="w-full" loading="lazy" />
               </div>
-              <p className="text-sm font-bold text-center text-[#0f7b3f]">Você sabia que o ar que passa pelo hidrômetro contabiliza na sua conta de água?</p>
+              <p className="text-sm font-bold text-center text-cta">Você sabia que o ar que passa pelo hidrômetro contabiliza na sua conta de água?</p>
 
               <p><strong>✅ ECONOMIA REAL:</strong> Reduza sua conta de água em até 50%! O ar presente na tubulação é contabilizado como água pelo hidrômetro. O Economizare elimina esse problema de forma definitiva.</p>
 
