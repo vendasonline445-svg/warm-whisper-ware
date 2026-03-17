@@ -995,7 +995,7 @@ const EconomizareIndex = () => {
                 <button onClick={() => setModalQty(q => Math.max(1, q - 1))} className="h-9 w-9 rounded-xl border-2 border-border flex items-center justify-center text-lg font-bold hover:border-cta/50 transition-colors">−</button>
                 <span className="text-base font-bold w-6 text-center">{modalQty}</span>
                 <button onClick={() => setModalQty(q => q + 1)} className="h-9 w-9 rounded-xl border-2 border-border flex items-center justify-center text-lg font-bold hover:border-cta/50 transition-colors">+</button>
-                <span className="ml-auto text-[#0f7b3f] font-extrabold text-lg">R$ {(PRICE * modalQty).toFixed(2).replace('.', ',')}</span>
+                <span className="ml-auto text-cta font-extrabold text-lg">R$ {(PRICE * modalQty).toFixed(2).replace('.', ',')}</span>
               </div>
             </div>
 
