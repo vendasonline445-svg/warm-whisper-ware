@@ -691,7 +691,7 @@ const Checkout = () => {
             Desconto especial
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: '#E0F7F5', color: '#00C9A7' }}>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: '#FEE2E2', color: '#fe2b54' }}>
               - R$ {BASE_DISCOUNT_VALUE.toFixed(2).replace(".", ",")}
             </span>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
