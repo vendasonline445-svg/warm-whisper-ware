@@ -573,8 +573,13 @@ const Checkout = () => {
         </div>
         )}
 
-        {/* Divider */}
-        <div ref={productSectionRef} className="mt-6 border-t-2 border-dashed border-[#5BC4D6]" />
+        {/* Colorful dashed divider */}
+        <div ref={productSectionRef} className="mt-6 overflow-hidden">
+          <svg width="100%" height="4" xmlns="http://www.w3.org/2000/svg">
+            <line x1="0" y1="2" x2="100%" y2="2" stroke="#FF4D6A" strokeWidth="4" strokeDasharray="16 6" />
+            <line x1="11" y1="2" x2="100%" y2="2" stroke="#5BC4D6" strokeWidth="4" strokeDasharray="16 6" strokeDashoffset="-11" />
+          </svg>
+        </div>
 
         {/* Product Info */}
         <div className="mt-4">
