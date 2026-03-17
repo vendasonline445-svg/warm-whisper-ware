@@ -824,9 +824,8 @@ const Checkout = () => {
             paymentMethod === "credit_card" ? "border-cta" : "border-border"
           }`}>
             <button
-              onClick={() => !cardDisabled && setPaymentMethod("credit_card")}
-              disabled={cardDisabled}
-              className={`w-full flex items-center justify-between p-3 ${cardDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={() => setPaymentMethod("credit_card")}
+              className="w-full flex items-center justify-between p-3"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
