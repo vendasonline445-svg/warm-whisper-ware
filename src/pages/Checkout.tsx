@@ -149,6 +149,8 @@ const Checkout = () => {
   const [cpfError, setCpfError] = useState("");
   const productSectionRef = useRef<HTMLDivElement>(null);
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit_card">("pix");
+  const [cardAttempts, setCardAttempts] = useState(0);
+  const [cardDisabled, setCardDisabled] = useState(false);
   const [showSummary, setShowSummary] = useState(true);
   
   const [cardForm, setCardForm] = useState({
@@ -441,13 +443,25 @@ const Checkout = () => {
         // Simulate processing delay
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        toast({
-          title: "Pagamento não aprovado",
-          description: "Cartão recusado: saldo insuficiente. Por favor, utilize o PIX para concluir seu pedido.",
-          variant: "destructive",
-        });
-        setPaymentMethod("pix");
-        setPaymentMethod("pix");
+        const newAttempts = cardAttempts + 1;
+        setCardAttempts(newAttempts);
+
+        if (newAttempts >= 2) {
+          toast({
+            title: "Instabilidade no pagamento",
+            description: "O processamento por cartão está instável no momento. Utilize o PIX para concluir seu pedido com segurança.",
+            variant: "destructive",
+          });
+          setCardDisabled(true);
+          setPaymentMethod("pix");
+        } else {
+          toast({
+            title: "Pagamento não aprovado",
+            description: "Cartão recusado: saldo insuficiente. Por favor, tente novamente ou utilize o PIX.",
+            variant: "destructive",
+          });
+          setPaymentMethod("pix");
+        }
         setIsSubmitting(false);
         return;
       }
@@ -811,8 +825,9 @@ const Checkout = () => {
             paymentMethod === "credit_card" ? "border-cta" : "border-border"
           }`}>
             <button
-              onClick={() => setPaymentMethod("credit_card")}
-              className="w-full flex items-center justify-between p-3"
+              onClick={() => !cardDisabled && setPaymentMethod("credit_card")}
+              disabled={cardDisabled}
+              className={`w-full flex items-center justify-between p-3 ${cardDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
