@@ -877,7 +877,7 @@ const Index = () => {
             </div>
 
             <div className="divide-y">
-              {reviews.map((r, idx) => (
+              {(showAllReviews ? reviews : reviews.slice(0, 3)).map((r, idx) => (
                 <div key={idx} className="py-4 first:pt-0" itemProp="review" itemScope itemType="https://schema.org/Review">
                   <div className="flex items-center gap-2.5 mb-1.5">
                     <img src={r.avatar} alt={r.name} className="h-8 w-8 rounded-full object-cover" loading="lazy" />
@@ -910,11 +910,21 @@ const Index = () => {
                 </div>
               ))}
             </div>
+
+            {/* Botão expandir/colapsar reviews */}
+            <button
+              onClick={() => setShowAllReviews(prev => !prev)}
+              className="w-full py-3 mt-2 text-sm font-semibold text-[#FF4C6A] border border-[#FF4C6A]/30 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+            >
+              {showAllReviews ? "Mostrar menos avaliações" : `Ver todas as ${reviews.length} avaliações`}
+              <ChevronDown className={`h-4 w-4 transition-transform ${showAllReviews ? "rotate-180" : ""}`} />
+            </button>
+
             {/* Review Filters */}
-            <div className="flex items-center gap-4 pt-4 border-t text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 pt-4 border-t text-sm text-muted-foreground mt-3">
               <span className="flex items-center gap-1"><Camera className="h-3.5 w-3.5" /> Inclui imagens (52)</span>
-              <span className="flex items-center gap-1">5 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (155)</span>
-              <span className="flex items-center gap-1">4 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (22)</span>
+              <span className="flex items-center gap-1">5 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (189)</span>
+              <span className="flex items-center gap-1">4 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> (18)</span>
             </div>
           </section>
 
