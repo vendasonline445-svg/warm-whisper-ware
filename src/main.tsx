@@ -183,4 +183,9 @@ if (typeof window !== "undefined") {
   });
 }
 
+// Detect TikTok in-app browser and add class for extra bottom spacing
+if (/musical_ly|tiktok|bytedance|bytedancewebview|trill/i.test(navigator.userAgent)) {
+  document.documentElement.classList.add("tiktok-browser");
+}
+
 createRoot(document.getElementById("root")!).render(<App />);

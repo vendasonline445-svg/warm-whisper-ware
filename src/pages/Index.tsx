@@ -1132,7 +1132,7 @@ const Index = () => {
       </div>
 
       {/* Sticky Bottom Bar */}
-      <div id="buy-bar" className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)] px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex items-center gap-1.5">
+      <div id="buy-bar" className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.06)] px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom)+var(--tiktok-bar))] flex items-center gap-1.5">
         <div className="flex items-center gap-3 flex-shrink-0">
           <button onClick={() => setStoreOpen(true)} className="flex flex-col items-center text-[10px] text-muted-foreground gap-0.5 min-w-[32px]">
             <Store className="h-5 w-5" />
