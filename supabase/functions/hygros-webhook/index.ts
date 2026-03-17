@@ -398,7 +398,7 @@ async function handlePaidWebhook(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: "✅ Venda Aprovada!",
-        text: `${lead.name || "Cliente"} - R$ ${valorReais}\n${lead.email || ""}`,
+        text: `R$ ${valorReais}`,
       }),
     });
     console.log("[Pushcut] Approved notification sent via webhook");

@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "💳 Venda Pendente (Cartão)",
-          text: `${customer?.name || "Cliente"} - R$ ${valorReais}\n${customer?.email || ""}`,
+          text: `R$ ${valorReais}`,
         }),
       });
       console.log("[Pushcut] Pending card notification sent");
