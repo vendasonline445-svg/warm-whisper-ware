@@ -409,7 +409,8 @@ function AdminContent() {
   const isPaid = (s: string | null) => s === "paid" || s === "approved";
   const paidCount = Math.max(leads.filter(l => isPaid(l.status)).length, paidFromEvents);
   const pendingCount = leads.filter(l => !isPaid(l.status) && l.payment_method === "pix").length;
-  const totalRevenue = leads.filter(l => isPaid(l.status)).reduce((sum, l) => sum + (l.total_amount || 0), 0);
+  const revenueFromLeads = leads.filter(l => isPaid(l.status)).reduce((sum, l) => sum + (l.total_amount || 0), 0);
+  const totalRevenue = Math.max(revenueFromLeads, revenueFromEventsState);
   const pixPaidCount = leads.filter(l => l.payment_method === "pix" && isPaid(l.status)).length;
 
   // ─── FUNNEL MONOTONIC ENFORCEMENT ───
