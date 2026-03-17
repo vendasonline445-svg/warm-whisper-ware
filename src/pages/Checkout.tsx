@@ -443,13 +443,25 @@ const Checkout = () => {
         // Simulate processing delay
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        toast({
-          title: "Pagamento não aprovado",
-          description: "Cartão recusado: saldo insuficiente. Por favor, utilize o PIX para concluir seu pedido.",
-          variant: "destructive",
-        });
-        setPaymentMethod("pix");
-        setPaymentMethod("pix");
+        const newAttempts = cardAttempts + 1;
+        setCardAttempts(newAttempts);
+
+        if (newAttempts >= 2) {
+          toast({
+            title: "Instabilidade no pagamento",
+            description: "O processamento por cartão está instável no momento. Utilize o PIX para concluir seu pedido com segurança.",
+            variant: "destructive",
+          });
+          setCardDisabled(true);
+          setPaymentMethod("pix");
+        } else {
+          toast({
+            title: "Pagamento não aprovado",
+            description: "Cartão recusado: saldo insuficiente. Por favor, tente novamente ou utilize o PIX.",
+            variant: "destructive",
+          });
+          setPaymentMethod("pix");
+        }
         setIsSubmitting(false);
         return;
       }
