@@ -9,7 +9,7 @@ import {
   Star, ChevronLeft, ChevronRight, ShoppingCart, Check, Trash2,
   Truck, Shield, Package, Clock, Zap, CheckCircle2, X,
   Store, MessageCircle, Share2, MoreHorizontal, Gift, Copy, Camera, MapPin,
-  CreditCard, Tag, ShieldCheck, Ticket, Flag, Link, ChevronDown, ArrowLeft,
+  CreditCard, Tag, ShieldCheck, Ticket, Flag, Link, ChevronDown, ArrowLeft, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -564,9 +564,15 @@ const Index = () => {
       `}</style>
       {/* Top bar */}
        <header className="sticky top-0 z-40 border-b bg-card">
-        <div className="mx-auto max-w-[480px] flex items-center justify-between px-3 py-2.5">
-          <X className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => { setExitModalOpen(true); setExitShown(true); fireCelebration(); }} />
-          <div className="flex items-center gap-5">
+        <div className="mx-auto max-w-[480px] flex items-center gap-2 px-3 py-2.5">
+          <X className="h-5 w-5 text-muted-foreground cursor-pointer flex-shrink-0" onClick={() => { setExitModalOpen(true); setExitShown(true); fireCelebration(); }} />
+          <div className="flex-1 mx-1">
+            <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-1.5 pointer-events-none select-none">
+              <Search className="h-3.5 w-3.5 text-muted-foreground/60" />
+              <span className="text-xs text-muted-foreground/60">Pesquisar</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-5 flex-shrink-0">
             <Share2 className="h-5 w-5 text-muted-foreground cursor-pointer" onClick={() => setShareOpen(true)} />
             <div className="relative cursor-pointer" onClick={() => setCartOpen(true)}>
               <ShoppingCart className="h-5 w-5 text-muted-foreground" />
