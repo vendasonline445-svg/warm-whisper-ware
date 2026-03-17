@@ -57,6 +57,10 @@ const App = () => {
                 <Route path="/taxa-alfandega" element={<Upsell1 />} />
                 <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
                 <Route path="/termos-de-uso" element={<TermosDeUso />} />
+                <Route path="/economizare" element={<EconomizareIndex />} />
+                <Route path="/economizare/checkout" element={<EconomizareCheckout />} />
+                <Route path="/economizare/pix" element={<EconomizarePix />} />
+                <Route path="/economizare/obrigado" element={<EconomizareObrigado />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/funil-admin" element={<FunilAdmin />} />
                 <Route path="/r/:trackingId" element={<TrackingRedirect />} />
