@@ -346,7 +346,7 @@ async function handlePaidWebhook(
     utm_source: metadata.utm_source || "",
     utm_campaign: metadata.utm_campaign || "",
     utm_content: metadata.utm_content || "",
-    transaction_id: transactionId,
+    transaction_id: matchedTxId,
     value: (normalized.amount || 0) / 100,
     method: "pix",
     source: "webhook",
