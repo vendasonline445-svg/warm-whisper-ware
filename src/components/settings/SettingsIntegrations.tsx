@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plug, Save, Settings2, CheckCircle2, Trash2, Pencil, X } from "lucide-react";
+import { Plug, Save, Settings2, CheckCircle2, Trash2, Pencil, X, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import SettingsPushcut from "./SettingsPushcut";
 
 interface IntegrationSetting {
   id: string;
@@ -337,6 +338,9 @@ export default function SettingsIntegrations() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Pushcut Notifications */}
+          <SettingsPushcut />
         </div>
       )}
 

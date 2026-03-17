@@ -1244,6 +1244,47 @@ export type Database = {
           },
         ]
       }
+      pushcut_destinations: {
+        Row: {
+          api_key: string
+          client_id: string | null
+          created_at: string
+          enabled: boolean
+          events: string[]
+          id: string
+          label: string
+          notification_name: string
+        }
+        Insert: {
+          api_key: string
+          client_id?: string | null
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          label: string
+          notification_name: string
+        }
+        Update: {
+          api_key?: string
+          client_id?: string | null
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          label?: string
+          notification_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pushcut_destinations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_actions: {
         Row: {
           client_id: string | null
