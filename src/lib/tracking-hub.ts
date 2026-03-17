@@ -282,6 +282,9 @@ export interface TrackOptions {
   };
 }
 
+// Events that tracker.js auto-detects — skip DB insert from React when tracker.js is active
+const TRACKER_JS_AUTO_EVENTS = new Set(["page_view", "view_content", "click_buy", "checkout_start", "add_payment_info", "pix_generated"]);
+
 export async function trackFunnelEvent(options: TrackOptions) {
   const { event, properties = {}, value = 0, userData } = options;
   const eventId = generateEventId();
@@ -293,7 +296,12 @@ export async function trackFunnelEvent(options: TrackOptions) {
   }
   sentEventIds.add(eventId);
 
-  // 2. Funnel order validation
+  // 2. If tracker.js is loaded and this is an auto-detected event, skip DB insert
+  //    (tracker.js already sends it via tracker-ingest to avoid double-writes)
+  const trackerLoaded = !!(window as any).__fiq_loaded;
+  const skipDbInsert = trackerLoaded && TRACKER_JS_AUTO_EVENTS.has(event);
+
+  // 3. Funnel order validation
   const eventIndex = FUNNEL_ORDER[event] ?? -1;
   const lastIndex = getLastFunnelIndex();
   let isConsistent = true;
@@ -312,7 +320,7 @@ export async function trackFunnelEvent(options: TrackOptions) {
   const sessionId = getOrCreateSessionId() || `s_fallback_${Date.now()}`;
   const timestamp = new Date().toISOString();
 
-  // 3. Build DB payload
+  // 4. Build DB payload
   const siteId = getSiteId();
 
   // Enrich with cached identity for EMQ diagnostics
@@ -340,20 +348,24 @@ export async function trackFunnelEvent(options: TrackOptions) {
     site_id: siteId,
   };
 
-  // 4. Try DB insert with retry queue fallback
-  const { error } = await db.from("events").insert(dbPayload);
-  if (error) {
-    console.warn(`${DEBUG} DB insert failed, queuing for retry: ${eventId}`);
-    const queue = loadRetryQueue();
-    queue.push({ dbPayload, retries: 0, critical: CRITICAL_EVENTS.has(event), eventId });
-    saveRetryQueue(queue);
-    db.from("event_queue").insert({
-      event_name: event,
-      payload: dbPayload as Json,
-      status: "pending",
-    }).then(() => {});
+  // 5. DB insert — skip if tracker.js handles it (avoid double-write)
+  if (!skipDbInsert) {
+    const { error } = await db.from("events").insert(dbPayload);
+    if (error) {
+      console.warn(`${DEBUG} DB insert failed, queuing for retry: ${eventId}`);
+      const queue = loadRetryQueue();
+      queue.push({ dbPayload, retries: 0, critical: CRITICAL_EVENTS.has(event), eventId });
+      saveRetryQueue(queue);
+      db.from("event_queue").insert({
+        event_name: event,
+        payload: dbPayload as Json,
+        status: "pending",
+      }).then(() => {});
+    } else {
+      console.log(`${DEBUG} ✓ ${event} saved to DB (event_id: ${eventId})`);
+    }
   } else {
-    console.log(`${DEBUG} ✓ ${event} saved to DB (event_id: ${eventId})`);
+    console.log(`${DEBUG} ⏭ ${event} skipped DB insert (tracker.js handles it)`);
   }
 
   // 5. Update funnel_state

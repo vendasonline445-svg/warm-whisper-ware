@@ -411,18 +411,24 @@
   // ══════════════════════════════════════════════════════════════
 
   var lastPath = window.location.pathname;
+  var routeChangeTimer = null;
 
   function onRouteChange() {
     var newPath = window.location.pathname;
     if (newPath === lastPath) return;
     lastPath = newPath;
 
-    firePageView();
-    setTimeout(fireViewContent, 500);
-    fireCheckoutStart();
-    setTimeout(firePaymentInfo, 1500);
-    setTimeout(firePixGenerated, 2000);
-    setTimeout(firePurchaseFallback, 2000);
+    // Debounce: only fire once per navigation (MutationObserver can spam)
+    if (routeChangeTimer) clearTimeout(routeChangeTimer);
+    routeChangeTimer = setTimeout(function () {
+      routeChangeTimer = null;
+      firePageView();
+      setTimeout(fireViewContent, 500);
+      fireCheckoutStart();
+      setTimeout(firePaymentInfo, 1500);
+      setTimeout(firePixGenerated, 2000);
+      setTimeout(firePurchaseFallback, 2000);
+    }, 300);
   }
 
   try {
