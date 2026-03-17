@@ -579,6 +579,22 @@ async function handlePaidWebhook(
     console.error("[Pushcut] Error:", e);
   }
 
+  // Pushcut: venda aprovada (op1)
+  try {
+    const valorReais2 = lead.total_amount ? (lead.total_amount / 100).toFixed(2).replace(".", ",") : "?";
+    await fetch("https://api.pushcut.io/hP4zcE1aQp4T4j61a5rwa/notifications/Paga%20op1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "✅ Venda Aprovada!",
+        text: `R$ ${valorReais2}`,
+      }),
+    });
+    console.log("[Pushcut] Approved op1 notification sent");
+  } catch (e) {
+    console.error("[Pushcut] Error op1:", e);
+  }
+
   if (lead.tracking_sent) {
     console.log("[Trackly] Already sent for this order, skipping");
     return;
