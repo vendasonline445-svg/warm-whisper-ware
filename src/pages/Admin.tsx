@@ -223,7 +223,7 @@ function AdminContent() {
       }
 
       // Deduplicate events by visitor_id (unified events table)
-      const allEvents = (eventsRes.data || []) as { event_name: string; event_data: any; created_at: string; visitor_id: string }[];
+      const allEvents = (eventsRes.data || []) as { event_name: string; event_data: any; created_at: string; visitor_id: string; value: number | null }[];
       const visitorIds = new Set<string>();
       const buyClickIds = new Set<string>();
       const imgClickIds = new Set<string>();
