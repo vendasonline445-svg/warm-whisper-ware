@@ -205,7 +205,7 @@ function AdminContent() {
       // Checkouts count from events
       supabase.from("events").select("id", { count: "exact", head: true }).in("event_name", ["checkout_start", "checkout_started"]).gte("created_at", rangeFrom).lte("created_at", rangeTo),
       // Fetch events for metrics
-      supabase.from("events").select("event_name, event_data, created_at, visitor_id").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }).limit(2000),
+      supabase.from("events").select("event_name, event_data, created_at, visitor_id, value").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }).limit(2000),
       // Alert queries (always use fixed windows, not period)
       supabase.from("checkout_leads").select("id", { count: "exact", head: true }).neq("status", "paid").gte("created_at", oneHourAgo),
       supabase.from("tracking_webhook_logs").select("id", { count: "exact", head: true }).neq("status", "sent").gte("created_at", oneDayAgo),
