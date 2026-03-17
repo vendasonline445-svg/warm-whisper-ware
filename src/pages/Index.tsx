@@ -289,10 +289,21 @@ const Index = () => {
       const data = await resp.json();
       setChatTyping(false);
 
+      const buyKeywords = ['comprar', 'quero comprar', 'como compro', 'quero uma', 'quero esse', 'onde compro', 'me vende', 'vou levar', 'quero pedir', 'fazer pedido'];
+      const isBuyIntent = buyKeywords.some(kw => userMsg.toLowerCase().includes(kw));
+
       if (data.reply) {
         setChatMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
       } else {
         setChatMessages(prev => [...prev, { role: 'bot', text: data.error || 'Desculpe, não consegui responder. Tente novamente!' }]);
+      }
+
+      if (isBuyIntent) {
+        setChatMessages(prev => [...prev, { role: 'bot', text: '🛒 Ótimo! Vou te direcionar para a compra agora mesmo!' }]);
+        setTimeout(() => {
+          closeChat();
+          setTimeout(() => handleBuyNow(), 400);
+        }, 5000);
       }
     } catch {
       setChatTyping(false);
