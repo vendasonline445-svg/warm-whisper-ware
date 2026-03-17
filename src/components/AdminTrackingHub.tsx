@@ -902,8 +902,8 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
           <Card className="p-4">
             <h4 className="text-xs font-bold text-foreground mb-2">Consistência do Funil</h4>
             <div className="space-y-1">
-              {FUNNEL_EVENTS.map(ev => {
-                const filtered = debugVisitorId ? events.filter(e => e.visitor_id?.includes(debugVisitorId)) : events;
+             {FUNNEL_EVENTS.map(ev => {
+                const filtered = debugVisitorId ? debugEvents.filter(e => e.visitor_id?.includes(debugVisitorId)) : debugEvents;
                 const count = filtered.filter(e => e.event_name === ev).length;
                 const inconsistent = filtered.filter(e => e.event_name === ev && e.event_data?.is_consistent === false).length;
                 return (
