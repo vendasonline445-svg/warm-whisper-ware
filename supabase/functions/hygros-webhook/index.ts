@@ -382,7 +382,7 @@ async function handlePaidWebhook(
       event_name: "purchase",
       source: "webhook",
       success: true,
-      payload: { transaction_id: transactionId, amount: normalized.amount || 0 },
+      payload: { transaction_id: matchedTxId, amount: normalized.amount || 0 },
     }),
   });
 
