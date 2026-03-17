@@ -48,6 +48,21 @@ function asObject(value: unknown): Record<string, any> {
     : {};
 }
 
+function normalizePhoneForHash(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return "";
+  return digits.startsWith("55") ? digits : `55${digits}`;
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return "";
+  const data = new TextEncoder().encode(normalized);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function parseRawPayload(rawBody: string): Record<string, any> {
   if (!rawBody?.trim()) return {};
 
