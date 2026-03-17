@@ -690,6 +690,22 @@ const EconomizareIndex = () => {
 
         <div className="px-3">
           {/* Reviews */}
+          {/* YouTube Video */}
+          <div className="mt-3 rounded-xl overflow-hidden border mx-auto">
+            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src="https://www.youtube.com/embed/dIOp3RLXgp0?si=AVR2o3oVRvFLSzdG"
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+                loading="lazy"
+              />
+            </div>
+          </div>
+
           <section className="mt-3" itemScope itemType="https://schema.org/Product">
             <meta itemProp="name" content="Economizare Eliminador de Ar" />
             <div itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
