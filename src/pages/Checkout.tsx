@@ -992,37 +992,40 @@ const Checkout = () => {
               </div>
             )}
 
-            {/* Footer CNPJ */}
-            <footer className="mt-6 border-t pt-4 pb-6">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-w-[280px] mx-auto mb-3">
-                {[
-                  { icon: "🛡️", text: "Compra Segura" },
-                  { icon: "👤", text: "Proteção ao Cliente" },
-                  { icon: "💳", text: "Pagamento Seguro" },
-                  { icon: "🔒", text: "Criptografia SSL" },
-                  { icon: "📋", text: "LGPD" },
-                ].map((item) => (
-                  <span key={item.text} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <span className="text-[10px] opacity-60">{item.icon}</span>
-                    {item.text}
-                  </span>
-                ))}
-              </div>
-              <p className="text-center text-[10px] text-muted-foreground/70 leading-relaxed max-w-[300px] mx-auto mb-3">
-                Seus dados são protegidos com criptografia SSL. Estamos em conformidade com a LGPD (Lei nº 13.709/2018).
-              </p>
-              <div className="text-center text-xs text-muted-foreground space-y-1.5">
-                <p className="font-semibold text-foreground text-[13px]">Mesa Lar LTA</p>
-                <p>CNPJ: 43.721.021/0001-09</p>
-                <p>Contato: contato@mesalar.com.br</p>
-              </div>
-              <div className="mt-3 border-t pt-3 text-center text-[11px] text-muted-foreground">
-                <p>© 2026 MESA LAR LTA — CNPJ 43.721.021/0001-09 — Todos os direitos reservados</p>
-              </div>
-            </footer>
           </div>
         </div>
       </div>
+
+      {/* Footer CNPJ - fundo da página */}
+      <footer className="w-full border-t pt-4 pb-6 bg-background">
+        <div className="max-w-md mx-auto px-4">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-w-[280px] mx-auto mb-3">
+            {[
+              { icon: "🛡️", text: "Compra Segura" },
+              { icon: "👤", text: "Proteção ao Cliente" },
+              { icon: "💳", text: "Pagamento Seguro" },
+              { icon: "🔒", text: "Criptografia SSL" },
+              { icon: "📋", text: "LGPD" },
+            ].map((item) => (
+              <span key={item.text} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <span className="text-[10px] opacity-60">{item.icon}</span>
+                {item.text}
+              </span>
+            ))}
+          </div>
+          <p className="text-center text-[10px] text-muted-foreground/70 leading-relaxed max-w-[300px] mx-auto mb-3">
+            Seus dados são protegidos com criptografia SSL. Estamos em conformidade com a LGPD (Lei nº 13.709/2018).
+          </p>
+          <div className="text-center text-xs text-muted-foreground space-y-1.5">
+            <p className="font-semibold text-foreground text-[13px]">Mesa Lar LTA</p>
+            <p>CNPJ: 43.721.021/0001-09</p>
+            <p>Contato: contato@mesalar.com.br</p>
+          </div>
+          <div className="mt-3 border-t pt-3 text-center text-[11px] text-muted-foreground">
+            <p>© 2026 MESA LAR LTA — CNPJ 43.721.021/0001-09 — Todos os direitos reservados</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
