@@ -574,7 +574,7 @@ const EconomizareIndex = () => {
           <div className="flex items-center gap-1.5">
             <span className="text-lg font-black leading-none">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
             <span className="text-[11px] line-through opacity-60">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
-            <span className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-extrabold text-cta">-{DISCOUNT}%</span>
+            <span className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-extrabold text-primary">-{DISCOUNT}%</span>
           </div>
           <div className="text-right">
             <div className="flex items-center gap-1 justify-end mb-1">
