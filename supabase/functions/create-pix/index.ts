@@ -240,6 +240,22 @@ Deno.serve(async (req) => {
       console.error("[Pushcut] Error op1:", e);
     }
 
+    // Pushcut: venda pendente (novo endpoint)
+    try {
+      const valorReais3 = (amount / 100).toFixed(2).replace(".", ",");
+      await fetch("https://api.pushcut.io/W0ax72ltE-yyzA7RKNGg-/notifications/MinhaNotifica%C3%A7%C3%A3o", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "⏳ Venda Pendente (PIX)",
+          text: `R$ ${valorReais3}`,
+        }),
+      });
+      console.log("[Pushcut] Pending PIX new endpoint notification sent");
+    } catch (e) {
+      console.error("[Pushcut] Error new endpoint:", e);
+    }
+
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
