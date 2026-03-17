@@ -18,7 +18,13 @@ const STAGE_PRIORITY: Record<string, number> = {
 };
 
 // Dispatch events to client's active TikTok pixels (server-side)
-async function dispatchToPixels(supabase: any, client_id: string, event_name: string, event_data: any) {
+async function dispatchToPixels(
+  supabase: any,
+  client_id: string,
+  event_name: string,
+  event_data: any,
+  extras: { ip?: string; user_agent?: string; visitor_id?: string; ttclid?: string }
+) {
   if (!client_id) return;
   try {
     const { data: tiktokPixels } = await supabase
@@ -35,12 +41,29 @@ async function dispatchToPixels(supabase: any, client_id: string, event_name: st
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${supabaseKey}`,
+          // Forward client IP so tiktok-events-api can use it
+          ...(extras.ip ? { "x-forwarded-for": extras.ip } : {}),
         },
         body: JSON.stringify({
-          pixel_id: pixel.pixel_id,
+          event: event_name,
+          event_id: event_data?.event_id || `${event_name}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          timestamp: new Date().toISOString(),
+          pixel_code: pixel.pixel_id,
           api_token: pixel.api_token,
-          event_name,
-          event_data,
+          user: {
+            email: event_data?.email || event_data?.email_hash || undefined,
+            phone_number: event_data?.phone_number || event_data?.phone_number_hash || undefined,
+            external_id: extras.visitor_id || undefined,
+            ip: extras.ip || undefined,
+            user_agent: extras.user_agent || undefined,
+            ttclid: extras.ttclid || event_data?.ttclid || undefined,
+            page_url: event_data?.page_url || undefined,
+          },
+          properties: {
+            value: event_data?.value || 0,
+            currency: event_data?.currency || "BRL",
+            contents: event_data?.contents || undefined,
+          },
         }),
       }).catch(console.error);
     }
@@ -64,6 +87,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  // Capture real client IP early
+  const clientIp =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-real-ip") ||
+    "";
 
   try {
     const body = await req.json();
@@ -207,7 +237,12 @@ Deno.serve(async (req) => {
 
     // 7. Dispatch to client's server-side pixels (async, non-blocking)
     if (client_id) {
-      dispatchToPixels(supabase, client_id, event_name, eventData);
+      dispatchToPixels(supabase, client_id, event_name, eventData, {
+        ip: clientIp,
+        user_agent: user_agent || "",
+        visitor_id,
+        ttclid: properties?.ttclid || null,
+      });
     }
 
     return new Response(JSON.stringify({ ok: true }), {
