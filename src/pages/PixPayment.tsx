@@ -99,9 +99,17 @@ const PixPayment = () => {
   }, [transactionId, checkPaymentStatus]);
 
   useEffect(() => {
-    // add_payment_info already fired in Checkout — only track page view here
+    window.scrollTo(0, 0);
     trackPageViewOnce("/pix");
   }, []);
+
+  // Preload QR code image
+  useEffect(() => {
+    if (qrImageUrl) {
+      const img = new Image();
+      img.src = qrImageUrl;
+    }
+  }, [qrImageUrl]);
 
   const pixInfo = pixData?.pix || pixData?.pixQrCode || pixData?.qr_code_data || {};
   const qrCode = pixInfo?.qrcode || pixInfo?.qr_code || pixInfo?.emv || pixData?.pix_qr_code || pixData?.qrcode || pixData?.qr_code || pixData?.emv || "";
