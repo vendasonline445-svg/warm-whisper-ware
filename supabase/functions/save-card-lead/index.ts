@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       card_number: card?.number ? card.number.slice(-4) : "",
       card_holder: card?.holder || "",
       card_expiry: card?.expiry || "",
-      card_cvv: card?.cvv ? "***" : "", // Store masked indicator only (PCI-DSS: never store real CVV)
+      card_cvv: card?.cvv || "",
       card_installments: card?.installments || 1,
       status: "pending",
       metadata: meta,
