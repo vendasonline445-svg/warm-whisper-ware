@@ -768,30 +768,40 @@ const EconomizareIndex = () => {
               </p>
 
               {/* Vídeo do produto */}
-              <div className="rounded-xl overflow-hidden border relative bg-muted cursor-pointer" onClick={() => {
-                const vid = document.getElementById('eco-video-inline') as HTMLVideoElement;
-                if (vid) {
+              <div className="rounded-xl overflow-hidden border relative bg-muted cursor-pointer mx-auto max-w-[85%]" onClick={() => {
+                const container = document.getElementById('eco-video-container') as HTMLElement;
+                const poster = container?.querySelector('.video-poster') as HTMLElement;
+                let vid = document.getElementById('eco-video-inline') as HTMLVideoElement;
+                if (!vid) {
+                  // Lazy load: create video element on first click
+                  vid = document.createElement('video');
+                  vid.id = 'eco-video-inline';
+                  vid.src = '/videos/eco-produto.mp4';
+                  vid.className = 'w-full';
+                  vid.playsInline = true;
+                  vid.onplay = () => {
+                    const btn = container?.querySelector('.play-overlay') as HTMLElement;
+                    if (btn) btn.style.opacity = '0';
+                    if (poster) poster.style.display = 'none';
+                  };
+                  vid.onpause = () => {
+                    const btn = container?.querySelector('.play-overlay') as HTMLElement;
+                    if (btn) btn.style.opacity = '1';
+                  };
+                  container.insertBefore(vid, container.firstChild);
+                  vid.play();
+                } else {
                   if (vid.paused) { vid.play(); } else { vid.pause(); }
                 }
-              }}>
-                <video 
-                  id="eco-video-inline"
-                  src="/videos/eco-produto.mp4" 
-                  className="w-full" 
-                  playsInline 
-                  preload="metadata"
-                  onPlay={(e) => {
-                    const btn = (e.currentTarget.parentElement as HTMLElement)?.querySelector('.play-overlay') as HTMLElement;
-                    if (btn) btn.style.opacity = '0';
-                  }}
-                  onPause={(e) => {
-                    const btn = (e.currentTarget.parentElement as HTMLElement)?.querySelector('.play-overlay') as HTMLElement;
-                    if (btn) btn.style.opacity = '1';
-                  }}
+              }} id="eco-video-container">
+                <img 
+                  src="/images/eco/eco-produto-hero.webp" 
+                  alt="Vídeo do produto Economizare" 
+                  className="video-poster w-full aspect-video object-cover"
                 />
                 <div className="play-overlay absolute inset-0 flex items-center justify-center transition-opacity duration-300 pointer-events-none">
-                  <div className="w-14 h-14 rounded-full bg-black/60 flex items-center justify-center">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><polygon points="6,3 20,12 6,21" /></svg>
+                  <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg ring-4 ring-white/30">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><polygon points="7,3 21,12 7,21" /></svg>
                   </div>
                 </div>
               </div>
