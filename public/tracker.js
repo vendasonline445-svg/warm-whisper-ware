@@ -203,7 +203,7 @@
   var LANDING_PATTERNS = /^\/$|\/index|\/produto|\/oferta|\/product|\/landing|\/lp|\/vsl/;
   function fireViewContent() {
     var p = window.location.pathname.toLowerCase();
-    if (LANDING_PATTERNS.test(p) && dedupOk("view_content")) {
+    if (LANDING_PATTERNS.test(p) && dedupOk("view_content", p)) {
       sendEvent("view_content", { page: p });
     }
   }
