@@ -25,12 +25,12 @@ const DISCOUNT = 59;
 const INSTALLMENTS_VALUE = (PRICE / 6).toFixed(2).replace(".", ",");
 
 const productImages = [
-  "/images/eco/eco-produto-1.png",
-  "/images/eco/eco-produto-2.jpg",
-  "/images/eco/eco-produto-3.png",
+  "/images/eco/eco-produto-clean.jpg",
+  "/images/eco/eco-produto-lateral.webp",
+  "/images/eco/eco-embalagem-combo.webp",
+  "/images/eco/eco-embalagem-front.webp",
+  "/images/eco/eco-hidrometro.webp",
   "/images/eco/eco-produto-tiktok.png",
-  "/images/eco/eco-inovacao.png",
-  "/images/eco/eco-sustentabilidade.png",
 ];
 
 const reviews = [
