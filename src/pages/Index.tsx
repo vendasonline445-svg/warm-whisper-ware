@@ -1063,6 +1063,15 @@ const Index = () => {
                 <a href="/termos-de-uso" className="text-destructive hover:underline">Termos de uso</a>
               </p>
             </div>
+            {/* Social proof bar below footer */}
+            <div className="mt-4 flex items-center justify-center gap-1.5 text-[13px]">
+              <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+              <span className="font-bold">4.8</span>
+              <span className="text-muted-foreground">(1.100)</span>
+              <span className="text-muted-foreground mx-0.5">•</span>
+              <span className="text-muted-foreground">4.473 vendidos</span>
+            </div>
+            <p className="mt-0.5 text-center text-[11px] font-medium text-cta">1.2K+ pessoas compraram nos últimos 3 dias</p>
           </footer>
         </div>
         </>) : <div className="mt-8 flex justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-foreground" /></div>}
