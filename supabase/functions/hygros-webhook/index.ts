@@ -279,24 +279,39 @@ async function handlePaidWebhook(
   serviceKey: string,
   normalized: ReturnType<typeof normalizeWebhook>,
 ) {
-  const transactionId = normalized.transactionId!;
+  // Hygros sends root.id (e.g. "PW7NNJRMN04E") but checkout_leads stores data.id (UUID).
+  // Try multiple candidate IDs to find the lead.
+  const candidateIds = [
+    normalized.transactionId,
+    normalized.data?.id,
+    normalized.root?.objectId,
+  ].filter((v): v is string => !!v && typeof v === "string");
 
-  const findRes = await fetch(
-    `${supabaseUrl}/rest/v1/checkout_leads?transaction_id=eq.${encodeURIComponent(transactionId)}&select=*`,
-    {
-      headers: {
-        apikey: serviceKey,
-        Authorization: `Bearer ${serviceKey}`,
-        "Content-Type": "application/json",
+  let lead: any = null;
+  let matchedTxId = "";
+
+  for (const txId of candidateIds) {
+    const findRes = await fetch(
+      `${supabaseUrl}/rest/v1/checkout_leads?transaction_id=eq.${encodeURIComponent(txId)}&select=*`,
+      {
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
       },
-    },
-  );
-
-  const leads = await findRes.json();
-  const lead = Array.isArray(leads) ? leads[0] : null;
+    );
+    const leads = await findRes.json();
+    lead = Array.isArray(leads) ? leads[0] : null;
+    if (lead) {
+      matchedTxId = txId;
+      console.log(`[hygros-webhook] Lead found using transaction_id: ${txId}`);
+      break;
+    }
+  }
 
   if (!lead) {
-    console.log("[hygros-webhook] No lead found for transaction_id:", transactionId);
+    console.log("[hygros-webhook] No lead found for any candidate IDs:", candidateIds);
     await fetch(`${supabaseUrl}/rest/v1/tracker_event_log`, {
       method: "POST",
       headers: restHeaders(serviceKey),
@@ -305,8 +320,8 @@ async function handlePaidWebhook(
         event_name: "purchase",
         source: "webhook",
         success: false,
-        error_message: `No matching lead for transaction_id ${transactionId}`,
-        payload: { transaction_id: transactionId, amount: normalized.amount || 0 },
+        error_message: `No matching lead for transaction_ids: ${candidateIds.join(", ")}`,
+        payload: { transaction_ids: candidateIds, amount: normalized.amount || 0 },
       }),
     });
     return;
