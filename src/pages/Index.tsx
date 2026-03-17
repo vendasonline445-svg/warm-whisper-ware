@@ -1063,8 +1063,19 @@ const Index = () => {
 
           {/* Footer */}
           <footer className="mt-8 border-t pt-6 pb-24">
-            <div className="text-center text-xs text-muted-foreground">
-              <p>© 2025 MesaLar.</p>
+            <div className="text-center text-xs text-muted-foreground space-y-2">
+              <p className="font-semibold text-foreground text-[13px]">Mesa Lar LTA</p>
+              <p>CNPJ: 43.721.021/0001-09</p>
+              <p>Contato: contato@mesalar.com.br</p>
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ↑ Voltar ao topo
+              </button>
+            </div>
+            <div className="mt-4 border-t pt-4 text-center text-[11px] text-muted-foreground">
+              <p>© 2026 MESA LAR LTA — CNPJ 43.721.021/0001-09 — Todos os direitos reservados</p>
               <p className="mt-1">
                 <a href="/politica-de-privacidade" className="text-destructive hover:underline">Política de privacidade</a>
                 <span className="mx-1">·</span>

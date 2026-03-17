@@ -991,6 +991,18 @@ const Checkout = () => {
                 `}</style>
               </div>
             )}
+
+            {/* Footer CNPJ */}
+            <footer className="mt-6 border-t pt-4 pb-6">
+              <div className="text-center text-xs text-muted-foreground space-y-1.5">
+                <p className="font-semibold text-foreground text-[13px]">Mesa Lar LTA</p>
+                <p>CNPJ: 43.721.021/0001-09</p>
+                <p>Contato: contato@mesalar.com.br</p>
+              </div>
+              <div className="mt-3 border-t pt-3 text-center text-[11px] text-muted-foreground">
+                <p>© 2026 MESA LAR LTA — CNPJ 43.721.021/0001-09 — Todos os direitos reservados</p>
+              </div>
+            </footer>
           </div>
         </div>
       </div>
