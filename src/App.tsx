@@ -23,6 +23,10 @@ import StoreFront from "./pages/StoreFront";
 import ProductPage from "./pages/ProductPage";
 import CartPage from "./pages/CartPage";
 import StoreAdmin from "./pages/StoreAdmin";
+import EconomizareIndex from "./pages/EconomizareIndex";
+import EconomizareCheckout from "./pages/EconomizareCheckout";
+import EconomizarePix from "./pages/EconomizarePix";
+import EconomizareObrigado from "./pages/EconomizareObrigado";
 
 const queryClient = new QueryClient();
 
