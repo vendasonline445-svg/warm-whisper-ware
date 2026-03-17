@@ -271,7 +271,7 @@ async function sendTracklyWebhook(
   await fetch(`${supabaseUrl}/rest/v1/checkout_leads?id=eq.${encodeURIComponent(lead.id)}`, {
     method: "PATCH",
     headers: restHeaders(serviceKey),
-    body: JSON.stringify({ tracking_sent: true, status: "approved" }),
+    body: JSON.stringify({ tracking_sent: true }),
   });
 
   await fetch(`${supabaseUrl}/rest/v1/order_tracking`, {
