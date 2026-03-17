@@ -840,9 +840,9 @@ const Index = () => {
             <meta itemProp="name" content="Mesa Dobrável Tipo Maleta 180x60cm" />
             <div itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
               <meta itemProp="ratingValue" content="4.8" />
-              <meta itemProp="reviewCount" content="207" />
+              <meta itemProp="reviewCount" content="1100" />
               <meta itemProp="bestRating" content="5" />
-              <h2 className="text-[15px] font-bold mb-1">Avaliações dos clientes (<span itemProp="ratingCount">207</span>)</h2>
+              <h2 className="text-[15px] font-bold mb-1">Avaliações dos clientes (<span itemProp="ratingCount">1.100</span>)</h2>
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xl font-black">4.8</span>
                 <span className="text-muted-foreground text-[13px]">/5</span>
