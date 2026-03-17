@@ -479,9 +479,34 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
 
   // Server-side: send to each pixel via edge function with enriched user data
   const storedUser = getUserData();
+
+  // Direct phone hash fallback: if _userData didn't capture phone, hash crm_user_phone directly
+  let phoneHash = storedUser.phone_hash || "";
+  if (!phoneHash) {
+    const cachedPhone = (() => {
+      try { return localStorage.getItem("crm_user_phone") || ""; } catch { return ""; }
+    })();
+    if (cachedPhone.trim()) {
+      const normalized = normalizePhone(cachedPhone).replace("+", "");
+      phoneHash = await sha256(normalized);
+      console.log(`${DEBUG} Phone hash generated from crm_user_phone fallback`);
+    }
+  }
+
+  // Direct email hash fallback
+  let emailHash = storedUser.email_hash || "";
+  if (!emailHash) {
+    const cachedEmail = (() => {
+      try { return localStorage.getItem("crm_user_email") || ""; } catch { return ""; }
+    })();
+    if (cachedEmail.trim()) {
+      emailHash = await sha256(cachedEmail.trim().toLowerCase());
+    }
+  }
+
   const baseUserData = {
-    email: storedUser.email_hash || "",
-    phone_number: storedUser.phone_hash || "",
+    email: emailHash,
+    phone_number: phoneHash,
     external_id: storedUser.external_id_hash || visitorId || "",
     ttclid: ttclid || "",
     user_agent: navigator.userAgent,
