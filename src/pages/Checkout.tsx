@@ -514,9 +514,14 @@ const Checkout = () => {
       <div className="mx-auto max-w-[480px] px-4">
         {/* Receiver info - shown when address is complete */}
         {isAddressComplete && form.name && (
-          <div className="mt-4 flex items-center justify-between py-2 border-b">
-            <span className="text-sm text-muted-foreground">Recebedor</span>
-            <span className="text-sm font-semibold">{form.name}</span>
+          <div className="mt-4 flex items-center justify-between py-2">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <User className="h-4 w-4 text-muted-foreground" />
+              Recebedor
+            </div>
+            <span className="flex items-center gap-1 text-xs text-success font-semibold">
+              <Check className="h-3.5 w-3.5" /> {form.name}
+            </span>
           </div>
         )}
 
