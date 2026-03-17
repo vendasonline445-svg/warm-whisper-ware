@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfDay, endOfDay, subDays, startOfMonth } from "date-fns";
 
 import AdminTikTokTab from "@/components/AdminTikTokTab";
+import { FunilLeads } from "@/components/funil/FunilLeads";
 import AdminTrackingHub from "@/components/AdminTrackingHub";
 import SettingsTracking from "@/components/settings/SettingsTracking";
 import SettingsPixels from "@/components/settings/SettingsPixels";
@@ -550,6 +551,8 @@ function AdminContent() {
           </div>
         )}
 
+
+        {tab === "leads" && <FunilLeads />}
 
         {tab === "tiktok" && <AdminTikTokTab />}
 

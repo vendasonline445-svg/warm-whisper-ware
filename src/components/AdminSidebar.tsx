@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAuth } from "@/hooks/use-auth";
 
 export type AdminTab =
+  | "leads"
   | "dashboard" | "funnel-health" | "live-activity"
   | "tracking" | "tracking-sessions" | "tracking-clicks" | "tracking-links" | "tracking-debug"
   | "campaigns" | "campaigns-creatives" | "campaigns-performance" | "campaigns-automation" | "campaigns-budgets"
@@ -47,6 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
     icon: <LayoutDashboard className="h-[18px] w-[18px]" />,
     items: [
       { tab: "dashboard", label: "Overview", icon: <Gauge className="h-3.5 w-3.5" /> },
+      { tab: "leads", label: "Leads", icon: <Users className="h-3.5 w-3.5" /> },
       { tab: "live-activity", label: "Live Activity", icon: <Signal className="h-3.5 w-3.5" /> },
       { tab: "funnel-health", label: "Funnel Health", icon: <Heart className="h-3.5 w-3.5" /> },
     ],
