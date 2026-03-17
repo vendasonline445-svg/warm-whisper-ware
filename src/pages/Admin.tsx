@@ -399,10 +399,11 @@ function AdminContent() {
     URL.revokeObjectURL(url);
   };
 
-  const paidCount = Math.max(leads.filter(l => l.status === "paid").length, paidFromEvents);
-  const pendingCount = leads.filter(l => l.status !== "paid" && l.payment_method === "pix").length;
-  const totalRevenue = leads.filter(l => l.status === "paid").reduce((sum, l) => sum + (l.total_amount || 0), 0);
-  const pixPaidCount = leads.filter(l => l.payment_method === "pix" && l.status === "paid").length;
+  const isPaid = (s: string | null) => s === "paid" || s === "approved";
+  const paidCount = Math.max(leads.filter(l => isPaid(l.status)).length, paidFromEvents);
+  const pendingCount = leads.filter(l => !isPaid(l.status) && l.payment_method === "pix").length;
+  const totalRevenue = leads.filter(l => isPaid(l.status)).reduce((sum, l) => sum + (l.total_amount || 0), 0);
+  const pixPaidCount = leads.filter(l => l.payment_method === "pix" && isPaid(l.status)).length;
 
   // ─── FUNNEL MONOTONIC ENFORCEMENT ───
   // Each step must be ≤ the previous step to avoid impossible conversions
