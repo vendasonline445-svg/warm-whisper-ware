@@ -192,7 +192,7 @@ export default function AdminLiveActivity() {
                       </span>
                       {evt.value && evt.value > 0 && (
                         <span className="text-xs font-bold text-emerald-400">
-                          R$ {(evt.value / 100).toFixed(2)}
+                          R$ {evt.value.toFixed(2)}
                         </span>
                       )}
                     </div>
