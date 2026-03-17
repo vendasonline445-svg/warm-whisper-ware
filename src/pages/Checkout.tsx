@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { trackFunnelEvent, identifyUser } from "@/lib/tracking-hub";
 import { cacheUserIdentity } from "@/lib/tiktok-tracking";
 import {
-  ArrowLeft, MapPin, Star, Truck, ShieldCheck, Minus, Plus, ChevronRight, Check, ChevronDown, CreditCard
+  ArrowLeft, MapPin, Star, Truck, ShieldCheck, Minus, Plus, ChevronRight, Check, ChevronDown, CreditCard, User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
