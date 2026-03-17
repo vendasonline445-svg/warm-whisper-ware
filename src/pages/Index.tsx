@@ -935,7 +935,7 @@ const Index = () => {
           })}} />
 
           {/* Store Info */}
-          <section className="mt-6 border-y py-5">
+          <section className="mt-6 border-y py-5 cursor-pointer active:bg-muted/50 transition-colors" onClick={() => setStoreOpen(true)}>
             <div className="flex items-center gap-3">
               <img src="/images/logo-mesalar.webp" alt="Mesalar" className="h-11 w-11 rounded-full object-contain border" />
               <div className="flex-1">
@@ -947,6 +947,7 @@ const Index = () => {
                   <span className="text-[11px] text-muted-foreground">(15.234 avaliações)</span>
                 </div>
               </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
           </section>
 
