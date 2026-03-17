@@ -1170,7 +1170,25 @@ const EconomizareIndex = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Exit Modal 1 - 25% OFF */}
+      {/* Video Zoom Modal */}
+      <Dialog open={videoZoomOpen} onOpenChange={(open) => { setVideoZoomOpen(open); }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 border-0 bg-black shadow-none outline-none ring-0 [&>button]:hidden">
+          <DialogDescription className="sr-only">Vídeo do produto ampliado</DialogDescription>
+          <DialogTitle className="sr-only">Vídeo do produto</DialogTitle>
+          <button onClick={() => setVideoZoomOpen(false)} className="absolute top-3 right-3 z-50 h-10 w-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+            <X className="h-6 w-6 text-white" />
+          </button>
+          <div
+            onTouchStart={(e) => { touchStartY.current = e.touches[0].clientY; }}
+            onTouchEnd={(e) => { const diffY = e.changedTouches[0].clientY - touchStartY.current; if (diffY > 100) setVideoZoomOpen(false); }}
+          >
+            {videoZoomOpen && (
+              <video src="/videos/eco-produto.mp4" className="w-full h-auto max-h-[85vh] rounded-lg" controls autoPlay playsInline />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {exitModalOpen && (
         <div className="fixed inset-0 z-[60]" onClick={() => { setExitModalOpen(false); if (!exit2Shown) { setExit2Open(true); setExit2Shown(true); fireAlertSiren(); } }}>
           <div className="absolute inset-0 bg-black/60 animate-in fade-in-0" />
