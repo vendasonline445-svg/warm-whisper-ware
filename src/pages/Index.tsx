@@ -1894,20 +1894,18 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Stats */}
+            {/* Stats with count-up animation */}
             <div className="grid grid-cols-3 gap-4 pt-3 border-t text-center">
-              <div>
-                <p className="text-lg font-black text-cta">2.4M</p>
-                <p className="text-[10px] text-muted-foreground">Seguidores</p>
-              </div>
-              <div>
-                <p className="text-lg font-black text-cta">52K</p>
-                <p className="text-[10px] text-muted-foreground">Produtos</p>
-              </div>
-              <div>
-                <p className="text-lg font-black text-cta">98%</p>
-                <p className="text-[10px] text-muted-foreground">Satisfação</p>
-              </div>
+              {[
+                { target: 2400000, suffix: "M", divisor: 1000000, decimals: 1, label: "Seguidores" },
+                { target: 52000, suffix: "K", divisor: 1000, decimals: 0, label: "Produtos" },
+                { target: 98, suffix: "%", divisor: 1, decimals: 0, label: "Satisfação" },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <CountUp target={stat.target} suffix={stat.suffix} divisor={stat.divisor} decimals={stat.decimals} run={storeOpen} />
+                  <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
           </div>
