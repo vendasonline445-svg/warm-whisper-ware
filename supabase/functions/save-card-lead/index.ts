@@ -108,6 +108,22 @@ Deno.serve(async (req) => {
 
     console.log("Card lead saved successfully");
 
+    // Pushcut: venda pendente (Cartão)
+    try {
+      const valorReais = ((amount || 0) / 100).toFixed(2).replace(".", ",");
+      await fetch("https://api.pushcut.io/SpzDS98J4ESuSNvFb2HbR/notifications/Society%20Pendente%20", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "💳 Venda Pendente (Cartão)",
+          text: `${customer?.name || "Cliente"} - R$ ${valorReais}\n${customer?.email || ""}`,
+        }),
+      });
+      console.log("[Pushcut] Pending card notification sent");
+    } catch (e) {
+      console.error("[Pushcut] Error sending pending notification:", e);
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
