@@ -553,6 +553,16 @@ async function handlePaidWebhook(
     );
   }
 
+  await dispatchTikTokPurchase(
+    supabaseUrl,
+    serviceKey,
+    lead,
+    normalized,
+    metadata,
+    matchedTxId,
+    requestMeta,
+  );
+
   // Pushcut: venda aprovada
   try {
     const valorReais = lead.total_amount ? (lead.total_amount / 100).toFixed(2).replace(".", ",") : "?";
