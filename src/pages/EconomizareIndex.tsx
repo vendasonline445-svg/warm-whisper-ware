@@ -834,7 +834,7 @@ const EconomizareIndex = () => {
               </div>
 
               {/* Guia de instalação - Caixa d'água */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-instalacao-caixa.webp" alt="Instalação na caixa d'água em 3 passos" className="w-full" loading="lazy" />
               </div>
 
