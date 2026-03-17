@@ -618,6 +618,15 @@ Deno.serve(async (req) => {
     const normalized = normalizeWebhook(parsedPayload);
 
     const headersObj = Object.fromEntries(req.headers.entries());
+    const requestMeta = {
+      ip:
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        req.headers.get("cf-connecting-ip") ||
+        req.headers.get("x-real-ip") ||
+        "",
+      userAgent: req.headers.get("user-agent") || "",
+    };
+
     console.log("[hygros-webhook] Received request", {
       method: req.method,
       url: req.url,
@@ -650,7 +659,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    await handlePaidWebhook(supabaseUrl, serviceKey, normalized);
+    await handlePaidWebhook(supabaseUrl, serviceKey, normalized, requestMeta);
 
     const response = { success: true, transaction_id: normalized.transactionId };
     await insertApiLog(supabaseUrl, serviceKey, req.method, parsedPayload, response, 200);
