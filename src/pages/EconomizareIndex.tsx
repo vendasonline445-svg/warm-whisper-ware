@@ -570,7 +570,7 @@ const EconomizareIndex = () => {
         </section>
 
         {/* Price Banner */}
-        <section className="bg-gradient-to-r from-cta to-cta-hover px-3 py-3 text-cta-foreground flex items-center justify-between">
+        <section className="bg-gradient-to-r from-primary to-[hsl(25,80%,55%)] px-3 py-3 text-primary-foreground flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-lg font-black leading-none">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
             <span className="text-[11px] line-through opacity-60">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
