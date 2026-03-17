@@ -844,7 +844,7 @@ const Index = () => {
               <meta itemProp="bestRating" content="5" />
               <h2 className="text-[15px] font-bold mb-1">Avaliações dos clientes (<span itemProp="ratingCount">1.163</span>)</h2>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-xl font-black">4.8</span>
+                <span className="text-xl font-black">4.9</span>
                 <span className="text-muted-foreground text-[13px]">/5</span>
                 <div className="flex gap-0.5 ml-1">
                   {[1, 2, 3, 4, 5].map((i) => (
