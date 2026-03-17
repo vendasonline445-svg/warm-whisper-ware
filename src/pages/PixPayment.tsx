@@ -126,6 +126,14 @@ const PixPayment = () => {
     ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`
     : "";
 
+  // Preload QR code image for faster rendering
+  useEffect(() => {
+    if (qrImageUrl) {
+      const img = new Image();
+      img.src = qrImageUrl;
+    }
+  }, [qrImageUrl]);
+
   if (paid) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(180deg, #f0f2f8 0%, #fdf0f2 50%, #f8f8fa 100%)" }}>
