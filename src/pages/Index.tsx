@@ -851,7 +851,15 @@ const Index = () => {
                     <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
-              </div>
+                </div>
+                <div className="flex flex-wrap gap-3 mt-2 text-[12px] text-muted-foreground">
+                  <span className="flex items-center gap-1">📷 Inclui imagens <span className="font-semibold text-foreground">(52)</span></span>
+                  <span className="flex items-center gap-1">5 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> <span className="font-semibold text-foreground">(1.087)</span></span>
+                  <span className="flex items-center gap-1">4 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> <span className="font-semibold text-foreground">(58)</span></span>
+                  <span className="flex items-center gap-1">3 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> <span className="font-semibold text-foreground">(12)</span></span>
+                  <span className="flex items-center gap-1">2 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> <span className="font-semibold text-foreground">(4)</span></span>
+                  <span className="flex items-center gap-1">1 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> <span className="font-semibold text-foreground">(2)</span></span>
+                </div>
             </div>
 
             <div className="divide-y">
