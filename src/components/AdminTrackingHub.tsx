@@ -404,13 +404,29 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
     });
   }, [creatives, creativeDiags]);
 
-  // ── Pixel health (memoized) ──
-  const pixelAlerts = useMemo(() => analyzePixelHealth(events), [events]);
+  // ── Filter events by baseline for debug ──
+  const debugEvents = useMemo(() => {
+    if (!debugBaseline) return events;
+    return events.filter(e => new Date(e.created_at).getTime() >= new Date(debugBaseline).getTime());
+  }, [events, debugBaseline]);
+
+  // ── Pixel health (memoized, uses baseline-filtered events) ──
+  const pixelAlerts = useMemo(() => analyzePixelHealth(debugEvents), [debugEvents]);
   const pixelScore = useMemo(() => {
     let score = 100;
     pixelAlerts.forEach(a => { score -= a.severity === "error" ? 20 : 10; });
     return Math.max(0, score);
   }, [pixelAlerts]);
+
+  const resetDebugBaseline = () => {
+    const now = new Date().toISOString();
+    setDebugBaseline(now);
+    try { localStorage.setItem("fiq_debug_baseline", now); } catch {}
+  };
+  const clearDebugBaseline = () => {
+    setDebugBaseline(null);
+    try { localStorage.removeItem("fiq_debug_baseline"); } catch {}
+  };
 
   const baseUrl = window.location.origin;
 
