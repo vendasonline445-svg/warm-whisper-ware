@@ -99,7 +99,7 @@ const PixPayment = () => {
   }, [transactionId, checkPaymentStatus]);
 
   useEffect(() => {
-    // add_payment_info already fired in Checkout — only track page view here
+    window.scrollTo(0, 0);
     trackPageViewOnce("/pix");
   }, []);
 
@@ -125,6 +125,14 @@ const PixPayment = () => {
   const qrImageUrl = qrCode
     ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`
     : "";
+
+  // Preload QR code image for faster rendering
+  useEffect(() => {
+    if (qrImageUrl) {
+      const img = new Image();
+      img.src = qrImageUrl;
+    }
+  }, [qrImageUrl]);
 
   if (paid) {
     return (
