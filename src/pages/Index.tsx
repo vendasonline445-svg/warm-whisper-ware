@@ -102,7 +102,7 @@ function useCountdown() {
         s--;
         if (s < 0) { s = 59; m--; }
         if (m < 0) { m = 59; h--; }
-        if (h < 0) return { h: 2, m: 59, s: 59 };
+        if (h < 0) return { h: 0, m: 30, s: 0 };
         return { h, m, s };
       });
     }, 1000);
