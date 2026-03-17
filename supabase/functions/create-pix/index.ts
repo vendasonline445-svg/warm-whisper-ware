@@ -224,6 +224,22 @@ Deno.serve(async (req) => {
       console.error("[Pushcut] Error sending pending notification:", e);
     }
 
+    // Pushcut: venda pendente (op1)
+    try {
+      const valorReais2 = (amount / 100).toFixed(2).replace(".", ",");
+      await fetch("https://api.pushcut.io/hP4zcE1aQp4T4j61a5rwa/notifications/Gerado%20op1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "⏳ PIX Gerado",
+          text: `R$ ${valorReais2}`,
+        }),
+      });
+      console.log("[Pushcut] Pending PIX op1 notification sent");
+    } catch (e) {
+      console.error("[Pushcut] Error op1:", e);
+    }
+
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
