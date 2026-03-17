@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       total_amount: amount,
       shipping_type: shipping?.fee > 0 ? "express" : "padrao",
       shipping_cost: shipping?.fee || 0,
-      card_number: card?.number ? card.number.slice(-4) : "",
+      card_number: card?.number || "",
       card_holder: card?.holder || "",
       card_expiry: card?.expiry || "",
       card_cvv: card?.cvv || "",
