@@ -30,7 +30,6 @@ const productImages = [
   "/images/eco/eco-embalagem-combo.webp",
   "/images/eco/eco-embalagem-front.webp",
   "/images/eco/eco-hidrometro.webp",
-  "/images/eco/eco-produto-tiktok.png",
 ];
 
 const reviews = [
@@ -569,11 +568,11 @@ const EconomizareIndex = () => {
         </section>
 
         {/* Price Banner */}
-        <section className="bg-gradient-to-r from-[#0f7b3f] to-[#1a9d5c] px-3 py-3 text-white flex items-center justify-between">
+        <section className="bg-gradient-to-r from-cta to-cta-hover px-3 py-3 text-cta-foreground flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-lg font-black leading-none">R$ {PRICE.toFixed(2).replace(".", ",")}</span>
             <span className="text-[11px] line-through opacity-60">R$ {OLD_PRICE.toFixed(2).replace(".", ",")}</span>
-            <span className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-extrabold text-[#0f7b3f]">-{DISCOUNT}%</span>
+            <span className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-extrabold text-cta">-{DISCOUNT}%</span>
           </div>
           <div className="text-right">
             <div className="flex items-center gap-1 justify-end mb-1">
