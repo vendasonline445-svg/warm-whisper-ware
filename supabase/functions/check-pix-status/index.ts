@@ -183,6 +183,32 @@ Deno.serve(async (req) => {
       } catch (err) {
         console.error("[Trackly] Error:", err);
       }
+
+      // Pushcut: venda aprovada
+      try {
+        // Fetch lead info for notification details
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const leadRes = await fetch(
+          `${supabaseUrl}/rest/v1/checkout_leads?transaction_id=eq.${transactionId}&select=name,email,total_amount&limit=1`,
+          { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+        );
+        const leadArr = await leadRes.json();
+        const leadInfo = Array.isArray(leadArr) ? leadArr[0] : null;
+        const valorReais = leadInfo?.total_amount ? (leadInfo.total_amount / 100).toFixed(2).replace(".", ",") : "?";
+
+        await fetch("https://api.pushcut.io/SpzDS98J4ESuSNvFb2HbR/notifications/MinhaNotifica%C3%A7%C3%A3o", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: "✅ Venda Aprovada!",
+            text: `${leadInfo?.name || "Cliente"} - R$ ${valorReais}\n${leadInfo?.email || ""}`,
+          }),
+        });
+        console.log("[Pushcut] Approved notification sent");
+      } catch (e) {
+        console.error("[Pushcut] Error sending approved notification:", e);
+      }
     }
 
     return new Response(

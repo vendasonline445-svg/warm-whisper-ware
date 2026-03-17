@@ -390,6 +390,22 @@ async function handlePaidWebhook(
     );
   }
 
+  // Pushcut: venda aprovada
+  try {
+    const valorReais = lead.total_amount ? (lead.total_amount / 100).toFixed(2).replace(".", ",") : "?";
+    await fetch("https://api.pushcut.io/SpzDS98J4ESuSNvFb2HbR/notifications/MinhaNotifica%C3%A7%C3%A3o", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "✅ Venda Aprovada!",
+        text: `${lead.name || "Cliente"} - R$ ${valorReais}\n${lead.email || ""}`,
+      }),
+    });
+    console.log("[Pushcut] Approved notification sent via webhook");
+  } catch (e) {
+    console.error("[Pushcut] Error:", e);
+  }
+
   if (lead.tracking_sent) {
     console.log("[Trackly] Already sent for this order, skipping");
     return;
