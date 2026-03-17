@@ -121,6 +121,7 @@ function AdminContent() {
   const [avgScroll, setAvgScroll] = useState(0);
   const [pixGeneratedFromEvents, setPixGeneratedFromEvents] = useState(0);
   const [paidFromEvents, setPaidFromEvents] = useState(0);
+  const [revenueFromEventsState, setRevenueFromEventsState] = useState(0);
   const [activeNow, setActiveNow] = useState(0);
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
   const [period, setPeriod] = useState<PeriodKey>("30days");
@@ -204,7 +205,7 @@ function AdminContent() {
       // Checkouts count from events
       supabase.from("events").select("id", { count: "exact", head: true }).in("event_name", ["checkout_start", "checkout_started"]).gte("created_at", rangeFrom).lte("created_at", rangeTo),
       // Fetch events for metrics
-      supabase.from("events").select("event_name, event_data, created_at, visitor_id").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }).limit(2000),
+      supabase.from("events").select("event_name, event_data, created_at, visitor_id, value").gte("created_at", rangeFrom).lte("created_at", rangeTo).order("created_at", { ascending: false }).limit(2000),
       // Alert queries (always use fixed windows, not period)
       supabase.from("checkout_leads").select("id", { count: "exact", head: true }).neq("status", "paid").gte("created_at", oneHourAgo),
       supabase.from("tracking_webhook_logs").select("id", { count: "exact", head: true }).neq("status", "sent").gte("created_at", oneDayAgo),
@@ -222,13 +223,14 @@ function AdminContent() {
       }
 
       // Deduplicate events by visitor_id (unified events table)
-      const allEvents = (eventsRes.data || []) as { event_name: string; event_data: any; created_at: string; visitor_id: string }[];
+      const allEvents = (eventsRes.data || []) as { event_name: string; event_data: any; created_at: string; visitor_id: string; value: number | null }[];
       const visitorIds = new Set<string>();
       const buyClickIds = new Set<string>();
       const imgClickIds = new Set<string>();
       const checkoutIds = new Set<string>();
       const pixGenIds = new Set<string>();
       const paidIds = new Set<string>();
+      let revenueFromEvents = 0;
       let scrollTotal = 0;
       let scrollCount = 0;
       const recentOneHour = Date.now() - 3600000;
@@ -245,7 +247,13 @@ function AdminContent() {
         if (e.event_name === "view_content" && key) imgClickIds.add(key);
         if ((e.event_name === "checkout_start" || e.event_name === "checkout_started") && key) checkoutIds.add(key);
         if ((e.event_name === "pix_generated" || e.event_name === "add_payment_info") && key) pixGenIds.add(key);
-        if ((e.event_name === "purchase" || e.event_name === "payment_confirmed" || e.event_name === "pix_paid") && key) paidIds.add(key);
+        if ((e.event_name === "purchase" || e.event_name === "payment_confirmed" || e.event_name === "pix_paid") && key) {
+          if (!paidIds.has(key)) {
+            const evtValue = e.value || 0;
+            if (evtValue > 0) revenueFromEvents += evtValue;
+          }
+          paidIds.add(key);
+        }
         if (e.event_name === "view_content") {
           const pct = typeof e.event_data === "object" && e.event_data !== null ? Number(e.event_data.percent || 0) : 0;
           if (pct > 0) { scrollTotal += pct; scrollCount++; }
@@ -265,6 +273,7 @@ function AdminContent() {
       setAvgScroll(scrollCount > 0 ? Math.round(scrollTotal / scrollCount) : 0);
       setPixGeneratedFromEvents(pixGenIds.size);
       setPaidFromEvents(paidIds.size);
+      setRevenueFromEventsState(revenueFromEvents);
       setActiveNow(activeIds.size);
 
       // Build alerts
@@ -402,7 +411,8 @@ function AdminContent() {
   const isPaid = (s: string | null) => s === "paid" || s === "approved";
   const paidCount = Math.max(leads.filter(l => isPaid(l.status)).length, paidFromEvents);
   const pendingCount = leads.filter(l => !isPaid(l.status) && l.payment_method === "pix").length;
-  const totalRevenue = leads.filter(l => isPaid(l.status)).reduce((sum, l) => sum + (l.total_amount || 0), 0);
+  const revenueFromLeads = leads.filter(l => isPaid(l.status)).reduce((sum, l) => sum + (l.total_amount || 0), 0);
+  const totalRevenue = Math.max(revenueFromLeads, revenueFromEventsState);
   const pixPaidCount = leads.filter(l => l.payment_method === "pix" && isPaid(l.status)).length;
 
   // ─── FUNNEL MONOTONIC ENFORCEMENT ───
