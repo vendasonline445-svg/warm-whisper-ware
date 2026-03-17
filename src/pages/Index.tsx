@@ -897,7 +897,7 @@ const Index = () => {
               onClick={() => setShowAllReviews(prev => !prev)}
               className="w-full py-3 mt-2 text-sm font-semibold text-[#FF4C6A] border border-[#FF4C6A]/30 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
             >
-              {showAllReviews ? "Mostrar menos avaliações" : "Ver todas as 1.100 avaliações"}
+              {showAllReviews ? "Mostrar menos avaliações" : "Ver todas as 1.163 avaliações"}
               <ChevronDown className={`h-4 w-4 transition-transform ${showAllReviews ? "rotate-180" : ""}`} />
             </button>
 
