@@ -983,9 +983,9 @@ const EconomizareIndex = () => {
               <img src="/images/eco/eco-produto-1.png" alt="Economizare" className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1" />
               <div>
                 <p className="font-bold text-sm">Bloqueador de Ar Economizare</p>
-                <p className="text-[#0f7b3f] font-extrabold text-lg">R$ {PRICE.toFixed(2).replace('.', ',')}</p>
+                <p className="text-cta font-extrabold text-lg">R$ {PRICE.toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {OLD_PRICE.toFixed(2).replace('.', ',')}</p>
-                <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">Economize {DISCOUNT}%</span>
+                <span className="inline-block mt-0.5 rounded bg-cta/10 text-cta text-[10px] font-bold px-1.5 py-0.5">Economize {DISCOUNT}%</span>
               </div>
             </div>
 
