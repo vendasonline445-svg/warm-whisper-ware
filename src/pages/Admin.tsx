@@ -271,6 +271,7 @@ function AdminContent() {
       setAvgScroll(scrollCount > 0 ? Math.round(scrollTotal / scrollCount) : 0);
       setPixGeneratedFromEvents(pixGenIds.size);
       setPaidFromEvents(paidIds.size);
+      setRevenueFromEventsState(revenueFromEvents);
       setActiveNow(activeIds.size);
 
       // Build alerts
