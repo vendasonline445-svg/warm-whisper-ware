@@ -771,7 +771,7 @@ const EconomizareIndex = () => {
               </p>
 
               {/* Vídeo do produto */}
-              <div className="rounded-xl overflow-hidden border relative bg-muted cursor-pointer mx-auto max-w-[75%]" onClick={() => {
+              <div className="rounded-xl overflow-hidden border relative bg-muted cursor-pointer mx-auto max-w-[65%]" onClick={() => {
                 const container = document.getElementById('eco-video-container') as HTMLElement;
                 const poster = container?.querySelector('.video-poster') as HTMLElement;
                 let vid = document.getElementById('eco-video-inline') as HTMLVideoElement;
