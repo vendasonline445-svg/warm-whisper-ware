@@ -1215,8 +1215,8 @@ const EconomizareIndex = () => {
                 <p className="font-bold text-sm">Bloqueador de Ar Economizare</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {OLD_PRICE.toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {PRICE.toFixed(2).replace('.', ',')}</p>
-                <p className="text-[#0f7b3f] font-extrabold text-lg">R$ {(PRICE * 0.75).toFixed(2).replace('.', ',')}</p>
-                <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">+25% OFF com cupom</span>
+                <p className="text-cta font-extrabold text-lg">R$ {(PRICE * 0.75).toFixed(2).replace('.', ',')}</p>
+                <span className="inline-block mt-0.5 rounded bg-cta/10 text-cta text-[10px] font-bold px-1.5 py-0.5">+25% OFF com cupom</span>
               </div>
             </div>
 
