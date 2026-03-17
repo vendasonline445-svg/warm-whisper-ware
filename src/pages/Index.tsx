@@ -125,6 +125,27 @@ function getSectionAtScroll(scrollTop: number): string {
   return "rodape";
 }
 
+function CountUp({ target, suffix, divisor, decimals, run }: { target: number; suffix: string; divisor: number; decimals: number; run: boolean }) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!run) { setValue(0); return; }
+    const duration = 1200;
+    const steps = 40;
+    const increment = target / steps;
+    let current = 0;
+    let step = 0;
+    const interval = setInterval(() => {
+      step++;
+      current = Math.min(target, Math.round(increment * step));
+      setValue(current);
+      if (step >= steps) clearInterval(interval);
+    }, duration / steps);
+    return () => clearInterval(interval);
+  }, [run, target]);
+  const display = decimals > 0 ? (value / divisor).toFixed(decimals) : Math.round(value / divisor).toString();
+  return <p className="text-lg font-black text-cta">{display}{suffix}</p>;
+}
+
 const Index = () => {
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
