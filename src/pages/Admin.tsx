@@ -249,7 +249,7 @@ function AdminContent() {
         if ((e.event_name === "pix_generated" || e.event_name === "add_payment_info") && key) pixGenIds.add(key);
         if ((e.event_name === "purchase" || e.event_name === "payment_confirmed" || e.event_name === "pix_paid") && key) {
           paidIds.add(key);
-          const evtValue = typeof e.event_data === "object" && e.event_data !== null ? Number(e.event_data.value || (e as any).value || 0) : 0;
+          const evtValue = e.value || 0;
           if (evtValue > 0) revenueFromEvents += evtValue;
         }
         if (e.event_name === "view_content") {
