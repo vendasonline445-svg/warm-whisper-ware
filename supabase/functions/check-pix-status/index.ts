@@ -174,7 +174,8 @@ Deno.serve(async (req) => {
     const data = await response.json();
     console.log(`Transaction ${transactionId} status:`, data.status);
 
-    const paid = data.status === "paid";
+    const PAID_STATUSES = new Set(["paid", "approved", "approved_payment", "succeeded", "success"]);
+    const paid = PAID_STATUSES.has(data.status);
 
     // When paid, trigger Trackly webhook automatically
     if (paid) {
