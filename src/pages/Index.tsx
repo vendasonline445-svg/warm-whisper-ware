@@ -565,7 +565,7 @@ const Index = () => {
       {/* Top bar */}
        <header className="sticky top-0 z-40 border-b bg-card">
         <div className="mx-auto max-w-[480px] flex items-center gap-2 px-3 py-2.5">
-          <X className="h-5 w-5 text-muted-foreground cursor-pointer flex-shrink-0" onClick={() => { setExitModalOpen(true); setExitShown(true); fireCelebration(); }} />
+          <ChevronLeft className="h-6 w-6 text-foreground cursor-pointer flex-shrink-0" onClick={() => { setExitModalOpen(true); setExitShown(true); fireCelebration(); }} />
           <div className="flex-1 mx-1">
             <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-1.5 pointer-events-none select-none">
               <Search className="h-3.5 w-3.5 text-muted-foreground/60" />
