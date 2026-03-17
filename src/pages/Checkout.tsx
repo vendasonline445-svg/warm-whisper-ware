@@ -997,9 +997,9 @@ const Checkout = () => {
       </div>
 
       {/* Footer CNPJ - fundo da página */}
-      <footer className="w-full border-t pt-4 pb-6 bg-background">
-        <div className="max-w-md mx-auto px-4">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-w-[280px] mx-auto mb-3">
+      <footer className="w-full border-t pt-6 pb-8 bg-background">
+        <div className="max-w-md mx-auto px-4 space-y-5">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 max-w-[280px] mx-auto">
             {[
               { icon: "🛡️", text: "Compra Segura" },
               { icon: "👤", text: "Proteção ao Cliente" },
@@ -1013,15 +1013,20 @@ const Checkout = () => {
               </span>
             ))}
           </div>
-          <p className="text-center text-[10px] text-muted-foreground/70 leading-relaxed max-w-[300px] mx-auto mb-3">
-            Seus dados são protegidos com criptografia SSL. Estamos em conformidade com a LGPD (Lei nº 13.709/2018).
-          </p>
-          <div className="text-center text-xs text-muted-foreground space-y-1.5">
+
+          <div className="border-t pt-4">
+            <p className="text-center text-[10px] text-muted-foreground/70 leading-relaxed max-w-[300px] mx-auto">
+              Seus dados são protegidos com criptografia SSL. Estamos em conformidade com a LGPD (Lei nº 13.709/2018).
+            </p>
+          </div>
+
+          <div className="border-t pt-4 text-center text-xs text-muted-foreground space-y-1">
             <p className="font-semibold text-foreground text-[13px]">Mesa Lar LTA</p>
             <p>CNPJ: 43.721.021/0001-09</p>
             <p>Contato: contato@mesalar.com.br</p>
           </div>
-          <div className="mt-3 border-t pt-3 text-center text-[11px] text-muted-foreground">
+
+          <div className="border-t pt-3 text-center text-[11px] text-muted-foreground">
             <p>© 2026 MESA LAR LTA — CNPJ 43.721.021/0001-09 — Todos os direitos reservados</p>
           </div>
         </div>
