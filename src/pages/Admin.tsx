@@ -229,6 +229,7 @@ function AdminContent() {
       const checkoutIds = new Set<string>();
       const pixGenIds = new Set<string>();
       const paidIds = new Set<string>();
+      let revenueFromEvents = 0;
       let scrollTotal = 0;
       let scrollCount = 0;
       const recentOneHour = Date.now() - 3600000;
