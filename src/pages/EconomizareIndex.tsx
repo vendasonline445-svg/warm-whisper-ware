@@ -1427,7 +1427,7 @@ const EconomizareIndex = () => {
                     <div className="flex-1">
                       <p className="font-bold text-sm">Bloqueador de Ar Economizare</p>
                       <p className="text-xs text-muted-foreground">Eliminador de Ar p/ Hidrômetro</p>
-                      <p className="text-[#0f7b3f] font-extrabold text-base mt-1">R$ {(PRICE * item.quantity).toFixed(2).replace('.', ',')}</p>
+                      <p className="text-cta font-extrabold text-base mt-1">R$ {(PRICE * item.quantity).toFixed(2).replace('.', ',')}</p>
                       <div className="flex items-center gap-3 mt-2">
                         <button onClick={() => updateCartItem(idx, item.quantity - 1)} className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"><span className="text-sm font-bold">−</span></button>
                         <span className="text-sm font-bold w-5 text-center">{item.quantity}</span>
