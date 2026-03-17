@@ -62,6 +62,7 @@ const App = () => {
                 <Route path="/economizare/checkout" element={<EconomizareCheckout />} />
                 <Route path="/economizare/pix" element={<EconomizarePix />} />
                 <Route path="/economizare/obrigado" element={<EconomizareObrigado />} />
+                <Route path="/economizare/admin" element={<EconomizareAdmin />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/funil-admin" element={<FunilAdmin />} />
                 <Route path="/r/:trackingId" element={<TrackingRedirect />} />
