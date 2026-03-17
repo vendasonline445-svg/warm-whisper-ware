@@ -920,7 +920,7 @@ const Index = () => {
             "aggregateRating": {
               "@type": "AggregateRating",
               "ratingValue": "4.8",
-              "reviewCount": "207",
+              "reviewCount": "1100",
               "bestRating": "5"
             },
             "review": reviews.map(r => ({
