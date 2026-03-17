@@ -331,7 +331,7 @@ const EconomizareIndex = () => {
   }, [storeOpen, chatOpen, exitModalOpen, exit2Open, modalOpen, cartOpen]);
 
   const fireCelebration = useCallback(() => {
-    const colors = ["#0f7b3f", "#1a9d5c", "#22c55e", "#ffd700", "#00d2d3", "#34d399"];
+    const colors = ["#fe2b54", "#f23d6b", "#ff6b8a", "#ffd700", "#ff4757", "#ff6348"];
     confetti({ particleCount: 40, spread: 70, origin: { y: 0.55 }, colors, gravity: 1.2 });
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -736,7 +736,7 @@ const EconomizareIndex = () => {
               ))}
             </div>
 
-            <button onClick={() => setShowAllReviews(prev => !prev)} className="w-full py-3 mt-2 text-sm font-semibold text-[#0f7b3f] border border-[#0f7b3f]/30 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
+            <button onClick={() => setShowAllReviews(prev => !prev)} className="w-full py-3 mt-2 text-sm font-semibold text-cta border border-cta/30 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
               {showAllReviews ? "Mostrar menos avaliações" : "Ver todas as 2.847 avaliações"}
               <ChevronDown className={`h-4 w-4 transition-transform ${showAllReviews ? "rotate-180" : ""}`} />
             </button>
@@ -782,7 +782,7 @@ const EconomizareIndex = () => {
               <div className="rounded-xl overflow-hidden border">
                 <img src="/images/eco/eco-hidrometro.webp" alt="Ar contabiliza na conta de água" className="w-full" loading="lazy" />
               </div>
-              <p className="text-sm font-bold text-center text-[#0f7b3f]">Você sabia que o ar que passa pelo hidrômetro contabiliza na sua conta de água?</p>
+              <p className="text-sm font-bold text-center text-cta">Você sabia que o ar que passa pelo hidrômetro contabiliza na sua conta de água?</p>
 
               <p><strong>✅ ECONOMIA REAL:</strong> Reduza sua conta de água em até 50%! O ar presente na tubulação é contabilizado como água pelo hidrômetro. O Economizare elimina esse problema de forma definitiva.</p>
 
@@ -852,8 +852,8 @@ const EconomizareIndex = () => {
           <section className="mt-5">
             <h2 className="text-[15px] font-bold mb-2">Envio e Entrega</h2>
             <div className="space-y-0">
-              <div className="flex items-start gap-2.5 rounded-xl bg-green-50 border border-green-200 p-3 mb-3">
-                <Truck className="h-4 w-4 mt-0.5 flex-shrink-0 text-[#0f7b3f]" />
+              <div className="flex items-start gap-2.5 rounded-xl bg-cta/5 border border-cta/20 p-3 mb-3">
+                <Truck className="h-4 w-4 mt-0.5 flex-shrink-0 text-cta" />
                 <div>
                   <p className="font-semibold text-[13px]">Frete Grátis para todo o Brasil!</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">Economize <strong>R$ 29,90</strong> no frete — promoção por tempo limitado.</p>
@@ -983,9 +983,9 @@ const EconomizareIndex = () => {
               <img src="/images/eco/eco-produto-1.png" alt="Economizare" className="h-16 w-16 rounded-lg object-contain border bg-muted/30 p-1" />
               <div>
                 <p className="font-bold text-sm">Bloqueador de Ar Economizare</p>
-                <p className="text-[#0f7b3f] font-extrabold text-lg">R$ {PRICE.toFixed(2).replace('.', ',')}</p>
+                <p className="text-cta font-extrabold text-lg">R$ {PRICE.toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {OLD_PRICE.toFixed(2).replace('.', ',')}</p>
-                <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">Economize {DISCOUNT}%</span>
+                <span className="inline-block mt-0.5 rounded bg-cta/10 text-cta text-[10px] font-bold px-1.5 py-0.5">Economize {DISCOUNT}%</span>
               </div>
             </div>
 
@@ -995,7 +995,7 @@ const EconomizareIndex = () => {
                 <button onClick={() => setModalQty(q => Math.max(1, q - 1))} className="h-9 w-9 rounded-xl border-2 border-border flex items-center justify-center text-lg font-bold hover:border-cta/50 transition-colors">−</button>
                 <span className="text-base font-bold w-6 text-center">{modalQty}</span>
                 <button onClick={() => setModalQty(q => q + 1)} className="h-9 w-9 rounded-xl border-2 border-border flex items-center justify-center text-lg font-bold hover:border-cta/50 transition-colors">+</button>
-                <span className="ml-auto text-[#0f7b3f] font-extrabold text-lg">R$ {(PRICE * modalQty).toFixed(2).replace('.', ',')}</span>
+                <span className="ml-auto text-cta font-extrabold text-lg">R$ {(PRICE * modalQty).toFixed(2).replace('.', ',')}</span>
               </div>
             </div>
 
@@ -1215,8 +1215,8 @@ const EconomizareIndex = () => {
                 <p className="font-bold text-sm">Bloqueador de Ar Economizare</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {OLD_PRICE.toFixed(2).replace('.', ',')}</p>
                 <p className="text-xs text-muted-foreground line-through">R$ {PRICE.toFixed(2).replace('.', ',')}</p>
-                <p className="text-[#0f7b3f] font-extrabold text-lg">R$ {(PRICE * 0.75).toFixed(2).replace('.', ',')}</p>
-                <span className="inline-block mt-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5">+25% OFF com cupom</span>
+                <p className="text-cta font-extrabold text-lg">R$ {(PRICE * 0.75).toFixed(2).replace('.', ',')}</p>
+                <span className="inline-block mt-0.5 rounded bg-cta/10 text-cta text-[10px] font-bold px-1.5 py-0.5">+25% OFF com cupom</span>
               </div>
             </div>
 
@@ -1353,7 +1353,7 @@ const EconomizareIndex = () => {
               <img src="/images/eco/logo-economizare.png" alt="Economizare" className="w-8 h-8 rounded-full object-contain border border-border" />
               <div>
                 <p className="text-sm font-bold leading-tight">Economizare Oficial</p>
-                <p className="text-[11px] text-green-600 font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />{chatTyping ? 'digitando...' : 'Online agora'}</p>
+                <p className="text-[11px] text-cta font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-cta inline-block" />{chatTyping ? 'digitando...' : 'Online agora'}</p>
               </div>
             </div>
 
@@ -1427,7 +1427,7 @@ const EconomizareIndex = () => {
                     <div className="flex-1">
                       <p className="font-bold text-sm">Bloqueador de Ar Economizare</p>
                       <p className="text-xs text-muted-foreground">Eliminador de Ar p/ Hidrômetro</p>
-                      <p className="text-[#0f7b3f] font-extrabold text-base mt-1">R$ {(PRICE * item.quantity).toFixed(2).replace('.', ',')}</p>
+                      <p className="text-cta font-extrabold text-base mt-1">R$ {(PRICE * item.quantity).toFixed(2).replace('.', ',')}</p>
                       <div className="flex items-center gap-3 mt-2">
                         <button onClick={() => updateCartItem(idx, item.quantity - 1)} className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted"><span className="text-sm font-bold">−</span></button>
                         <span className="text-sm font-bold w-5 text-center">{item.quantity}</span>
@@ -1440,7 +1440,7 @@ const EconomizareIndex = () => {
 
                 <div className="flex justify-between items-center py-3 border-b">
                   <span className="text-sm font-semibold">Total</span>
-                  <span className="text-lg font-extrabold text-[#0f7b3f]">R$ {cartTotal.toFixed(2).replace('.', ',')}</span>
+                  <span className="text-lg font-extrabold text-cta">R$ {cartTotal.toFixed(2).replace('.', ',')}</span>
                 </div>
 
                 <button onClick={handleCartCheckout} className="w-full bg-cta text-white font-bold text-base py-3.5 rounded-2xl mt-4 hover:bg-cta-hover transition-colors">Finalizar compra</button>
