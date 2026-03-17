@@ -289,10 +289,143 @@ async function sendTracklyWebhook(
   });
 }
 
+async function dispatchTikTokPurchase(
+  supabaseUrl: string,
+  serviceKey: string,
+  lead: any,
+  normalized: ReturnType<typeof normalizeWebhook>,
+  metadata: Record<string, any>,
+  matchedTxId: string,
+  requestMeta: { ip?: string; userAgent?: string },
+) {
+  try {
+    const clientFilter = lead.client_id
+      ? `&client_id=eq.${encodeURIComponent(String(lead.client_id))}`
+      : "";
+
+    const pixelsRes = await fetch(
+      `${supabaseUrl}/rest/v1/tiktok_pixels?select=pixel_id,api_token&status=eq.active${clientFilter}`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+
+    const pixels = await pixelsRes.json();
+    const activePixels = Array.isArray(pixels) ? pixels : [];
+
+    if (activePixels.length === 0) {
+      console.log("[TikTok] No active pixels found for approved purchase");
+      return;
+    }
+
+    const emailRaw = pickFirstString(lead.email, normalized.customer?.email) || "";
+    const phoneRaw = pickFirstString(lead.phone, normalized.customer?.phone) || "";
+    const externalIdRaw =
+      pickFirstString(
+        metadata.visitor_id,
+        asObject(metadata.tracking).visitor_id,
+        lead.transaction_id,
+        matchedTxId,
+        lead.id,
+      ) || "";
+
+    const emailHash = emailRaw ? await sha256Hex(emailRaw) : "";
+    const phoneHash = phoneRaw ? await sha256Hex(normalizePhoneForHash(phoneRaw)) : "";
+    const externalIdHash = externalIdRaw ? await sha256Hex(externalIdRaw) : "";
+
+    const ttclid = pickFirstString(
+      metadata.ttclid,
+      asObject(metadata.tracking).ttclid,
+      normalized.data?.ttclid,
+      normalized.root?.ttclid,
+    );
+
+    const pageUrl = pickFirstString(
+      metadata.page_url,
+      asObject(metadata.tracking).page_url,
+      normalized.data?.checkoutUrl,
+      normalized.root?.checkoutUrl,
+    );
+
+    const userAgent = pickFirstString(
+      metadata.user_agent,
+      asObject(metadata.tracking).user_agent,
+      requestMeta.userAgent,
+    );
+
+    const ip = pickFirstString(
+      normalized.data?.ip,
+      normalized.root?.ip,
+      requestMeta.ip,
+    );
+
+    const firstItem = normalized.items[0] || {};
+    const quantity = Number.parseInt(String(firstItem.quantity ?? lead.quantity ?? 1), 10) || 1;
+    const valueCents = pickFirstNumber(normalized.amount, lead.total_amount, firstItem.unitPrice, 0);
+    const value = Number((valueCents / 100).toFixed(2));
+    const eventId = `purchase_${matchedTxId || lead.transaction_id || lead.id || Date.now()}`;
+
+    const requests = activePixels.map((pixel: any) => {
+      const payload = {
+        event: "CompletePayment",
+        event_id: eventId,
+        timestamp: new Date().toISOString(),
+        pixel_code: pixel.pixel_id,
+        api_token: pixel.api_token,
+        user: {
+          email: emailHash || undefined,
+          phone_number: phoneHash || undefined,
+          external_id: externalIdHash || undefined,
+          ip: ip || undefined,
+          user_agent: userAgent || undefined,
+          ttclid: ttclid || undefined,
+          page_url: pageUrl || undefined,
+        },
+        properties: {
+          currency: "BRL",
+          value,
+          content_type: "product",
+          contents: [
+            {
+              content_id: firstItem.externalRef || "mesa-dobravel",
+              content_name: firstItem.title || metadata.productName || "Mesa Dobrável",
+              content_type: "product",
+              quantity,
+              price: value,
+            },
+          ],
+          num_items: quantity,
+          method: lead.payment_method || normalized.data?.paymentMethod || "pix",
+        },
+      };
+
+      return fetch(`${supabaseUrl}/functions/v1/tiktok-events-api`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceKey}`,
+          ...(ip ? { "x-forwarded-for": ip } : {}),
+        },
+        body: JSON.stringify(payload),
+      })
+        .then(async (res) => {
+          const text = await res.text();
+          console.log(`[TikTok] Purchase dispatch (${pixel.pixel_id}) -> ${res.status}:`, text);
+        })
+        .catch((err) => {
+          console.error(`[TikTok] Purchase dispatch failed (${pixel.pixel_id}):`, err);
+        });
+    });
+
+    await Promise.allSettled(requests);
+  } catch (err) {
+    console.error("[TikTok] Error dispatching approved purchase:", err);
+  }
+}
+
 async function handlePaidWebhook(
   supabaseUrl: string,
   serviceKey: string,
   normalized: ReturnType<typeof normalizeWebhook>,
+  requestMeta: { ip?: string; userAgent?: string },
 ) {
   // Hygros sends root.id (e.g. "PW7NNJRMN04E") but checkout_leads stores data.id (UUID).
   // Try multiple candidate IDs to find the lead.
