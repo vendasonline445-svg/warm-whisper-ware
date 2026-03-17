@@ -1952,8 +1952,12 @@ const Index = () => {
             >
               <X className="h-3.5 w-3.5" />
             </button>
-            <div className="px-5 pt-2 pb-3 border-b">
-              <p className="text-base font-bold">Chat - Mesa Dobrável Mesalar</p>
+            <div className="px-5 pt-2 pb-3 border-b flex items-center gap-3">
+              <img src="/images/logo-mesalar.webp" alt="Mesalar" className="w-8 h-8 rounded-full object-contain border border-border" />
+              <div>
+                <p className="text-sm font-bold leading-tight">Mesalar Oficial</p>
+                <p className="text-[11px] text-green-600 font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />Online agora</p>
+              </div>
             </div>
 
             {/* Messages */}
