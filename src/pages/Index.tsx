@@ -927,7 +927,8 @@ const Index = () => {
               "@type": "Review",
               "author": { "@type": "Person", "name": r.name },
               "reviewRating": { "@type": "Rating", "ratingValue": String(r.rating), "bestRating": "5" },
-              "reviewBody": r.text
+              "reviewBody": r.text,
+              "datePublished": (() => { const d = new Date(); d.setDate(d.getDate() - r.daysAgo); return d.toISOString().split('T')[0]; })()
             }))
           })}} />
 
