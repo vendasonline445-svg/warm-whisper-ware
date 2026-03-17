@@ -89,7 +89,7 @@ const faqs = [
   { q: "De que material é feita?", a: "Tampo em HDPE (plástico de alta densidade) e estrutura em aço tubular com pintura epóxi anticorrosiva." },
   { q: "Como funciona o sistema de maleta?", a: "A mesa dobra ao meio e possui uma alça ergonômica, transformando-se em uma maleta compacta fácil de transportar." },
   { q: "Posso usar ao ar livre na chuva?", a: "Sim! O material HDPE é resistente a sol, chuva e umidade. A estrutura possui pintura anticorrosiva." },
-  { q: "Qual o prazo de entrega?", a: "Receba em 5 a 8 dias úteis após confirmação do pagamento. Pedidos até 14h são despachados no mesmo dia." },
+  { q: "Qual o prazo de entrega?", a: "Receba em 1 a 3 dias úteis após confirmação do pagamento. Pedidos até 14h são despachados no mesmo dia." },
   { q: "Tem garantia?", a: "Sim! 1 ano de garantia contra defeitos de fabricação." },
 ];
 
@@ -722,7 +722,7 @@ const Index = () => {
               <Truck className="h-3 w-3" /> Frete grátis
             </span>
             <div className="text-[13px]">
-              <span>Receba em <strong>5 - 8 dias úteis</strong></span>
+              <span>Receba em <strong>1 - 3 dias úteis</strong></span>
               <div className="text-[11px] text-muted-foreground">
                 Taxa de envio: <span className="line-through">R$ 29,90</span>{" "}
                 <span className="font-semibold text-success">Grátis</span>
@@ -1011,7 +1011,7 @@ const Index = () => {
                 <Clock className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                 <div>
                   <p className="font-semibold text-[13px]">Prazo de entrega</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Receba em <strong>5 a 8 dias úteis</strong> após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia.</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Receba em <strong>1 a 3 dias úteis</strong> após confirmação do pagamento. Pedidos feitos até 14h são despachados no mesmo dia.</p>
                 </div>
               </div>
 
