@@ -807,7 +807,7 @@ const EconomizareIndex = () => {
               </div>
 
               {/* Você sabia? */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-hidrometro.webp" alt="Ar contabiliza na conta de água" className="w-full" loading="lazy" />
               </div>
               <p className="text-sm font-bold text-center text-cta">Você sabia que o ar que passa pelo hidrômetro contabiliza na sua conta de água?</p>
