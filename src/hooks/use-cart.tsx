@@ -22,17 +22,50 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType>({} as CartContextType);
 
+const CART_KEY = 'fiq_cart';
+const CART_TS_KEY = 'fiq_cart_ts';
+const CART_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+function loadCart(): CartItem[] {
+  try {
+    const ts = Number(localStorage.getItem(CART_TS_KEY) || '0');
+    if (Date.now() - ts > CART_TTL_MS) {
+      localStorage.removeItem(CART_KEY);
+      localStorage.removeItem(CART_TS_KEY);
+      return [];
+    }
+    const saved = localStorage.getItem(CART_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('fiq_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [items, setItems] = useState<CartItem[]>(loadCart);
 
   useEffect(() => {
-    localStorage.setItem('fiq_cart', JSON.stringify(items));
+    localStorage.setItem(CART_KEY, JSON.stringify(items));
+    if (items.length > 0) {
+      // only set timestamp when cart has items
+      if (!localStorage.getItem(CART_TS_KEY)) {
+        localStorage.setItem(CART_TS_KEY, String(Date.now()));
+      }
+    } else {
+      localStorage.removeItem(CART_TS_KEY);
+    }
   }, [items]);
+
+  // Check expiry every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const ts = Number(localStorage.getItem(CART_TS_KEY) || '0');
+      if (ts && Date.now() - ts > CART_TTL_MS) {
+        setItems([]);
+        localStorage.removeItem(CART_KEY);
+        localStorage.removeItem(CART_TS_KEY);
+      }
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const addItem = (newItem: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
     setItems(prev => {
