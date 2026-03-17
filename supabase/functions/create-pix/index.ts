@@ -215,8 +215,8 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: "💰 Venda Pendente (PIX)",
-          text: `${customer.name} - R$ ${valorReais}\n${customer.email}`,
+          title: "⏳ Venda Pendente (PIX)",
+          text: `R$ ${valorReais}`,
         }),
       });
       console.log("[Pushcut] Pending PIX notification sent");
