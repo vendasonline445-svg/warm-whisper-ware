@@ -27,6 +27,7 @@ import EconomizareIndex from "./pages/EconomizareIndex";
 import EconomizareCheckout from "./pages/EconomizareCheckout";
 import EconomizarePix from "./pages/EconomizarePix";
 import EconomizareObrigado from "./pages/EconomizareObrigado";
+import EconomizareAdmin from "./pages/EconomizareAdmin";
 
 const queryClient = new QueryClient();
 
