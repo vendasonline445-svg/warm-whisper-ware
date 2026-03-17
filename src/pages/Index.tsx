@@ -863,7 +863,7 @@ const Index = () => {
                       <span className="font-semibold text-[13px]" itemProp="author" itemScope itemType="https://schema.org/Person">
                         <span itemProp="name">{r.name}</span>
                       </span>
-                      <span className="block text-[11px] text-muted-foreground">{getReviewDate(r.daysAgo)}</span>
+                      <span className="block text-[11px] text-muted-foreground">{getReviewDate(r.daysAgo)} · <span itemProp="about">Modelo: {r.model}</span></span>
                     </div>
                   </div>
                   <div className="flex gap-0.5 mb-1.5" itemProp="reviewRating" itemScope itemType="https://schema.org/Rating">
