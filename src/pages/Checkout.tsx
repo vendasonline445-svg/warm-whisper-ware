@@ -451,7 +451,7 @@ const Checkout = () => {
             description: "O processamento por cartão está instável no momento. Utilize o PIX para concluir seu pedido com segurança.",
             variant: "destructive",
           });
-          setCardDisabled(true);
+          setPaymentMethod("pix");
           setPaymentMethod("pix");
         } else {
           toast({
