@@ -404,8 +404,14 @@ export async function trackFunnelEvent(options: TrackOptions) {
       await identifyTikTokUser(userData);
     }
 
+    // Use deterministic event_id for purchase (matches webhook's format)
+    const tiktokEventId = event === "purchase" && properties.transaction_id
+      ? `purchase_${properties.transaction_id}`
+      : eventId;
+
     await trackTikTokEvent({
       event: tiktokEvent,
+      eventId: tiktokEventId,
       properties: {
         ...properties,
         content_type: properties.content_type || "product",
@@ -417,7 +423,7 @@ export async function trackFunnelEvent(options: TrackOptions) {
       userData,
     });
 
-    console.log(`${DEBUG} → TikTok ${tiktokEvent} dispatched (event_id: ${eventId})`);
+    console.log(`${DEBUG} → TikTok ${tiktokEvent} dispatched (event_id: ${tiktokEventId})`);
   }
 
   console.log(`${DEBUG} ✓ ${event} complete | consistent: ${isConsistent} | event_id: ${eventId}`);
