@@ -859,9 +859,12 @@ const Index = () => {
                 <div key={idx} className="py-4 first:pt-0" itemProp="review" itemScope itemType="https://schema.org/Review">
                   <div className="flex items-center gap-2.5 mb-1.5">
                     <img src={r.avatar} alt={r.name} className="h-8 w-8 rounded-full object-cover" loading="lazy" />
-                    <span className="font-semibold text-[13px]" itemProp="author" itemScope itemType="https://schema.org/Person">
-                      <span itemProp="name">{r.name}</span>
-                    </span>
+                    <div className="flex-1">
+                      <span className="font-semibold text-[13px]" itemProp="author" itemScope itemType="https://schema.org/Person">
+                        <span itemProp="name">{r.name}</span>
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground">{getReviewDate(r.daysAgo)}</span>
+                    </div>
                   </div>
                   <div className="flex gap-0.5 mb-1.5" itemProp="reviewRating" itemScope itemType="https://schema.org/Rating">
                     <meta itemProp="ratingValue" content={String(r.rating)} />
