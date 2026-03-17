@@ -768,36 +768,46 @@ const EconomizareIndex = () => {
               </p>
 
               {/* Vídeo do produto */}
-              <div className="rounded-xl overflow-hidden border relative bg-muted cursor-pointer" onClick={() => {
-                const vid = document.getElementById('eco-video-inline') as HTMLVideoElement;
-                if (vid) {
+              <div className="rounded-xl overflow-hidden border relative bg-muted cursor-pointer mx-auto max-w-[85%]" onClick={() => {
+                const container = document.getElementById('eco-video-container') as HTMLElement;
+                const poster = container?.querySelector('.video-poster') as HTMLElement;
+                let vid = document.getElementById('eco-video-inline') as HTMLVideoElement;
+                if (!vid) {
+                  // Lazy load: create video element on first click
+                  vid = document.createElement('video');
+                  vid.id = 'eco-video-inline';
+                  vid.src = '/videos/eco-produto.mp4';
+                  vid.className = 'w-full';
+                  vid.playsInline = true;
+                  vid.onplay = () => {
+                    const btn = container?.querySelector('.play-overlay') as HTMLElement;
+                    if (btn) btn.style.opacity = '0';
+                    if (poster) poster.style.display = 'none';
+                  };
+                  vid.onpause = () => {
+                    const btn = container?.querySelector('.play-overlay') as HTMLElement;
+                    if (btn) btn.style.opacity = '1';
+                  };
+                  container.insertBefore(vid, container.firstChild);
+                  vid.play();
+                } else {
                   if (vid.paused) { vid.play(); } else { vid.pause(); }
                 }
-              }}>
-                <video 
-                  id="eco-video-inline"
-                  src="/videos/eco-produto.mp4" 
-                  className="w-full" 
-                  playsInline 
-                  preload="metadata"
-                  onPlay={(e) => {
-                    const btn = (e.currentTarget.parentElement as HTMLElement)?.querySelector('.play-overlay') as HTMLElement;
-                    if (btn) btn.style.opacity = '0';
-                  }}
-                  onPause={(e) => {
-                    const btn = (e.currentTarget.parentElement as HTMLElement)?.querySelector('.play-overlay') as HTMLElement;
-                    if (btn) btn.style.opacity = '1';
-                  }}
+              }} id="eco-video-container">
+                <img 
+                  src="/images/eco/eco-produto-hero.webp" 
+                  alt="Vídeo do produto Economizare" 
+                  className="video-poster w-full aspect-video object-cover"
                 />
                 <div className="play-overlay absolute inset-0 flex items-center justify-center transition-opacity duration-300 pointer-events-none">
-                  <div className="w-14 h-14 rounded-full bg-black/60 flex items-center justify-center">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><polygon points="6,3 20,12 6,21" /></svg>
+                  <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg ring-4 ring-white/30">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><polygon points="7,3 21,12 7,21" /></svg>
                   </div>
                 </div>
               </div>
 
               {/* Você sabia? */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-hidrometro.webp" alt="Ar contabiliza na conta de água" className="w-full" loading="lazy" />
               </div>
               <p className="text-sm font-bold text-center text-cta">Você sabia que o ar que passa pelo hidrômetro contabiliza na sua conta de água?</p>
@@ -805,33 +815,33 @@ const EconomizareIndex = () => {
               <p><strong>✅ ECONOMIA REAL:</strong> Reduza sua conta de água em até 50%! O ar presente na tubulação é contabilizado como água pelo hidrômetro. O Economizare elimina esse problema de forma definitiva.</p>
 
               {/* Produto + embalagem */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-embalagem-combo.webp" alt="Economizare com embalagem" className="w-full" loading="lazy" />
               </div>
               <p className="text-[11px] text-center text-muted-foreground">Nova embalagem — 100% Original desde 2004 · Patente INPI requerida</p>
 
               <p><strong>✅ BLOQUEADOR DE AR COM REGULAÇÃO DE PRESSÃO:</strong> O único eliminador de ar com controle de vazão da água. Diferencial exclusivo que protege sua rede hidráulica e otimiza o funcionamento.</p>
 
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-produto-lateral.webp" alt="Economizare bloqueador de ar com regulação de pressão" className="w-full" loading="lazy" />
               </div>
 
               <p><strong>✅ INSTALAÇÃO SIMPLES:</strong> Não precisa de encanador! Instale você mesmo direto na caixa d'água ou após o hidrômetro. Qualquer pessoa consegue seguindo o manual ilustrado.</p>
 
               {/* Guia de instalação - Hidrômetro */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-instalacao-hidrometro.webp" alt="Instalação após hidrômetro em 3 passos" className="w-full" loading="lazy" />
               </div>
 
               {/* Guia de instalação - Caixa d'água */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-instalacao-caixa.webp" alt="Instalação na caixa d'água em 3 passos" className="w-full" loading="lazy" />
               </div>
 
               <p><strong>✅ CERTIFICAÇÃO INMETRO:</strong> Produto atestado pelo SICAL do Brasil, laboratório acreditado pelo INMETRO. Marca e patente registrados junto ao INPI.</p>
 
               {/* Legalidade */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-legalidade.webp" alt="Produto 100% legalizado - decisão do STJ" className="w-full" loading="lazy" />
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">Segundo o STJ, a responsabilidade da concessionária termina no hidrômetro. Após o relógio medidor, a instalação fica a critério do cliente. <strong>Produto 100% legalizado.</strong></p>
@@ -839,7 +849,7 @@ const EconomizareIndex = () => {
               <p><strong>✅ PARA TODOS OS AMBIENTES:</strong> Funciona em residências, apartamentos, comércios, condomínios e indústrias. Compatível com qualquer rede hidráulica.</p>
 
               {/* Embalagem frontal */}
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-embalagem-front.webp" alt="Embalagem frontal Economizare" className="w-full" loading="lazy" />
               </div>
               <p className="text-[11px] text-center text-muted-foreground">Pague apenas pela água que consome · Redutor de conta de água</p>
