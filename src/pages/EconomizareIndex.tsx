@@ -768,13 +768,8 @@ const EconomizareIndex = () => {
               </p>
 
               {/* Vídeo do produto */}
-              <div className="rounded-xl overflow-hidden border cursor-pointer relative bg-muted" onClick={() => setVideoZoomOpen(true)}>
-                <video src="/videos/eco-produto.mp4#t=0.1" className="w-full" muted playsInline preload="metadata" />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                  <div className="h-14 w-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                    <svg viewBox="0 0 24 24" className="h-7 w-7 text-foreground ml-1" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                  </div>
-                </div>
+              <div className="rounded-xl overflow-hidden border relative bg-muted">
+                <video src="/videos/eco-produto.mp4" className="w-full" controls playsInline preload="metadata" />
               </div>
               <p className="text-[11px] text-center text-muted-foreground">▶ Toque para assistir o vídeo completo</p>
 
