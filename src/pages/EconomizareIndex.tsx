@@ -1353,7 +1353,7 @@ const EconomizareIndex = () => {
               <img src="/images/eco/logo-economizare.png" alt="Economizare" className="w-8 h-8 rounded-full object-contain border border-border" />
               <div>
                 <p className="text-sm font-bold leading-tight">Economizare Oficial</p>
-                <p className="text-[11px] text-green-600 font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />{chatTyping ? 'digitando...' : 'Online agora'}</p>
+                <p className="text-[11px] text-cta font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-cta inline-block" />{chatTyping ? 'digitando...' : 'Online agora'}</p>
               </div>
             </div>
 
