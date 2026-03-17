@@ -121,6 +121,7 @@ function AdminContent() {
   const [avgScroll, setAvgScroll] = useState(0);
   const [pixGeneratedFromEvents, setPixGeneratedFromEvents] = useState(0);
   const [paidFromEvents, setPaidFromEvents] = useState(0);
+  const [revenueFromEventsState, setRevenueFromEventsState] = useState(0);
   const [activeNow, setActiveNow] = useState(0);
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
   const [period, setPeriod] = useState<PeriodKey>("30days");
