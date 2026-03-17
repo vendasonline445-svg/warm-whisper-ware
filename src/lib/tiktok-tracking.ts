@@ -411,6 +411,7 @@ async function initializePixels() {
 
 interface TrackEventOptions {
   event: string;
+  eventId?: string;
   properties?: Record<string, any>;
   userData?: {
     email?: string;
