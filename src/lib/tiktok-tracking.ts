@@ -421,8 +421,8 @@ interface TrackEventOptions {
 }
 
 export async function trackTikTokEvent(options: TrackEventOptions) {
-  const { event, properties = {}, userData } = options;
-  const eventId = generateEventId();
+  const { event, eventId: externalEventId, properties = {}, userData } = options;
+  const eventId = externalEventId || generateEventId();
   const timestamp = new Date().toISOString();
   const ttclid = getCachedTTClid() || getStoredParam("ttclid");
 
