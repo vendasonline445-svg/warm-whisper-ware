@@ -852,8 +852,8 @@ const EconomizareIndex = () => {
           <section className="mt-5">
             <h2 className="text-[15px] font-bold mb-2">Envio e Entrega</h2>
             <div className="space-y-0">
-              <div className="flex items-start gap-2.5 rounded-xl bg-green-50 border border-green-200 p-3 mb-3">
-                <Truck className="h-4 w-4 mt-0.5 flex-shrink-0 text-[#0f7b3f]" />
+              <div className="flex items-start gap-2.5 rounded-xl bg-cta/5 border border-cta/20 p-3 mb-3">
+                <Truck className="h-4 w-4 mt-0.5 flex-shrink-0 text-cta" />
                 <div>
                   <p className="font-semibold text-[13px]">Frete Grátis para todo o Brasil!</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">Economize <strong>R$ 29,90</strong> no frete — promoção por tempo limitado.</p>
