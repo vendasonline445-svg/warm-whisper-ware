@@ -822,7 +822,7 @@ const EconomizareIndex = () => {
 
               <p><strong>✅ BLOQUEADOR DE AR COM REGULAÇÃO DE PRESSÃO:</strong> O único eliminador de ar com controle de vazão da água. Diferencial exclusivo que protege sua rede hidráulica e otimiza o funcionamento.</p>
 
-              <div className="rounded-xl overflow-hidden border">
+              <div className="rounded-xl overflow-hidden border mx-auto max-w-[92%]">
                 <img src="/images/eco/eco-produto-lateral.webp" alt="Economizare bloqueador de ar com regulação de pressão" className="w-full" loading="lazy" />
               </div>
 
