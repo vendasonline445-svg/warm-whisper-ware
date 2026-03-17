@@ -1959,9 +1959,9 @@ const Index = () => {
             {/* Close button */}
             <button
               onClick={closeChat}
-              className="absolute right-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute left-3 top-3 rounded-full bg-muted p-1.5 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <X className="h-3.5 w-3.5" />
+              <ArrowLeft className="h-3.5 w-3.5" />
             </button>
             <div className="px-5 pt-2 pb-3 border-b flex items-center gap-3">
               <img src="/images/logo-mesalar.webp" alt="Mesalar" className="w-8 h-8 rounded-full object-contain border border-border" />
