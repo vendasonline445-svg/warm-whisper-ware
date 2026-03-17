@@ -710,7 +710,7 @@ const Index = () => {
           <div className="mt-1.5 flex items-center gap-1.5 text-[13px]">
             <Star className="h-3.5 w-3.5 fill-primary text-primary" />
             <span className="font-bold">4.8</span>
-            <span className="text-muted-foreground">(207)</span>
+            <span className="text-muted-foreground">(1.100)</span>
             <span className="text-muted-foreground mx-0.5">•</span>
             <span className="text-muted-foreground">4.473 vendidos</span>
           </div>
