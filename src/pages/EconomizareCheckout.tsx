@@ -293,7 +293,7 @@ const EconomizareCheckout = () => {
         {/* Colorful divider */}
         <div ref={productSectionRef} className="mt-6 overflow-hidden" style={{
           height: '4px',
-          backgroundImage: 'repeating-linear-gradient(90deg, #0f7b3f 0px, #0f7b3f 14px, transparent 14px, transparent 18px, #FF4D6A 18px, #FF4D6A 32px, transparent 32px, transparent 36px)',
+          backgroundImage: 'repeating-linear-gradient(90deg, #5BC4D6 0px, #5BC4D6 14px, transparent 14px, transparent 18px, #FF4D6A 18px, #FF4D6A 32px, transparent 32px, transparent 36px)',
           backgroundSize: '36px 4px',
         }} />
 
