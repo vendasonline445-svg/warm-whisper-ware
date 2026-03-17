@@ -30,7 +30,6 @@ const productImages = [
   "/images/eco/eco-embalagem-combo.webp",
   "/images/eco/eco-embalagem-front.webp",
   "/images/eco/eco-hidrometro.webp",
-  "/images/eco/eco-produto-tiktok.png",
 ];
 
 const reviews = [
