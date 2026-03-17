@@ -255,6 +255,9 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
   const [newLink, setNewLink] = useState({ url: "", tracking_id: "", campaign_id: "", creative_id: "" });
   const [newCost, setNewCost] = useState({ campaign_id: "", date: "", spend: "", impressions: "", clicks: "" });
   const [debugVisitorId, setDebugVisitorId] = useState("");
+  const [debugBaseline, setDebugBaseline] = useState<string | null>(() => {
+    try { return localStorage.getItem("fiq_debug_baseline"); } catch { return null; }
+  });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -401,13 +404,29 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
     });
   }, [creatives, creativeDiags]);
 
-  // ── Pixel health (memoized) ──
-  const pixelAlerts = useMemo(() => analyzePixelHealth(events), [events]);
+  // ── Filter events by baseline for debug ──
+  const debugEvents = useMemo(() => {
+    if (!debugBaseline) return events;
+    return events.filter(e => new Date(e.created_at).getTime() >= new Date(debugBaseline).getTime());
+  }, [events, debugBaseline]);
+
+  // ── Pixel health (memoized, uses baseline-filtered events) ──
+  const pixelAlerts = useMemo(() => analyzePixelHealth(debugEvents), [debugEvents]);
   const pixelScore = useMemo(() => {
     let score = 100;
     pixelAlerts.forEach(a => { score -= a.severity === "error" ? 20 : 10; });
     return Math.max(0, score);
   }, [pixelAlerts]);
+
+  const resetDebugBaseline = () => {
+    const now = new Date().toISOString();
+    setDebugBaseline(now);
+    try { localStorage.setItem("fiq_debug_baseline", now); } catch {}
+  };
+  const clearDebugBaseline = () => {
+    setDebugBaseline(null);
+    try { localStorage.removeItem("fiq_debug_baseline"); } catch {}
+  };
 
   const baseUrl = window.location.origin;
 
@@ -798,10 +817,18 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
       {/* ══ DEBUG + PIXEL OPTIMIZATION ══ */}
       {subTab === "debug" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5"><Bug className="h-4 w-4" /> Debug de Tracking</h3>
-            <Button variant="ghost" size="sm" onClick={fetchData}><RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /></Button>
-          </div>
+           <div className="flex items-center gap-2">
+             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5"><Bug className="h-4 w-4" /> Debug de Tracking</h3>
+             <Button variant="ghost" size="sm" onClick={fetchData}><RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /></Button>
+             <Button variant="outline" size="sm" className="text-[10px] h-7 gap-1" onClick={resetDebugBaseline}>
+               <Clock className="h-3 w-3" /> Resetar baseline
+             </Button>
+             {debugBaseline && (
+               <Button variant="ghost" size="sm" className="text-[10px] h-7 gap-1 text-muted-foreground" onClick={clearDebugBaseline}>
+                 ✕ Desde {new Date(debugBaseline).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+               </Button>
+             )}
+           </div>
 
           {/* Pixel Health Score */}
           <Card className={`p-4 border-dashed ${pixelScore >= 80 ? "border-emerald-500/30" : pixelScore >= 50 ? "border-amber-500/30" : "border-red-500/30"}`}>
@@ -857,10 +884,10 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
           {/* Summary cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             {[
-              { label: "Sessões", value: sessions.length, icon: <Monitor className="h-4 w-4" /> },
-              { label: "Eventos", value: events.length, icon: <Activity className="h-4 w-4" /> },
+             { label: "Sessões", value: sessions.length, icon: <Monitor className="h-4 w-4" /> },
+              { label: "Eventos", value: debugEvents.length, icon: <Activity className="h-4 w-4" /> },
               { label: "Com ttclid", value: sessions.filter(s => s.ttclid).length, icon: <Globe className="h-4 w-4" /> },
-              { label: "Purchases", value: events.filter(e => e.event_name === "purchase").length, icon: <CheckCircle2 className="h-4 w-4" /> },
+              { label: "Purchases", value: debugEvents.filter(e => e.event_name === "purchase").length, icon: <CheckCircle2 className="h-4 w-4" /> },
               { label: "Atribuições", value: attributions.length, icon: <Target className="h-4 w-4" /> },
             ].map((m, i) => (
               <Card key={i} className="p-3 text-center">
@@ -875,8 +902,8 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
           <Card className="p-4">
             <h4 className="text-xs font-bold text-foreground mb-2">Consistência do Funil</h4>
             <div className="space-y-1">
-              {FUNNEL_EVENTS.map(ev => {
-                const filtered = debugVisitorId ? events.filter(e => e.visitor_id?.includes(debugVisitorId)) : events;
+             {FUNNEL_EVENTS.map(ev => {
+                const filtered = debugVisitorId ? debugEvents.filter(e => e.visitor_id?.includes(debugVisitorId)) : debugEvents;
                 const count = filtered.filter(e => e.event_name === ev).length;
                 const inconsistent = filtered.filter(e => e.event_name === ev && e.event_data?.is_consistent === false).length;
                 return (
@@ -914,7 +941,7 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
           <Card className="p-4">
             <h4 className="text-xs font-bold text-foreground mb-2">Timeline de Eventos {debugVisitorId && `(${debugVisitorId})`}</h4>
             <div className="max-h-[300px] overflow-y-auto space-y-1">
-              {(debugVisitorId ? events.filter(e => e.visitor_id?.includes(debugVisitorId)) : events).slice(0, 50).map(e => (
+              {(debugVisitorId ? debugEvents.filter(e => e.visitor_id?.includes(debugVisitorId)) : debugEvents).slice(0, 50).map(e => (
                 <div key={e.id} className="flex items-center gap-2 text-[11px] py-1 border-b border-border/20">
                   <span className="text-muted-foreground w-28 shrink-0">{fmtDate(e.created_at)}</span>
                   <Badge variant={e.event_name === "purchase" ? "default" : e.event_data?.is_consistent === false ? "destructive" : "secondary"} className="text-[9px] shrink-0">{e.event_name}</Badge>

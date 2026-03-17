@@ -182,21 +182,42 @@ Deno.serve(async (req) => {
       currency: properties?.currency || "BRL",
     };
 
-    // 4. Insert into events table
-    const { error: evtErr } = await supabase.from("events").insert({
-      visitor_id,
-      session_id: session_id || null,
-      event_name,
-      event_data: eventData,
-      source: properties?.utm_source || null,
-      campaign: properties?.utm_campaign || null,
-      value: properties?.value || 0,
-      client_id,
-      site_id: site_id || null,
-    });
+    // 4. Server-side dedup: skip if same visitor+event in last 5 seconds
+    let skipInsert = false;
+    try {
+      const fiveSecsAgo = new Date(Date.now() - 5000).toISOString();
+      const { data: recent } = await supabase
+        .from("events")
+        .select("id")
+        .eq("visitor_id", visitor_id)
+        .eq("event_name", event_name)
+        .gte("created_at", fiveSecsAgo)
+        .limit(1);
+      if (recent && recent.length > 0) {
+        skipInsert = true;
+        console.log(`[tracker-ingest] Dedup: skipping ${event_name} for ${visitor_id} (duplicate within 5s)`);
+      }
+    } catch (e) {
+      console.error("[tracker-ingest] dedup check error:", e);
+    }
 
-    if (evtErr) {
-      console.error("[tracker-ingest] events insert error:", evtErr.message);
+    // Insert into events table
+    if (!skipInsert) {
+      const { error: evtErr } = await supabase.from("events").insert({
+        visitor_id,
+        session_id: session_id || null,
+        event_name,
+        event_data: eventData,
+        source: properties?.utm_source || null,
+        campaign: properties?.utm_campaign || null,
+        value: properties?.value || 0,
+        client_id,
+        site_id: site_id || null,
+      });
+
+      if (evtErr) {
+        console.error("[tracker-ingest] events insert error:", evtErr.message);
+      }
     }
 
     // 5. Update funnel_state (monotonic — only advance, never go back)
