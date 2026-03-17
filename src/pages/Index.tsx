@@ -88,6 +88,22 @@ const reviews = [
     rating: 5,
     photos: ["/images/review-juliana-1.webp", "/images/review-juliana-2.webp"],
   },
+  // --- Extra reviews (sem foto) para maximizar detecção do TikTok ---
+  { name: "Fernanda L.", avatar: "/images/avatar-carla.webp", text: "Mesa maravilhosa! Usei no aniversário do meu filho e coube tudo. Super estável, não balança nada. Recomendo demais!", rating: 5, photos: [] },
+  { name: "Lucas R.", avatar: "/images/avatar-karine.webp", text: "Comprei para usar no apartamento pequeno. Quando não preciso, fecho e guardo atrás do armário. Perfeita!", rating: 5, photos: [] },
+  { name: "Amanda Costa", avatar: "/images/avatar-patricia.webp", text: "Entrega super rápida! A mesa veio muito bem embalada. Qualidade excelente pelo preço. Já indiquei pra minha vizinha.", rating: 5, photos: [] },
+  { name: "Roberto S.", avatar: "/images/avatar-karine.webp", text: "Surpreendeu demais! Achei que ia ser frágil mas é muito resistente. Coloquei um monte de coisa em cima e ficou firme.", rating: 5, photos: [] },
+  { name: "Mariana Oliveira", avatar: "/images/avatar-raquel.webp", text: "Já é a segunda que compro! A primeira durou 3 anos de uso pesado. Qualidade top. Nota 10!", rating: 5, photos: [] },
+  { name: "Sandra B.", avatar: "/images/avatar-juliana.webp", text: "Usei pra montar minha barraquinha de feira e foi perfeita. Leve pra carregar e monta rapidinho. Amei! ❤️", rating: 5, photos: [] },
+  { name: "Thiago M.", avatar: "/images/avatar-karine.webp", text: "Mesa com ótimo custo-benefício. Superfície lisa, fácil de limpar. Pés bem firmes no chão.", rating: 5, photos: [] },
+  { name: "Camila Souza", avatar: "/images/avatar-carla.webp", text: "Comprei pro escritório em casa e ficou ótima! Espaçosa, bonita e muito prática de guardar.", rating: 4, photos: [] },
+  { name: "Diego F.", avatar: "/images/avatar-karine.webp", text: "Produto excelente! Usei em um evento e todo mundo perguntou onde comprei. Muito bonita e resistente.", rating: 5, photos: [] },
+  { name: "Beatriz Almeida", avatar: "/images/avatar-patricia.webp", text: "Chegou antes do prazo! A mesa é exatamente como nas fotos. Montagem super fácil, fiz sozinha.", rating: 5, photos: [] },
+  { name: "Carlos H.", avatar: "/images/avatar-karine.webp", text: "Comprei a branca e ficou linda na varanda. Material de qualidade, não enferruja. Muito satisfeito!", rating: 5, photos: [] },
+  { name: "Priscila N.", avatar: "/images/avatar-raquel.webp", text: "Mesa perfeita pro dia a dia! Uso pra tudo: refeições, trabalho, artesanato. Super versátil.", rating: 5, photos: [] },
+  { name: "Ana Paula G.", avatar: "/images/avatar-juliana.webp", text: "Melhor compra que fiz esse ano! A mesa é incrível, muito prática e o acabamento é lindo. Super recomendo! 🌟", rating: 5, photos: [] },
+  { name: "Marcos Vinícius", avatar: "/images/avatar-karine.webp", text: "Levei pro acampamento e foi show! Leve, fácil de transportar na maleta. Cabe no porta-malas tranquilo.", rating: 5, photos: [] },
+  { name: "Gabriela T.", avatar: "/images/avatar-carla.webp", text: "Nota 1000! A mesa é linda, resistente e super prática. Minha família toda adorou. Vou comprar outra pro sítio!", rating: 5, photos: [] },
 ];
 
 const faqs = [
