@@ -248,9 +248,11 @@ function AdminContent() {
         if ((e.event_name === "checkout_start" || e.event_name === "checkout_started") && key) checkoutIds.add(key);
         if ((e.event_name === "pix_generated" || e.event_name === "add_payment_info") && key) pixGenIds.add(key);
         if ((e.event_name === "purchase" || e.event_name === "payment_confirmed" || e.event_name === "pix_paid") && key) {
+          if (!paidIds.has(key)) {
+            const evtValue = e.value || 0;
+            if (evtValue > 0) revenueFromEvents += evtValue;
+          }
           paidIds.add(key);
-          const evtValue = e.value || 0;
-          if (evtValue > 0) revenueFromEvents += evtValue;
         }
         if (e.event_name === "view_content") {
           const pct = typeof e.event_data === "object" && e.event_data !== null ? Number(e.event_data.percent || 0) : 0;
