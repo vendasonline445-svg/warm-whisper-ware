@@ -941,7 +941,7 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
           <Card className="p-4">
             <h4 className="text-xs font-bold text-foreground mb-2">Timeline de Eventos {debugVisitorId && `(${debugVisitorId})`}</h4>
             <div className="max-h-[300px] overflow-y-auto space-y-1">
-              {(debugVisitorId ? events.filter(e => e.visitor_id?.includes(debugVisitorId)) : events).slice(0, 50).map(e => (
+              {(debugVisitorId ? debugEvents.filter(e => e.visitor_id?.includes(debugVisitorId)) : debugEvents).slice(0, 50).map(e => (
                 <div key={e.id} className="flex items-center gap-2 text-[11px] py-1 border-b border-border/20">
                   <span className="text-muted-foreground w-28 shrink-0">{fmtDate(e.created_at)}</span>
                   <Badge variant={e.event_name === "purchase" ? "default" : e.event_data?.is_consistent === false ? "destructive" : "secondary"} className="text-[9px] shrink-0">{e.event_name}</Badge>
