@@ -552,6 +552,8 @@ function AdminContent() {
         )}
 
 
+        {tab === "leads" && <FunilLeads />}
+
         {tab === "tiktok" && <AdminTikTokTab />}
 
         {(tab === "tracking" || tab === "tracking-sessions" || tab === "tracking-clicks" || tab === "tracking-links" || tab === "tracking-debug") && (
