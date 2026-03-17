@@ -710,7 +710,7 @@ const Index = () => {
           <div className="mt-1.5 flex items-center gap-1.5 text-[13px]">
             <Star className="h-3.5 w-3.5 fill-primary text-primary" />
             <span className="font-bold">4.8</span>
-            <span className="text-muted-foreground">(207)</span>
+            <span className="text-muted-foreground">(1.100)</span>
             <span className="text-muted-foreground mx-0.5">•</span>
             <span className="text-muted-foreground">4.473 vendidos</span>
           </div>
@@ -840,9 +840,9 @@ const Index = () => {
             <meta itemProp="name" content="Mesa Dobrável Tipo Maleta 180x60cm" />
             <div itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
               <meta itemProp="ratingValue" content="4.8" />
-              <meta itemProp="reviewCount" content="207" />
+              <meta itemProp="reviewCount" content="1100" />
               <meta itemProp="bestRating" content="5" />
-              <h2 className="text-[15px] font-bold mb-1">Avaliações dos clientes (<span itemProp="ratingCount">207</span>)</h2>
+              <h2 className="text-[15px] font-bold mb-1">Avaliações dos clientes (<span itemProp="ratingCount">1.100</span>)</h2>
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xl font-black">4.8</span>
                 <span className="text-muted-foreground text-[13px]">/5</span>
@@ -897,7 +897,7 @@ const Index = () => {
               onClick={() => setShowAllReviews(prev => !prev)}
               className="w-full py-3 mt-2 text-sm font-semibold text-[#FF4C6A] border border-[#FF4C6A]/30 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
             >
-              {showAllReviews ? "Mostrar menos avaliações" : "Ver todas as 207 avaliações"}
+              {showAllReviews ? "Mostrar menos avaliações" : "Ver todas as 1.100 avaliações"}
               <ChevronDown className={`h-4 w-4 transition-transform ${showAllReviews ? "rotate-180" : ""}`} />
             </button>
 
@@ -920,7 +920,7 @@ const Index = () => {
             "aggregateRating": {
               "@type": "AggregateRating",
               "ratingValue": "4.8",
-              "reviewCount": "207",
+              "reviewCount": "1100",
               "bestRating": "5"
             },
             "review": reviews.map(r => ({
