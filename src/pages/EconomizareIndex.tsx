@@ -795,7 +795,7 @@ const EconomizareIndex = () => {
                 }
               }} id="eco-video-container">
                 <img 
-                  src="/images/eco/eco-produto-hero.webp" 
+                  src="/images/eco/eco-video-thumb.png" 
                   alt="Vídeo do produto Economizare" 
                   className="video-poster w-full aspect-video object-cover"
                 />
