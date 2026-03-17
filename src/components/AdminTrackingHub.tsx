@@ -817,10 +817,18 @@ export default function AdminTrackingHub({ defaultTab }: { defaultTab?: SubTab }
       {/* ══ DEBUG + PIXEL OPTIMIZATION ══ */}
       {subTab === "debug" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5"><Bug className="h-4 w-4" /> Debug de Tracking</h3>
-            <Button variant="ghost" size="sm" onClick={fetchData}><RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /></Button>
-          </div>
+           <div className="flex items-center gap-2">
+             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5"><Bug className="h-4 w-4" /> Debug de Tracking</h3>
+             <Button variant="ghost" size="sm" onClick={fetchData}><RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /></Button>
+             <Button variant="outline" size="sm" className="text-[10px] h-7 gap-1" onClick={resetDebugBaseline}>
+               <Clock className="h-3 w-3" /> Resetar baseline
+             </Button>
+             {debugBaseline && (
+               <Button variant="ghost" size="sm" className="text-[10px] h-7 gap-1 text-muted-foreground" onClick={clearDebugBaseline}>
+                 ✕ Desde {new Date(debugBaseline).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+               </Button>
+             )}
+           </div>
 
           {/* Pixel Health Score */}
           <Card className={`p-4 border-dashed ${pixelScore >= 80 ? "border-emerald-500/30" : pixelScore >= 50 ? "border-amber-500/30" : "border-red-500/30"}`}>
