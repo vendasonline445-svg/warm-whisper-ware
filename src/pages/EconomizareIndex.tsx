@@ -771,7 +771,7 @@ const EconomizareIndex = () => {
               </p>
 
               {/* Vídeo do produto */}
-              <div className="rounded-xl overflow-hidden border relative bg-muted cursor-pointer" onClick={() => {
+              <div className="rounded-xl overflow-hidden border relative bg-muted cursor-pointer mx-auto max-w-[75%]" onClick={() => {
                 const container = document.getElementById('eco-video-container') as HTMLElement;
                 const poster = container?.querySelector('.video-poster') as HTMLElement;
                 let vid = document.getElementById('eco-video-inline') as HTMLVideoElement;
@@ -800,7 +800,7 @@ const EconomizareIndex = () => {
                 <img 
                   src="/images/eco/eco-video-thumb.png" 
                   alt="Vídeo do produto Economizare" 
-                  className="video-poster w-full aspect-video object-cover"
+                  className="video-poster w-full aspect-[9/16] object-cover"
                 />
                 <div className="play-overlay absolute inset-0 flex items-center justify-center transition-opacity duration-300 pointer-events-none">
                   <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg ring-4 ring-white/30">
