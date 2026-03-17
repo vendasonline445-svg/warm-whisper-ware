@@ -475,6 +475,19 @@ async function handlePaidWebhook(
     return;
   }
 
+  // --- DEDUP: Skip if this lead was already approved ---
+  if (lead.status === "approved") {
+    console.log(`[hygros-webhook] DEDUP: Lead ${lead.id} already approved, skipping duplicate webhook`);
+    return;
+  }
+
+  // Mark as approved immediately to block concurrent duplicates
+  await fetch(`${supabaseUrl}/rest/v1/checkout_leads?id=eq.${encodeURIComponent(lead.id)}`, {
+    method: "PATCH",
+    headers: restHeaders(serviceKey),
+    body: JSON.stringify({ status: "approved" }),
+  });
+
   let metadata: Record<string, any> = {};
   try {
     metadata =
