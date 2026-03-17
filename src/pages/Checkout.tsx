@@ -83,7 +83,7 @@ const Checkout = () => {
         const updated = storeItems.filter((_, i) => i !== index);
         if (updated.length === 0) {
           localStorage.removeItem('fiq_cart');
-          navigate('/loja');
+          navigate('/');
           return;
         }
         setStoreItems(updated);
