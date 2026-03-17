@@ -108,6 +108,9 @@
 }
 
 @layer base {
+  :root {
+    --tiktok-bar: 0px;
+  }
   * {
     @apply border-border;
   }
@@ -115,6 +118,18 @@
     @apply bg-background text-foreground;
     font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* TikTok in-app browser extra bottom spacing */
+@supports (padding: max(0px)) {
+  :root {
+    --tiktok-bar: 0px;
+  }
+}
+@media screen and (max-width: 768px) {
+  .tiktok-browser {
+    --tiktok-bar: 40px;
   }
 }
 
