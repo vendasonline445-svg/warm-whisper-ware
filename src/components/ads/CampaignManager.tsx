@@ -647,6 +647,11 @@ export default function CampaignManager() {
                                 title="Duplicar campanha">
                                 <Copy className="h-3.5 w-3.5" />
                               </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
+                                onClick={() => openBulkDuplicate(camp)}
+                                title="Duplicar em massa">
+                                <Layers className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
