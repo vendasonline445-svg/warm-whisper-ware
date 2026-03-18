@@ -259,19 +259,59 @@ Deno.serve(async (req) => {
         });
       }
 
+      const budgetPayload = {
+        advertiser_id,
+        campaign_id: String(campaign_id),
+        budget: Number(budget),
+      };
+
       const resp = await fetch(`${TIKTOK_API}/campaign/update/`, {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          advertiser_id,
-          campaign_id: String(campaign_id),
-          budget: Number(budget),
-        }),
+        body: JSON.stringify(budgetPayload),
       });
       const data = await resp.json();
       console.log("TikTok update budget response:", JSON.stringify(data).slice(0, 500));
 
       if (data.code !== 0) {
+        const isSmartLike = String(data?.message || "").toLowerCase().includes("smart");
+
+        if (isSmartLike) {
+          const fallbackEndpoints = [
+            `${TIKTOK_API}/smart_plus/campaign/update/`,
+            `${TIKTOK_API}/campaign/gmv_max/update/`,
+          ];
+
+          const fallbackErrors: Array<{ endpoint: string; code?: number; message?: string }> = [];
+
+          for (const endpoint of fallbackEndpoints) {
+            const fallbackResp = await fetch(endpoint, {
+              method: "POST",
+              headers,
+              body: JSON.stringify(budgetPayload),
+            });
+            const fallbackData = await fallbackResp.json();
+            console.log(`TikTok fallback budget response (${endpoint}):`, JSON.stringify(fallbackData).slice(0, 500));
+
+            if (fallbackData.code === 0) {
+              return new Response(JSON.stringify({ success: true, mode: endpoint }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+
+            fallbackErrors.push({ endpoint, code: fallbackData.code, message: fallbackData.message });
+          }
+
+          return new Response(JSON.stringify({
+            error: "Não foi possível atualizar orçamento para campanha Smart/GMV Max.",
+            code: data.code,
+            details: fallbackErrors,
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
         return new Response(JSON.stringify({ error: data.message, code: data.code }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
