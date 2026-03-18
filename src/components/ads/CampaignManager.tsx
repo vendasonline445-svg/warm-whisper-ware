@@ -795,6 +795,15 @@ export default function CampaignManager() {
               <Label className="text-xs">Orçamento (R$) — opcional</Label>
               <Input type="number" step="0.01" value={bulkDupBudget} onChange={(e) => setBulkDupBudget(e.target.value)} placeholder="Manter original" className="mt-1" />
             </div>
+            <div>
+              <Label className="text-xs">Quantidade de cópias por conta</Label>
+              <Input type="number" min={1} max={50} value={bulkCopies} onChange={(e) => setBulkCopies(Math.max(1, parseInt(e.target.value) || 1))} className="mt-1" />
+              {bulkCopies > 1 && bulkSelectedAccounts.length > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Total: {bulkCopies} × {bulkSelectedAccounts.length} conta(s) = {bulkCopies * bulkSelectedAccounts.length} campanha(s)
+                </p>
+              )}
+            </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
