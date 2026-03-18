@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
 
       // Fetch campaigns from TikTok
       const campResp = await fetch(
-        `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=100`,
+        `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=200`,
         { headers }
       );
       const campData = await campResp.json();
