@@ -38,6 +38,7 @@
  */
 
 import { useState, useEffect } from "react";
+import RotatingTrustBar from "@/components/RotatingTrustBar";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getUrlWithUtm } from "@/utils/utm";
