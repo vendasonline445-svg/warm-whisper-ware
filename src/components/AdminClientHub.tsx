@@ -63,9 +63,29 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
     window.open(oauthUrl, "_blank");
   };
 
+  const getAdvertiserIds = (advertiserValue: string | null) =>
+    (advertiserValue || "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+
   const updateAdvertiserId = async (bcId: string, advertiserId: string) => {
-    await db.from("business_centers").update({ advertiser_id: advertiserId }).eq("id", bcId);
+    await db.from("business_centers").update({ advertiser_id: advertiserId || null }).eq("id", bcId);
     toast({ title: "Advertiser ID salvo" });
+    fetchData();
+  };
+
+  const toggleAdvertiserId = async (bc: any, advertiserId: string) => {
+    const selected = getAdvertiserIds(bc.advertiser_id);
+    const next = selected.includes(advertiserId)
+      ? selected.filter((id) => id !== advertiserId)
+      : [...selected, advertiserId];
+
+    await db
+      .from("business_centers")
+      .update({ advertiser_id: next.length ? next.join(",") : null })
+      .eq("id", bc.id);
+
     fetchData();
   };
 
@@ -88,17 +108,33 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
   };
 
   const syncCampaigns = async (bc: any) => {
-    if (!bc.advertiser_id) {
-      toast({ title: "Configure o Advertiser ID primeiro", variant: "destructive" });
+    const advertiserIds = getAdvertiserIds(bc.advertiser_id);
+    if (!advertiserIds.length) {
+      toast({ title: "Configure ao menos uma conta de anúncio", variant: "destructive" });
       return;
     }
+
     setSyncing(bc.id);
+    let totalSynced = 0;
+    let failed = 0;
+
     try {
-      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
-        body: { bc_id: bc.id, action: "sync_campaigns", advertiser_id: bc.advertiser_id },
+      for (const advertiserId of advertiserIds) {
+        try {
+          const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+            body: { bc_id: bc.id, action: "sync_campaigns", advertiser_id: advertiserId },
+          });
+          if (error) throw error;
+          totalSynced += data?.synced || 0;
+        } catch {
+          failed++;
+        }
+      }
+
+      toast({
+        title: `✅ ${totalSynced} campanhas sincronizadas`,
+        description: failed ? `${failed} conta(s) com erro` : undefined,
       });
-      if (error) throw error;
-      toast({ title: `✅ ${data.synced} campanhas sincronizadas` });
     } catch (err: any) {
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
     }
@@ -106,17 +142,33 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
   };
 
   const syncCosts = async (bc: any) => {
-    if (!bc.advertiser_id) {
-      toast({ title: "Configure o Advertiser ID primeiro", variant: "destructive" });
+    const advertiserIds = getAdvertiserIds(bc.advertiser_id);
+    if (!advertiserIds.length) {
+      toast({ title: "Configure ao menos uma conta de anúncio", variant: "destructive" });
       return;
     }
+
     setSyncing(bc.id + "_costs");
+    let totalInserted = 0;
+    let failed = 0;
+
     try {
-      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
-        body: { bc_id: bc.id, action: "sync_costs", advertiser_id: bc.advertiser_id },
+      for (const advertiserId of advertiserIds) {
+        try {
+          const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+            body: { bc_id: bc.id, action: "sync_costs", advertiser_id: advertiserId },
+          });
+          if (error) throw error;
+          totalInserted += data?.inserted || 0;
+        } catch {
+          failed++;
+        }
+      }
+
+      toast({
+        title: `✅ ${totalInserted} registros de custo sincronizados`,
+        description: failed ? `${failed} conta(s) com erro` : undefined,
       });
-      if (error) throw error;
-      toast({ title: `✅ ${data.inserted} registros de custo sincronizados` });
     } catch (err: any) {
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
     }
@@ -303,7 +355,10 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
             <Card className="p-8 text-center text-muted-foreground text-sm">Nenhum Business Center cadastrado.</Card>
           ) : (
             <div className="grid gap-2">
-              {businessCenters.map(bc => (
+              {businessCenters.map((bc) => {
+                const selectedAdvertiserIds = getAdvertiserIds(bc.advertiser_id);
+
+                return (
                 <Card key={bc.id} className={`p-4 space-y-3 ${bc.status !== "active" ? "opacity-60" : ""}`}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -345,9 +400,9 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
                   {bc.platform === "tiktok" && isTokenValid(bc) && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Conta de Anúncio:</Label>
-                        {bc.advertiser_id && (
-                          <Badge variant="secondary" className="text-[10px] font-mono">{bc.advertiser_id}</Badge>
+                        <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Contas de Anúncio:</Label>
+                        {selectedAdvertiserIds.length > 0 && (
+                          <Badge variant="secondary" className="text-[10px]">{selectedAdvertiserIds.length} selecionada(s)</Badge>
                         )}
                         <Button
                           size="sm" variant="outline" className="h-6 text-[10px] gap-1 ml-auto"
@@ -364,17 +419,17 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
                             <button
                               key={adv.advertiser_id}
                               className={`flex items-center justify-between px-3 py-2 rounded-md text-xs text-left transition-colors ${
-                                bc.advertiser_id === adv.advertiser_id
+                                selectedAdvertiserIds.includes(adv.advertiser_id)
                                   ? "bg-primary/10 border border-primary/30 text-primary"
                                   : "hover:bg-muted border border-transparent"
                               }`}
-                              onClick={() => updateAdvertiserId(bc.id, adv.advertiser_id)}
+                              onClick={() => toggleAdvertiserId(bc, adv.advertiser_id)}
                             >
                               <div>
                                 <p className="font-medium">{adv.advertiser_name}</p>
                                 <p className="text-[10px] text-muted-foreground font-mono">{adv.advertiser_id}</p>
                               </div>
-                              {bc.advertiser_id === adv.advertiser_id && (
+                              {selectedAdvertiserIds.includes(adv.advertiser_id) && (
                                 <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
                               )}
                             </button>
@@ -446,7 +501,8 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
                     </div>
                   )}
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
 
