@@ -130,6 +130,24 @@ function isMethodNotAllowedError(data: any): boolean {
   return msg.includes("method not allowed") || msg.includes("http 405");
 }
 
+const AD_LIST_FIELDS = [
+  "ad_id",
+  "ad_name",
+  "adgroup_id",
+  "campaign_id",
+  "identity_id",
+  "identity_type",
+  "creative_material_mode",
+  "ad_format",
+  "ad_text",
+  "landing_page_url",
+  "display_name",
+  "call_to_action",
+  "placement_type",
+  "placement",
+  "creatives",
+];
+
 async function requestTikTokListPage(
   headers: Record<string, string>,
   endpoint: string,
@@ -137,6 +155,7 @@ async function requestTikTokListPage(
   page: number,
   filtering: Record<string, any>,
   pageSize = 100,
+  fields?: string[],
 ) {
   const postResp = await fetch(`${TIKTOK_API}/${endpoint}/`, {
     method: "POST",
@@ -146,6 +165,7 @@ async function requestTikTokListPage(
       page,
       page_size: pageSize,
       filtering,
+      ...(fields?.length ? { fields } : {}),
     }),
   });
   const postData = await safeJson(postResp);
@@ -159,6 +179,7 @@ async function requestTikTokListPage(
     page: String(page),
     page_size: String(pageSize),
     filtering: JSON.stringify(filtering),
+    ...(fields?.length ? { fields: JSON.stringify(fields) } : {}),
   });
   const getResp = await fetch(`${TIKTOK_API}/${endpoint}/?${query.toString()}`, { headers });
   return safeJson(getResp);
@@ -250,14 +271,27 @@ async function getAdsForMode(
     let page = 1;
 
     while (true) {
-      const data = await requestTikTokListPage(
+      let data = await requestTikTokListPage(
         headers,
         API_BY_MODE[mode].adGet,
         advertiserId,
         page,
         { adgroup_ids: batch },
         pageSize,
+        AD_LIST_FIELDS,
       );
+
+      if (data.code !== 0) {
+        // fallback without fields in case endpoint/account does not accept custom fields
+        data = await requestTikTokListPage(
+          headers,
+          API_BY_MODE[mode].adGet,
+          advertiserId,
+          page,
+          { adgroup_ids: batch },
+          pageSize,
+        );
+      }
 
       if (data.code !== 0) {
         console.error(`Failed to get ads (${mode}):`, data.message);
@@ -273,6 +307,61 @@ async function getAdsForMode(
   }
 
   return allAds;
+}
+
+async function getAdDetailForMode(
+  headers: Record<string, string>,
+  advertiserId: string,
+  adId: string,
+  mode: CampaignApiMode,
+) {
+  let data = await requestTikTokListPage(
+    headers,
+    API_BY_MODE[mode].adGet,
+    advertiserId,
+    1,
+    { ad_ids: [String(adId)] },
+    1,
+    AD_LIST_FIELDS,
+  );
+
+  if (data.code !== 0) {
+    data = await requestTikTokListPage(
+      headers,
+      API_BY_MODE[mode].adGet,
+      advertiserId,
+      1,
+      { ad_ids: [String(adId)] },
+      1,
+    );
+  }
+
+  if (data.code !== 0) return null;
+  return data.data?.list?.[0] || null;
+}
+
+async function buildAdPayloadForCreate(
+  headers: Record<string, string>,
+  sourceAdvertiserId: string,
+  ad: Record<string, any>,
+  preferredMode: CampaignApiMode,
+) {
+  const adId = String(ad?.ad_id || "");
+  const modes: CampaignApiMode[] = [preferredMode, preferredMode === "standard" ? "smart_plus" : "standard"];
+
+  let merged = { ...ad };
+
+  if (adId) {
+    for (const mode of modes) {
+      const detail = await getAdDetailForMode(headers, sourceAdvertiserId, adId, mode);
+      if (detail) {
+        merged = { ...merged, ...detail };
+        if (Array.isArray(merged.creatives) && merged.creatives.length > 0) break;
+      }
+    }
+  }
+
+  return cleanPayload(merged, AD_READONLY_FIELDS);
 }
 
 function cleanPayload(obj: Record<string, any>, readonlyFields: Set<string>): Record<string, any> {
@@ -361,6 +450,8 @@ async function duplicateAdGroupsAndAds(
     adsByAdGroup[agId].push(ad);
   }
 
+  const adPayloadCache = new Map<string, Record<string, any>>();
+
   for (const ag of adGroups) {
     const sourceAgId = String(ag.adgroup_id);
     const agPayload = cleanPayload(ag, ADGROUP_READONLY_FIELDS);
@@ -413,9 +504,19 @@ async function duplicateAdGroupsAndAds(
 
     const adsForGroup = adsByAdGroup[sourceAgId] || [];
     for (const ad of adsForGroup) {
-      const adPayload = cleanPayload(ad, AD_READONLY_FIELDS);
-      adPayload.advertiser_id = targetAdvertiserId;
-      adPayload.adgroup_id = newAgId;
+      const sourceAdId = String(ad?.ad_id || `${sourceAgId}_${Math.random()}`);
+      let baseAdPayload = adPayloadCache.get(sourceAdId);
+
+      if (!baseAdPayload) {
+        baseAdPayload = await buildAdPayloadForCreate(headers, sourceAdvertiserId, ad, readMode);
+        adPayloadCache.set(sourceAdId, baseAdPayload);
+      }
+
+      const adPayload = {
+        ...baseAdPayload,
+        advertiser_id: targetAdvertiserId,
+        adgroup_id: newAgId,
+      };
 
       const adModes: CampaignApiMode[] = [targetMode, targetMode === "standard" ? "smart_plus" : "standard"];
       let adCreated = false;
@@ -425,6 +526,13 @@ async function duplicateAdGroupsAndAds(
         const adRequestPayload = stripUnsetValues({ ...adPayload });
         if (mode === "smart_plus" && !adRequestPayload.request_id) {
           adRequestPayload.request_id = generateRequestId();
+        }
+
+        if (mode === "smart_plus" && (!Array.isArray(adRequestPayload.creatives) || adRequestPayload.creatives.length === 0)) {
+          const detail = await getAdDetailForMode(headers, sourceAdvertiserId, sourceAdId, "smart_plus");
+          if (detail?.creatives && Array.isArray(detail.creatives) && detail.creatives.length > 0) {
+            adRequestPayload.creatives = detail.creatives;
+          }
         }
 
         const adResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].adCreate}/`, {
