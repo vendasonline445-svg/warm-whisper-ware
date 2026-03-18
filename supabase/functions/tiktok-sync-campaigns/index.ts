@@ -38,8 +38,11 @@ const API_BY_MODE = {
   },
 } as const;
 
-const generateRequestId = () =>
-  crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+const generateRequestId = (): number => {
+  const timestamp = Date.now();
+  const suffix = Math.floor(Math.random() * 90) + 10;
+  return Number(`${timestamp}${suffix}`);
+};
 
 const createCampaignWithFallback = async (
   headers: Record<string, string>,
@@ -64,9 +67,7 @@ const createCampaignWithFallback = async (
     const requestPayload = { ...attempt.payload };
 
     if (mode === "smart_plus") {
-      if (!requestPayload.request_id) {
-        requestPayload.request_id = generateRequestId();
-      }
+      requestPayload.request_id = generateRequestId();
 
       for (const [key, value] of Object.entries(requestPayload)) {
         if (value === "UNSET" || value === "") {
