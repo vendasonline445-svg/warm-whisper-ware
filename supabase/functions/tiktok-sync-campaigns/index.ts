@@ -522,22 +522,17 @@ Deno.serve(async (req) => {
         createBody.budget = new_budget || orig.budget;
       }
 
-      const createResp = await fetch(`${TIKTOK_API}/campaign/create/`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(createBody),
-      });
-      const createData = await safeJson(createResp);
-      console.log("TikTok duplicate campaign response:", JSON.stringify(createData).slice(0, 500));
+      const createResult = await createCampaignWithFallback(headers, createBody);
+      console.log("TikTok duplicate campaign response:", JSON.stringify(createResult.data).slice(0, 500));
 
-      if (createData.code !== 0) {
-        return new Response(JSON.stringify({ error: createData.message, code: createData.code }), {
+      if (!createResult.success) {
+        return new Response(JSON.stringify({ error: createResult.data?.message || "Failed to duplicate campaign", code: createResult.data?.code }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       // Save to local DB
-      const newCampId = String(createData.data?.campaign_id);
+      const newCampId = String(createResult.data?.data?.campaign_id);
       await supabase.from("campaigns").insert({
         campaign_external_id: newCampId,
         campaign_name: createBody.campaign_name,
