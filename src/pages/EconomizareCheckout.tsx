@@ -220,9 +220,7 @@ const EconomizareCheckout = () => {
           </button>
           <div className="flex-1 text-center">
             <p className="font-bold text-sm">Resumo do pedido</p>
-            <p className="text-xs text-success flex items-center justify-center gap-1">
-              <ShieldCheck className="h-3 w-3" /> Seus dados estão seguros conosco
-            </p>
+            <RotatingTrustBar />
           </div>
           <div className="w-5" />
         </div>
