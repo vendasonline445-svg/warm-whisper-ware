@@ -490,7 +490,7 @@ Deno.serve(async (req) => {
         headers,
         body: JSON.stringify(createBody),
       });
-      const createData = await createResp.json();
+      const createData = await safeJson(createResp);
       console.log("TikTok duplicate campaign response:", JSON.stringify(createData).slice(0, 500));
 
       if (createData.code !== 0) {
