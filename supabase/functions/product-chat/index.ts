@@ -94,11 +94,34 @@ REGRAS DE RESPOSTA:
 - Se perguntar sobre outro produto, diga que no momento só trabalhamos com a Mesa Dobrável Mesalar
 - Responda em português do Brasil`;
 
+// Simple in-memory rate limit: 3 messages per visitor per 10 min window
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 3;
+const WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages } = await req.json();
+    const { messages, visitor_id } = await req.json();
+    
+    // Rate limiting
+    const key = visitor_id || req.headers.get("x-forwarded-for") || "unknown";
+    const now = Date.now();
+    const entry = rateLimitMap.get(key);
+    if (entry && now < entry.resetAt) {
+      if (entry.count >= RATE_LIMIT) {
+        return new Response(JSON.stringify({ error: "Você atingiu o limite de mensagens. Tente novamente em alguns minutos." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      entry.count++;
+    } else {
+      rateLimitMap.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    }
+    // Cleanup old entries
+    for (const [k, v] of rateLimitMap) { if (now > v.resetAt) rateLimitMap.delete(k); }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
