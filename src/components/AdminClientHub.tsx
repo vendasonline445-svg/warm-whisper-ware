@@ -40,6 +40,8 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [advertisers, setAdvertisers] = useState<Record<string, { advertiser_id: string; advertiser_name: string }[]>>({});
+  const [loadingAdvs, setLoadingAdvs] = useState<string | null>(null);
 
   // Client form
   const [newClient, setNewClient] = useState({ client_name: "", contact_email: "", contact_phone: "", notes: "" });
