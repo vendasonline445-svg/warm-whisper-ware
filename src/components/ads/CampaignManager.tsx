@@ -469,9 +469,11 @@ export default function CampaignManager() {
         .map((r: any) => String(r.error))))
         .slice(0, 2);
 
+      const totalAg = (data?.results || []).reduce((s: number, r: any) => s + (r.ad_groups_created || 0), 0);
+      const totalAds = (data?.results || []).reduce((s: number, r: any) => s + (r.ads_created || 0), 0);
       toast({
         title: `✅ Duplicação em massa concluída`,
-        description: `${succeeded}/${total} contas com sucesso${failed > 0 ? ` — ${failed} falharam` : ""}${failedMessages.length ? ` (${failedMessages.join(" | ")})` : ""}`,
+        description: `${succeeded}/${total} contas • ${totalAg} conjuntos • ${totalAds} anúncios${failed > 0 ? ` — ${failed} falharam` : ""}${failedMessages.length ? ` (${failedMessages.join(" | ")})` : ""}`,
       });
 
       setBulkDupDialog(null);
