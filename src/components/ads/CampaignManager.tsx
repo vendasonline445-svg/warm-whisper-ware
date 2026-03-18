@@ -328,9 +328,19 @@ export default function CampaignManager() {
                     {loading && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8">
-                          <div className="flex flex-col items-center gap-2">
+                          <div className="flex flex-col items-center gap-3">
                             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Buscando campanhas de todas as contas...</p>
+                            <div className="w-48">
+                              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                                <div
+                                  className="h-full bg-primary rounded-full transition-all duration-300"
+                                  style={{ width: `${progress.total > 0 ? (progress.loaded / progress.total) * 100 : 0}%` }}
+                                />
+                              </div>
+                              <p className="text-[10px] text-muted-foreground mt-1.5">
+                                {progress.loaded}/{progress.total} contas • {campaigns.length} campanhas encontradas
+                              </p>
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>
