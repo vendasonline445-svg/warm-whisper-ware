@@ -103,7 +103,16 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
     setSyncing(null);
   };
 
-  const fetchData = useCallback(async () => {
+  // Check for OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("oauth") === "success") {
+      toast({ title: "✅ TikTok conectado!", description: "Token de acesso recebido com sucesso." });
+      window.history.replaceState({}, "", window.location.pathname);
+      fetchData();
+    }
+  }, []);
+
     setLoading(true);
     try {
       if (subTab === "clientes") {
