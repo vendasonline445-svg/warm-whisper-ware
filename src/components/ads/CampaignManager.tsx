@@ -140,59 +140,110 @@ export default function CampaignManager() {
 
   // ── Fetch performance metrics from DB ──
   const fetchMetrics = async (campaignList: TikTokCampaign[]) => {
-    if (!campaignList.length) return;
+    if (!campaignList.length) {
+      setMetricsMap({});
+      return;
+    }
+
     setLoadingMetrics(true);
 
     try {
-      const externalIds = campaignList.map(c => c.campaign_id);
+      const externalIds = campaignList.map(c => String(c.campaign_id));
+      const campaignNames = new Set(campaignList.map(c => String(c.campaign_name || "").trim()).filter(Boolean));
 
-      // 1. Get matching campaigns from DB (maps external_id → internal id)
+      // 1) Map external campaign_id -> internal campaign row
       const { data: dbCampaigns } = await db
         .from("campaigns")
-        .select("id, campaign_external_id")
+        .select("id, campaign_external_id, campaign_name")
         .in("campaign_external_id", externalIds);
 
       const extToInternal: Record<string, string> = {};
+      const extToName: Record<string, string> = {};
       (dbCampaigns || []).forEach((c: any) => {
-        if (c.campaign_external_id) extToInternal[c.campaign_external_id] = c.id;
+        const extId = String(c.campaign_external_id || "");
+        if (!extId) return;
+        extToInternal[extId] = c.id;
+        extToName[extId] = String(c.campaign_name || "").trim();
       });
 
       const internalIds = Object.values(extToInternal);
       if (!internalIds.length) {
-        setLoadingMetrics(false);
+        setMetricsMap({});
         return;
       }
 
-      // 2. Fetch costs and attributions in parallel
-      const [costsRes, attribRes] = await Promise.all([
-        db.from("campaign_costs").select("campaign_id, spend, impressions, clicks, cpc, ctr").in("campaign_id", internalIds),
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+
+      // 2) Read spend + sales sources in parallel
+      const [costsRes, attribRes, purchaseRes] = await Promise.all([
+        db.from("campaign_costs").select("campaign_id, spend, impressions, clicks").in("campaign_id", internalIds),
         db.from("attributions").select("campaign_id, revenue, event_type").in("campaign_id", internalIds),
+        db
+          .from("events")
+          .select("id, campaign, value, event_data")
+          .eq("event_name", "purchase")
+          .gte("created_at", thirtyDaysAgo)
+          .order("created_at", { ascending: false })
+          .limit(1000),
       ]);
 
-      // 3. Aggregate costs per campaign
+      // 3) Aggregate costs per internal campaign_id
       const costsAgg: Record<string, { spend: number; impressions: number; clicks: number }> = {};
       (costsRes.data || []).forEach((c: any) => {
         if (!costsAgg[c.campaign_id]) costsAgg[c.campaign_id] = { spend: 0, impressions: 0, clicks: 0 };
-        costsAgg[c.campaign_id].spend += c.spend || 0;
-        costsAgg[c.campaign_id].impressions += c.impressions || 0;
-        costsAgg[c.campaign_id].clicks += c.clicks || 0;
+        costsAgg[c.campaign_id].spend += Number(c.spend || 0);
+        costsAgg[c.campaign_id].impressions += Number(c.impressions || 0);
+        costsAgg[c.campaign_id].clicks += Number(c.clicks || 0);
       });
 
-      // 4. Aggregate attributions per campaign
+      // 4) Primary source for sales/revenue: attributions
       const attribAgg: Record<string, { revenue: number; sales: number }> = {};
       (attribRes.data || []).forEach((a: any) => {
+        if (!a?.campaign_id) return;
         if (!attribAgg[a.campaign_id]) attribAgg[a.campaign_id] = { revenue: 0, sales: 0 };
-        attribAgg[a.campaign_id].revenue += a.revenue || 0;
+        attribAgg[a.campaign_id].revenue += Number(a.revenue || 0);
         attribAgg[a.campaign_id].sales += 1;
       });
 
-      // 5. Build metrics map keyed by external campaign_id
+      // 5) Fallback source when attributions are empty: purchase events (dedupe by transaction_id)
+      const fallbackByCampaignName: Record<string, { revenue: number; sales: number }> = {};
+      const dedupByCampaignAndTx: Record<string, Record<string, number>> = {};
+
+      (purchaseRes.data || []).forEach((event: any) => {
+        const payload = (event?.event_data && typeof event.event_data === "object") ? event.event_data : {};
+        const campaignName = String(event?.campaign || payload?.utm_campaign || "").trim();
+        if (!campaignName || !campaignNames.has(campaignName)) return;
+
+        const txId = String(payload?.transaction_id || event?.id || "").trim();
+        if (!txId) return;
+
+        const value = Number(event?.value || 0);
+        if (!Number.isFinite(value) || value <= 0) return;
+
+        if (!dedupByCampaignAndTx[campaignName]) dedupByCampaignAndTx[campaignName] = {};
+        dedupByCampaignAndTx[campaignName][txId] = Math.max(dedupByCampaignAndTx[campaignName][txId] || 0, value);
+      });
+
+      Object.entries(dedupByCampaignAndTx).forEach(([campaignName, txValues]) => {
+        const values = Object.values(txValues);
+        fallbackByCampaignName[campaignName] = {
+          sales: values.length,
+          revenue: values.reduce((sum, value) => sum + value, 0),
+        };
+      });
+
+      // 6) Build metrics map keyed by external campaign_id
       const newMetrics: Record<string, CampaignMetrics> = {};
       for (const [extId, intId] of Object.entries(extToInternal)) {
         const costs = costsAgg[intId] || { spend: 0, impressions: 0, clicks: 0 };
         const attr = attribAgg[intId] || { revenue: 0, sales: 0 };
-        const roas = costs.spend > 0 ? (attr.revenue / costs.spend) : 0;
-        const cpa = attr.sales > 0 ? (costs.spend / attr.sales) : 0;
+        const fallback = fallbackByCampaignName[extToName[extId] || ""] || { revenue: 0, sales: 0 };
+
+        const revenue = attr.sales > 0 || attr.revenue > 0 ? attr.revenue : fallback.revenue;
+        const sales = attr.sales > 0 || attr.revenue > 0 ? attr.sales : fallback.sales;
+
+        const roas = costs.spend > 0 ? (revenue / costs.spend) : 0;
+        const cpa = sales > 0 ? (costs.spend / sales) : 0;
         const cpc = costs.clicks > 0 ? (costs.spend / costs.clicks) : 0;
         const ctr = costs.impressions > 0 ? ((costs.clicks / costs.impressions) * 100) : 0;
 
@@ -202,8 +253,8 @@ export default function CampaignManager() {
           clicks: costs.clicks,
           cpc,
           ctr,
-          revenue: attr.revenue,
-          sales: attr.sales,
+          revenue,
+          sales,
           roas,
           cpa,
         };
@@ -212,8 +263,9 @@ export default function CampaignManager() {
       setMetricsMap(newMetrics);
     } catch (err) {
       console.error("Error fetching metrics:", err);
+    } finally {
+      setLoadingMetrics(false);
     }
-    setLoadingMetrics(false);
   };
 
   // Fetch metrics when campaigns change
