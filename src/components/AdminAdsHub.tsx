@@ -13,9 +13,10 @@ import TikTokConnect from "@/components/ads/TikTokConnect";
 
 const db = supabase as any;
 
-type SubTab = "campaigns" | "creatives" | "automation" | "budgets";
+type SubTab = "campaigns" | "creatives" | "automation" | "budgets" | "connect";
 
 const SUB_TABS: { key: SubTab; label: string; icon: React.ReactNode }[] = [
+  { key: "connect", label: "Conexão", icon: <Link2 className="h-4 w-4" /> },
   { key: "campaigns", label: "Campanhas", icon: <Megaphone className="h-4 w-4" /> },
   { key: "creatives", label: "Criativos", icon: <Palette className="h-4 w-4" /> },
   { key: "automation", label: "Automação", icon: <Zap className="h-4 w-4" /> },
