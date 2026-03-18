@@ -275,6 +275,25 @@ function cleanPayload(obj: Record<string, any>, readonlyFields: Set<string>): Re
   return cleaned;
 }
 
+function buildCampaignCreatePayload(
+  sourceCampaign: Record<string, any>,
+  targetAdvertiserId: string,
+  customName?: string,
+  customBudget?: number,
+) {
+  const payload = cleanPayload(sourceCampaign, CAMPAIGN_READONLY_FIELDS);
+
+  payload.advertiser_id = targetAdvertiserId;
+  payload.campaign_name = customName || `Copy of ${sourceCampaign.campaign_name || "Campaign"}`;
+  payload.objective_type = payload.objective_type || "WEB_CONVERSIONS";
+
+  if (customBudget !== undefined && Number.isFinite(customBudget)) {
+    payload.budget = customBudget;
+  }
+
+  return payload;
+}
+
 async function duplicateAdGroupsAndAds(
   headers: Record<string, string>,
   sourceAdvertiserId: string,
