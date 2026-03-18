@@ -860,17 +860,15 @@ Deno.serve(async (req) => {
 
       const orig = source.campaign;
       const sourceMode = source.mode;
+      const parsedBudget = new_budget !== undefined ? Number(new_budget) : undefined;
+      const budgetOverride = parsedBudget !== undefined && Number.isFinite(parsedBudget) ? parsedBudget : undefined;
 
-      const createBody: any = {
+      const createBody = buildCampaignCreatePayload(
+        orig,
         advertiser_id,
-        campaign_name: new_name || `Copy of ${orig.campaign_name}`,
-        objective_type: orig.objective_type || "WEB_CONVERSIONS",
-        budget_mode: orig.budget_mode || "BUDGET_MODE_DYNAMIC",
-      };
-
-      if (orig.budget && orig.budget > 0) {
-        createBody.budget = new_budget || orig.budget;
-      }
+        new_name || `Copy of ${orig.campaign_name}`,
+        budgetOverride,
+      );
 
       const createResult = await createCampaignWithFallback(headers, createBody, sourceMode);
       console.log("Duplicate campaign result:", JSON.stringify(createResult.data).slice(0, 500));
