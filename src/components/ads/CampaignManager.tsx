@@ -685,23 +685,51 @@ export default function CampaignManager() {
             </Button>
 
             {campaigns.length > 0 && (
-              <div className="flex gap-1 ml-auto">
-                <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("all")}>
-                  Todas ({campaigns.length})
-                </Button>
-                <Button size="sm" variant={statusFilter === "ENABLE" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("ENABLE")}>
-                  Ativas ({activeCampaigns})
-                </Button>
-                <Button size="sm" variant={statusFilter === "DISABLE" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("DISABLE")}>
-                  Pausadas ({pausedCampaigns})
-                </Button>
-              </div>
+              <>
+                <div className="flex gap-1 ml-auto">
+                  <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("all")}>
+                    Todas ({campaigns.length})
+                  </Button>
+                  <Button size="sm" variant={statusFilter === "ENABLE" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("ENABLE")}>
+                    Ativas ({activeCampaigns})
+                  </Button>
+                  <Button size="sm" variant={statusFilter === "DISABLE" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("DISABLE")}>
+                    Pausadas ({pausedCampaigns})
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={sortBy} onValueChange={(value) => setSortBy(value as CampaignSortBy)}>
+                    <SelectTrigger className="w-36 h-8 text-xs">
+                      <SelectValue placeholder="Ordenar por" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="updated" className="text-xs">Mais recentes</SelectItem>
+                      <SelectItem value="name" className="text-xs">Nome</SelectItem>
+                      <SelectItem value="sales" className="text-xs">Vendas</SelectItem>
+                      <SelectItem value="spend" className="text-xs">Gastos</SelectItem>
+                      <SelectItem value="revenue" className="text-xs">Revenue</SelectItem>
+                      <SelectItem value="roas" className="text-xs">ROAS</SelectItem>
+                      <SelectItem value="roi" className="text-xs">ROI</SelectItem>
+                      <SelectItem value="clicks" className="text-xs">Clicks</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={sortDirection} onValueChange={(value) => setSortDirection(value as SortDirection)}>
+                    <SelectTrigger className="w-28 h-8 text-xs">
+                      <SelectValue placeholder="Ordem" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="desc" className="text-xs">Decrescente</SelectItem>
+                      <SelectItem value="asc" className="text-xs">Crescente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
           </div>
 
           {/* ── Summary Cards ── */}
           {Object.keys(metricsMap).length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
               <Card className="p-3 text-center">
                 <DollarSign className="h-4 w-4 mx-auto text-muted-foreground mb-0.5" />
                 <p className="text-sm font-bold text-foreground">{fmtMoneyShort(totals.spend)}</p>
@@ -718,9 +746,18 @@ export default function CampaignManager() {
                 <p className="text-[10px] text-muted-foreground">Revenue</p>
               </Card>
               <Card className="p-3 text-center">
-                <BarChart3 className="h-4 w-4 mx-auto mb-0.5" style={{ color: totals.roas >= 1 ? "var(--emerald-500, #10b981)" : "var(--destructive)" }} />
+                <BarChart3 className="h-4 w-4 mx-auto mb-0.5" />
                 <p className={`text-sm font-bold ${totals.roas >= 1 ? "text-emerald-500" : "text-destructive"}`}>{totals.roas.toFixed(2)}x</p>
                 <p className="text-[10px] text-muted-foreground">ROAS</p>
+              </Card>
+              <Card className="p-3 text-center">
+                {totals.roi >= 0 ? (
+                  <TrendingUp className="h-4 w-4 mx-auto text-emerald-500 mb-0.5" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 mx-auto text-destructive mb-0.5" />
+                )}
+                <p className={`text-sm font-bold ${totals.roi >= 0 ? "text-emerald-500" : "text-destructive"}`}>{totals.roi.toFixed(1)}%</p>
+                <p className="text-[10px] text-muted-foreground">ROI</p>
               </Card>
               <Card className="p-3 text-center">
                 <DollarSign className="h-4 w-4 mx-auto text-amber-500 mb-0.5" />
@@ -749,6 +786,7 @@ export default function CampaignManager() {
                       <TableHead className="text-xs text-right">Vendas</TableHead>
                       <TableHead className="text-xs text-right">Revenue</TableHead>
                       <TableHead className="text-xs text-right">ROAS</TableHead>
+                      <TableHead className="text-xs text-right">ROI</TableHead>
                       <TableHead className="text-xs text-right">CPA</TableHead>
                       <TableHead className="text-xs text-right">Clicks</TableHead>
                       <TableHead className="text-xs">ID</TableHead>
