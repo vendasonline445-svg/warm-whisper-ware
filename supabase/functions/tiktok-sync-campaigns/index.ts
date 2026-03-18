@@ -53,7 +53,30 @@ Deno.serve(async (req) => {
         { headers }
       );
       const data = await resp.json();
-      return new Response(JSON.stringify(data), {
+      console.log("TikTok advertisers response:", JSON.stringify(data).slice(0, 1000));
+
+      // For each advertiser, try to get its name via advertiser/info
+      const advertisers = data?.data?.list || [];
+      const enriched = [];
+      for (const adv of advertisers) {
+        let name = adv.advertiser_name || adv.advertiser_id;
+        try {
+          const infoResp = await fetch(
+            `${TIKTOK_API}/advertiser/info/?advertiser_ids=["${adv.advertiser_id}"]`,
+            { headers: { ...headers, "Access-Token": bc.access_token } }
+          );
+          const infoData = await infoResp.json();
+          if (infoData.data?.list?.[0]?.name) {
+            name = infoData.data.list[0].name;
+          }
+        } catch { /* ignore */ }
+        enriched.push({
+          advertiser_id: String(adv.advertiser_id),
+          advertiser_name: name,
+        });
+      }
+
+      return new Response(JSON.stringify({ code: 0, data: { list: enriched } }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -70,7 +93,7 @@ Deno.serve(async (req) => {
 
       // Fetch campaigns from TikTok
       const campResp = await fetch(
-        `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=100`,
+        `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=200`,
         { headers }
       );
       const campData = await campResp.json();

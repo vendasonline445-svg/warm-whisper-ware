@@ -40,6 +40,8 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [advertisers, setAdvertisers] = useState<Record<string, { advertiser_id: string; advertiser_name: string }[]>>({});
+  const [loadingAdvs, setLoadingAdvs] = useState<string | null>(null);
 
   // Client form
   const [newClient, setNewClient] = useState({ client_name: "", contact_email: "", contact_phone: "", notes: "" });
@@ -65,6 +67,24 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
     await db.from("business_centers").update({ advertiser_id: advertiserId }).eq("id", bcId);
     toast({ title: "Advertiser ID salvo" });
     fetchData();
+  };
+
+  const fetchAdvertisers = async (bc: any) => {
+    setLoadingAdvs(bc.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "get_advertisers" },
+      });
+      if (error) throw error;
+      const list = data?.data?.list || [];
+      setAdvertisers(prev => ({ ...prev, [bc.id]: list }));
+      if (list.length === 0) {
+        toast({ title: "Nenhuma conta de anúncio encontrada", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao buscar contas", description: err.message, variant: "destructive" });
+    }
+    setLoadingAdvs(null);
   };
 
   const syncCampaigns = async (bc: any) => {
@@ -321,13 +341,54 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
                     </div>
                   </div>
 
-                  {/* Advertiser ID */}
-                  {bc.platform === "tiktok" && (
+                  {/* Advertiser Account Selection */}
+                  {bc.platform === "tiktok" && isTokenValid(bc) && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Conta de Anúncio:</Label>
+                        {bc.advertiser_id && (
+                          <Badge variant="secondary" className="text-[10px] font-mono">{bc.advertiser_id}</Badge>
+                        )}
+                        <Button
+                          size="sm" variant="outline" className="h-6 text-[10px] gap-1 ml-auto"
+                          disabled={loadingAdvs === bc.id}
+                          onClick={() => fetchAdvertisers(bc)}
+                        >
+                          {loadingAdvs === bc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                          Buscar Contas
+                        </Button>
+                      </div>
+                      {advertisers[bc.id] && advertisers[bc.id].length > 0 && (
+                        <div className="grid gap-1 max-h-48 overflow-y-auto border border-border rounded-md p-2">
+                          {advertisers[bc.id].map((adv) => (
+                            <button
+                              key={adv.advertiser_id}
+                              className={`flex items-center justify-between px-3 py-2 rounded-md text-xs text-left transition-colors ${
+                                bc.advertiser_id === adv.advertiser_id
+                                  ? "bg-primary/10 border border-primary/30 text-primary"
+                                  : "hover:bg-muted border border-transparent"
+                              }`}
+                              onClick={() => updateAdvertiserId(bc.id, adv.advertiser_id)}
+                            >
+                              <div>
+                                <p className="font-medium">{adv.advertiser_name}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono">{adv.advertiser_id}</p>
+                              </div>
+                              {bc.advertiser_id === adv.advertiser_id && (
+                                <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {bc.platform === "tiktok" && !isTokenValid(bc) && (
                     <div className="flex items-center gap-2">
                       <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Advertiser ID:</Label>
                       <Input
                         className="h-7 text-xs flex-1 max-w-xs"
-                        placeholder="Ex: 7234567890123"
+                        placeholder="Conecte via OAuth para buscar contas"
                         defaultValue={bc.advertiser_id || ""}
                         onBlur={(e) => {
                           if (e.target.value !== (bc.advertiser_id || "")) {
