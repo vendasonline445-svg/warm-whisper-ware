@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
         `${TIKTOK_API}/oauth2/advertiser/get/?app_id=${Deno.env.get("TIKTOK_APP_ID")}&secret=${Deno.env.get("TIKTOK_APP_SECRET")}&access_token=${bc.access_token}`,
         { headers }
       );
-      const data = await resp.json();
+      const data = await safeJson(resp);
       console.log("TikTok advertisers response:", JSON.stringify(data).slice(0, 1000));
 
       const advList = data?.data?.list || [];
