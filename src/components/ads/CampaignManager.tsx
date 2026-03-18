@@ -362,7 +362,98 @@ export default function CampaignManager() {
     setActionLoading(null);
   };
 
-  const statusBadge = (status: string) => {
+  // ── Bulk duplicate ──
+  const openBulkDuplicate = async (camp: TikTokCampaign) => {
+    setBulkDupDialog(camp);
+    setBulkDupName(camp.campaign_name);
+    setBulkDupBudget(camp.budget > 0 ? String(camp.budget) : "");
+    setBulkSelectedAccounts([]);
+    setBulkAccounts([]);
+    setBulkLoadingAccounts(true);
+
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) { setBulkLoadingAccounts(false); return; }
+
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "get_advertisers" },
+      });
+      if (error) throw error;
+      const accounts = (data?.data?.list || []).filter(
+        (a: any) => a.advertiser_id !== camp.advertiser_id
+      );
+      setBulkAccounts(accounts);
+    } catch (err: any) {
+      toast({ title: "Erro ao carregar contas", description: err.message, variant: "destructive" });
+    }
+    setBulkLoadingAccounts(false);
+  };
+
+  const toggleBulkAccount = (advId: string) => {
+    setBulkSelectedAccounts(prev =>
+      prev.includes(advId) ? prev.filter(id => id !== advId) : [...prev, advId]
+    );
+  };
+
+  const selectAllActiveAccounts = () => {
+    const activeIds = bulkAccounts
+      .filter(a => a.status !== "STATUS_DISABLE" && a.status !== "STATUS_PENDING_CONFIRM" && a.status !== "STATUS_CONFIRM_FAIL")
+      .map(a => a.advertiser_id);
+    setBulkSelectedAccounts(activeIds);
+  };
+
+  const executeBulkDuplicate = async () => {
+    if (!bulkDupDialog || !bulkSelectedAccounts.length) return;
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) return;
+
+    setBulkDuplicating(true);
+    setBulkProgress({ done: 0, total: bulkSelectedAccounts.length });
+
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: {
+          bc_id: bc.id,
+          action: "bulk_duplicate",
+          source_advertiser_id: bulkDupDialog.advertiser_id,
+          campaign_id: bulkDupDialog.campaign_id,
+          target_advertiser_ids: bulkSelectedAccounts,
+          new_name: bulkDupName || undefined,
+          new_budget: bulkDupBudget ? parseFloat(bulkDupBudget) : undefined,
+        },
+      });
+      if (error) throw error;
+
+      const succeeded = data?.succeeded || 0;
+      const total = data?.total || bulkSelectedAccounts.length;
+      const failed = total - succeeded;
+
+      toast({
+        title: `✅ Duplicação em massa concluída`,
+        description: `${succeeded}/${total} contas com sucesso${failed > 0 ? ` — ${failed} falharam` : ""}`,
+      });
+
+      setBulkDupDialog(null);
+      fetchCampaigns();
+    } catch (err: any) {
+      toast({ title: "Erro na duplicação em massa", description: err.message, variant: "destructive" });
+    }
+    setBulkDuplicating(false);
+  };
+
+  const getAccountStatusLabel = (status: string) => {
+    const map: Record<string, { label: string; disabled: boolean }> = {
+      STATUS_ENABLE: { label: "Ativa", disabled: false },
+      STATUS_DISABLE: { label: "Suspensa", disabled: true },
+      STATUS_PENDING_CONFIRM: { label: "Pendente", disabled: true },
+      STATUS_CONFIRM_FAIL: { label: "Rejeitada", disabled: true },
+      STATUS_CONFIRM_FAIL_END: { label: "Rejeitada", disabled: true },
+      STATUS_PENDING_VERIFIED: { label: "Em verificação", disabled: false },
+      STATUS_CONFIRM_MODIFY_FAIL: { label: "Modificação rejeitada", disabled: true },
+    };
+    return map[status] || { label: status.replace("STATUS_", ""), disabled: false };
+  };
+
     if (status === "ENABLE") return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px]"><Play className="h-2.5 w-2.5 mr-0.5" />Ativo</Badge>;
     if (status === "DISABLE") return <Badge className="bg-muted text-muted-foreground text-[10px]"><Pause className="h-2.5 w-2.5 mr-0.5" />Pausado</Badge>;
     return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
