@@ -293,7 +293,7 @@ export default function CampaignManager() {
     setLoading(false);
 
     // Auto-sync costs in background only for active accounts
-    syncCostsInBackground(bc.id, activeAdvertiserIds);
+    syncCostsInBackground(bc.id, activeAdvertiserIds, allCampaigns);
   };
 
   const syncCostsInBackground = async (bcId: string, advertiserIds: string[], campaignList?: TikTokCampaign[]) => {
