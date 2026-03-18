@@ -562,7 +562,7 @@ Deno.serve(async (req) => {
               headers,
               body: JSON.stringify(createBody),
             });
-            const createData = await createResp.json();
+            const createData = await safeJson(createResp);
 
             if (createData.code !== 0) {
               results.push({ advertiser_id: targetAdvId, copy: copyNum, success: false, error: createData.message });
