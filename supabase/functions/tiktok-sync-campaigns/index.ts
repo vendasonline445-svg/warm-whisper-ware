@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       "Access-Token": bc.access_token,
     };
 
-    // ── Action: get advertiser accounts ──
+    // ── Action: get advertiser accounts (with status) ──
     if (action === "get_advertisers") {
       const resp = await fetch(
         `${TIKTOK_API}/oauth2/advertiser/get/?app_id=${Deno.env.get("TIKTOK_APP_ID")}&secret=${Deno.env.get("TIKTOK_APP_SECRET")}&access_token=${bc.access_token}`,
@@ -55,10 +55,41 @@ Deno.serve(async (req) => {
       const data = await resp.json();
       console.log("TikTok advertisers response:", JSON.stringify(data).slice(0, 1000));
 
-      const advertisers = (data?.data?.list || []).map((adv: any) => ({
-        advertiser_id: String(adv.advertiser_id),
-        advertiser_name: adv.advertiser_name || String(adv.advertiser_id),
-      }));
+      const advList = data?.data?.list || [];
+      const advIds = advList.map((a: any) => String(a.advertiser_id));
+
+      // Fetch status for all advertisers in batches of 100
+      const statusMap: Record<string, { status: string; name: string }> = {};
+      for (let i = 0; i < advIds.length; i += 100) {
+        const batch = advIds.slice(i, i + 100);
+        try {
+          const infoResp = await fetch(
+            `${TIKTOK_API}/advertiser/info/?advertiser_ids=${JSON.stringify(batch)}&fields=["advertiser_id","name","status","description"]`,
+            { headers }
+          );
+          const infoData = await infoResp.json();
+          if (infoData.code === 0 && infoData.data?.list) {
+            for (const info of infoData.data.list) {
+              statusMap[String(info.advertiser_id)] = {
+                status: info.status || "STATUS_UNKNOWN",
+                name: info.name || String(info.advertiser_id),
+              };
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching advertiser info batch:", e);
+        }
+      }
+
+      const advertisers = advList.map((adv: any) => {
+        const id = String(adv.advertiser_id);
+        const info = statusMap[id];
+        return {
+          advertiser_id: id,
+          advertiser_name: info?.name || adv.advertiser_name || id,
+          status: info?.status || "STATUS_UNKNOWN",
+        };
+      });
 
       return new Response(JSON.stringify({ code: 0, data: { list: advertisers } }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -468,6 +499,75 @@ Deno.serve(async (req) => {
       });
 
       return new Response(JSON.stringify({ success: true, new_campaign_id: newCampId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: bulk duplicate campaign to multiple accounts ──
+    if (action === "bulk_duplicate") {
+      const { source_advertiser_id, campaign_id, target_advertiser_ids, new_name, new_budget } = body;
+      if (!source_advertiser_id || !campaign_id || !target_advertiser_ids?.length) {
+        return new Response(JSON.stringify({ error: "source_advertiser_id, campaign_id, target_advertiser_ids required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 1. Get original campaign details
+      const origResp = await fetch(
+        `${TIKTOK_API}/campaign/get/?advertiser_id=${source_advertiser_id}&page_size=1&filtering={"campaign_ids":["${campaign_id}"]}`,
+        { headers }
+      );
+      const origData = await origResp.json();
+      const orig = origData.data?.list?.[0];
+
+      if (!orig) {
+        return new Response(JSON.stringify({ error: "Campaign not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const results: Array<{ advertiser_id: string; success: boolean; campaign_id?: string; error?: string }> = [];
+
+      for (const targetAdvId of target_advertiser_ids) {
+        try {
+          const createBody: any = {
+            advertiser_id: targetAdvId,
+            campaign_name: new_name || orig.campaign_name,
+            objective_type: orig.objective_type || "WEB_CONVERSIONS",
+            budget_mode: orig.budget_mode || "BUDGET_MODE_DYNAMIC",
+          };
+          if (orig.budget && orig.budget > 0) {
+            createBody.budget = new_budget || orig.budget;
+          }
+
+          const createResp = await fetch(`${TIKTOK_API}/campaign/create/`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(createBody),
+          });
+          const createData = await createResp.json();
+
+          if (createData.code !== 0) {
+            results.push({ advertiser_id: targetAdvId, success: false, error: createData.message });
+          } else {
+            const newId = String(createData.data?.campaign_id);
+            await supabase.from("campaigns").insert({
+              campaign_external_id: newId,
+              campaign_name: createBody.campaign_name,
+              platform: "tiktok",
+              client_id: bc.client_id,
+            });
+            results.push({ advertiser_id: targetAdvId, success: true, campaign_id: newId });
+          }
+        } catch (e: any) {
+          results.push({ advertiser_id: targetAdvId, success: false, error: e.message });
+        }
+      }
+
+      const succeeded = results.filter(r => r.success).length;
+      console.log(`Bulk duplicate: ${succeeded}/${target_advertiser_ids.length} succeeded`);
+
+      return new Response(JSON.stringify({ success: true, results, succeeded, total: target_advertiser_ids.length }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

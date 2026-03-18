@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import {
   RefreshCw, Play, Pause, Copy, Loader2, DollarSign, AlertTriangle,
-  TrendingUp, TrendingDown, BarChart3, ShoppingCart, Eye
+  TrendingUp, TrendingDown, BarChart3, ShoppingCart, Eye, Layers
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 
 const db = supabase as any;
@@ -78,6 +79,16 @@ export default function CampaignManager() {
   // Budget edit dialog
   const [budgetDialog, setBudgetDialog] = useState<TikTokCampaign | null>(null);
   const [newBudget, setNewBudget] = useState("");
+
+  // Bulk duplicate dialog
+  const [bulkDupDialog, setBulkDupDialog] = useState<TikTokCampaign | null>(null);
+  const [bulkDupName, setBulkDupName] = useState("");
+  const [bulkDupBudget, setBulkDupBudget] = useState("");
+  const [bulkAccounts, setBulkAccounts] = useState<Array<{ advertiser_id: string; advertiser_name: string; status: string }>>([]);
+  const [bulkSelectedAccounts, setBulkSelectedAccounts] = useState<string[]>([]);
+  const [bulkLoadingAccounts, setBulkLoadingAccounts] = useState(false);
+  const [bulkDuplicating, setBulkDuplicating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
 
   const getCacheKey = (bcId: string) => `campaign_manager_cache_${bcId}`;
 
@@ -351,6 +362,98 @@ export default function CampaignManager() {
     setActionLoading(null);
   };
 
+  // ── Bulk duplicate ──
+  const openBulkDuplicate = async (camp: TikTokCampaign) => {
+    setBulkDupDialog(camp);
+    setBulkDupName(camp.campaign_name);
+    setBulkDupBudget(camp.budget > 0 ? String(camp.budget) : "");
+    setBulkSelectedAccounts([]);
+    setBulkAccounts([]);
+    setBulkLoadingAccounts(true);
+
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) { setBulkLoadingAccounts(false); return; }
+
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "get_advertisers" },
+      });
+      if (error) throw error;
+      const accounts = (data?.data?.list || []).filter(
+        (a: any) => a.advertiser_id !== camp.advertiser_id
+      );
+      setBulkAccounts(accounts);
+    } catch (err: any) {
+      toast({ title: "Erro ao carregar contas", description: err.message, variant: "destructive" });
+    }
+    setBulkLoadingAccounts(false);
+  };
+
+  const toggleBulkAccount = (advId: string) => {
+    setBulkSelectedAccounts(prev =>
+      prev.includes(advId) ? prev.filter(id => id !== advId) : [...prev, advId]
+    );
+  };
+
+  const selectAllActiveAccounts = () => {
+    const activeIds = bulkAccounts
+      .filter(a => a.status !== "STATUS_DISABLE" && a.status !== "STATUS_PENDING_CONFIRM" && a.status !== "STATUS_CONFIRM_FAIL")
+      .map(a => a.advertiser_id);
+    setBulkSelectedAccounts(activeIds);
+  };
+
+  const executeBulkDuplicate = async () => {
+    if (!bulkDupDialog || !bulkSelectedAccounts.length) return;
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) return;
+
+    setBulkDuplicating(true);
+    setBulkProgress({ done: 0, total: bulkSelectedAccounts.length });
+
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: {
+          bc_id: bc.id,
+          action: "bulk_duplicate",
+          source_advertiser_id: bulkDupDialog.advertiser_id,
+          campaign_id: bulkDupDialog.campaign_id,
+          target_advertiser_ids: bulkSelectedAccounts,
+          new_name: bulkDupName || undefined,
+          new_budget: bulkDupBudget ? parseFloat(bulkDupBudget) : undefined,
+        },
+      });
+      if (error) throw error;
+
+      const succeeded = data?.succeeded || 0;
+      const total = data?.total || bulkSelectedAccounts.length;
+      const failed = total - succeeded;
+
+      toast({
+        title: `✅ Duplicação em massa concluída`,
+        description: `${succeeded}/${total} contas com sucesso${failed > 0 ? ` — ${failed} falharam` : ""}`,
+      });
+
+      setBulkDupDialog(null);
+      fetchCampaigns();
+    } catch (err: any) {
+      toast({ title: "Erro na duplicação em massa", description: err.message, variant: "destructive" });
+    }
+    setBulkDuplicating(false);
+  };
+
+  const getAccountStatusLabel = (status: string) => {
+    const map: Record<string, { label: string; disabled: boolean }> = {
+      STATUS_ENABLE: { label: "Ativa", disabled: false },
+      STATUS_DISABLE: { label: "Suspensa", disabled: true },
+      STATUS_PENDING_CONFIRM: { label: "Pendente", disabled: true },
+      STATUS_CONFIRM_FAIL: { label: "Rejeitada", disabled: true },
+      STATUS_CONFIRM_FAIL_END: { label: "Rejeitada", disabled: true },
+      STATUS_PENDING_VERIFIED: { label: "Em verificação", disabled: false },
+      STATUS_CONFIRM_MODIFY_FAIL: { label: "Modificação rejeitada", disabled: true },
+    };
+    return map[status] || { label: status.replace("STATUS_", ""), disabled: false };
+  };
+
   const statusBadge = (status: string) => {
     if (status === "ENABLE") return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px]"><Play className="h-2.5 w-2.5 mr-0.5" />Ativo</Badge>;
     if (status === "DISABLE") return <Badge className="bg-muted text-muted-foreground text-[10px]"><Pause className="h-2.5 w-2.5 mr-0.5" />Pausado</Badge>;
@@ -544,6 +647,11 @@ export default function CampaignManager() {
                                 title="Duplicar campanha">
                                 <Copy className="h-3.5 w-3.5" />
                               </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
+                                onClick={() => openBulkDuplicate(camp)}
+                                title="Duplicar em massa">
+                                <Layers className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -627,6 +735,101 @@ export default function CampaignManager() {
             <Button onClick={duplicateCampaign} className="w-full" disabled={!!actionLoading}>
               {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
               Duplicar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Bulk Duplicate Dialog */}
+      <Dialog open={!!bulkDupDialog} onOpenChange={(open) => !open && setBulkDupDialog(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <Layers className="h-4 w-4" /> Duplicar em Massa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-3">
+              <p className="text-xs text-muted-foreground">Campanha original</p>
+              <p className="text-sm font-medium truncate">{bulkDupDialog?.campaign_name}</p>
+              <p className="text-[10px] font-mono text-muted-foreground mt-0.5">Conta: {bulkDupDialog?.advertiser_id}</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Nome da campanha duplicada</Label>
+              <Input value={bulkDupName} onChange={(e) => setBulkDupName(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs">Orçamento (R$) — opcional</Label>
+              <Input type="number" step="0.01" value={bulkDupBudget} onChange={(e) => setBulkDupBudget(e.target.value)} placeholder="Manter original" className="mt-1" />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-xs">Selecione as contas de destino</Label>
+                <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={selectAllActiveAccounts} disabled={bulkLoadingAccounts}>
+                  Selecionar todas ativas
+                </Button>
+              </div>
+
+              {bulkLoadingAccounts ? (
+                <div className="flex items-center justify-center py-6 gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando contas...
+                </div>
+              ) : bulkAccounts.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">Nenhuma outra conta encontrada neste BC.</p>
+              ) : (
+                <div className="border border-border rounded-lg max-h-60 overflow-y-auto divide-y divide-border">
+                  {bulkAccounts.map((acc) => {
+                    const info = getAccountStatusLabel(acc.status);
+                    const isDisabled = info.disabled;
+                    const isChecked = bulkSelectedAccounts.includes(acc.advertiser_id);
+                    return (
+                      <label
+                        key={acc.advertiser_id}
+                        className={`flex items-center gap-3 px-3 py-2 text-xs transition-colors ${
+                          isDisabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-muted/50"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isChecked}
+                          disabled={isDisabled}
+                          onCheckedChange={() => !isDisabled && toggleBulkAccount(acc.advertiser_id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate font-medium">{acc.advertiser_name}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground">{acc.advertiser_id}</p>
+                        </div>
+                        <Badge variant={isDisabled ? "destructive" : "outline"} className="text-[9px] shrink-0">
+                          {info.label}
+                        </Badge>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              {bulkSelectedAccounts.length > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  {bulkSelectedAccounts.length} conta(s) selecionada(s)
+                </p>
+              )}
+            </div>
+
+            <Button
+              onClick={executeBulkDuplicate}
+              className="w-full"
+              disabled={!bulkSelectedAccounts.length || bulkDuplicating}
+            >
+              {bulkDuplicating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Duplicando... {bulkProgress.done}/{bulkProgress.total}
+                </>
+              ) : (
+                <>
+                  <Layers className="h-4 w-4 mr-2" />
+                  Duplicar em {bulkSelectedAccounts.length} conta(s)
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>
