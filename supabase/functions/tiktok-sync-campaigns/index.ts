@@ -108,25 +108,50 @@ Deno.serve(async (req) => {
 
       const campaigns = campData.data?.list || [];
       let synced = 0;
+      const errors: string[] = [];
 
       for (const camp of campaigns) {
-        const { error: upsertErr } = await supabase
+        // Try upsert first, fall back to insert if needed
+        const extId = String(camp.campaign_id);
+        
+        // Check if exists
+        const { data: existing } = await supabase
           .from("campaigns")
-          .upsert(
-            {
-              campaign_external_id: String(camp.campaign_id),
+          .select("id")
+          .eq("campaign_external_id", extId)
+          .maybeSingle();
+
+        let upsertErr;
+        if (existing) {
+          const { error: err } = await supabase
+            .from("campaigns")
+            .update({ campaign_name: camp.campaign_name })
+            .eq("id", existing.id);
+          upsertErr = err;
+        } else {
+          const { error: err } = await supabase
+            .from("campaigns")
+            .insert({
+              campaign_external_id: extId,
               campaign_name: camp.campaign_name,
               platform: "tiktok",
               client_id: bc.client_id,
-            },
-            { onConflict: "campaign_external_id" }
-          );
+            });
+          upsertErr = err;
+        }
 
-        if (!upsertErr) synced++;
+        if (upsertErr) {
+          console.error(`Campaign upsert error for ${extId}:`, upsertErr.message);
+          errors.push(`${extId}: ${upsertErr.message}`);
+        } else {
+          synced++;
+        }
       }
 
+      console.log(`Sync result: ${synced}/${campaigns.length} synced. Errors: ${errors.length}`);
+
       return new Response(
-        JSON.stringify({ success: true, total: campaigns.length, synced }),
+        JSON.stringify({ success: true, total: campaigns.length, synced, errors }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
