@@ -340,12 +340,25 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
 
                   {/* OAuth & Sync Actions */}
                   {bc.platform === "tiktok" && (
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex gap-2 flex-wrap items-center">
                       {!isTokenValid(bc) && (
                         <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => startOAuth(bc)}>
                           <ExternalLink className="h-3 w-3" /> Conectar via OAuth
                         </Button>
                       )}
+                      {/* Copy OAuth Link */}
+                      <Button
+                        size="sm" variant="outline" className="h-7 text-xs gap-1"
+                        onClick={() => {
+                          const state = btoa(JSON.stringify({ client_id: bc.client_id, bc_id: bc.id }));
+                          const redirectUri = encodeURIComponent(`https://slcuaijctwvmumgtpxgv.supabase.co/functions/v1/tiktok-oauth-callback`);
+                          const link = `https://business-api.tiktok.com/portal/auth?app_id=${TIKTOK_APP_ID}&state=${state}&redirect_uri=${redirectUri}`;
+                          navigator.clipboard.writeText(link);
+                          toast({ title: "🔗 Link OAuth copiado!", description: "Cole no navegador onde está logado no TikTok Ads Manager." });
+                        }}
+                      >
+                        <Copy className="h-3 w-3" /> Copiar Link OAuth
+                      </Button>
                       {isTokenValid(bc) && (
                         <>
                           <Button
