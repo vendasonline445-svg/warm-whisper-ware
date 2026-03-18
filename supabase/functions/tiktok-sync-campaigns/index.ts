@@ -277,7 +277,7 @@ Deno.serve(async (req) => {
           operation_status, // "ENABLE" | "DISABLE"
         }),
       });
-      const data = await resp.json();
+      const data = await safeJson(resp);
       console.log("TikTok update status response:", JSON.stringify(data).slice(0, 500));
 
       if (data.code !== 0) {
