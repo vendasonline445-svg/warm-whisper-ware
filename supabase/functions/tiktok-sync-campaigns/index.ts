@@ -17,24 +17,48 @@ const safeJson = async (resp: Response) => {
   }
 };
 
+type CampaignApiMode = "standard" | "smart_plus";
+
+const API_BY_MODE = {
+  standard: {
+    campaignGet: "campaign/get",
+    campaignCreate: "campaign/create",
+    adgroupGet: "adgroup/get",
+    adgroupCreate: "adgroup/create",
+    adGet: "ad/get",
+    adCreate: "ad/create",
+  },
+  smart_plus: {
+    campaignGet: "smart_plus/campaign/get",
+    campaignCreate: "smart_plus/campaign/create",
+    adgroupGet: "smart_plus/adgroup/get",
+    adgroupCreate: "smart_plus/adgroup/create",
+    adGet: "smart_plus/ad/get",
+    adCreate: "smart_plus/ad/create",
+  },
+} as const;
+
 const createCampaignWithFallback = async (
   headers: Record<string, string>,
   payload: Record<string, any>,
+  mode: CampaignApiMode,
 ) => {
   const attempts: Array<{ mode: string; payload: Record<string, any> }> = [
     { mode: String(payload.budget_mode || "ORIGINAL"), payload: { ...payload } },
   ];
 
-  const baseMode = String(payload.budget_mode || "").toUpperCase();
-  if (baseMode.includes("DYNAMIC")) {
-    attempts.push({ mode: "BUDGET_MODE_DAY", payload: { ...payload, budget_mode: "BUDGET_MODE_DAY" } });
-    attempts.push({ mode: "BUDGET_MODE_TOTAL", payload: { ...payload, budget_mode: "BUDGET_MODE_TOTAL" } });
+  if (mode === "standard") {
+    const baseMode = String(payload.budget_mode || "").toUpperCase();
+    if (baseMode.includes("DYNAMIC")) {
+      attempts.push({ mode: "BUDGET_MODE_DAY", payload: { ...payload, budget_mode: "BUDGET_MODE_DAY" } });
+      attempts.push({ mode: "BUDGET_MODE_TOTAL", payload: { ...payload, budget_mode: "BUDGET_MODE_TOTAL" } });
+    }
   }
 
   let lastData: any = null;
 
   for (const attempt of attempts) {
-    const createResp = await fetch(`${TIKTOK_API}/campaign/create/`, {
+    const createResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].campaignCreate}/`, {
       method: "POST",
       headers,
       body: JSON.stringify(attempt.payload),
@@ -42,7 +66,7 @@ const createCampaignWithFallback = async (
     const createData = await safeJson(createResp);
 
     if (createData.code === 0) {
-      return { success: true as const, data: createData, mode: attempt.mode, payload: attempt.payload };
+      return { success: true as const, data: createData, mode, payload: attempt.payload };
     }
 
     lastData = createData;
@@ -51,7 +75,7 @@ const createCampaignWithFallback = async (
     if (!retryable) break;
   }
 
-  return { success: false as const, data: lastData };
+  return { success: false as const, data: lastData, mode };
 };
 
 // ── Helpers to duplicate ad groups + ads ──
@@ -112,7 +136,46 @@ async function requestTikTokListPage(
   return safeJson(getResp);
 }
 
-async function getAdGroups(headers: Record<string, string>, advertiserId: string, campaignId: string) {
+async function getCampaignByMode(
+  headers: Record<string, string>,
+  advertiserId: string,
+  campaignId: string,
+  mode: CampaignApiMode,
+) {
+  const data = await requestTikTokListPage(
+    headers,
+    API_BY_MODE[mode].campaignGet,
+    advertiserId,
+    1,
+    { campaign_ids: [String(campaignId)] },
+    1,
+  );
+
+  if (data.code !== 0) return null;
+  return data.data?.list?.[0] || null;
+}
+
+async function getSourceCampaign(
+  headers: Record<string, string>,
+  advertiserId: string,
+  campaignId: string,
+): Promise<{ mode: CampaignApiMode; campaign: any } | null> {
+  const [smartCampaign, standardCampaign] = await Promise.all([
+    getCampaignByMode(headers, advertiserId, campaignId, "smart_plus"),
+    getCampaignByMode(headers, advertiserId, campaignId, "standard"),
+  ]);
+
+  if (smartCampaign) return { mode: "smart_plus", campaign: smartCampaign };
+  if (standardCampaign) return { mode: "standard", campaign: standardCampaign };
+  return null;
+}
+
+async function getAdGroupsForMode(
+  headers: Record<string, string>,
+  advertiserId: string,
+  campaignId: string,
+  mode: CampaignApiMode,
+) {
   const allAdGroups: any[] = [];
   let page = 1;
   const pageSize = 100;
@@ -120,15 +183,15 @@ async function getAdGroups(headers: Record<string, string>, advertiserId: string
   while (true) {
     const data = await requestTikTokListPage(
       headers,
-      "adgroup/get",
+      API_BY_MODE[mode].adgroupGet,
       advertiserId,
       page,
-      { campaign_ids: [campaignId] },
+      { campaign_ids: [String(campaignId)] },
       pageSize,
     );
 
     if (data.code !== 0) {
-      console.error("Failed to get ad groups:", data.message);
+      console.error(`Failed to get ad groups (${mode}):`, data.message);
       break;
     }
 
@@ -142,7 +205,12 @@ async function getAdGroups(headers: Record<string, string>, advertiserId: string
   return allAdGroups;
 }
 
-async function getAds(headers: Record<string, string>, advertiserId: string, adgroupIds: string[]) {
+async function getAdsForMode(
+  headers: Record<string, string>,
+  advertiserId: string,
+  adgroupIds: string[],
+  mode: CampaignApiMode,
+) {
   if (!adgroupIds.length) return [];
 
   const allAds: any[] = [];
@@ -156,7 +224,7 @@ async function getAds(headers: Record<string, string>, advertiserId: string, adg
     while (true) {
       const data = await requestTikTokListPage(
         headers,
-        "ad/get",
+        API_BY_MODE[mode].adGet,
         advertiserId,
         page,
         { adgroup_ids: batch },
@@ -164,7 +232,7 @@ async function getAds(headers: Record<string, string>, advertiserId: string, adg
       );
 
       if (data.code !== 0) {
-        console.error("Failed to get ads:", data.message);
+        console.error(`Failed to get ads (${mode}):`, data.message);
         break;
       }
 
@@ -198,7 +266,8 @@ async function duplicateAdGroupsAndAds(
   targetAdvertiserId: string,
   sourceCampaignId: string,
   newCampaignId: string,
-  isCrossAccount: boolean,
+  sourceMode: CampaignApiMode,
+  targetMode: CampaignApiMode,
 ) {
   const logs: string[] = [];
   let adGroupsCreated = 0;
@@ -206,18 +275,37 @@ async function duplicateAdGroupsAndAds(
   let adGroupsFailed = 0;
   let adsFailed = 0;
 
-  // 1. Get all ad groups from original campaign
-  const adGroups = await getAdGroups(headers, sourceAdvertiserId, sourceCampaignId);
-  logs.push(`Found ${adGroups.length} ad groups in source campaign`);
+  let readMode: CampaignApiMode = sourceMode;
+  let adGroups = await getAdGroupsForMode(headers, sourceAdvertiserId, sourceCampaignId, readMode);
+
+  if (adGroups.length === 0) {
+    const fallbackMode: CampaignApiMode = readMode === "standard" ? "smart_plus" : "standard";
+    const fallbackAdGroups = await getAdGroupsForMode(headers, sourceAdvertiserId, sourceCampaignId, fallbackMode);
+    if (fallbackAdGroups.length > 0) {
+      readMode = fallbackMode;
+      adGroups = fallbackAdGroups;
+      logs.push(`Ad groups encontrados com fallback de modo (${fallbackMode})`);
+    }
+  }
+
+  logs.push(`Found ${adGroups.length} ad groups in source campaign (mode: ${readMode})`);
 
   if (adGroups.length === 0) return { adGroupsCreated, adsCreated, adGroupsFailed, adsFailed, logs };
 
-  // 2. Get all ads from all ad groups
   const adGroupIds = adGroups.map((ag: any) => String(ag.adgroup_id));
-  const allAds = await getAds(headers, sourceAdvertiserId, adGroupIds);
+  let allAds = await getAdsForMode(headers, sourceAdvertiserId, adGroupIds, readMode);
+
+  if (allAds.length === 0) {
+    const fallbackMode: CampaignApiMode = readMode === "standard" ? "smart_plus" : "standard";
+    const fallbackAds = await getAdsForMode(headers, sourceAdvertiserId, adGroupIds, fallbackMode);
+    if (fallbackAds.length > 0) {
+      allAds = fallbackAds;
+      logs.push(`Ads encontrados com fallback de modo (${fallbackMode})`);
+    }
+  }
+
   logs.push(`Found ${allAds.length} ads across all ad groups`);
 
-  // Group ads by adgroup_id for mapping
   const adsByAdGroup: Record<string, any[]> = {};
   for (const ad of allAds) {
     const agId = String(ad.adgroup_id);
@@ -225,32 +313,43 @@ async function duplicateAdGroupsAndAds(
     adsByAdGroup[agId].push(ad);
   }
 
-  // 3. Create each ad group under the new campaign
   for (const ag of adGroups) {
     const sourceAgId = String(ag.adgroup_id);
     const agPayload = cleanPayload(ag, ADGROUP_READONLY_FIELDS);
     agPayload.advertiser_id = targetAdvertiserId;
     agPayload.campaign_id = newCampaignId;
 
-    // If schedule_start_time is in the past, update it
     if (agPayload.schedule_start_time) {
       const startTime = new Date(agPayload.schedule_start_time);
       if (startTime < new Date()) {
-        // Set to 5 minutes from now
         const future = new Date(Date.now() + 5 * 60 * 1000);
         agPayload.schedule_start_time = future.toISOString().replace("T", " ").split(".")[0];
       }
     }
 
-    const agResp = await fetch(`${TIKTOK_API}/adgroup/create/`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(agPayload),
-    });
-    const agData = await safeJson(agResp);
+    const adgroupModes: CampaignApiMode[] = [targetMode, targetMode === "standard" ? "smart_plus" : "standard"];
+    let agData: any = null;
+    let agErrorMessage = "";
 
-    if (agData.code !== 0) {
-      logs.push(`❌ Ad group "${ag.adgroup_name}": ${agData.message}`);
+    for (const mode of adgroupModes) {
+      const agResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].adgroupCreate}/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(agPayload),
+      });
+      const responseData = await safeJson(agResp);
+      if (responseData.code === 0) {
+        agData = responseData;
+        if (mode !== targetMode) {
+          logs.push(`ℹ️ Ad group create fallback endpoint usado (${mode})`);
+        }
+        break;
+      }
+      agErrorMessage = responseData?.message || "Falha ao criar ad group";
+    }
+
+    if (!agData) {
+      logs.push(`❌ Ad group "${ag.adgroup_name}": ${agErrorMessage}`);
       adGroupsFailed++;
       continue;
     }
@@ -259,29 +358,40 @@ async function duplicateAdGroupsAndAds(
     adGroupsCreated++;
     logs.push(`✅ Ad group "${ag.adgroup_name}" → ${newAgId}`);
 
-    // 4. Create ads under the new ad group
     const adsForGroup = adsByAdGroup[sourceAgId] || [];
     for (const ad of adsForGroup) {
       const adPayload = cleanPayload(ad, AD_READONLY_FIELDS);
       adPayload.advertiser_id = targetAdvertiserId;
       adPayload.adgroup_id = newAgId;
 
-      // For cross-account, creative assets (video_id, image_ids) may not work
-      // but we try anyway - TikTok will return an error if they're not available
+      const adModes: CampaignApiMode[] = [targetMode, targetMode === "standard" ? "smart_plus" : "standard"];
+      let adCreated = false;
+      let adErrorMessage = "";
 
-      const adResp = await fetch(`${TIKTOK_API}/ad/create/`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(adPayload),
-      });
-      const adData = await safeJson(adResp);
+      for (const mode of adModes) {
+        const adResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].adCreate}/`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(adPayload),
+        });
+        const adData = await safeJson(adResp);
 
-      if (adData.code !== 0) {
-        logs.push(`  ❌ Ad "${ad.ad_name}": ${adData.message}`);
+        if (adData.code === 0) {
+          adsCreated++;
+          adCreated = true;
+          logs.push(`  ✅ Ad "${ad.ad_name}" → ${adData.data?.ad_id}`);
+          if (mode !== targetMode) {
+            logs.push(`  ℹ️ Ad create fallback endpoint usado (${mode})`);
+          }
+          break;
+        }
+
+        adErrorMessage = adData?.message || "Falha ao criar anúncio";
+      }
+
+      if (!adCreated) {
+        logs.push(`  ❌ Ad "${ad.ad_name}": ${adErrorMessage}`);
         adsFailed++;
-      } else {
-        adsCreated++;
-        logs.push(`  ✅ Ad "${ad.ad_name}" → ${adData.data?.ad_id}`);
       }
     }
   }
