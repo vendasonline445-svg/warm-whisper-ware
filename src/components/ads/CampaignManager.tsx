@@ -89,6 +89,7 @@ export default function CampaignManager() {
   const [bulkLoadingAccounts, setBulkLoadingAccounts] = useState(false);
   const [bulkDuplicating, setBulkDuplicating] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
+  const [bulkCopies, setBulkCopies] = useState(1);
 
   const getCacheKey = (bcId: string) => `campaign_manager_cache_${bcId}`;
 
@@ -398,6 +399,7 @@ export default function CampaignManager() {
     setBulkDupBudget(camp.budget > 0 ? String(camp.budget) : "");
     setBulkSelectedAccounts([]);
     setBulkAccounts([]);
+    setBulkCopies(1);
     setBulkLoadingAccounts(true);
 
     const bc = bcs.find((b: any) => b.id === selectedBc);
@@ -436,8 +438,9 @@ export default function CampaignManager() {
     const bc = bcs.find((b: any) => b.id === selectedBc);
     if (!bc) return;
 
+    const totalOps = bulkSelectedAccounts.length * bulkCopies;
     setBulkDuplicating(true);
-    setBulkProgress({ done: 0, total: bulkSelectedAccounts.length });
+    setBulkProgress({ done: 0, total: totalOps });
 
     try {
       const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
@@ -449,6 +452,7 @@ export default function CampaignManager() {
           target_advertiser_ids: bulkSelectedAccounts,
           new_name: bulkDupName || undefined,
           new_budget: bulkDupBudget ? parseFloat(bulkDupBudget) : undefined,
+          copies: bulkCopies,
         },
       });
       if (error) throw error;
@@ -791,6 +795,15 @@ export default function CampaignManager() {
               <Label className="text-xs">Orçamento (R$) — opcional</Label>
               <Input type="number" step="0.01" value={bulkDupBudget} onChange={(e) => setBulkDupBudget(e.target.value)} placeholder="Manter original" className="mt-1" />
             </div>
+            <div>
+              <Label className="text-xs">Quantidade de cópias por conta</Label>
+              <Input type="number" min={1} max={50} value={bulkCopies} onChange={(e) => setBulkCopies(Math.max(1, parseInt(e.target.value) || 1))} className="mt-1" />
+              {bulkCopies > 1 && bulkSelectedAccounts.length > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Total: {bulkCopies} × {bulkSelectedAccounts.length} conta(s) = {bulkCopies * bulkSelectedAccounts.length} campanha(s)
+                </p>
+              )}
+            </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -856,7 +869,7 @@ export default function CampaignManager() {
               ) : (
                 <>
                   <Layers className="h-4 w-4 mr-2" />
-                  Duplicar em {bulkSelectedAccounts.length} conta(s)
+                  Duplicar {bulkCopies}× em {bulkSelectedAccounts.length} conta(s) ({bulkCopies * bulkSelectedAccounts.length} total)
                 </>
               )}
             </Button>
