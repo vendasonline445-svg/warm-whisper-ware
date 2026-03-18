@@ -739,6 +739,101 @@ export default function CampaignManager() {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Bulk Duplicate Dialog */}
+      <Dialog open={!!bulkDupDialog} onOpenChange={(open) => !open && setBulkDupDialog(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <Layers className="h-4 w-4" /> Duplicar em Massa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-3">
+              <p className="text-xs text-muted-foreground">Campanha original</p>
+              <p className="text-sm font-medium truncate">{bulkDupDialog?.campaign_name}</p>
+              <p className="text-[10px] font-mono text-muted-foreground mt-0.5">Conta: {bulkDupDialog?.advertiser_id}</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Nome da campanha duplicada</Label>
+              <Input value={bulkDupName} onChange={(e) => setBulkDupName(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs">Orçamento (R$) — opcional</Label>
+              <Input type="number" step="0.01" value={bulkDupBudget} onChange={(e) => setBulkDupBudget(e.target.value)} placeholder="Manter original" className="mt-1" />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-xs">Selecione as contas de destino</Label>
+                <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={selectAllActiveAccounts} disabled={bulkLoadingAccounts}>
+                  Selecionar todas ativas
+                </Button>
+              </div>
+
+              {bulkLoadingAccounts ? (
+                <div className="flex items-center justify-center py-6 gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando contas...
+                </div>
+              ) : bulkAccounts.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">Nenhuma outra conta encontrada neste BC.</p>
+              ) : (
+                <div className="border border-border rounded-lg max-h-60 overflow-y-auto divide-y divide-border">
+                  {bulkAccounts.map((acc) => {
+                    const info = getAccountStatusLabel(acc.status);
+                    const isDisabled = info.disabled;
+                    const isChecked = bulkSelectedAccounts.includes(acc.advertiser_id);
+                    return (
+                      <label
+                        key={acc.advertiser_id}
+                        className={`flex items-center gap-3 px-3 py-2 text-xs transition-colors ${
+                          isDisabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-muted/50"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isChecked}
+                          disabled={isDisabled}
+                          onCheckedChange={() => !isDisabled && toggleBulkAccount(acc.advertiser_id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate font-medium">{acc.advertiser_name}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground">{acc.advertiser_id}</p>
+                        </div>
+                        <Badge variant={isDisabled ? "destructive" : "outline"} className="text-[9px] shrink-0">
+                          {info.label}
+                        </Badge>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              {bulkSelectedAccounts.length > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  {bulkSelectedAccounts.length} conta(s) selecionada(s)
+                </p>
+              )}
+            </div>
+
+            <Button
+              onClick={executeBulkDuplicate}
+              className="w-full"
+              disabled={!bulkSelectedAccounts.length || bulkDuplicating}
+            >
+              {bulkDuplicating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Duplicando... {bulkProgress.done}/{bulkProgress.total}
+                </>
+              ) : (
+                <>
+                  <Layers className="h-4 w-4 mr-2" />
+                  Duplicar em {bulkSelectedAccounts.length} conta(s)
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
