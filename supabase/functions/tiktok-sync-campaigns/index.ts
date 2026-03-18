@@ -55,28 +55,12 @@ Deno.serve(async (req) => {
       const data = await resp.json();
       console.log("TikTok advertisers response:", JSON.stringify(data).slice(0, 1000));
 
-      // For each advertiser, try to get its name via advertiser/info
-      const advertisers = data?.data?.list || [];
-      const enriched = [];
-      for (const adv of advertisers) {
-        let name = adv.advertiser_name || adv.advertiser_id;
-        try {
-          const infoResp = await fetch(
-            `${TIKTOK_API}/advertiser/info/?advertiser_ids=["${adv.advertiser_id}"]`,
-            { headers: { ...headers, "Access-Token": bc.access_token } }
-          );
-          const infoData = await infoResp.json();
-          if (infoData.data?.list?.[0]?.name) {
-            name = infoData.data.list[0].name;
-          }
-        } catch { /* ignore */ }
-        enriched.push({
-          advertiser_id: String(adv.advertiser_id),
-          advertiser_name: name,
-        });
-      }
+      const advertisers = (data?.data?.list || []).map((adv: any) => ({
+        advertiser_id: String(adv.advertiser_id),
+        advertiser_name: adv.advertiser_name || String(adv.advertiser_id),
+      }));
 
-      return new Response(JSON.stringify({ code: 0, data: { list: enriched } }), {
+      return new Response(JSON.stringify({ code: 0, data: { list: advertisers } }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
