@@ -581,15 +581,18 @@ async function duplicateAdGroupsAndAds(
       let adErrorMessage = "";
 
       for (const mode of adModes) {
-        const adRequestPayload = stripUnsetValues({ ...adPayload });
-        if (mode === "smart_plus" && !adRequestPayload.request_id) {
-          adRequestPayload.request_id = generateRequestId();
-        }
+        let adRequestPayload = stripUnsetValues({ ...adPayload });
 
-        if (mode === "smart_plus" && (!Array.isArray(adRequestPayload.creatives) || adRequestPayload.creatives.length === 0)) {
+        if (mode === "smart_plus") {
           const detail = await getAdDetailForMode(headers, sourceAdvertiserId, sourceAdId, "smart_plus");
-          if (detail?.creatives && Array.isArray(detail.creatives) && detail.creatives.length > 0) {
-            adRequestPayload.creatives = detail.creatives;
+          if (detail) {
+            adRequestPayload = stripUnsetValues({ ...adRequestPayload, ...detail });
+          }
+
+          adRequestPayload = normalizeSmartPlusPayload(adRequestPayload);
+
+          if (!adRequestPayload.request_id) {
+            adRequestPayload.request_id = generateRequestId();
           }
         }
 
