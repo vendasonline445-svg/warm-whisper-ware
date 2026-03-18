@@ -89,6 +89,7 @@ export default function CampaignManager() {
   const [bulkLoadingAccounts, setBulkLoadingAccounts] = useState(false);
   const [bulkDuplicating, setBulkDuplicating] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
+  const [bulkCopies, setBulkCopies] = useState(1);
 
   const getCacheKey = (bcId: string) => `campaign_manager_cache_${bcId}`;
 
