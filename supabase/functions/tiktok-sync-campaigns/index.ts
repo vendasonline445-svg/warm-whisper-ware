@@ -589,17 +589,17 @@ Deno.serve(async (req) => {
               createBody.budget = new_budget || orig.budget;
             }
 
-            const createResp = await fetch(`${TIKTOK_API}/campaign/create/`, {
-              method: "POST",
-              headers,
-              body: JSON.stringify(createBody),
-            });
-            const createData = await safeJson(createResp);
+            const createResult = await createCampaignWithFallback(headers, createBody);
 
-            if (createData.code !== 0) {
-              results.push({ advertiser_id: targetAdvId, copy: copyNum, success: false, error: createData.message });
+            if (!createResult.success) {
+              results.push({
+                advertiser_id: targetAdvId,
+                copy: copyNum,
+                success: false,
+                error: createResult.data?.message || "Falha ao criar campanha",
+              });
             } else {
-              const newId = String(createData.data?.campaign_id);
+              const newId = String(createResult.data?.data?.campaign_id);
               await supabase.from("campaigns").insert({
                 campaign_external_id: newId,
                 campaign_name: copyName,
