@@ -63,9 +63,29 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
     window.open(oauthUrl, "_blank");
   };
 
+  const getAdvertiserIds = (advertiserValue: string | null) =>
+    (advertiserValue || "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+
   const updateAdvertiserId = async (bcId: string, advertiserId: string) => {
-    await db.from("business_centers").update({ advertiser_id: advertiserId }).eq("id", bcId);
+    await db.from("business_centers").update({ advertiser_id: advertiserId || null }).eq("id", bcId);
     toast({ title: "Advertiser ID salvo" });
+    fetchData();
+  };
+
+  const toggleAdvertiserId = async (bc: any, advertiserId: string) => {
+    const selected = getAdvertiserIds(bc.advertiser_id);
+    const next = selected.includes(advertiserId)
+      ? selected.filter((id) => id !== advertiserId)
+      : [...selected, advertiserId];
+
+    await db
+      .from("business_centers")
+      .update({ advertiser_id: next.length ? next.join(",") : null })
+      .eq("id", bc.id);
+
     fetchData();
   };
 
@@ -88,17 +108,33 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
   };
 
   const syncCampaigns = async (bc: any) => {
-    if (!bc.advertiser_id) {
-      toast({ title: "Configure o Advertiser ID primeiro", variant: "destructive" });
+    const advertiserIds = getAdvertiserIds(bc.advertiser_id);
+    if (!advertiserIds.length) {
+      toast({ title: "Configure ao menos uma conta de anúncio", variant: "destructive" });
       return;
     }
+
     setSyncing(bc.id);
+    let totalSynced = 0;
+    let failed = 0;
+
     try {
-      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
-        body: { bc_id: bc.id, action: "sync_campaigns", advertiser_id: bc.advertiser_id },
+      for (const advertiserId of advertiserIds) {
+        try {
+          const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+            body: { bc_id: bc.id, action: "sync_campaigns", advertiser_id: advertiserId },
+          });
+          if (error) throw error;
+          totalSynced += data?.synced || 0;
+        } catch {
+          failed++;
+        }
+      }
+
+      toast({
+        title: `✅ ${totalSynced} campanhas sincronizadas`,
+        description: failed ? `${failed} conta(s) com erro` : undefined,
       });
-      if (error) throw error;
-      toast({ title: `✅ ${data.synced} campanhas sincronizadas` });
     } catch (err: any) {
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
     }
@@ -106,17 +142,33 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
   };
 
   const syncCosts = async (bc: any) => {
-    if (!bc.advertiser_id) {
-      toast({ title: "Configure o Advertiser ID primeiro", variant: "destructive" });
+    const advertiserIds = getAdvertiserIds(bc.advertiser_id);
+    if (!advertiserIds.length) {
+      toast({ title: "Configure ao menos uma conta de anúncio", variant: "destructive" });
       return;
     }
+
     setSyncing(bc.id + "_costs");
+    let totalInserted = 0;
+    let failed = 0;
+
     try {
-      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
-        body: { bc_id: bc.id, action: "sync_costs", advertiser_id: bc.advertiser_id },
+      for (const advertiserId of advertiserIds) {
+        try {
+          const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+            body: { bc_id: bc.id, action: "sync_costs", advertiser_id: advertiserId },
+          });
+          if (error) throw error;
+          totalInserted += data?.inserted || 0;
+        } catch {
+          failed++;
+        }
+      }
+
+      toast({
+        title: `✅ ${totalInserted} registros de custo sincronizados`,
+        description: failed ? `${failed} conta(s) com erro` : undefined,
       });
-      if (error) throw error;
-      toast({ title: `✅ ${data.inserted} registros de custo sincronizados` });
     } catch (err: any) {
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
     }
