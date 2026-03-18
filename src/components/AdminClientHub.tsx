@@ -22,6 +22,7 @@ const SUB_TABS: { key: SubTab; label: string; icon: React.ReactNode }[] = [
 ];
 
 const db = supabase as any;
+const TIKTOK_APP_ID = "7617705058569814033";
 
 function fmtDate(d: string) {
   try { return new Date(d).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch { return d; }
