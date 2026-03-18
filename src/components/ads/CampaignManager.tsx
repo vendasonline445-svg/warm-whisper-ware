@@ -316,7 +316,16 @@ export default function CampaignManager() {
       setNewBudget("");
       setCampaigns(prev => prev.map(c => c.campaign_id === budgetDialog.campaign_id ? { ...c, budget: parseFloat(newBudget) } : c));
     } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      let description = err?.message || "Falha ao atualizar orçamento";
+      if (err?.context && typeof err.context.json === "function") {
+        try {
+          const payload = await err.context.json();
+          description = payload?.error || payload?.message || description;
+        } catch {
+          // ignore parse errors
+        }
+      }
+      toast({ title: "Erro", description, variant: "destructive" });
     }
     setActionLoading(null);
   };
