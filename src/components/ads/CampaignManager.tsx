@@ -41,8 +41,12 @@ interface CampaignMetrics {
   revenue: number; // centavos
   sales: number;
   roas: number;
+  roi: number;
   cpa: number;
 }
+
+type CampaignSortBy = "updated" | "name" | "spend" | "sales" | "revenue" | "roas" | "roi" | "clicks";
+type SortDirection = "asc" | "desc";
 
 interface CampaignCachePayload {
   campaigns: TikTokCampaign[];
@@ -69,6 +73,8 @@ export default function CampaignManager() {
   const [progress, setProgress] = useState({ loaded: 0, total: 0 });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<CampaignSortBy>("spend");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [metricsMap, setMetricsMap] = useState<Record<string, CampaignMetrics>>({});
 
   // Duplicate dialog
