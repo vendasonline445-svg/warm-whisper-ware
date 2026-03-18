@@ -869,7 +869,7 @@ export default function CampaignManager() {
               ) : (
                 <>
                   <Layers className="h-4 w-4 mr-2" />
-                  Duplicar em {bulkSelectedAccounts.length} conta(s)
+                  Duplicar {bulkCopies}× em {bulkSelectedAccounts.length} conta(s) ({bulkCopies * bulkSelectedAccounts.length} total)
                 </>
               )}
             </Button>
