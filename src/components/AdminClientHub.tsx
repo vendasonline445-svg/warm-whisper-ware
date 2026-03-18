@@ -274,7 +274,7 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
           ) : (
             <div className="grid gap-2">
               {businessCenters.map(bc => (
-                <Card key={bc.id} className={`p-4 ${bc.status !== "active" ? "opacity-60" : ""}`}>
+                <Card key={bc.id} className={`p-4 space-y-3 ${bc.status !== "active" ? "opacity-60" : ""}`}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -291,8 +291,10 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmtDate(bc.created_at)}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1.5">
-                        {bc.access_token ? (
-                          <Badge className="text-[9px] bg-emerald-500/15 text-emerald-600 border-emerald-500/30"><Key className="h-2.5 w-2.5 mr-0.5" />OAuth Conectado</Badge>
+                        {isTokenValid(bc) ? (
+                          <Badge className="text-[9px] bg-emerald-500/15 text-emerald-600 border-emerald-500/30"><CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />OAuth Conectado</Badge>
+                        ) : bc.access_token ? (
+                          <Badge className="text-[9px] bg-amber-500/15 text-amber-600 border-amber-500/30"><AlertTriangle className="h-2.5 w-2.5 mr-0.5" />Token Expirado</Badge>
                         ) : (
                           <Badge className="text-[9px] bg-amber-500/15 text-amber-600 border-amber-500/30"><Key className="h-2.5 w-2.5 mr-0.5" />Sem Token</Badge>
                         )}
@@ -308,6 +310,57 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
                       <Button variant="ghost" size="sm" onClick={() => deleteBC(bc.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   </div>
+
+                  {/* Advertiser ID */}
+                  {bc.platform === "tiktok" && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Advertiser ID:</Label>
+                      <Input
+                        className="h-7 text-xs flex-1 max-w-xs"
+                        placeholder="Ex: 7234567890123"
+                        defaultValue={bc.advertiser_id || ""}
+                        onBlur={(e) => {
+                          if (e.target.value !== (bc.advertiser_id || "")) {
+                            updateAdvertiserId(bc.id, e.target.value);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* OAuth & Sync Actions */}
+                  {bc.platform === "tiktok" && (
+                    <div className="flex gap-2 flex-wrap">
+                      {!isTokenValid(bc) && (
+                        <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => startOAuth(bc)}>
+                          <ExternalLink className="h-3 w-3" /> Conectar via OAuth
+                        </Button>
+                      )}
+                      {isTokenValid(bc) && (
+                        <>
+                          <Button
+                            size="sm" variant="outline" className="h-7 text-xs gap-1"
+                            disabled={!!syncing}
+                            onClick={() => syncCampaigns(bc)}
+                          >
+                            {syncing === bc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                            Sync Campanhas
+                          </Button>
+                          <Button
+                            size="sm" variant="outline" className="h-7 text-xs gap-1"
+                            disabled={!!syncing}
+                            onClick={() => syncCosts(bc)}
+                          >
+                            {syncing === bc.id + "_costs" ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                            Sync Custos
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => startOAuth(bc)}>
+                            <ExternalLink className="h-3 w-3" /> Reconectar
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </Card>
               ))}
             </div>
