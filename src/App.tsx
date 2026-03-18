@@ -28,6 +28,7 @@ import EconomizareCheckout from "./pages/EconomizareCheckout";
 import EconomizarePix from "./pages/EconomizarePix";
 import EconomizareObrigado from "./pages/EconomizareObrigado";
 import EconomizareAdmin from "./pages/EconomizareAdmin";
+import JesusPage from "./pages/JesusPage";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => {
                 <Route path="/economizare/pix" element={<EconomizarePix />} />
                 <Route path="/economizare/obrigado" element={<EconomizareObrigado />} />
                 <Route path="/economizare/admin" element={<EconomizareAdmin />} />
+                <Route path="/fe" element={<JesusPage />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/funil-admin" element={<FunilAdmin />} />
                 <Route path="/r/:trackingId" element={<TrackingRedirect />} />
