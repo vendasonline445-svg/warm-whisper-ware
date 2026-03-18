@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       "Access-Token": bc.access_token,
     };
 
-    // ── Action: get advertiser accounts ──
+    // ── Action: get advertiser accounts (with status) ──
     if (action === "get_advertisers") {
       const resp = await fetch(
         `${TIKTOK_API}/oauth2/advertiser/get/?app_id=${Deno.env.get("TIKTOK_APP_ID")}&secret=${Deno.env.get("TIKTOK_APP_SECRET")}&access_token=${bc.access_token}`,
@@ -55,10 +55,41 @@ Deno.serve(async (req) => {
       const data = await resp.json();
       console.log("TikTok advertisers response:", JSON.stringify(data).slice(0, 1000));
 
-      const advertisers = (data?.data?.list || []).map((adv: any) => ({
-        advertiser_id: String(adv.advertiser_id),
-        advertiser_name: adv.advertiser_name || String(adv.advertiser_id),
-      }));
+      const advList = data?.data?.list || [];
+      const advIds = advList.map((a: any) => String(a.advertiser_id));
+
+      // Fetch status for all advertisers in batches of 100
+      const statusMap: Record<string, { status: string; name: string }> = {};
+      for (let i = 0; i < advIds.length; i += 100) {
+        const batch = advIds.slice(i, i + 100);
+        try {
+          const infoResp = await fetch(
+            `${TIKTOK_API}/advertiser/info/?advertiser_ids=${JSON.stringify(batch)}&fields=["advertiser_id","name","status","description"]`,
+            { headers }
+          );
+          const infoData = await infoResp.json();
+          if (infoData.code === 0 && infoData.data?.list) {
+            for (const info of infoData.data.list) {
+              statusMap[String(info.advertiser_id)] = {
+                status: info.status || "STATUS_UNKNOWN",
+                name: info.name || String(info.advertiser_id),
+              };
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching advertiser info batch:", e);
+        }
+      }
+
+      const advertisers = advList.map((adv: any) => {
+        const id = String(adv.advertiser_id);
+        const info = statusMap[id];
+        return {
+          advertiser_id: id,
+          advertiser_name: info?.name || adv.advertiser_name || id,
+          status: info?.status || "STATUS_UNKNOWN",
+        };
+      });
 
       return new Response(JSON.stringify({ code: 0, data: { list: advertisers } }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
