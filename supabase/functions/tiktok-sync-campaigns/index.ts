@@ -311,7 +311,7 @@ Deno.serve(async (req) => {
         headers,
         body: JSON.stringify(budgetPayload),
       });
-      const data = await resp.json();
+      const data = await safeJson(resp);
       console.log("TikTok update budget response:", JSON.stringify(data).slice(0, 500));
 
       if (data.code !== 0) {
