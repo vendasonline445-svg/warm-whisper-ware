@@ -381,7 +381,11 @@ export default function CampaignManager() {
         body: { bc_id: bc.id, action: "duplicate_campaign", advertiser_id: dupDialog.advertiser_id, campaign_id: dupDialog.campaign_id, new_name: dupName || undefined, new_budget: dupBudget ? parseFloat(dupBudget) : undefined },
       });
       if (error) throw error;
-      toast({ title: `✅ Campanha duplicada! ID: ${data.new_campaign_id}` });
+      const agOk = data.ad_groups_created || 0;
+      const adsOk = data.ads_created || 0;
+      const agFail = data.ad_groups_failed || 0;
+      const adsFail = data.ads_failed || 0;
+      toast({ title: `✅ Campanha duplicada!`, description: `Campanha + ${agOk} conjunto(s) + ${adsOk} anúncio(s) criados${agFail + adsFail > 0 ? ` (${agFail + adsFail} falhas)` : ""}` });
       setDupDialog(null);
       setDupName("");
       setDupBudget("");
@@ -465,9 +469,11 @@ export default function CampaignManager() {
         .map((r: any) => String(r.error))))
         .slice(0, 2);
 
+      const totalAg = (data?.results || []).reduce((s: number, r: any) => s + (r.ad_groups_created || 0), 0);
+      const totalAds = (data?.results || []).reduce((s: number, r: any) => s + (r.ads_created || 0), 0);
       toast({
         title: `✅ Duplicação em massa concluída`,
-        description: `${succeeded}/${total} contas com sucesso${failed > 0 ? ` — ${failed} falharam` : ""}${failedMessages.length ? ` (${failedMessages.join(" | ")})` : ""}`,
+        description: `${succeeded}/${total} contas • ${totalAg} conjuntos • ${totalAds} anúncios${failed > 0 ? ` — ${failed} falharam` : ""}${failedMessages.length ? ` (${failedMessages.join(" | ")})` : ""}`,
       });
 
       setBulkDupDialog(null);
