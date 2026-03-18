@@ -39,11 +39,69 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState<string | null>(null);
 
   // Client form
   const [newClient, setNewClient] = useState({ client_name: "", contact_email: "", contact_phone: "", notes: "" });
   // BC form
   const [newBC, setNewBC] = useState({ client_id: "", bc_name: "", bc_external_id: "", platform: "tiktok" });
+
+  const isTokenValid = (bc: any) => {
+    if (!bc.access_token) return false;
+    if (!bc.token_expires_at) return true;
+    return new Date(bc.token_expires_at) > new Date();
+  };
+
+  const startOAuth = (bc: any) => {
+    const state = btoa(JSON.stringify({ client_id: bc.client_id, bc_id: bc.id }));
+    const redirectUri = encodeURIComponent(
+      `https://slcuaijctwvmumgtpxgv.supabase.co/functions/v1/tiktok-oauth-callback`
+    );
+    const oauthUrl = `https://business-api.tiktok.com/portal/auth?app_id=${TIKTOK_APP_ID}&state=${state}&redirect_uri=${redirectUri}`;
+    window.open(oauthUrl, "_blank");
+  };
+
+  const updateAdvertiserId = async (bcId: string, advertiserId: string) => {
+    await db.from("business_centers").update({ advertiser_id: advertiserId }).eq("id", bcId);
+    toast({ title: "Advertiser ID salvo" });
+    fetchData();
+  };
+
+  const syncCampaigns = async (bc: any) => {
+    if (!bc.advertiser_id) {
+      toast({ title: "Configure o Advertiser ID primeiro", variant: "destructive" });
+      return;
+    }
+    setSyncing(bc.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "sync_campaigns", advertiser_id: bc.advertiser_id },
+      });
+      if (error) throw error;
+      toast({ title: `✅ ${data.synced} campanhas sincronizadas` });
+    } catch (err: any) {
+      toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+    }
+    setSyncing(null);
+  };
+
+  const syncCosts = async (bc: any) => {
+    if (!bc.advertiser_id) {
+      toast({ title: "Configure o Advertiser ID primeiro", variant: "destructive" });
+      return;
+    }
+    setSyncing(bc.id + "_costs");
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "sync_costs", advertiser_id: bc.advertiser_id },
+      });
+      if (error) throw error;
+      toast({ title: `✅ ${data.inserted} registros de custo sincronizados` });
+    } catch (err: any) {
+      toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+    }
+    setSyncing(null);
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
