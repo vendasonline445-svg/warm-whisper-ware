@@ -355,27 +355,35 @@ export default function CampaignManager() {
 
     saveCampaignsToCache(bc.id, allCampaigns);
     const suspendedMsg = suspendedCount > 0 ? `${suspendedCount} contas suspensas ignoradas. ` : "";
+
+    const advertisersWithCampaigns = Array.from(
+      new Set(allCampaigns.map((c) => String(c.advertiser_id || "")).filter(Boolean)),
+    );
+    const advertisersForSync = advertisersWithCampaigns.length > 0 ? advertisersWithCampaigns : activeAdvertiserIds;
+
     toast({
       title: `${allCampaigns.length} campanhas de ${activeAdvertiserIds.length} contas ativas`,
-      description: suspendedMsg + (totalErrors > 0 ? `${totalErrors} contas com erro` : ""),
+      description: suspendedMsg +
+        `${advertisersForSync.length} conta(s) com campanha em sincronização de gastos` +
+        (totalErrors > 0 ? ` • ${totalErrors} contas com erro` : ""),
     });
     setLoading(false);
 
-    // Auto-sync costs in background only for active accounts
-    syncCostsInBackground(bc.id, activeAdvertiserIds, allCampaigns);
+    // Auto-sync costs only for accounts that actually returned campaigns (faster + more accurate)
+    syncCostsInBackground(bc.id, advertisersForSync, allCampaigns);
   };
 
   const syncCostsInBackground = async (bcId: string, advertiserIds: string[], campaignList?: TikTokCampaign[]) => {
     try {
-      const batchSize = 5;
+      const batchSize = 10;
       for (let i = 0; i < advertiserIds.length; i += batchSize) {
         const batch = advertiserIds.slice(i, i + batchSize);
         await Promise.allSettled(
-          batch.map(advId =>
+          batch.map((advId) =>
             supabase.functions.invoke("tiktok-sync-campaigns", {
               body: { bc_id: bcId, action: "sync_costs", advertiser_id: advId },
-            })
-          )
+            }),
+          ),
         );
       }
       // Re-fetch metrics after costs are synced — use passed list to avoid stale closure
