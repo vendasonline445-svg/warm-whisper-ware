@@ -460,10 +460,14 @@ export default function CampaignManager() {
       const succeeded = data?.succeeded || 0;
       const total = data?.total || bulkSelectedAccounts.length;
       const failed = total - succeeded;
+      const failedMessages = Array.from(new Set((data?.results || [])
+        .filter((r: any) => !r.success && r.error)
+        .map((r: any) => String(r.error))))
+        .slice(0, 2);
 
       toast({
         title: `✅ Duplicação em massa concluída`,
-        description: `${succeeded}/${total} contas com sucesso${failed > 0 ? ` — ${failed} falharam` : ""}`,
+        description: `${succeeded}/${total} contas com sucesso${failed > 0 ? ` — ${failed} falharam` : ""}${failedMessages.length ? ` (${failedMessages.join(" | ")})` : ""}`,
       });
 
       setBulkDupDialog(null);
