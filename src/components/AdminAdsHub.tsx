@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Megaphone, Palette, Zap, Wallet, Plus, Trash2, Pencil, Play, Pause, AlertTriangle, Link2, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import TikTokConnect from "@/components/ads/TikTokConnect";
+import CampaignManager from "@/components/ads/CampaignManager";
 
 const db = supabase as any;
 
