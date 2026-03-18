@@ -130,6 +130,82 @@ function isMethodNotAllowedError(data: any): boolean {
   return msg.includes("method not allowed") || msg.includes("http 405");
 }
 
+const AD_LIST_FIELDS = [
+  "ad_id",
+  "ad_name",
+  "adgroup_id",
+  "campaign_id",
+  "identity_id",
+  "identity_type",
+  "creative_material_mode",
+  "ad_format",
+  "ad_text",
+  "landing_page_url",
+  "display_name",
+  "call_to_action",
+  "placement_type",
+  "placement",
+  "creatives",
+  "creative_list",
+  "ad_text_list",
+  "call_to_action_list",
+  "landing_page_url_list",
+  "page_list",
+  "deeplink_list",
+  "ad_configuration",
+];
+
+function hasCreativesForMode(payload: Record<string, any>, mode: CampaignApiMode): boolean {
+  if (mode === "smart_plus") {
+    return Array.isArray(payload.creative_list) && payload.creative_list.length > 0;
+  }
+  return Array.isArray(payload.creatives) && payload.creatives.length > 0;
+}
+
+function toSmartPlusCreativeList(creatives: any): any[] {
+  if (!Array.isArray(creatives)) return [];
+  return creatives
+    .map((item: any) => {
+      if (!item) return null;
+      if (item.creative_info) return item;
+      if (typeof item === "object") return { creative_info: item };
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function normalizeSmartPlusPayload(payload: Record<string, any>): Record<string, any> {
+  const normalized = { ...payload };
+
+  if ((!Array.isArray(normalized.creative_list) || normalized.creative_list.length === 0) && Array.isArray(normalized.creatives)) {
+    normalized.creative_list = toSmartPlusCreativeList(normalized.creatives);
+  }
+
+  if ((!Array.isArray(normalized.ad_text_list) || normalized.ad_text_list.length === 0) && typeof normalized.ad_text === "string" && normalized.ad_text.trim()) {
+    normalized.ad_text_list = [{ ad_text: normalized.ad_text.trim() }];
+  }
+
+  if ((!Array.isArray(normalized.landing_page_url_list) || normalized.landing_page_url_list.length === 0) && typeof normalized.landing_page_url === "string" && normalized.landing_page_url.trim()) {
+    normalized.landing_page_url_list = [{ landing_page_url: normalized.landing_page_url.trim() }];
+  }
+
+  if ((!Array.isArray(normalized.call_to_action_list) || normalized.call_to_action_list.length === 0) && typeof normalized.call_to_action === "string" && normalized.call_to_action.trim()) {
+    normalized.call_to_action_list = [{ call_to_action: normalized.call_to_action.trim() }];
+  }
+
+  if ((!Array.isArray(normalized.page_list) || normalized.page_list.length === 0) && typeof normalized.page_id === "string" && normalized.page_id.trim()) {
+    normalized.page_list = [{ page_id: normalized.page_id.trim() }];
+  }
+
+  delete normalized.creatives;
+  delete normalized.ad_text;
+  delete normalized.landing_page_url;
+  delete normalized.call_to_action;
+  delete normalized.page_id;
+
+  return stripUnsetValues(normalized);
+}
+
 async function requestTikTokListPage(
   headers: Record<string, string>,
   endpoint: string,
@@ -137,6 +213,7 @@ async function requestTikTokListPage(
   page: number,
   filtering: Record<string, any>,
   pageSize = 100,
+  fields?: string[],
 ) {
   const postResp = await fetch(`${TIKTOK_API}/${endpoint}/`, {
     method: "POST",
@@ -146,6 +223,7 @@ async function requestTikTokListPage(
       page,
       page_size: pageSize,
       filtering,
+      ...(fields?.length ? { fields } : {}),
     }),
   });
   const postData = await safeJson(postResp);
@@ -159,6 +237,7 @@ async function requestTikTokListPage(
     page: String(page),
     page_size: String(pageSize),
     filtering: JSON.stringify(filtering),
+    ...(fields?.length ? { fields: JSON.stringify(fields) } : {}),
   });
   const getResp = await fetch(`${TIKTOK_API}/${endpoint}/?${query.toString()}`, { headers });
   return safeJson(getResp);
@@ -250,14 +329,27 @@ async function getAdsForMode(
     let page = 1;
 
     while (true) {
-      const data = await requestTikTokListPage(
+      let data = await requestTikTokListPage(
         headers,
         API_BY_MODE[mode].adGet,
         advertiserId,
         page,
         { adgroup_ids: batch },
         pageSize,
+        AD_LIST_FIELDS,
       );
+
+      if (data.code !== 0) {
+        // fallback without fields in case endpoint/account does not accept custom fields
+        data = await requestTikTokListPage(
+          headers,
+          API_BY_MODE[mode].adGet,
+          advertiserId,
+          page,
+          { adgroup_ids: batch },
+          pageSize,
+        );
+      }
 
       if (data.code !== 0) {
         console.error(`Failed to get ads (${mode}):`, data.message);
@@ -273,6 +365,61 @@ async function getAdsForMode(
   }
 
   return allAds;
+}
+
+async function getAdDetailForMode(
+  headers: Record<string, string>,
+  advertiserId: string,
+  adId: string,
+  mode: CampaignApiMode,
+) {
+  let data = await requestTikTokListPage(
+    headers,
+    API_BY_MODE[mode].adGet,
+    advertiserId,
+    1,
+    { ad_ids: [String(adId)] },
+    1,
+    AD_LIST_FIELDS,
+  );
+
+  if (data.code !== 0) {
+    data = await requestTikTokListPage(
+      headers,
+      API_BY_MODE[mode].adGet,
+      advertiserId,
+      1,
+      { ad_ids: [String(adId)] },
+      1,
+    );
+  }
+
+  if (data.code !== 0) return null;
+  return data.data?.list?.[0] || null;
+}
+
+async function buildAdPayloadForCreate(
+  headers: Record<string, string>,
+  sourceAdvertiserId: string,
+  ad: Record<string, any>,
+  preferredMode: CampaignApiMode,
+) {
+  const adId = String(ad?.ad_id || "");
+  const modes: CampaignApiMode[] = [preferredMode, preferredMode === "standard" ? "smart_plus" : "standard"];
+
+  let merged = { ...ad };
+
+  if (adId) {
+    for (const mode of modes) {
+      const detail = await getAdDetailForMode(headers, sourceAdvertiserId, adId, mode);
+      if (detail) {
+        merged = { ...merged, ...detail };
+        if (hasCreativesForMode(merged, mode)) break;
+      }
+    }
+  }
+
+  return cleanPayload(merged, AD_READONLY_FIELDS);
 }
 
 function cleanPayload(obj: Record<string, any>, readonlyFields: Set<string>): Record<string, any> {
@@ -361,6 +508,8 @@ async function duplicateAdGroupsAndAds(
     adsByAdGroup[agId].push(ad);
   }
 
+  const adPayloadCache = new Map<string, Record<string, any>>();
+
   for (const ag of adGroups) {
     const sourceAgId = String(ag.adgroup_id);
     const agPayload = cleanPayload(ag, ADGROUP_READONLY_FIELDS);
@@ -413,18 +562,38 @@ async function duplicateAdGroupsAndAds(
 
     const adsForGroup = adsByAdGroup[sourceAgId] || [];
     for (const ad of adsForGroup) {
-      const adPayload = cleanPayload(ad, AD_READONLY_FIELDS);
-      adPayload.advertiser_id = targetAdvertiserId;
-      adPayload.adgroup_id = newAgId;
+      const sourceAdId = String(ad?.ad_id || `${sourceAgId}_${Math.random()}`);
+      let baseAdPayload = adPayloadCache.get(sourceAdId);
+
+      if (!baseAdPayload) {
+        baseAdPayload = await buildAdPayloadForCreate(headers, sourceAdvertiserId, ad, readMode);
+        adPayloadCache.set(sourceAdId, baseAdPayload);
+      }
+
+      const adPayload = {
+        ...baseAdPayload,
+        advertiser_id: targetAdvertiserId,
+        adgroup_id: newAgId,
+      };
 
       const adModes: CampaignApiMode[] = [targetMode, targetMode === "standard" ? "smart_plus" : "standard"];
       let adCreated = false;
       let adErrorMessage = "";
 
       for (const mode of adModes) {
-        const adRequestPayload = stripUnsetValues({ ...adPayload });
-        if (mode === "smart_plus" && !adRequestPayload.request_id) {
-          adRequestPayload.request_id = generateRequestId();
+        let adRequestPayload = stripUnsetValues({ ...adPayload });
+
+        if (mode === "smart_plus") {
+          const detail = await getAdDetailForMode(headers, sourceAdvertiserId, sourceAdId, "smart_plus");
+          if (detail) {
+            adRequestPayload = stripUnsetValues({ ...adRequestPayload, ...detail });
+          }
+
+          adRequestPayload = normalizeSmartPlusPayload(adRequestPayload);
+
+          if (!adRequestPayload.request_id) {
+            adRequestPayload.request_id = generateRequestId();
+          }
         }
 
         const adResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].adCreate}/`, {
