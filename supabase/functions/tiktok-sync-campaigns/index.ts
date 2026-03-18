@@ -17,6 +17,43 @@ const safeJson = async (resp: Response) => {
   }
 };
 
+const createCampaignWithFallback = async (
+  headers: Record<string, string>,
+  payload: Record<string, any>,
+) => {
+  const attempts: Array<{ mode: string; payload: Record<string, any> }> = [
+    { mode: String(payload.budget_mode || "ORIGINAL"), payload: { ...payload } },
+  ];
+
+  const baseMode = String(payload.budget_mode || "").toUpperCase();
+  if (baseMode.includes("DYNAMIC")) {
+    attempts.push({ mode: "BUDGET_MODE_DAY", payload: { ...payload, budget_mode: "BUDGET_MODE_DAY" } });
+    attempts.push({ mode: "BUDGET_MODE_TOTAL", payload: { ...payload, budget_mode: "BUDGET_MODE_TOTAL" } });
+  }
+
+  let lastData: any = null;
+
+  for (const attempt of attempts) {
+    const createResp = await fetch(`${TIKTOK_API}/campaign/create/`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(attempt.payload),
+    });
+    const createData = await safeJson(createResp);
+
+    if (createData.code === 0) {
+      return { success: true as const, data: createData, mode: attempt.mode, payload: attempt.payload };
+    }
+
+    lastData = createData;
+    const msg = String(createData?.message || "").toLowerCase();
+    const retryable = msg.includes("dynamic daily budget is not supported") || msg.includes("budget mode");
+    if (!retryable) break;
+  }
+
+  return { success: false as const, data: lastData };
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -485,22 +522,17 @@ Deno.serve(async (req) => {
         createBody.budget = new_budget || orig.budget;
       }
 
-      const createResp = await fetch(`${TIKTOK_API}/campaign/create/`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(createBody),
-      });
-      const createData = await safeJson(createResp);
-      console.log("TikTok duplicate campaign response:", JSON.stringify(createData).slice(0, 500));
+      const createResult = await createCampaignWithFallback(headers, createBody);
+      console.log("TikTok duplicate campaign response:", JSON.stringify(createResult.data).slice(0, 500));
 
-      if (createData.code !== 0) {
-        return new Response(JSON.stringify({ error: createData.message, code: createData.code }), {
+      if (!createResult.success) {
+        return new Response(JSON.stringify({ error: createResult.data?.message || "Failed to duplicate campaign", code: createResult.data?.code }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       // Save to local DB
-      const newCampId = String(createData.data?.campaign_id);
+      const newCampId = String(createResult.data?.data?.campaign_id);
       await supabase.from("campaigns").insert({
         campaign_external_id: newCampId,
         campaign_name: createBody.campaign_name,
@@ -557,17 +589,17 @@ Deno.serve(async (req) => {
               createBody.budget = new_budget || orig.budget;
             }
 
-            const createResp = await fetch(`${TIKTOK_API}/campaign/create/`, {
-              method: "POST",
-              headers,
-              body: JSON.stringify(createBody),
-            });
-            const createData = await safeJson(createResp);
+            const createResult = await createCampaignWithFallback(headers, createBody);
 
-            if (createData.code !== 0) {
-              results.push({ advertiser_id: targetAdvId, copy: copyNum, success: false, error: createData.message });
+            if (!createResult.success) {
+              results.push({
+                advertiser_id: targetAdvId,
+                copy: copyNum,
+                success: false,
+                error: createResult.data?.message || "Falha ao criar campanha",
+              });
             } else {
-              const newId = String(createData.data?.campaign_id);
+              const newId = String(createResult.data?.data?.campaign_id);
               await supabase.from("campaigns").insert({
                 campaign_external_id: newId,
                 campaign_name: copyName,
