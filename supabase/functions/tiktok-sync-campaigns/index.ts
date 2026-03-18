@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
             `${TIKTOK_API}/advertiser/info/?advertiser_ids=${JSON.stringify(batch)}&fields=["advertiser_id","name","status","description"]`,
             { headers }
           );
-          const infoData = await infoResp.json();
+          const infoData = await safeJson(infoResp);
           if (infoData.code === 0 && infoData.data?.list) {
             for (const info of infoData.data.list) {
               statusMap[String(info.advertiser_id)] = {
