@@ -811,21 +811,17 @@ Deno.serve(async (req) => {
         });
       }
 
-      // 1. Get original campaign details
-      const origResp = await fetch(
-        `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=1&filtering={"campaign_ids":["${campaign_id}"]}`,
-        { headers }
-      );
-      const origData = await safeJson(origResp);
-      const orig = origData.data?.list?.[0];
+      const source = await getSourceCampaign(headers, advertiser_id, campaign_id);
 
-      if (!orig) {
+      if (!source?.campaign) {
         return new Response(JSON.stringify({ error: "Campaign not found" }), {
           status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // 2. Create new campaign with same settings
+      const orig = source.campaign;
+      const sourceMode = source.mode;
+
       const createBody: any = {
         advertiser_id,
         campaign_name: new_name || `Copy of ${orig.campaign_name}`,
@@ -837,18 +833,22 @@ Deno.serve(async (req) => {
         createBody.budget = new_budget || orig.budget;
       }
 
-      const createResult = await createCampaignWithFallback(headers, createBody);
+      const createResult = await createCampaignWithFallback(headers, createBody, sourceMode);
       console.log("Duplicate campaign result:", JSON.stringify(createResult.data).slice(0, 500));
 
       if (!createResult.success) {
-        return new Response(JSON.stringify({ error: createResult.data?.message || "Failed to duplicate campaign", code: createResult.data?.code }), {
+        return new Response(JSON.stringify({
+          error: createResult.data?.message || "Failed to duplicate campaign",
+          code: createResult.data?.code,
+          source_mode: sourceMode,
+        }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
+      const targetMode = createResult.mode;
       const newCampId = String(createResult.data?.data?.campaign_id);
 
-      // Save to local DB
       await supabase.from("campaigns").insert({
         campaign_external_id: newCampId,
         campaign_name: createBody.campaign_name,
@@ -856,15 +856,22 @@ Deno.serve(async (req) => {
         client_id: bc.client_id,
       });
 
-      // 3. Duplicate ad groups + ads
       const dupResult = await duplicateAdGroupsAndAds(
-        headers, advertiser_id, advertiser_id, campaign_id, newCampId, false
+        headers,
+        advertiser_id,
+        advertiser_id,
+        campaign_id,
+        newCampId,
+        sourceMode,
+        targetMode,
       );
 
-      console.log(`Duplicate complete: ${dupResult.adGroupsCreated} ad groups, ${dupResult.adsCreated} ads created`);
+      console.log(`Duplicate complete (${sourceMode}→${targetMode}): ${dupResult.adGroupsCreated} ad groups, ${dupResult.adsCreated} ads created`);
 
       return new Response(JSON.stringify({
         success: true,
+        source_mode: sourceMode,
+        target_mode: targetMode,
         new_campaign_id: newCampId,
         ad_groups_created: dupResult.adGroupsCreated,
         ads_created: dupResult.adsCreated,
@@ -886,20 +893,16 @@ Deno.serve(async (req) => {
       }
 
       const numCopies = Math.min(Math.max(1, Number(copies) || 1), 50);
+      const source = await getSourceCampaign(headers, source_advertiser_id, campaign_id);
 
-      // 1. Get original campaign details
-      const origResp = await fetch(
-        `${TIKTOK_API}/campaign/get/?advertiser_id=${source_advertiser_id}&page_size=1&filtering={"campaign_ids":["${campaign_id}"]}`,
-        { headers }
-      );
-      const origData = await safeJson(origResp);
-      const orig = origData.data?.list?.[0];
-
-      if (!orig) {
+      if (!source?.campaign) {
         return new Response(JSON.stringify({ error: "Campaign not found" }), {
           status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      const orig = source.campaign;
+      const sourceMode = source.mode;
 
       const results: Array<{
         advertiser_id: string;
@@ -915,8 +918,6 @@ Deno.serve(async (req) => {
       }> = [];
 
       for (const targetAdvId of target_advertiser_ids) {
-        const isCrossAccount = targetAdvId !== source_advertiser_id;
-
         for (let copyNum = 1; copyNum <= numCopies; copyNum++) {
           try {
             const copyName = numCopies > 1
@@ -929,22 +930,24 @@ Deno.serve(async (req) => {
               objective_type: orig.objective_type || "WEB_CONVERSIONS",
               budget_mode: orig.budget_mode || "BUDGET_MODE_DYNAMIC",
             };
+
             if (orig.budget && orig.budget > 0) {
               createBody.budget = new_budget || orig.budget;
             }
 
-            const createResult = await createCampaignWithFallback(headers, createBody);
+            const createResult = await createCampaignWithFallback(headers, createBody, sourceMode);
 
             if (!createResult.success) {
               results.push({
                 advertiser_id: targetAdvId,
                 copy: copyNum,
                 success: false,
-                error: createResult.data?.message || "Falha ao criar campanha",
+                error: `${createResult.data?.message || "Falha ao criar campanha"} [mode=${sourceMode}]`,
               });
               continue;
             }
 
+            const targetMode = createResult.mode;
             const newId = String(createResult.data?.data?.campaign_id);
 
             await supabase.from("campaigns").insert({
@@ -954,9 +957,14 @@ Deno.serve(async (req) => {
               client_id: bc.client_id,
             });
 
-            // Duplicate ad groups + ads
             const dupResult = await duplicateAdGroupsAndAds(
-              headers, source_advertiser_id, targetAdvId, campaign_id, newId, isCrossAccount
+              headers,
+              source_advertiser_id,
+              targetAdvId,
+              campaign_id,
+              newId,
+              sourceMode,
+              targetMode,
             );
 
             results.push({
@@ -978,9 +986,9 @@ Deno.serve(async (req) => {
 
       const succeeded = results.filter(r => r.success).length;
       const totalOps = target_advertiser_ids.length * numCopies;
-      console.log(`Bulk duplicate: ${succeeded}/${totalOps} succeeded`);
+      console.log(`Bulk duplicate (${sourceMode}): ${succeeded}/${totalOps} succeeded`);
 
-      return new Response(JSON.stringify({ success: true, results, succeeded, total: totalOps, copies: numCopies }), {
+      return new Response(JSON.stringify({ success: true, source_mode: sourceMode, results, succeeded, total: totalOps, copies: numCopies }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
