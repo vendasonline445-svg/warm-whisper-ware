@@ -113,6 +113,7 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
     }
   }, []);
 
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       if (subTab === "clientes") {
