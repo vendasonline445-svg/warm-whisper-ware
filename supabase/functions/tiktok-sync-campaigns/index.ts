@@ -7,6 +7,16 @@ const corsHeaders = {
 
 const TIKTOK_API = "https://business-api.tiktok.com/open_api/v1.3";
 
+const safeJson = async (resp: Response) => {
+  const text = await resp.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error("Non-JSON response:", text.slice(0, 300));
+    return { code: -1, message: `TikTok returned non-JSON (HTTP ${resp.status})`, data: null };
+  }
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -52,7 +62,7 @@ Deno.serve(async (req) => {
         `${TIKTOK_API}/oauth2/advertiser/get/?app_id=${Deno.env.get("TIKTOK_APP_ID")}&secret=${Deno.env.get("TIKTOK_APP_SECRET")}&access_token=${bc.access_token}`,
         { headers }
       );
-      const data = await resp.json();
+      const data = await safeJson(resp);
       console.log("TikTok advertisers response:", JSON.stringify(data).slice(0, 1000));
 
       const advList = data?.data?.list || [];
@@ -67,7 +77,7 @@ Deno.serve(async (req) => {
             `${TIKTOK_API}/advertiser/info/?advertiser_ids=${JSON.stringify(batch)}&fields=["advertiser_id","name","status","description"]`,
             { headers }
           );
-          const infoData = await infoResp.json();
+          const infoData = await safeJson(infoResp);
           if (infoData.code === 0 && infoData.data?.list) {
             for (const info of infoData.data.list) {
               statusMap[String(info.advertiser_id)] = {
@@ -111,7 +121,7 @@ Deno.serve(async (req) => {
         `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=200`,
         { headers }
       );
-      const campData = await campResp.json();
+      const campData = await safeJson(campResp);
       console.log("TikTok campaigns response:", JSON.stringify(campData).slice(0, 500));
 
       if (campData.code !== 0) {
@@ -198,7 +208,7 @@ Deno.serve(async (req) => {
           page_size: 200,
         }),
       });
-      const reportData = await reportResp.json();
+      const reportData = await safeJson(reportResp);
       console.log("TikTok report response:", JSON.stringify(reportData).slice(0, 500));
 
       if (reportData.code !== 0) {
@@ -267,7 +277,7 @@ Deno.serve(async (req) => {
           operation_status, // "ENABLE" | "DISABLE"
         }),
       });
-      const data = await resp.json();
+      const data = await safeJson(resp);
       console.log("TikTok update status response:", JSON.stringify(data).slice(0, 500));
 
       if (data.code !== 0) {
@@ -301,7 +311,7 @@ Deno.serve(async (req) => {
         headers,
         body: JSON.stringify(budgetPayload),
       });
-      const data = await resp.json();
+      const data = await safeJson(resp);
       console.log("TikTok update budget response:", JSON.stringify(data).slice(0, 500));
 
       if (data.code !== 0) {
@@ -321,7 +331,7 @@ Deno.serve(async (req) => {
               headers,
               body: JSON.stringify(budgetPayload),
             });
-            const fallbackData = await fallbackResp.json();
+            const fallbackData = await safeJson(fallbackResp);
             console.log(`TikTok fallback budget response (${endpoint}):`, JSON.stringify(fallbackData).slice(0, 500));
 
             if (fallbackData.code === 0) {
@@ -381,7 +391,7 @@ Deno.serve(async (req) => {
               `${TIKTOK_API}/campaign/get/?advertiser_id=${advId}&page_size=200&fields=["campaign_id","campaign_name","operation_status","budget","budget_mode","objective_type","secondary_status","create_time","modify_time"]`,
               { headers }
             );
-            const data = await resp.json();
+            const data = await safeJson(resp);
             if (data.code !== 0) return [];
             return (data.data?.list || []).map((c: any) => ({
               campaign_id: String(c.campaign_id),
@@ -454,7 +464,7 @@ Deno.serve(async (req) => {
         `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=1&filtering={"campaign_ids":["${campaign_id}"]}`,
         { headers }
       );
-      const origData = await origResp.json();
+      const origData = await safeJson(origResp);
       const orig = origData.data?.list?.[0];
 
       if (!orig) {
@@ -480,7 +490,7 @@ Deno.serve(async (req) => {
         headers,
         body: JSON.stringify(createBody),
       });
-      const createData = await createResp.json();
+      const createData = await safeJson(createResp);
       console.log("TikTok duplicate campaign response:", JSON.stringify(createData).slice(0, 500));
 
       if (createData.code !== 0) {
@@ -519,7 +529,7 @@ Deno.serve(async (req) => {
         `${TIKTOK_API}/campaign/get/?advertiser_id=${source_advertiser_id}&page_size=1&filtering={"campaign_ids":["${campaign_id}"]}`,
         { headers }
       );
-      const origData = await origResp.json();
+      const origData = await safeJson(origResp);
       const orig = origData.data?.list?.[0];
 
       if (!orig) {
@@ -552,7 +562,7 @@ Deno.serve(async (req) => {
               headers,
               body: JSON.stringify(createBody),
             });
-            const createData = await createResp.json();
+            const createData = await safeJson(createResp);
 
             if (createData.code !== 0) {
               results.push({ advertiser_id: targetAdvId, copy: copyNum, success: false, error: createData.message });
