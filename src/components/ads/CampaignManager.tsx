@@ -33,6 +33,7 @@ export default function CampaignManager() {
   const [selectedBc, setSelectedBc] = useState<string>("");
   const [campaigns, setCampaigns] = useState<TikTokCampaign[]>([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState({ loaded: 0, total: 0 });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -74,20 +75,34 @@ export default function CampaignManager() {
 
     setLoading(true);
     setCampaigns([]);
-    try {
-      // Single edge function call handles all advertiser IDs server-side
-      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
-        body: { bc_id: bc.id, action: "get_campaign_details", advertiser_ids: advertiserIds },
-      });
-      if (error) throw error;
-      setCampaigns(data.campaigns || []);
-      toast({ 
-        title: `${data.campaigns?.length || 0} campanhas de ${data.accounts || advertiserIds.length} contas`,
-        description: data.errors > 0 ? `${data.errors} contas com erro (ignoradas)` : undefined,
-      });
-    } catch (err: any) {
-      toast({ title: "Erro ao buscar campanhas", description: err.message, variant: "destructive" });
+    setProgress({ loaded: 0, total: advertiserIds.length });
+
+    // Progressive loading: batch 15 advertiser IDs per edge function call
+    const batchSize = 15;
+    let allCampaigns: TikTokCampaign[] = [];
+    let totalErrors = 0;
+
+    for (let i = 0; i < advertiserIds.length; i += batchSize) {
+      const batch = advertiserIds.slice(i, i + batchSize);
+      try {
+        const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+          body: { bc_id: bc.id, action: "get_campaign_details", advertiser_ids: batch },
+        });
+        if (error) throw error;
+        const newCamps = data.campaigns || [];
+        totalErrors += data.errors || 0;
+        allCampaigns = [...allCampaigns, ...newCamps];
+        setCampaigns([...allCampaigns]);
+      } catch {
+        totalErrors += batch.length;
+      }
+      setProgress({ loaded: Math.min(i + batchSize, advertiserIds.length), total: advertiserIds.length });
     }
+
+    toast({
+      title: `${allCampaigns.length} campanhas de ${advertiserIds.length} contas`,
+      description: totalErrors > 0 ? `${totalErrors} contas com erro (ignoradas)` : undefined,
+    });
     setLoading(false);
   };
 
@@ -313,9 +328,19 @@ export default function CampaignManager() {
                     {loading && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8">
-                          <div className="flex flex-col items-center gap-2">
+                          <div className="flex flex-col items-center gap-3">
                             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Buscando campanhas de todas as contas...</p>
+                            <div className="w-48">
+                              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                                <div
+                                  className="h-full bg-primary rounded-full transition-all duration-300"
+                                  style={{ width: `${progress.total > 0 ? (progress.loaded / progress.total) * 100 : 0}%` }}
+                                />
+                              </div>
+                              <p className="text-[10px] text-muted-foreground mt-1.5">
+                                {progress.loaded}/{progress.total} contas • {campaigns.length} campanhas encontradas
+                              </p>
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>
