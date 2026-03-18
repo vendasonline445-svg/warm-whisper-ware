@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
         `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=200`,
         { headers }
       );
-      const campData = await campResp.json();
+      const campData = await safeJson(campResp);
       console.log("TikTok campaigns response:", JSON.stringify(campData).slice(0, 500));
 
       if (campData.code !== 0) {
