@@ -794,7 +794,7 @@ export default function CampaignManager() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredCampaigns.map((camp) => {
+                    {sortedCampaigns.map((camp) => {
                       const m = metricsMap[camp.campaign_id];
                       return (
                         <TableRow key={camp.campaign_id}>
@@ -824,6 +824,13 @@ export default function CampaignManager() {
                             {m ? (
                               <Badge className={`text-[10px] ${m.roas >= 2 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : m.roas >= 1 ? "bg-amber-500/15 text-amber-600 border-amber-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
                                 {m.roas.toFixed(2)}x
+                              </Badge>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell className="text-xs text-right font-mono">
+                            {m ? (
+                              <Badge className={`text-[10px] ${m.roi >= 0 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
+                                {m.roi.toFixed(1)}%
                               </Badge>
                             ) : <span className="text-muted-foreground">—</span>}
                           </TableCell>
