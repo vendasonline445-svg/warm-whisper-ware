@@ -399,6 +399,7 @@ export default function CampaignManager() {
     setBulkDupBudget(camp.budget > 0 ? String(camp.budget) : "");
     setBulkSelectedAccounts([]);
     setBulkAccounts([]);
+    setBulkCopies(1);
     setBulkLoadingAccounts(true);
 
     const bc = bcs.find((b: any) => b.id === selectedBc);
