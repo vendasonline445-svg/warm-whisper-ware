@@ -73,50 +73,109 @@ const AD_READONLY_FIELDS = new Set([
   "catalogs", "item_duet_status", "item_stitch_status",
 ]);
 
+function isMethodNotAllowedError(data: any): boolean {
+  const msg = String(data?.message || "").toLowerCase();
+  return msg.includes("method not allowed") || msg.includes("http 405");
+}
+
+async function requestTikTokListPage(
+  headers: Record<string, string>,
+  endpoint: string,
+  advertiserId: string,
+  page: number,
+  filtering: Record<string, any>,
+  pageSize = 100,
+) {
+  const postResp = await fetch(`${TIKTOK_API}/${endpoint}/`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      advertiser_id: advertiserId,
+      page,
+      page_size: pageSize,
+      filtering,
+    }),
+  });
+  const postData = await safeJson(postResp);
+
+  if (postData.code === 0 || !isMethodNotAllowedError(postData)) {
+    return postData;
+  }
+
+  const query = new URLSearchParams({
+    advertiser_id: advertiserId,
+    page: String(page),
+    page_size: String(pageSize),
+    filtering: JSON.stringify(filtering),
+  });
+  const getResp = await fetch(`${TIKTOK_API}/${endpoint}/?${query.toString()}`, { headers });
+  return safeJson(getResp);
+}
+
 async function getAdGroups(headers: Record<string, string>, advertiserId: string, campaignId: string) {
   const allAdGroups: any[] = [];
   let page = 1;
+  const pageSize = 100;
+
   while (true) {
-    const resp = await fetch(
-      `${TIKTOK_API}/adgroup/get/?advertiser_id=${advertiserId}&page=${page}&page_size=200&filtering=${encodeURIComponent(JSON.stringify({ campaign_ids: [campaignId] }))}`,
-      { headers }
+    const data = await requestTikTokListPage(
+      headers,
+      "adgroup/get",
+      advertiserId,
+      page,
+      { campaign_ids: [campaignId] },
+      pageSize,
     );
-    const data = await safeJson(resp);
+
     if (data.code !== 0) {
       console.error("Failed to get ad groups:", data.message);
       break;
     }
+
     const list = data.data?.list || [];
     allAdGroups.push(...list);
-    if (list.length < 200) break;
+
+    if (list.length < pageSize) break;
     page++;
   }
+
   return allAdGroups;
 }
 
 async function getAds(headers: Record<string, string>, advertiserId: string, adgroupIds: string[]) {
   if (!adgroupIds.length) return [];
+
   const allAds: any[] = [];
+  const pageSize = 100;
+
   // Batch adgroup IDs in groups of 100
   for (let i = 0; i < adgroupIds.length; i += 100) {
     const batch = adgroupIds.slice(i, i + 100);
     let page = 1;
+
     while (true) {
-      const resp = await fetch(
-        `${TIKTOK_API}/ad/get/?advertiser_id=${advertiserId}&page=${page}&page_size=200&filtering=${encodeURIComponent(JSON.stringify({ adgroup_ids: batch }))}`,
-        { headers }
+      const data = await requestTikTokListPage(
+        headers,
+        "ad/get",
+        advertiserId,
+        page,
+        { adgroup_ids: batch },
+        pageSize,
       );
-      const data = await safeJson(resp);
+
       if (data.code !== 0) {
         console.error("Failed to get ads:", data.message);
         break;
       }
+
       const list = data.data?.list || [];
       allAds.push(...list);
-      if (list.length < 200) break;
+
+      if (list.length < pageSize) break;
       page++;
     }
   }
+
   return allAds;
 }
 
