@@ -7,6 +7,16 @@ const corsHeaders = {
 
 const TIKTOK_API = "https://business-api.tiktok.com/open_api/v1.3";
 
+const safeJson = async (resp: Response) => {
+  const text = await resp.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error("Non-JSON response:", text.slice(0, 300));
+    return { code: -1, message: `TikTok returned non-JSON (HTTP ${resp.status})`, data: null };
+  }
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
