@@ -503,6 +503,75 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Action: bulk duplicate campaign to multiple accounts ──
+    if (action === "bulk_duplicate") {
+      const { source_advertiser_id, campaign_id, target_advertiser_ids, new_name, new_budget } = body;
+      if (!source_advertiser_id || !campaign_id || !target_advertiser_ids?.length) {
+        return new Response(JSON.stringify({ error: "source_advertiser_id, campaign_id, target_advertiser_ids required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 1. Get original campaign details
+      const origResp = await fetch(
+        `${TIKTOK_API}/campaign/get/?advertiser_id=${source_advertiser_id}&page_size=1&filtering={"campaign_ids":["${campaign_id}"]}`,
+        { headers }
+      );
+      const origData = await origResp.json();
+      const orig = origData.data?.list?.[0];
+
+      if (!orig) {
+        return new Response(JSON.stringify({ error: "Campaign not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const results: Array<{ advertiser_id: string; success: boolean; campaign_id?: string; error?: string }> = [];
+
+      for (const targetAdvId of target_advertiser_ids) {
+        try {
+          const createBody: any = {
+            advertiser_id: targetAdvId,
+            campaign_name: new_name || orig.campaign_name,
+            objective_type: orig.objective_type || "WEB_CONVERSIONS",
+            budget_mode: orig.budget_mode || "BUDGET_MODE_DYNAMIC",
+          };
+          if (orig.budget && orig.budget > 0) {
+            createBody.budget = new_budget || orig.budget;
+          }
+
+          const createResp = await fetch(`${TIKTOK_API}/campaign/create/`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(createBody),
+          });
+          const createData = await createResp.json();
+
+          if (createData.code !== 0) {
+            results.push({ advertiser_id: targetAdvId, success: false, error: createData.message });
+          } else {
+            const newId = String(createData.data?.campaign_id);
+            await supabase.from("campaigns").insert({
+              campaign_external_id: newId,
+              campaign_name: createBody.campaign_name,
+              platform: "tiktok",
+              client_id: bc.client_id,
+            });
+            results.push({ advertiser_id: targetAdvId, success: true, campaign_id: newId });
+          }
+        } catch (e: any) {
+          results.push({ advertiser_id: targetAdvId, success: false, error: e.message });
+        }
+      }
+
+      const succeeded = results.filter(r => r.success).length;
+      console.log(`Bulk duplicate: ${succeeded}/${target_advertiser_ids.length} succeeded`);
+
+      return new Response(JSON.stringify({ success: true, results, succeeded, total: target_advertiser_ids.length }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
