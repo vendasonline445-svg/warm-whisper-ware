@@ -33,6 +33,7 @@ export default function CampaignManager() {
   const [selectedBc, setSelectedBc] = useState<string>("");
   const [campaigns, setCampaigns] = useState<TikTokCampaign[]>([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState({ loaded: 0, total: 0 });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
