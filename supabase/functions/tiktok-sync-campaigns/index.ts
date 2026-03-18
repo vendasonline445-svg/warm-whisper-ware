@@ -380,8 +380,8 @@ async function duplicateAdGroupsAndAds(
     let agErrorMessage = "";
 
     for (const mode of adgroupModes) {
-      const adgroupPayload = { ...agPayload };
-      if (mode === "smart_plus" && !adgroupPayload.request_id) {
+      const adgroupPayload = stripUnsetValues({ ...agPayload });
+      if (mode === "smart_plus") {
         adgroupPayload.request_id = generateRequestId();
       }
 
@@ -422,10 +422,15 @@ async function duplicateAdGroupsAndAds(
       let adErrorMessage = "";
 
       for (const mode of adModes) {
+        const adRequestPayload = stripUnsetValues({ ...adPayload });
+        if (mode === "smart_plus" && !adRequestPayload.request_id) {
+          adRequestPayload.request_id = generateRequestId();
+        }
+
         const adResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].adCreate}/`, {
           method: "POST",
           headers,
-          body: JSON.stringify(adPayload),
+          body: JSON.stringify(adRequestPayload),
         });
         const adData = await safeJson(adResp);
 
