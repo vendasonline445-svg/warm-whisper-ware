@@ -7,14 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Megaphone, Palette, Zap, Wallet, Plus, Trash2, Pencil, Play, Pause, AlertTriangle } from "lucide-react";
+import { Megaphone, Palette, Zap, Wallet, Plus, Trash2, Pencil, Play, Pause, AlertTriangle, Link2, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import TikTokConnect from "@/components/ads/TikTokConnect";
 
 const db = supabase as any;
 
-type SubTab = "campaigns" | "creatives" | "automation" | "budgets";
+type SubTab = "campaigns" | "creatives" | "automation" | "budgets" | "connect";
 
 const SUB_TABS: { key: SubTab; label: string; icon: React.ReactNode }[] = [
+  { key: "connect", label: "Conexão", icon: <Link2 className="h-4 w-4" /> },
   { key: "campaigns", label: "Campanhas", icon: <Megaphone className="h-4 w-4" /> },
   { key: "creatives", label: "Criativos", icon: <Palette className="h-4 w-4" /> },
   { key: "automation", label: "Automação", icon: <Zap className="h-4 w-4" /> },
@@ -24,7 +26,7 @@ const SUB_TABS: { key: SubTab; label: string; icon: React.ReactNode }[] = [
 const fmtMoney = (v: number) => `R$ ${(v / 100).toFixed(2)}`;
 
 export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
-  const [subTab, setSubTab] = useState<SubTab>(defaultTab ?? "campaigns");
+  const [subTab, setSubTab] = useState<SubTab>(defaultTab ?? "connect");
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [creatives, setCreatives] = useState<any[]>([]);
   const [rules, setRules] = useState<any[]>([]);
@@ -122,7 +124,10 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
         ))}
       </div>
 
-      {loading && <p className="text-center text-muted-foreground py-8">Carregando...</p>}
+      {loading && subTab !== "connect" && <p className="text-center text-muted-foreground py-8">Carregando...</p>}
+
+      {/* ── CONNECT ── */}
+      {subTab === "connect" && <TikTokConnect onSynced={fetchData} />}
 
       {/* ── CAMPAIGNS ── */}
       {!loading && subTab === "campaigns" && (

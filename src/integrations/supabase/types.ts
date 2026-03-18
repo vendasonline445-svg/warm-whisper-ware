@@ -212,6 +212,7 @@ export type Database = {
       business_centers: {
         Row: {
           access_token: string | null
+          advertiser_id: string | null
           bc_external_id: string | null
           bc_name: string
           client_id: string
@@ -225,6 +226,7 @@ export type Database = {
         }
         Insert: {
           access_token?: string | null
+          advertiser_id?: string | null
           bc_external_id?: string | null
           bc_name: string
           client_id: string
@@ -238,6 +240,7 @@ export type Database = {
         }
         Update: {
           access_token?: string | null
+          advertiser_id?: string | null
           bc_external_id?: string | null
           bc_name?: string
           client_id?: string
