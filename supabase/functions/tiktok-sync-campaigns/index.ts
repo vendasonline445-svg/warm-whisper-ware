@@ -366,10 +366,15 @@ async function duplicateAdGroupsAndAds(
     let agErrorMessage = "";
 
     for (const mode of adgroupModes) {
+      const adgroupPayload = { ...agPayload };
+      if (mode === "smart_plus" && !adgroupPayload.request_id) {
+        adgroupPayload.request_id = generateRequestId();
+      }
+
       const agResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].adgroupCreate}/`, {
         method: "POST",
         headers,
-        body: JSON.stringify(agPayload),
+        body: JSON.stringify(adgroupPayload),
       });
       const responseData = await safeJson(agResp);
       if (responseData.code === 0) {
