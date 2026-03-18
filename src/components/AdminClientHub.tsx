@@ -69,6 +69,24 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
     fetchData();
   };
 
+  const fetchAdvertisers = async (bc: any) => {
+    setLoadingAdvs(bc.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "get_advertisers" },
+      });
+      if (error) throw error;
+      const list = data?.data?.list || [];
+      setAdvertisers(prev => ({ ...prev, [bc.id]: list }));
+      if (list.length === 0) {
+        toast({ title: "Nenhuma conta de anúncio encontrada", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao buscar contas", description: err.message, variant: "destructive" });
+    }
+    setLoadingAdvs(null);
+  };
+
   const syncCampaigns = async (bc: any) => {
     if (!bc.advertiser_id) {
       toast({ title: "Configure o Advertiser ID primeiro", variant: "destructive" });
