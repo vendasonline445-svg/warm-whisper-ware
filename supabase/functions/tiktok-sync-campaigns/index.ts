@@ -820,17 +820,39 @@ Deno.serve(async (req) => {
         const campExtId = String(dims.campaign_id);
         const date = dims.stat_time_day?.split(" ")[0];
 
-        const { data: intCamp } = await supabase
+        // Look up or auto-create campaign in local DB
+        let { data: intCamp } = await supabase
           .from("campaigns")
           .select("id")
           .eq("campaign_external_id", campExtId)
           .maybeSingle();
 
+        if (!intCamp) {
+          // Auto-create campaign record so costs can be linked
+          const { data: newCamp } = await supabase
+            .from("campaigns")
+            .insert({
+              campaign_external_id: campExtId,
+              campaign_name: `TikTok Campaign ${campExtId}`,
+              platform: "tiktok",
+              client_id: bc.client_id,
+            })
+            .select("id")
+            .single();
+          intCamp = newCamp;
+          console.log(`Auto-created campaign for external_id ${campExtId} → ${newCamp?.id}`);
+        }
+
+        if (!intCamp?.id) {
+          console.warn(`Could not resolve campaign for external_id ${campExtId}, skipping`);
+          continue;
+        }
+
         const spendCents = Math.round(parseFloat(metrics.spend || "0") * 100);
 
         await supabase.from("campaign_costs").upsert(
           {
-            campaign_id: intCamp?.id || null,
+            campaign_id: intCamp.id,
             client_id: bc.client_id,
             date,
             spend: spendCents,

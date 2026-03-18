@@ -293,10 +293,10 @@ export default function CampaignManager() {
     setLoading(false);
 
     // Auto-sync costs in background only for active accounts
-    syncCostsInBackground(bc.id, activeAdvertiserIds);
+    syncCostsInBackground(bc.id, activeAdvertiserIds, allCampaigns);
   };
 
-  const syncCostsInBackground = async (bcId: string, advertiserIds: string[]) => {
+  const syncCostsInBackground = async (bcId: string, advertiserIds: string[], campaignList?: TikTokCampaign[]) => {
     try {
       const batchSize = 5;
       for (let i = 0; i < advertiserIds.length; i += batchSize) {
@@ -309,8 +309,9 @@ export default function CampaignManager() {
           )
         );
       }
-      // Re-fetch metrics after costs are synced
-      if (campaigns.length > 0) fetchMetrics(campaigns);
+      // Re-fetch metrics after costs are synced — use passed list to avoid stale closure
+      const list = campaignList || campaigns;
+      if (list.length > 0) fetchMetrics(list);
     } catch (err) {
       console.error("Background cost sync error:", err);
     }
