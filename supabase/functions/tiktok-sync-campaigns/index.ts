@@ -38,11 +38,20 @@ const API_BY_MODE = {
   },
 } as const;
 
-const generateRequestId = (): number => {
-  const timestamp = Date.now();
-  const suffix = Math.floor(Math.random() * 90) + 10;
-  return Number(`${timestamp}${suffix}`);
+const generateRequestId = (): string => {
+  const timestamp = Date.now().toString();
+  const suffix = Math.floor(Math.random() * 900000 + 100000).toString();
+  return `${timestamp}${suffix}`;
 };
+
+function stripUnsetValues(payload: Record<string, any>): Record<string, any> {
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === "UNSET" || value === "") {
+      delete payload[key];
+    }
+  }
+  return payload;
+}
 
 const createCampaignWithFallback = async (
   headers: Record<string, string>,
@@ -68,12 +77,7 @@ const createCampaignWithFallback = async (
 
     if (mode === "smart_plus") {
       requestPayload.request_id = generateRequestId();
-
-      for (const [key, value] of Object.entries(requestPayload)) {
-        if (value === "UNSET" || value === "") {
-          delete requestPayload[key];
-        }
-      }
+      stripUnsetValues(requestPayload);
     }
 
     const createResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].campaignCreate}/`, {
