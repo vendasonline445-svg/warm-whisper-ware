@@ -961,16 +961,15 @@ Deno.serve(async (req) => {
               ? `${new_name || orig.campaign_name} (${copyNum})`
               : (new_name || orig.campaign_name);
 
-            const createBody: any = {
-              advertiser_id: targetAdvId,
-              campaign_name: copyName,
-              objective_type: orig.objective_type || "WEB_CONVERSIONS",
-              budget_mode: orig.budget_mode || "BUDGET_MODE_DYNAMIC",
-            };
+            const parsedBudget = new_budget !== undefined ? Number(new_budget) : undefined;
+            const budgetOverride = parsedBudget !== undefined && Number.isFinite(parsedBudget) ? parsedBudget : undefined;
 
-            if (orig.budget && orig.budget > 0) {
-              createBody.budget = new_budget || orig.budget;
-            }
+            const createBody = buildCampaignCreatePayload(
+              orig,
+              targetAdvId,
+              copyName,
+              budgetOverride,
+            );
 
             const createResult = await createCampaignWithFallback(headers, createBody, sourceMode);
 
