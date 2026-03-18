@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import RotatingTrustBar from "@/components/RotatingTrustBar";
 
 const PRICE = 57.40;
 const OLD_PRICE = 139.90;

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import RotatingTrustBar from "@/components/RotatingTrustBar";
 
 const SIZE_PRICES: Record<string, { price: number; oldPrice: number; discount: number }> = {
   "120x60cm": { price: 69.90, oldPrice: 159.90, discount: 56 },
