@@ -438,8 +438,9 @@ export default function CampaignManager() {
     const bc = bcs.find((b: any) => b.id === selectedBc);
     if (!bc) return;
 
+    const totalOps = bulkSelectedAccounts.length * bulkCopies;
     setBulkDuplicating(true);
-    setBulkProgress({ done: 0, total: bulkSelectedAccounts.length });
+    setBulkProgress({ done: 0, total: totalOps });
 
     try {
       const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
@@ -451,6 +452,7 @@ export default function CampaignManager() {
           target_advertiser_ids: bulkSelectedAccounts,
           new_name: bulkDupName || undefined,
           new_budget: bulkDupBudget ? parseFloat(bulkDupBudget) : undefined,
+          copies: bulkCopies,
         },
       });
       if (error) throw error;
