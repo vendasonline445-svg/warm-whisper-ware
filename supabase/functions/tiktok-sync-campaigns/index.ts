@@ -38,6 +38,9 @@ const API_BY_MODE = {
   },
 } as const;
 
+const generateRequestId = () =>
+  crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
 const createCampaignWithFallback = async (
   headers: Record<string, string>,
   payload: Record<string, any>,
@@ -58,15 +61,21 @@ const createCampaignWithFallback = async (
   let lastData: any = null;
 
   for (const attempt of attempts) {
+    const requestPayload = { ...attempt.payload };
+
+    if (mode === "smart_plus" && !requestPayload.request_id) {
+      requestPayload.request_id = generateRequestId();
+    }
+
     const createResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].campaignCreate}/`, {
       method: "POST",
       headers,
-      body: JSON.stringify(attempt.payload),
+      body: JSON.stringify(requestPayload),
     });
     const createData = await safeJson(createResp);
 
     if (createData.code === 0) {
-      return { success: true as const, data: createData, mode, payload: attempt.payload };
+      return { success: true as const, data: createData, mode, payload: requestPayload };
     }
 
     lastData = createData;
@@ -79,6 +88,12 @@ const createCampaignWithFallback = async (
 };
 
 // ── Helpers to duplicate ad groups + ads ──
+
+const CAMPAIGN_READONLY_FIELDS = new Set([
+  "campaign_id", "advertiser_id", "create_time", "modify_time", "operation_status", "secondary_status",
+  "primary_status", "campaign_primary_status", "statistic_type", "campaign_status", "split_test_variable",
+  "split_test_enabled", "is_new_structure", "campaign_product_source",
+]);
 
 const ADGROUP_READONLY_FIELDS = new Set([
   "adgroup_id", "campaign_id", "campaign_name", "advertiser_id",
