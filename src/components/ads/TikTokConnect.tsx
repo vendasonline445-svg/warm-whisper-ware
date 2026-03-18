@@ -32,6 +32,8 @@ export default function TikTokConnect({ onSynced }: { onSynced?: () => void }) {
   const [showAdd, setShowAdd] = useState(false);
   const [newBc, setNewBc] = useState({ bc_name: "", bc_external_id: "" });
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [advertisers, setAdvertisers] = useState<Record<string, { advertiser_id: string; advertiser_name: string }[]>>({});
+  const [loadingAdvs, setLoadingAdvs] = useState<string | null>(null);
 
   useEffect(() => { loadBCs(); }, []);
 
