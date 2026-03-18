@@ -454,6 +454,7 @@ export default function CampaignManager() {
     return map[status] || { label: status.replace("STATUS_", ""), disabled: false };
   };
 
+  const statusBadge = (status: string) => {
     if (status === "ENABLE") return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px]"><Play className="h-2.5 w-2.5 mr-0.5" />Ativo</Badge>;
     if (status === "DISABLE") return <Badge className="bg-muted text-muted-foreground text-[10px]"><Pause className="h-2.5 w-2.5 mr-0.5" />Pausado</Badge>;
     return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
