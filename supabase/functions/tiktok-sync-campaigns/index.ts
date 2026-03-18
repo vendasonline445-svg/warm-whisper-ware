@@ -38,11 +38,20 @@ const API_BY_MODE = {
   },
 } as const;
 
-const generateRequestId = (): number => {
-  const timestamp = Date.now();
-  const suffix = Math.floor(Math.random() * 90) + 10;
-  return Number(`${timestamp}${suffix}`);
+const generateRequestId = (): string => {
+  const timestamp = Date.now().toString();
+  const suffix = Math.floor(Math.random() * 900000 + 100000).toString();
+  return `${timestamp}${suffix}`;
 };
+
+function stripUnsetValues(payload: Record<string, any>): Record<string, any> {
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === "UNSET" || value === "") {
+      delete payload[key];
+    }
+  }
+  return payload;
+}
 
 const createCampaignWithFallback = async (
   headers: Record<string, string>,
@@ -68,12 +77,7 @@ const createCampaignWithFallback = async (
 
     if (mode === "smart_plus") {
       requestPayload.request_id = generateRequestId();
-
-      for (const [key, value] of Object.entries(requestPayload)) {
-        if (value === "UNSET" || value === "") {
-          delete requestPayload[key];
-        }
-      }
+      stripUnsetValues(requestPayload);
     }
 
     const createResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].campaignCreate}/`, {
@@ -276,6 +280,7 @@ function cleanPayload(obj: Record<string, any>, readonlyFields: Set<string>): Re
   for (const [key, value] of Object.entries(obj)) {
     if (readonlyFields.has(key)) continue;
     if (value === null || value === undefined) continue;
+    if (value === "UNSET" || value === "") continue;
     // Skip empty arrays/objects that might cause API errors
     if (Array.isArray(value) && value.length === 0) continue;
     if (typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0) continue;
@@ -300,7 +305,7 @@ function buildCampaignCreatePayload(
     payload.budget = customBudget;
   }
 
-  return payload;
+  return stripUnsetValues(payload);
 }
 
 async function duplicateAdGroupsAndAds(
@@ -375,8 +380,8 @@ async function duplicateAdGroupsAndAds(
     let agErrorMessage = "";
 
     for (const mode of adgroupModes) {
-      const adgroupPayload = { ...agPayload };
-      if (mode === "smart_plus" && !adgroupPayload.request_id) {
+      const adgroupPayload = stripUnsetValues({ ...agPayload });
+      if (mode === "smart_plus") {
         adgroupPayload.request_id = generateRequestId();
       }
 
@@ -417,10 +422,15 @@ async function duplicateAdGroupsAndAds(
       let adErrorMessage = "";
 
       for (const mode of adModes) {
+        const adRequestPayload = stripUnsetValues({ ...adPayload });
+        if (mode === "smart_plus" && !adRequestPayload.request_id) {
+          adRequestPayload.request_id = generateRequestId();
+        }
+
         const adResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].adCreate}/`, {
           method: "POST",
           headers,
-          body: JSON.stringify(adPayload),
+          body: JSON.stringify(adRequestPayload),
         });
         const adData = await safeJson(adResp);
 

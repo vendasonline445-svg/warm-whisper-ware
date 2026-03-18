@@ -479,7 +479,16 @@ export default function CampaignManager() {
       setBulkDupDialog(null);
       fetchCampaigns();
     } catch (err: any) {
-      toast({ title: "Erro na duplicação em massa", description: err.message, variant: "destructive" });
+      let description = err?.message || "Falha na duplicação em massa";
+      if (err?.context && typeof err.context.json === "function") {
+        try {
+          const payload = await err.context.json();
+          description = payload?.error || payload?.message || description;
+        } catch {
+          // ignore parse errors
+        }
+      }
+      toast({ title: "Erro na duplicação em massa", description, variant: "destructive" });
     }
     setBulkDuplicating(false);
   };
