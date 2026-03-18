@@ -788,63 +788,135 @@ Deno.serve(async (req) => {
 
       const today = new Date().toISOString().split("T")[0];
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+      const startDate = date_from || weekAgo;
+      const endDate = date_to || today;
+      const reportMetrics = ["spend", "impressions", "clicks", "cpc", "cpm", "ctr", "conversion", "cost_per_conversion"];
+      const reportDimensions = ["campaign_id", "stat_time_day"];
 
-      const reportResp = await fetch(`${TIKTOK_API}/report/integrated/get/`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          advertiser_id,
+      const rows: any[] = [];
+      const pageSize = 200;
+      let page = 1;
+
+      while (true) {
+        const query = new URLSearchParams({
+          advertiser_id: String(advertiser_id),
           report_type: "BASIC",
           data_level: "AUCTION_CAMPAIGN",
-          dimensions: ["campaign_id", "stat_time_day"],
-          metrics: ["spend", "impressions", "clicks", "cpc", "cpm", "ctr", "conversion", "cost_per_conversion"],
-          start_date: date_from || weekAgo,
-          end_date: date_to || today,
-          page_size: 200,
-        }),
-      });
-      const reportData = await safeJson(reportResp);
-
-      if (reportData.code !== 0) {
-        return new Response(JSON.stringify({ error: reportData.message, code: reportData.code }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          dimensions: JSON.stringify(reportDimensions),
+          metrics: JSON.stringify(reportMetrics),
+          start_date: startDate,
+          end_date: endDate,
+          page: String(page),
+          page_size: String(pageSize),
         });
+
+        let reportData = await safeJson(await fetch(
+          `${TIKTOK_API}/report/integrated/get/?${query.toString()}`,
+          { headers }
+        ));
+
+        if (reportData.code !== 0 && isMethodNotAllowedError(reportData)) {
+          reportData = await safeJson(await fetch(`${TIKTOK_API}/report/integrated/get/`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              advertiser_id,
+              report_type: "BASIC",
+              data_level: "AUCTION_CAMPAIGN",
+              dimensions: reportDimensions,
+              metrics: reportMetrics,
+              start_date: startDate,
+              end_date: endDate,
+              page,
+              page_size: pageSize,
+            }),
+          }));
+        }
+
+        if (reportData.code !== 0) {
+          return new Response(JSON.stringify({
+            error: reportData.message,
+            code: reportData.code,
+            page,
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const list = reportData.data?.list || [];
+        rows.push(...list);
+
+        const pageInfo = reportData.data?.page_info || {};
+        const totalPages = Number(pageInfo.total_page || 0);
+        const totalNumber = Number(pageInfo.total_number || 0);
+        const hasNextByFlag = pageInfo.has_next_page === true;
+        const hasNextByTotal = totalPages > 0 ? page < totalPages : totalNumber > page * pageSize;
+        const hasNextByLength = list.length === pageSize;
+
+        if (!list.length || (!hasNextByFlag && !hasNextByTotal && !hasNextByLength) || page >= 50) {
+          break;
+        }
+
+        page += 1;
       }
 
-      const rows = reportData.data?.list || [];
+      const uniqueExternalIds = Array.from(new Set(
+        rows
+          .map((row: any) => String(row?.dimensions?.campaign_id || "").trim())
+          .filter(Boolean)
+      ));
+
+      const extToInternal: Record<string, string> = {};
+
+      if (uniqueExternalIds.length > 0) {
+        const { data: existingCampaigns } = await supabase
+          .from("campaigns")
+          .select("id, campaign_external_id")
+          .in("campaign_external_id", uniqueExternalIds);
+
+        (existingCampaigns || []).forEach((campaign: any) => {
+          if (campaign.campaign_external_id) {
+            extToInternal[String(campaign.campaign_external_id)] = campaign.id;
+          }
+        });
+
+        for (const extId of uniqueExternalIds) {
+          if (extToInternal[extId]) continue;
+          const { data: created } = await supabase
+            .from("campaigns")
+            .insert({
+              campaign_external_id: extId,
+              campaign_name: `TikTok Campaign ${extId}`,
+              platform: "tiktok",
+              client_id: bc.client_id,
+            })
+            .select("id, campaign_external_id")
+            .single();
+
+          if (created?.id) {
+            extToInternal[extId] = created.id;
+          }
+        }
+      }
+
       let inserted = 0;
+      let skipped = 0;
 
       for (const row of rows) {
         const dims = row.dimensions || {};
         const metrics = row.metrics || {};
-        const campExtId = String(dims.campaign_id);
-        const date = dims.stat_time_day?.split(" ")[0];
+        const campExtId = String(dims.campaign_id || "").trim();
+        const date = String(dims.stat_time_day || "").split(" ")[0];
 
-        // Look up or auto-create campaign in local DB
-        let { data: intCamp } = await supabase
-          .from("campaigns")
-          .select("id")
-          .eq("campaign_external_id", campExtId)
-          .maybeSingle();
-
-        if (!intCamp) {
-          // Auto-create campaign record so costs can be linked
-          const { data: newCamp } = await supabase
-            .from("campaigns")
-            .insert({
-              campaign_external_id: campExtId,
-              campaign_name: `TikTok Campaign ${campExtId}`,
-              platform: "tiktok",
-              client_id: bc.client_id,
-            })
-            .select("id")
-            .single();
-          intCamp = newCamp;
-          console.log(`Auto-created campaign for external_id ${campExtId} → ${newCamp?.id}`);
+        if (!campExtId || !date) {
+          skipped++;
+          continue;
         }
 
-        if (!intCamp?.id) {
-          console.warn(`Could not resolve campaign for external_id ${campExtId}, skipping`);
+        const campaignId = extToInternal[campExtId];
+        if (!campaignId) {
+          skipped++;
           continue;
         }
 
@@ -852,7 +924,7 @@ Deno.serve(async (req) => {
 
         await supabase.from("campaign_costs").upsert(
           {
-            campaign_id: intCamp.id,
+            campaign_id: campaignId,
             client_id: bc.client_id,
             date,
             spend: spendCents,
@@ -868,7 +940,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true, rows: rows.length, inserted }),
+        JSON.stringify({ success: true, rows: rows.length, inserted, skipped, pages: page }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
