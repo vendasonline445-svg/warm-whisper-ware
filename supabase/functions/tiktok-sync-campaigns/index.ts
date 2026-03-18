@@ -17,6 +17,43 @@ const safeJson = async (resp: Response) => {
   }
 };
 
+const createCampaignWithFallback = async (
+  headers: Record<string, string>,
+  payload: Record<string, any>,
+) => {
+  const attempts: Array<{ mode: string; payload: Record<string, any> }> = [
+    { mode: String(payload.budget_mode || "ORIGINAL"), payload: { ...payload } },
+  ];
+
+  const baseMode = String(payload.budget_mode || "").toUpperCase();
+  if (baseMode.includes("DYNAMIC")) {
+    attempts.push({ mode: "BUDGET_MODE_DAY", payload: { ...payload, budget_mode: "BUDGET_MODE_DAY" } });
+    attempts.push({ mode: "BUDGET_MODE_TOTAL", payload: { ...payload, budget_mode: "BUDGET_MODE_TOTAL" } });
+  }
+
+  let lastData: any = null;
+
+  for (const attempt of attempts) {
+    const createResp = await fetch(`${TIKTOK_API}/campaign/create/`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(attempt.payload),
+    });
+    const createData = await safeJson(createResp);
+
+    if (createData.code === 0) {
+      return { success: true as const, data: createData, mode: attempt.mode, payload: attempt.payload };
+    }
+
+    lastData = createData;
+    const msg = String(createData?.message || "").toLowerCase();
+    const retryable = msg.includes("dynamic daily budget is not supported") || msg.includes("budget mode");
+    if (!retryable) break;
+  }
+
+  return { success: false as const, data: lastData };
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
