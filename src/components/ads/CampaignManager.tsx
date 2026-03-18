@@ -41,8 +41,12 @@ interface CampaignMetrics {
   revenue: number; // centavos
   sales: number;
   roas: number;
+  roi: number;
   cpa: number;
 }
+
+type CampaignSortBy = "updated" | "name" | "spend" | "sales" | "revenue" | "roas" | "roi" | "clicks";
+type SortDirection = "asc" | "desc";
 
 interface CampaignCachePayload {
   campaigns: TikTokCampaign[];
@@ -69,6 +73,8 @@ export default function CampaignManager() {
   const [progress, setProgress] = useState({ loaded: 0, total: 0 });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<CampaignSortBy>("spend");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [metricsMap, setMetricsMap] = useState<Record<string, CampaignMetrics>>({});
 
   // Duplicate dialog
@@ -172,17 +178,26 @@ export default function CampaignManager() {
         return;
       }
 
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+      const thirtyDaysAgoDate = new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
+      const thirtyDaysAgoIso = new Date(Date.now() - 30 * 86400000).toISOString();
 
       // 2) Read spend + sales sources in parallel
       const [costsRes, attribRes, purchaseRes] = await Promise.all([
-        db.from("campaign_costs").select("campaign_id, spend, impressions, clicks").in("campaign_id", internalIds),
-        db.from("attributions").select("campaign_id, revenue, event_type").in("campaign_id", internalIds),
+        db
+          .from("campaign_costs")
+          .select("campaign_id, spend, impressions, clicks")
+          .in("campaign_id", internalIds)
+          .gte("date", thirtyDaysAgoDate),
+        db
+          .from("attributions")
+          .select("campaign_id, revenue, event_type")
+          .in("campaign_id", internalIds)
+          .gte("created_at", thirtyDaysAgoIso),
         db
           .from("events")
           .select("id, campaign, value, event_data")
           .eq("event_name", "purchase")
-          .gte("created_at", thirtyDaysAgo)
+          .gte("created_at", thirtyDaysAgoIso)
           .order("created_at", { ascending: false })
           .limit(1000),
       ]);
@@ -243,6 +258,7 @@ export default function CampaignManager() {
         const sales = attr.sales > 0 || attr.revenue > 0 ? attr.sales : fallback.sales;
 
         const roas = costs.spend > 0 ? (revenue / costs.spend) : 0;
+        const roi = costs.spend > 0 ? (((revenue - costs.spend) / costs.spend) * 100) : 0;
         const cpa = sales > 0 ? (costs.spend / sales) : 0;
         const cpc = costs.clicks > 0 ? (costs.spend / costs.clicks) : 0;
         const ctr = costs.impressions > 0 ? ((costs.clicks / costs.impressions) * 100) : 0;
@@ -256,6 +272,7 @@ export default function CampaignManager() {
           revenue,
           sales,
           roas,
+          roi,
           cpa,
         };
       }
@@ -338,27 +355,35 @@ export default function CampaignManager() {
 
     saveCampaignsToCache(bc.id, allCampaigns);
     const suspendedMsg = suspendedCount > 0 ? `${suspendedCount} contas suspensas ignoradas. ` : "";
+
+    const advertisersWithCampaigns = Array.from(
+      new Set(allCampaigns.map((c) => String(c.advertiser_id || "")).filter(Boolean)),
+    );
+    const advertisersForSync = advertisersWithCampaigns.length > 0 ? advertisersWithCampaigns : activeAdvertiserIds;
+
     toast({
       title: `${allCampaigns.length} campanhas de ${activeAdvertiserIds.length} contas ativas`,
-      description: suspendedMsg + (totalErrors > 0 ? `${totalErrors} contas com erro` : ""),
+      description: suspendedMsg +
+        `${advertisersForSync.length} conta(s) com campanha em sincronização de gastos` +
+        (totalErrors > 0 ? ` • ${totalErrors} contas com erro` : ""),
     });
     setLoading(false);
 
-    // Auto-sync costs in background only for active accounts
-    syncCostsInBackground(bc.id, activeAdvertiserIds, allCampaigns);
+    // Auto-sync costs only for accounts that actually returned campaigns (faster + more accurate)
+    syncCostsInBackground(bc.id, advertisersForSync, allCampaigns);
   };
 
   const syncCostsInBackground = async (bcId: string, advertiserIds: string[], campaignList?: TikTokCampaign[]) => {
     try {
-      const batchSize = 5;
+      const batchSize = 10;
       for (let i = 0; i < advertiserIds.length; i += batchSize) {
         const batch = advertiserIds.slice(i, i + batchSize);
         await Promise.allSettled(
-          batch.map(advId =>
+          batch.map((advId) =>
             supabase.functions.invoke("tiktok-sync-campaigns", {
               body: { bc_id: bcId, action: "sync_costs", advertiser_id: advId },
-            })
-          )
+            }),
+          ),
         );
       }
       // Re-fetch metrics after costs are synced — use passed list to avoid stale closure
@@ -565,17 +590,57 @@ export default function CampaignManager() {
     return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
   };
 
-  const filteredCampaigns = statusFilter === "all"
-    ? campaigns
-    : campaigns.filter(c => c.operation_status === statusFilter);
+  const filteredCampaigns = useMemo(() => (
+    statusFilter === "all"
+      ? campaigns
+      : campaigns.filter((c) => c.operation_status === statusFilter)
+  ), [campaigns, statusFilter]);
 
-  const activeCampaigns = campaigns.filter(c => c.operation_status === "ENABLE").length;
-  const pausedCampaigns = campaigns.filter(c => c.operation_status === "DISABLE").length;
+  const sortedCampaigns = useMemo(() => {
+    const next = [...filteredCampaigns];
+    const direction = sortDirection === "asc" ? 1 : -1;
+
+    const byNumber = (a: number, b: number) => (a - b) * direction;
+    const byText = (a: string, b: string) => a.localeCompare(b, "pt-BR") * direction;
+
+    next.sort((a, b) => {
+      const ma = metricsMap[a.campaign_id];
+      const mb = metricsMap[b.campaign_id];
+
+      switch (sortBy) {
+        case "name":
+          return byText(a.campaign_name || "", b.campaign_name || "");
+        case "spend":
+          return byNumber(ma?.spend || 0, mb?.spend || 0);
+        case "sales":
+          return byNumber(ma?.sales || 0, mb?.sales || 0);
+        case "revenue":
+          return byNumber(ma?.revenue || 0, mb?.revenue || 0);
+        case "roas":
+          return byNumber(ma?.roas || 0, mb?.roas || 0);
+        case "roi":
+          return byNumber(ma?.roi || 0, mb?.roi || 0);
+        case "clicks":
+          return byNumber(ma?.clicks || 0, mb?.clicks || 0);
+        case "updated":
+        default:
+          return byNumber(
+            new Date(a.modify_time || a.create_time || 0).getTime(),
+            new Date(b.modify_time || b.create_time || 0).getTime(),
+          );
+      }
+    });
+
+    return next;
+  }, [filteredCampaigns, metricsMap, sortBy, sortDirection]);
+
+  const activeCampaigns = campaigns.filter((c) => c.operation_status === "ENABLE").length;
+  const pausedCampaigns = campaigns.filter((c) => c.operation_status === "DISABLE").length;
 
   // ── Totals for summary cards ──
   const totals = useMemo(() => {
     let spend = 0, revenue = 0, sales = 0, clicks = 0, impressions = 0;
-    Object.values(metricsMap).forEach(m => {
+    Object.values(metricsMap).forEach((m) => {
       spend += m.spend;
       revenue += m.revenue;
       sales += m.sales;
@@ -583,11 +648,12 @@ export default function CampaignManager() {
       impressions += m.impressions;
     });
     const roas = spend > 0 ? (revenue / spend) : 0;
+    const roi = spend > 0 ? (((revenue - spend) / spend) * 100) : 0;
     const cpa = sales > 0 ? (spend / sales) : 0;
-    return { spend, revenue, sales, clicks, impressions, roas, cpa };
+    return { spend, revenue, sales, clicks, impressions, roas, roi, cpa };
   }, [metricsMap]);
 
-  const colSpanTotal = 11;
+  const colSpanTotal = 12;
 
   return (
     <div className="space-y-4">
@@ -619,23 +685,51 @@ export default function CampaignManager() {
             </Button>
 
             {campaigns.length > 0 && (
-              <div className="flex gap-1 ml-auto">
-                <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("all")}>
-                  Todas ({campaigns.length})
-                </Button>
-                <Button size="sm" variant={statusFilter === "ENABLE" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("ENABLE")}>
-                  Ativas ({activeCampaigns})
-                </Button>
-                <Button size="sm" variant={statusFilter === "DISABLE" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("DISABLE")}>
-                  Pausadas ({pausedCampaigns})
-                </Button>
-              </div>
+              <>
+                <div className="flex gap-1 ml-auto">
+                  <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("all")}>
+                    Todas ({campaigns.length})
+                  </Button>
+                  <Button size="sm" variant={statusFilter === "ENABLE" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("ENABLE")}>
+                    Ativas ({activeCampaigns})
+                  </Button>
+                  <Button size="sm" variant={statusFilter === "DISABLE" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("DISABLE")}>
+                    Pausadas ({pausedCampaigns})
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={sortBy} onValueChange={(value) => setSortBy(value as CampaignSortBy)}>
+                    <SelectTrigger className="w-36 h-8 text-xs">
+                      <SelectValue placeholder="Ordenar por" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="updated" className="text-xs">Mais recentes</SelectItem>
+                      <SelectItem value="name" className="text-xs">Nome</SelectItem>
+                      <SelectItem value="sales" className="text-xs">Vendas</SelectItem>
+                      <SelectItem value="spend" className="text-xs">Gastos</SelectItem>
+                      <SelectItem value="revenue" className="text-xs">Revenue</SelectItem>
+                      <SelectItem value="roas" className="text-xs">ROAS</SelectItem>
+                      <SelectItem value="roi" className="text-xs">ROI</SelectItem>
+                      <SelectItem value="clicks" className="text-xs">Clicks</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={sortDirection} onValueChange={(value) => setSortDirection(value as SortDirection)}>
+                    <SelectTrigger className="w-28 h-8 text-xs">
+                      <SelectValue placeholder="Ordem" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="desc" className="text-xs">Decrescente</SelectItem>
+                      <SelectItem value="asc" className="text-xs">Crescente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
           </div>
 
           {/* ── Summary Cards ── */}
           {Object.keys(metricsMap).length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
               <Card className="p-3 text-center">
                 <DollarSign className="h-4 w-4 mx-auto text-muted-foreground mb-0.5" />
                 <p className="text-sm font-bold text-foreground">{fmtMoneyShort(totals.spend)}</p>
@@ -652,9 +746,18 @@ export default function CampaignManager() {
                 <p className="text-[10px] text-muted-foreground">Revenue</p>
               </Card>
               <Card className="p-3 text-center">
-                <BarChart3 className="h-4 w-4 mx-auto mb-0.5" style={{ color: totals.roas >= 1 ? "var(--emerald-500, #10b981)" : "var(--destructive)" }} />
+                <BarChart3 className="h-4 w-4 mx-auto mb-0.5" />
                 <p className={`text-sm font-bold ${totals.roas >= 1 ? "text-emerald-500" : "text-destructive"}`}>{totals.roas.toFixed(2)}x</p>
                 <p className="text-[10px] text-muted-foreground">ROAS</p>
+              </Card>
+              <Card className="p-3 text-center">
+                {totals.roi >= 0 ? (
+                  <TrendingUp className="h-4 w-4 mx-auto text-emerald-500 mb-0.5" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 mx-auto text-destructive mb-0.5" />
+                )}
+                <p className={`text-sm font-bold ${totals.roi >= 0 ? "text-emerald-500" : "text-destructive"}`}>{totals.roi.toFixed(1)}%</p>
+                <p className="text-[10px] text-muted-foreground">ROI</p>
               </Card>
               <Card className="p-3 text-center">
                 <DollarSign className="h-4 w-4 mx-auto text-amber-500 mb-0.5" />
@@ -683,6 +786,7 @@ export default function CampaignManager() {
                       <TableHead className="text-xs text-right">Vendas</TableHead>
                       <TableHead className="text-xs text-right">Revenue</TableHead>
                       <TableHead className="text-xs text-right">ROAS</TableHead>
+                      <TableHead className="text-xs text-right">ROI</TableHead>
                       <TableHead className="text-xs text-right">CPA</TableHead>
                       <TableHead className="text-xs text-right">Clicks</TableHead>
                       <TableHead className="text-xs">ID</TableHead>
@@ -690,7 +794,7 @@ export default function CampaignManager() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredCampaigns.map((camp) => {
+                    {sortedCampaigns.map((camp) => {
                       const m = metricsMap[camp.campaign_id];
                       return (
                         <TableRow key={camp.campaign_id}>
@@ -720,6 +824,13 @@ export default function CampaignManager() {
                             {m ? (
                               <Badge className={`text-[10px] ${m.roas >= 2 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : m.roas >= 1 ? "bg-amber-500/15 text-amber-600 border-amber-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
                                 {m.roas.toFixed(2)}x
+                              </Badge>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell className="text-xs text-right font-mono">
+                            {m ? (
+                              <Badge className={`text-[10px] ${m.roi >= 0 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
+                                {m.roi.toFixed(1)}%
                               </Badge>
                             ) : <span className="text-muted-foreground">—</span>}
                           </TableCell>

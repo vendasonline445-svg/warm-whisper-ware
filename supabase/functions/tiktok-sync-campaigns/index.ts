@@ -1061,6 +1061,95 @@ Deno.serve(async (req) => {
         });
       }
 
+      const campaignFields = [
+        "campaign_id",
+        "campaign_name",
+        "operation_status",
+        "secondary_status",
+        "budget",
+        "budget_mode",
+        "objective_type",
+        "create_time",
+        "modify_time",
+      ];
+
+      const listCampaignsByMode = async (advId: string, mode: CampaignApiMode) => {
+        const endpoint = API_BY_MODE[mode].campaignGet;
+        const collected: any[] = [];
+        let page = 1;
+        const pageSize = 100;
+
+        while (page <= 50) {
+          let data = await requestTikTokListPage(
+            headers,
+            endpoint,
+            advId,
+            page,
+            { operation_status: ["ENABLE", "DISABLE"] },
+            pageSize,
+            campaignFields,
+          );
+
+          if (data.code !== 0) {
+            data = await requestTikTokListPage(
+              headers,
+              endpoint,
+              advId,
+              page,
+              {},
+              pageSize,
+              campaignFields,
+            );
+          }
+
+          if (data.code !== 0) {
+            data = await requestTikTokListPage(
+              headers,
+              endpoint,
+              advId,
+              page,
+              {},
+              pageSize,
+            );
+          }
+
+          if (data.code !== 0) {
+            if (page === 1) {
+              console.error(`Failed to get campaigns for ${advId} (${mode}):`, data.message);
+            }
+            break;
+          }
+
+          const list = data.data?.list || [];
+          if (!list.length) break;
+
+          collected.push(...list.map((c: any) => ({
+            campaign_id: String(c.campaign_id),
+            campaign_name: c.campaign_name,
+            operation_status: c.operation_status,
+            secondary_status: c.secondary_status,
+            budget: c.budget,
+            budget_mode: c.budget_mode,
+            objective_type: c.objective_type,
+            create_time: c.create_time,
+            modify_time: c.modify_time,
+            advertiser_id: advId,
+          })));
+
+          const pageInfo = data.data?.page_info || {};
+          const totalPages = Number(pageInfo.total_page || 0);
+          const totalNumber = Number(pageInfo.total_number || 0);
+          const hasNextByFlag = pageInfo.has_next_page === true;
+          const hasNextByTotal = totalPages > 0 ? page < totalPages : totalNumber > page * pageSize;
+          const hasNextByLength = list.length === pageSize;
+
+          if (!hasNextByFlag && !hasNextByTotal && !hasNextByLength) break;
+          page += 1;
+        }
+
+        return collected;
+      };
+
       const allCampaigns: any[] = [];
       let errors = 0;
 
@@ -1069,26 +1158,20 @@ Deno.serve(async (req) => {
         const batch = ids.slice(i, i + batchSize);
         const results = await Promise.allSettled(
           batch.map(async (advId: string) => {
-            const resp = await fetch(
-              `${TIKTOK_API}/campaign/get/?advertiser_id=${advId}&page_size=200&fields=["campaign_id","campaign_name","operation_status","budget","budget_mode","objective_type","secondary_status","create_time","modify_time"]`,
-              { headers }
-            );
-            const data = await safeJson(resp);
-            if (data.code !== 0) return [];
-            return (data.data?.list || []).map((c: any) => ({
-              campaign_id: String(c.campaign_id),
-              campaign_name: c.campaign_name,
-              operation_status: c.operation_status,
-              secondary_status: c.secondary_status,
-              budget: c.budget,
-              budget_mode: c.budget_mode,
-              objective_type: c.objective_type,
-              create_time: c.create_time,
-              modify_time: c.modify_time,
-              advertiser_id: advId,
-            }));
+            const [standard, smartPlus] = await Promise.all([
+              listCampaignsByMode(advId, "standard"),
+              listCampaignsByMode(advId, "smart_plus"),
+            ]);
+
+            const uniqueById = new Map<string, any>();
+            [...standard, ...smartPlus].forEach((campaign) => {
+              uniqueById.set(String(campaign.campaign_id), campaign);
+            });
+
+            return Array.from(uniqueById.values());
           })
         );
+
         for (const r of results) {
           if (r.status === "fulfilled") allCampaigns.push(...r.value);
           else errors++;
