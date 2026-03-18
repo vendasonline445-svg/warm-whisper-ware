@@ -14,6 +14,8 @@ import {
 import { toast } from "@/hooks/use-toast";
 
 const db = supabase as any;
+const SELECTED_BC_STORAGE_KEY = "campaign_manager_selected_bc";
+const CAMPAIGN_CACHE_TTL_MS = 10 * 60 * 1000;
 
 interface TikTokCampaign {
   campaign_id: string;
@@ -26,6 +28,11 @@ interface TikTokCampaign {
   create_time: string;
   modify_time: string;
   advertiser_id?: string; // track which account owns this campaign
+}
+
+interface CampaignCachePayload {
+  campaigns: TikTokCampaign[];
+  updatedAt: number;
 }
 
 export default function CampaignManager() {
@@ -46,6 +53,37 @@ export default function CampaignManager() {
   const [budgetDialog, setBudgetDialog] = useState<TikTokCampaign | null>(null);
   const [newBudget, setNewBudget] = useState("");
 
+  const getCacheKey = (bcId: string) => `campaign_manager_cache_${bcId}`;
+
+  const loadCampaignsFromCache = (bcId: string): boolean => {
+    try {
+      const raw = localStorage.getItem(getCacheKey(bcId));
+      if (!raw) return false;
+
+      const parsed = JSON.parse(raw) as CampaignCachePayload;
+      if (!parsed?.updatedAt || !Array.isArray(parsed?.campaigns)) {
+        localStorage.removeItem(getCacheKey(bcId));
+        return false;
+      }
+
+      if (Date.now() - parsed.updatedAt > CAMPAIGN_CACHE_TTL_MS) {
+        localStorage.removeItem(getCacheKey(bcId));
+        return false;
+      }
+
+      setCampaigns(parsed.campaigns);
+      return true;
+    } catch {
+      localStorage.removeItem(getCacheKey(bcId));
+      return false;
+    }
+  };
+
+  const saveCampaignsToCache = (bcId: string, data: TikTokCampaign[]) => {
+    const payload: CampaignCachePayload = { campaigns: data, updatedAt: Date.now() };
+    localStorage.setItem(getCacheKey(bcId), JSON.stringify(payload));
+  };
+
   useEffect(() => {
     loadBCs();
   }, []);
@@ -57,9 +95,18 @@ export default function CampaignManager() {
       .eq("platform", "tiktok")
       .not("access_token", "is", null)
       .not("advertiser_id", "is", null);
-    setBcs(data || []);
-    if (data?.length === 1) {
-      setSelectedBc(data[0].id);
+
+    const allBcs = data || [];
+    setBcs(allBcs);
+
+    const savedBcId = localStorage.getItem(SELECTED_BC_STORAGE_KEY);
+    if (savedBcId && allBcs.some((bc) => bc.id === savedBcId)) {
+      setSelectedBc(savedBcId);
+      return;
+    }
+
+    if (allBcs.length === 1) {
+      setSelectedBc(allBcs[0].id);
     }
   };
 
@@ -99,6 +146,8 @@ export default function CampaignManager() {
       setProgress({ loaded: Math.min(i + batchSize, advertiserIds.length), total: advertiserIds.length });
     }
 
+    saveCampaignsToCache(bc.id, allCampaigns);
+
     toast({
       title: `${allCampaigns.length} campanhas de ${advertiserIds.length} contas`,
       description: totalErrors > 0 ? `${totalErrors} contas com erro (ignoradas)` : undefined,
@@ -107,7 +156,14 @@ export default function CampaignManager() {
   };
 
   useEffect(() => {
-    if (selectedBc) fetchCampaigns();
+    if (!selectedBc) {
+      setCampaigns([]);
+      return;
+    }
+
+    localStorage.setItem(SELECTED_BC_STORAGE_KEY, selectedBc);
+    const hasCache = loadCampaignsFromCache(selectedBc);
+    if (!hasCache) setCampaigns([]);
   }, [selectedBc]);
 
   const toggleStatus = async (camp: TikTokCampaign) => {
