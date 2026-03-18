@@ -280,6 +280,7 @@ function cleanPayload(obj: Record<string, any>, readonlyFields: Set<string>): Re
   for (const [key, value] of Object.entries(obj)) {
     if (readonlyFields.has(key)) continue;
     if (value === null || value === undefined) continue;
+    if (value === "UNSET" || value === "") continue;
     // Skip empty arrays/objects that might cause API errors
     if (Array.isArray(value) && value.length === 0) continue;
     if (typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0) continue;
@@ -304,7 +305,7 @@ function buildCampaignCreatePayload(
     payload.budget = customBudget;
   }
 
-  return payload;
+  return stripUnsetValues(payload);
 }
 
 async function duplicateAdGroupsAndAds(
