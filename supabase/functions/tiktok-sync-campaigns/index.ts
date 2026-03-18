@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
           page_size: 200,
         }),
       });
-      const reportData = await reportResp.json();
+      const reportData = await safeJson(reportResp);
       console.log("TikTok report response:", JSON.stringify(reportData).slice(0, 500));
 
       if (reportData.code !== 0) {
