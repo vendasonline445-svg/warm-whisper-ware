@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Megaphone, Palette, Zap, Wallet, Plus, Trash2, Pencil, Play, Pause, AlertTriangle, Link2, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import TikTokConnect from "@/components/ads/TikTokConnect";
+import CampaignManager from "@/components/ads/CampaignManager";
 
 const db = supabase as any;
 
@@ -131,34 +132,39 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
 
       {/* ── CAMPAIGNS ── */}
       {!loading && subTab === "campaigns" && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Campanhas ({campaigns.length})</CardTitle></CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Plataforma</TableHead>
-                    <TableHead>ID Externo</TableHead>
-                    <TableHead>Criada em</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {campaigns.map(c => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.campaign_name}</TableCell>
-                      <TableCell><Badge variant="outline">{c.platform}</Badge></TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">{c.campaign_external_id || "—"}</TableCell>
-                      <TableCell className="text-xs">{new Date(c.created_at).toLocaleDateString("pt-BR")}</TableCell>
+        <div className="space-y-4">
+          <CampaignManager />
+          
+          {/* Local campaigns from DB */}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Campanhas Sincronizadas ({campaigns.length})</CardTitle></CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Plataforma</TableHead>
+                      <TableHead>ID Externo</TableHead>
+                      <TableHead>Criada em</TableHead>
                     </TableRow>
-                  ))}
-                  {!campaigns.length && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhuma campanha</TableCell></TableRow>}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {campaigns.map(c => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium">{c.campaign_name}</TableCell>
+                        <TableCell><Badge variant="outline">{c.platform}</Badge></TableCell>
+                        <TableCell className="text-xs font-mono text-muted-foreground">{c.campaign_external_id || "—"}</TableCell>
+                        <TableCell className="text-xs">{new Date(c.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                      </TableRow>
+                    ))}
+                    {!campaigns.length && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhuma campanha</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* ── CREATIVES ── */}

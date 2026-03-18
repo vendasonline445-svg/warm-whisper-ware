@@ -234,6 +234,171 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── Action: update campaign status (enable/disable) ──
+    if (action === "update_status") {
+      const { advertiser_id, campaign_ids, operation_status } = body;
+      if (!advertiser_id || !campaign_ids || !operation_status) {
+        return new Response(JSON.stringify({ error: "advertiser_id, campaign_ids, operation_status required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const resp = await fetch(`${TIKTOK_API}/campaign/status/update/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          advertiser_id,
+          campaign_ids: campaign_ids.map(String),
+          operation_status, // "ENABLE" | "DISABLE"
+        }),
+      });
+      const data = await resp.json();
+      console.log("TikTok update status response:", JSON.stringify(data).slice(0, 500));
+
+      if (data.code !== 0) {
+        return new Response(JSON.stringify({ error: data.message, code: data.code }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: data.data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: update campaign budget ──
+    if (action === "update_budget") {
+      const { advertiser_id, campaign_id, budget } = body;
+      if (!advertiser_id || !campaign_id || budget === undefined) {
+        return new Response(JSON.stringify({ error: "advertiser_id, campaign_id, budget required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const resp = await fetch(`${TIKTOK_API}/campaign/update/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          advertiser_id,
+          campaign_id: String(campaign_id),
+          budget: Number(budget),
+        }),
+      });
+      const data = await resp.json();
+      console.log("TikTok update budget response:", JSON.stringify(data).slice(0, 500));
+
+      if (data.code !== 0) {
+        return new Response(JSON.stringify({ error: data.message, code: data.code }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: get campaign details (with status, budget, etc.) ──
+    if (action === "get_campaign_details") {
+      const { advertiser_id } = body;
+      if (!advertiser_id) {
+        return new Response(JSON.stringify({ error: "advertiser_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const resp = await fetch(
+        `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=200&fields=["campaign_id","campaign_name","operation_status","budget","budget_mode","objective_type","secondary_status","create_time","modify_time"]`,
+        { headers }
+      );
+      const data = await resp.json();
+
+      if (data.code !== 0) {
+        return new Response(JSON.stringify({ error: data.message, code: data.code }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const campaigns = (data.data?.list || []).map((c: any) => ({
+        campaign_id: String(c.campaign_id),
+        campaign_name: c.campaign_name,
+        operation_status: c.operation_status,
+        secondary_status: c.secondary_status,
+        budget: c.budget,
+        budget_mode: c.budget_mode,
+        objective_type: c.objective_type,
+        create_time: c.create_time,
+        modify_time: c.modify_time,
+      }));
+
+      return new Response(JSON.stringify({ success: true, campaigns }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: duplicate campaign ──
+    if (action === "duplicate_campaign") {
+      const { advertiser_id, campaign_id, new_name, new_budget } = body;
+      if (!advertiser_id || !campaign_id) {
+        return new Response(JSON.stringify({ error: "advertiser_id, campaign_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 1. Get original campaign details
+      const origResp = await fetch(
+        `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=1&filtering={"campaign_ids":["${campaign_id}"]}`,
+        { headers }
+      );
+      const origData = await origResp.json();
+      const orig = origData.data?.list?.[0];
+
+      if (!orig) {
+        return new Response(JSON.stringify({ error: "Campaign not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 2. Create new campaign with same settings
+      const createBody: any = {
+        advertiser_id,
+        campaign_name: new_name || `Copy of ${orig.campaign_name}`,
+        objective_type: orig.objective_type || "WEB_CONVERSIONS",
+        budget_mode: orig.budget_mode || "BUDGET_MODE_DYNAMIC",
+      };
+
+      if (orig.budget && orig.budget > 0) {
+        createBody.budget = new_budget || orig.budget;
+      }
+
+      const createResp = await fetch(`${TIKTOK_API}/campaign/create/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(createBody),
+      });
+      const createData = await createResp.json();
+      console.log("TikTok duplicate campaign response:", JSON.stringify(createData).slice(0, 500));
+
+      if (createData.code !== 0) {
+        return new Response(JSON.stringify({ error: createData.message, code: createData.code }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Save to local DB
+      const newCampId = String(createData.data?.campaign_id);
+      await supabase.from("campaigns").insert({
+        campaign_external_id: newCampId,
+        campaign_name: createBody.campaign_name,
+        platform: "tiktok",
+        client_id: bc.client_id,
+      });
+
+      return new Response(JSON.stringify({ success: true, new_campaign_id: newCampId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
