@@ -332,6 +332,36 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Auto-upsert campaigns into DB so metrics/costs can be matched
+      if (allCampaigns.length > 0) {
+        const clientId = bc.client_id;
+        const upsertBatch = allCampaigns.map((c: any) => ({
+          campaign_external_id: c.campaign_id,
+          campaign_name: c.campaign_name,
+          platform: "tiktok",
+          client_id: clientId,
+        }));
+
+        // Process in batches of 50
+        for (let i = 0; i < upsertBatch.length; i += 50) {
+          const batch = upsertBatch.slice(i, i + 50);
+          for (const camp of batch) {
+            const { data: existing } = await supabase
+              .from("campaigns")
+              .select("id")
+              .eq("campaign_external_id", camp.campaign_external_id)
+              .maybeSingle();
+
+            if (existing) {
+              await supabase.from("campaigns").update({ campaign_name: camp.campaign_name }).eq("id", existing.id);
+            } else {
+              await supabase.from("campaigns").insert(camp);
+            }
+          }
+        }
+        console.log(`Auto-upserted ${allCampaigns.length} campaigns into DB`);
+      }
+
       console.log(`get_campaign_details: ${allCampaigns.length} campaigns from ${ids.length} accounts (${errors} errors)`);
 
       return new Response(JSON.stringify({ success: true, campaigns: allCampaigns, accounts: ids.length, errors }), {
