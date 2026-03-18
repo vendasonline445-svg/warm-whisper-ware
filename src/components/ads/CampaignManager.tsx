@@ -80,6 +80,16 @@ export default function CampaignManager() {
   const [budgetDialog, setBudgetDialog] = useState<TikTokCampaign | null>(null);
   const [newBudget, setNewBudget] = useState("");
 
+  // Bulk duplicate dialog
+  const [bulkDupDialog, setBulkDupDialog] = useState<TikTokCampaign | null>(null);
+  const [bulkDupName, setBulkDupName] = useState("");
+  const [bulkDupBudget, setBulkDupBudget] = useState("");
+  const [bulkAccounts, setBulkAccounts] = useState<Array<{ advertiser_id: string; advertiser_name: string; status: string }>>([]);
+  const [bulkSelectedAccounts, setBulkSelectedAccounts] = useState<string[]>([]);
+  const [bulkLoadingAccounts, setBulkLoadingAccounts] = useState(false);
+  const [bulkDuplicating, setBulkDuplicating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
+
   const getCacheKey = (bcId: string) => `campaign_manager_cache_${bcId}`;
 
   const loadCampaignsFromCache = (bcId: string): boolean => {
