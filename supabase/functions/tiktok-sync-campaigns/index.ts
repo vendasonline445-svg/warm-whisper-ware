@@ -282,40 +282,59 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── Action: get campaign details (with status, budget, etc.) ──
+    // ── Action: get campaign details (single or multi advertiser) ──
     if (action === "get_campaign_details") {
-      const { advertiser_id } = body;
-      if (!advertiser_id) {
-        return new Response(JSON.stringify({ error: "advertiser_id required" }), {
+      const { advertiser_id, advertiser_ids } = body;
+      const ids: string[] = advertiser_ids 
+        ? advertiser_ids 
+        : advertiser_id 
+          ? [advertiser_id] 
+          : [];
+      
+      if (!ids.length) {
+        return new Response(JSON.stringify({ error: "advertiser_id or advertiser_ids required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      const resp = await fetch(
-        `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=200&fields=["campaign_id","campaign_name","operation_status","budget","budget_mode","objective_type","secondary_status","create_time","modify_time"]`,
-        { headers }
-      );
-      const data = await resp.json();
+      const allCampaigns: any[] = [];
+      let errors = 0;
 
-      if (data.code !== 0) {
-        return new Response(JSON.stringify({ error: data.message, code: data.code }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      // Process in parallel batches of 10
+      const batchSize = 10;
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const batch = ids.slice(i, i + batchSize);
+        const results = await Promise.allSettled(
+          batch.map(async (advId: string) => {
+            const resp = await fetch(
+              `${TIKTOK_API}/campaign/get/?advertiser_id=${advId}&page_size=200&fields=["campaign_id","campaign_name","operation_status","budget","budget_mode","objective_type","secondary_status","create_time","modify_time"]`,
+              { headers }
+            );
+            const data = await resp.json();
+            if (data.code !== 0) return [];
+            return (data.data?.list || []).map((c: any) => ({
+              campaign_id: String(c.campaign_id),
+              campaign_name: c.campaign_name,
+              operation_status: c.operation_status,
+              secondary_status: c.secondary_status,
+              budget: c.budget,
+              budget_mode: c.budget_mode,
+              objective_type: c.objective_type,
+              create_time: c.create_time,
+              modify_time: c.modify_time,
+              advertiser_id: advId,
+            }));
+          })
+        );
+        for (const r of results) {
+          if (r.status === "fulfilled") allCampaigns.push(...r.value);
+          else errors++;
+        }
       }
 
-      const campaigns = (data.data?.list || []).map((c: any) => ({
-        campaign_id: String(c.campaign_id),
-        campaign_name: c.campaign_name,
-        operation_status: c.operation_status,
-        secondary_status: c.secondary_status,
-        budget: c.budget,
-        budget_mode: c.budget_mode,
-        objective_type: c.objective_type,
-        create_time: c.create_time,
-        modify_time: c.modify_time,
-      }));
+      console.log(`get_campaign_details: ${allCampaigns.length} campaigns from ${ids.length} accounts (${errors} errors)`);
 
-      return new Response(JSON.stringify({ success: true, campaigns }), {
+      return new Response(JSON.stringify({ success: true, campaigns: allCampaigns, accounts: ids.length, errors }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
