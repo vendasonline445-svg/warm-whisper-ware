@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
-  RefreshCw, Play, Pause, Copy, Loader2, DollarSign, Megaphone, AlertTriangle
+  RefreshCw, Play, Pause, Copy, Loader2, DollarSign, AlertTriangle
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -25,6 +25,7 @@ interface TikTokCampaign {
   objective_type: string;
   create_time: string;
   modify_time: string;
+  advertiser_id?: string; // track which account owns this campaign
 }
 
 export default function CampaignManager() {
@@ -33,6 +34,7 @@ export default function CampaignManager() {
   const [campaigns, setCampaigns] = useState<TikTokCampaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Duplicate dialog
   const [dupDialog, setDupDialog] = useState<TikTokCampaign | null>(null);
@@ -64,13 +66,37 @@ export default function CampaignManager() {
     const bc = bcs.find((b) => b.id === selectedBc);
     if (!bc) return;
 
+    const advertiserIds = (bc.advertiser_id || "").split(",").filter(Boolean);
+    if (!advertiserIds.length) {
+      toast({ title: "Nenhuma conta de anúncio selecionada", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
+    setCampaigns([]);
     try {
-      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
-        body: { bc_id: bc.id, action: "get_campaign_details", advertiser_id: bc.advertiser_id },
-      });
-      if (error) throw error;
-      setCampaigns(data.campaigns || []);
+      const allCampaigns: TikTokCampaign[] = [];
+      // Fetch in parallel (batches of 5 to avoid overload)
+      const batchSize = 5;
+      for (let i = 0; i < advertiserIds.length; i += batchSize) {
+        const batch = advertiserIds.slice(i, i + batchSize);
+        const results = await Promise.all(
+          batch.map(async (advId) => {
+            try {
+              const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+                body: { bc_id: bc.id, action: "get_campaign_details", advertiser_id: advId },
+              });
+              if (error) throw error;
+              return (data.campaigns || []).map((c: any) => ({ ...c, advertiser_id: advId }));
+            } catch {
+              return [];
+            }
+          })
+        );
+        allCampaigns.push(...results.flat());
+      }
+      setCampaigns(allCampaigns);
+      toast({ title: `${allCampaigns.length} campanhas de ${advertiserIds.length} contas` });
     } catch (err: any) {
       toast({ title: "Erro ao buscar campanhas", description: err.message, variant: "destructive" });
     }
@@ -93,14 +119,17 @@ export default function CampaignManager() {
         body: {
           bc_id: bc.id,
           action: "update_status",
-          advertiser_id: bc.advertiser_id,
+          advertiser_id: camp.advertiser_id,
           campaign_ids: [camp.campaign_id],
           operation_status: newStatus,
         },
       });
       if (error) throw error;
       toast({ title: `✅ Campanha ${newStatus === "ENABLE" ? "ativada" : "pausada"}` });
-      fetchCampaigns();
+      // Update local state
+      setCampaigns(prev => prev.map(c =>
+        c.campaign_id === camp.campaign_id ? { ...c, operation_status: newStatus } : c
+      ));
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -118,7 +147,7 @@ export default function CampaignManager() {
         body: {
           bc_id: bc.id,
           action: "update_budget",
-          advertiser_id: bc.advertiser_id,
+          advertiser_id: budgetDialog.advertiser_id,
           campaign_id: budgetDialog.campaign_id,
           budget: parseFloat(newBudget),
         },
@@ -127,7 +156,9 @@ export default function CampaignManager() {
       toast({ title: "✅ Orçamento atualizado" });
       setBudgetDialog(null);
       setNewBudget("");
-      fetchCampaigns();
+      setCampaigns(prev => prev.map(c =>
+        c.campaign_id === budgetDialog.campaign_id ? { ...c, budget: parseFloat(newBudget) } : c
+      ));
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -145,7 +176,7 @@ export default function CampaignManager() {
         body: {
           bc_id: bc.id,
           action: "duplicate_campaign",
-          advertiser_id: bc.advertiser_id,
+          advertiser_id: dupDialog.advertiser_id,
           campaign_id: dupDialog.campaign_id,
           new_name: dupName || undefined,
           new_budget: dupBudget ? parseFloat(dupBudget) : undefined,
@@ -169,19 +200,25 @@ export default function CampaignManager() {
     return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
   };
 
+  const filteredCampaigns = statusFilter === "all"
+    ? campaigns
+    : campaigns.filter(c => c.operation_status === statusFilter);
+
+  const activeCampaigns = campaigns.filter(c => c.operation_status === "ENABLE").length;
+  const pausedCampaigns = campaigns.filter(c => c.operation_status === "DISABLE").length;
+
   return (
     <div className="space-y-4">
-      {/* BC Selector */}
       {bcs.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
             <AlertTriangle className="h-6 w-6 mx-auto text-amber-500 mb-2" />
-            <p className="text-sm text-muted-foreground">Conecte um Business Center com token OAuth e Advertiser ID para gerenciar campanhas.</p>
+            <p className="text-sm text-muted-foreground">Conecte um Business Center com token OAuth e selecione contas de anúncio para gerenciar campanhas.</p>
           </CardContent>
         </Card>
       ) : (
         <>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Select value={selectedBc} onValueChange={setSelectedBc}>
               <SelectTrigger className="w-72 h-8 text-xs">
                 <SelectValue placeholder="Selecione o Business Center" />
@@ -189,7 +226,7 @@ export default function CampaignManager() {
               <SelectContent>
                 {bcs.map((bc) => (
                   <SelectItem key={bc.id} value={bc.id} className="text-xs">
-                    {bc.bc_name}
+                    {bc.bc_name} ({(bc.advertiser_id || "").split(",").filter(Boolean).length} contas)
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -198,7 +235,21 @@ export default function CampaignManager() {
               {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
               Atualizar
             </Button>
-            <Badge variant="secondary" className="text-xs">{campaigns.length} campanhas</Badge>
+
+            {/* Status filter */}
+            {campaigns.length > 0 && (
+              <div className="flex gap-1 ml-auto">
+                <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("all")}>
+                  Todas ({campaigns.length})
+                </Button>
+                <Button size="sm" variant={statusFilter === "ENABLE" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("ENABLE")}>
+                  Ativas ({activeCampaigns})
+                </Button>
+                <Button size="sm" variant={statusFilter === "DISABLE" ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setStatusFilter("DISABLE")}>
+                  Pausadas ({pausedCampaigns})
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Campaigns Table */}
@@ -217,7 +268,7 @@ export default function CampaignManager() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {campaigns.map((camp) => (
+                    {filteredCampaigns.map((camp) => (
                       <TableRow key={camp.campaign_id}>
                         <TableCell className="font-medium text-xs max-w-[200px] truncate">{camp.campaign_name}</TableCell>
                         <TableCell>{statusBadge(camp.operation_status)}</TableCell>
@@ -230,7 +281,6 @@ export default function CampaignManager() {
                         <TableCell className="text-[10px] font-mono text-muted-foreground">{camp.campaign_id}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
-                            {/* Toggle Status */}
                             <Button
                               size="sm" variant="ghost" className="h-7 w-7 p-0"
                               disabled={!!actionLoading}
@@ -245,7 +295,6 @@ export default function CampaignManager() {
                                 <Play className="h-3.5 w-3.5 text-emerald-500" />
                               )}
                             </Button>
-                            {/* Edit Budget */}
                             <Button
                               size="sm" variant="ghost" className="h-7 w-7 p-0"
                               disabled={!!actionLoading}
@@ -254,7 +303,6 @@ export default function CampaignManager() {
                             >
                               <DollarSign className="h-3.5 w-3.5" />
                             </Button>
-                            {/* Duplicate */}
                             <Button
                               size="sm" variant="ghost" className="h-7 w-7 p-0"
                               disabled={!!actionLoading}
@@ -277,7 +325,10 @@ export default function CampaignManager() {
                     {loading && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8">
-                          <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                          <div className="flex flex-col items-center gap-2">
+                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">Buscando campanhas de todas as contas...</p>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )}
