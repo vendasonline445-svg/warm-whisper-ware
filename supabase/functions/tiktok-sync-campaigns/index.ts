@@ -54,6 +54,182 @@ const createCampaignWithFallback = async (
   return { success: false as const, data: lastData };
 };
 
+// ── Helpers to duplicate ad groups + ads ──
+
+const ADGROUP_READONLY_FIELDS = new Set([
+  "adgroup_id", "campaign_id", "campaign_name", "advertiser_id",
+  "create_time", "modify_time", "status", "operation_status",
+  "secondary_status", "is_comment_disable", "stitch_status",
+  "duet_status", "opt_status", "aoi_selection_type",
+  "statistic_type", "is_hfss", "feed_type",
+  "rf_campaign_type", "data_driven_ga_enabled",
+]);
+
+const AD_READONLY_FIELDS = new Set([
+  "ad_id", "adgroup_id", "campaign_id", "advertiser_id",
+  "create_time", "modify_time", "status", "operation_status",
+  "secondary_status", "opt_status", "is_aco", "is_creative_authorized",
+  "creative_authorized_bc_id", "ad_diagnostics",
+  "catalogs", "item_duet_status", "item_stitch_status",
+]);
+
+async function getAdGroups(headers: Record<string, string>, advertiserId: string, campaignId: string) {
+  const allAdGroups: any[] = [];
+  let page = 1;
+  while (true) {
+    const resp = await fetch(
+      `${TIKTOK_API}/adgroup/get/?advertiser_id=${advertiserId}&page=${page}&page_size=200&filtering=${encodeURIComponent(JSON.stringify({ campaign_ids: [campaignId] }))}`,
+      { headers }
+    );
+    const data = await safeJson(resp);
+    if (data.code !== 0) {
+      console.error("Failed to get ad groups:", data.message);
+      break;
+    }
+    const list = data.data?.list || [];
+    allAdGroups.push(...list);
+    if (list.length < 200) break;
+    page++;
+  }
+  return allAdGroups;
+}
+
+async function getAds(headers: Record<string, string>, advertiserId: string, adgroupIds: string[]) {
+  if (!adgroupIds.length) return [];
+  const allAds: any[] = [];
+  // Batch adgroup IDs in groups of 100
+  for (let i = 0; i < adgroupIds.length; i += 100) {
+    const batch = adgroupIds.slice(i, i + 100);
+    let page = 1;
+    while (true) {
+      const resp = await fetch(
+        `${TIKTOK_API}/ad/get/?advertiser_id=${advertiserId}&page=${page}&page_size=200&filtering=${encodeURIComponent(JSON.stringify({ adgroup_ids: batch }))}`,
+        { headers }
+      );
+      const data = await safeJson(resp);
+      if (data.code !== 0) {
+        console.error("Failed to get ads:", data.message);
+        break;
+      }
+      const list = data.data?.list || [];
+      allAds.push(...list);
+      if (list.length < 200) break;
+      page++;
+    }
+  }
+  return allAds;
+}
+
+function cleanPayload(obj: Record<string, any>, readonlyFields: Set<string>): Record<string, any> {
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (readonlyFields.has(key)) continue;
+    if (value === null || value === undefined) continue;
+    // Skip empty arrays/objects that might cause API errors
+    if (Array.isArray(value) && value.length === 0) continue;
+    if (typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0) continue;
+    cleaned[key] = value;
+  }
+  return cleaned;
+}
+
+async function duplicateAdGroupsAndAds(
+  headers: Record<string, string>,
+  sourceAdvertiserId: string,
+  targetAdvertiserId: string,
+  sourceCampaignId: string,
+  newCampaignId: string,
+  isCrossAccount: boolean,
+) {
+  const logs: string[] = [];
+  let adGroupsCreated = 0;
+  let adsCreated = 0;
+  let adGroupsFailed = 0;
+  let adsFailed = 0;
+
+  // 1. Get all ad groups from original campaign
+  const adGroups = await getAdGroups(headers, sourceAdvertiserId, sourceCampaignId);
+  logs.push(`Found ${adGroups.length} ad groups in source campaign`);
+
+  if (adGroups.length === 0) return { adGroupsCreated, adsCreated, adGroupsFailed, adsFailed, logs };
+
+  // 2. Get all ads from all ad groups
+  const adGroupIds = adGroups.map((ag: any) => String(ag.adgroup_id));
+  const allAds = await getAds(headers, sourceAdvertiserId, adGroupIds);
+  logs.push(`Found ${allAds.length} ads across all ad groups`);
+
+  // Group ads by adgroup_id for mapping
+  const adsByAdGroup: Record<string, any[]> = {};
+  for (const ad of allAds) {
+    const agId = String(ad.adgroup_id);
+    if (!adsByAdGroup[agId]) adsByAdGroup[agId] = [];
+    adsByAdGroup[agId].push(ad);
+  }
+
+  // 3. Create each ad group under the new campaign
+  for (const ag of adGroups) {
+    const sourceAgId = String(ag.adgroup_id);
+    const agPayload = cleanPayload(ag, ADGROUP_READONLY_FIELDS);
+    agPayload.advertiser_id = targetAdvertiserId;
+    agPayload.campaign_id = newCampaignId;
+
+    // If schedule_start_time is in the past, update it
+    if (agPayload.schedule_start_time) {
+      const startTime = new Date(agPayload.schedule_start_time);
+      if (startTime < new Date()) {
+        // Set to 5 minutes from now
+        const future = new Date(Date.now() + 5 * 60 * 1000);
+        agPayload.schedule_start_time = future.toISOString().replace("T", " ").split(".")[0];
+      }
+    }
+
+    const agResp = await fetch(`${TIKTOK_API}/adgroup/create/`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(agPayload),
+    });
+    const agData = await safeJson(agResp);
+
+    if (agData.code !== 0) {
+      logs.push(`❌ Ad group "${ag.adgroup_name}": ${agData.message}`);
+      adGroupsFailed++;
+      continue;
+    }
+
+    const newAgId = String(agData.data?.adgroup_id);
+    adGroupsCreated++;
+    logs.push(`✅ Ad group "${ag.adgroup_name}" → ${newAgId}`);
+
+    // 4. Create ads under the new ad group
+    const adsForGroup = adsByAdGroup[sourceAgId] || [];
+    for (const ad of adsForGroup) {
+      const adPayload = cleanPayload(ad, AD_READONLY_FIELDS);
+      adPayload.advertiser_id = targetAdvertiserId;
+      adPayload.adgroup_id = newAgId;
+
+      // For cross-account, creative assets (video_id, image_ids) may not work
+      // but we try anyway - TikTok will return an error if they're not available
+
+      const adResp = await fetch(`${TIKTOK_API}/ad/create/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(adPayload),
+      });
+      const adData = await safeJson(adResp);
+
+      if (adData.code !== 0) {
+        logs.push(`  ❌ Ad "${ad.ad_name}": ${adData.message}`);
+        adsFailed++;
+      } else {
+        adsCreated++;
+        logs.push(`  ✅ Ad "${ad.ad_name}" → ${adData.data?.ad_id}`);
+      }
+    }
+  }
+
+  return { adGroupsCreated, adsCreated, adGroupsFailed, adsFailed, logs };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -74,7 +250,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get BC with access token
     const { data: bc, error: bcErr } = await supabase
       .from("business_centers")
       .select("*")
@@ -100,12 +275,10 @@ Deno.serve(async (req) => {
         { headers }
       );
       const data = await safeJson(resp);
-      console.log("TikTok advertisers response:", JSON.stringify(data).slice(0, 1000));
 
       const advList = data?.data?.list || [];
       const advIds = advList.map((a: any) => String(a.advertiser_id));
 
-      // Fetch status for all advertisers in batches of 100
       const statusMap: Record<string, { status: string; name: string }> = {};
       for (let i = 0; i < advIds.length; i += 100) {
         const batch = advIds.slice(i, i + 100);
@@ -148,23 +321,19 @@ Deno.serve(async (req) => {
       const { advertiser_id } = body;
       if (!advertiser_id) {
         return new Response(JSON.stringify({ error: "advertiser_id required" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Fetch campaigns from TikTok
       const campResp = await fetch(
         `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=200`,
         { headers }
       );
       const campData = await safeJson(campResp);
-      console.log("TikTok campaigns response:", JSON.stringify(campData).slice(0, 500));
 
       if (campData.code !== 0) {
         return new Response(JSON.stringify({ error: campData.message, code: campData.code }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -173,10 +342,7 @@ Deno.serve(async (req) => {
       const errors: string[] = [];
 
       for (const camp of campaigns) {
-        // Try upsert first, fall back to insert if needed
         const extId = String(camp.campaign_id);
-        
-        // Check if exists
         const { data: existing } = await supabase
           .from("campaigns")
           .select("id")
@@ -203,14 +369,11 @@ Deno.serve(async (req) => {
         }
 
         if (upsertErr) {
-          console.error(`Campaign upsert error for ${extId}:`, upsertErr.message);
           errors.push(`${extId}: ${upsertErr.message}`);
         } else {
           synced++;
         }
       }
-
-      console.log(`Sync result: ${synced}/${campaigns.length} synced. Errors: ${errors.length}`);
 
       return new Response(
         JSON.stringify({ success: true, total: campaigns.length, synced, errors }),
@@ -223,8 +386,7 @@ Deno.serve(async (req) => {
       const { advertiser_id, date_from, date_to } = body;
       if (!advertiser_id) {
         return new Response(JSON.stringify({ error: "advertiser_id required" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -246,12 +408,10 @@ Deno.serve(async (req) => {
         }),
       });
       const reportData = await safeJson(reportResp);
-      console.log("TikTok report response:", JSON.stringify(reportData).slice(0, 500));
 
       if (reportData.code !== 0) {
         return new Response(JSON.stringify({ error: reportData.message, code: reportData.code }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -264,7 +424,6 @@ Deno.serve(async (req) => {
         const campExtId = String(dims.campaign_id);
         const date = dims.stat_time_day?.split(" ")[0];
 
-        // Find internal campaign
         const { data: intCamp } = await supabase
           .from("campaigns")
           .select("id")
@@ -311,11 +470,10 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           advertiser_id,
           campaign_ids: campaign_ids.map(String),
-          operation_status, // "ENABLE" | "DISABLE"
+          operation_status,
         }),
       });
       const data = await safeJson(resp);
-      console.log("TikTok update status response:", JSON.stringify(data).slice(0, 500));
 
       if (data.code !== 0) {
         return new Response(JSON.stringify({ error: data.message, code: data.code }), {
@@ -349,7 +507,6 @@ Deno.serve(async (req) => {
         body: JSON.stringify(budgetPayload),
       });
       const data = await safeJson(resp);
-      console.log("TikTok update budget response:", JSON.stringify(data).slice(0, 500));
 
       if (data.code !== 0) {
         const isSmartLike = String(data?.message || "").toLowerCase().includes("smart");
@@ -369,7 +526,6 @@ Deno.serve(async (req) => {
               body: JSON.stringify(budgetPayload),
             });
             const fallbackData = await safeJson(fallbackResp);
-            console.log(`TikTok fallback budget response (${endpoint}):`, JSON.stringify(fallbackData).slice(0, 500));
 
             if (fallbackData.code === 0) {
               return new Response(JSON.stringify({ success: true, mode: endpoint }), {
@@ -403,12 +559,12 @@ Deno.serve(async (req) => {
     // ── Action: get campaign details (single or multi advertiser) ──
     if (action === "get_campaign_details") {
       const { advertiser_id, advertiser_ids } = body;
-      const ids: string[] = advertiser_ids 
-        ? advertiser_ids 
-        : advertiser_id 
-          ? [advertiser_id] 
+      const ids: string[] = advertiser_ids
+        ? advertiser_ids
+        : advertiser_id
+          ? [advertiser_id]
           : [];
-      
+
       if (!ids.length) {
         return new Response(JSON.stringify({ error: "advertiser_id or advertiser_ids required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -418,7 +574,6 @@ Deno.serve(async (req) => {
       const allCampaigns: any[] = [];
       let errors = 0;
 
-      // Process in parallel batches of 10
       const batchSize = 10;
       for (let i = 0; i < ids.length; i += batchSize) {
         const batch = ids.slice(i, i + batchSize);
@@ -450,44 +605,35 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Auto-upsert campaigns into DB so metrics/costs can be matched
+      // Auto-upsert campaigns into DB
       if (allCampaigns.length > 0) {
         const clientId = bc.client_id;
-        const upsertBatch = allCampaigns.map((c: any) => ({
-          campaign_external_id: c.campaign_id,
-          campaign_name: c.campaign_name,
-          platform: "tiktok",
-          client_id: clientId,
-        }));
+        for (const c of allCampaigns) {
+          const { data: existing } = await supabase
+            .from("campaigns")
+            .select("id")
+            .eq("campaign_external_id", c.campaign_id)
+            .maybeSingle();
 
-        // Process in batches of 50
-        for (let i = 0; i < upsertBatch.length; i += 50) {
-          const batch = upsertBatch.slice(i, i + 50);
-          for (const camp of batch) {
-            const { data: existing } = await supabase
-              .from("campaigns")
-              .select("id")
-              .eq("campaign_external_id", camp.campaign_external_id)
-              .maybeSingle();
-
-            if (existing) {
-              await supabase.from("campaigns").update({ campaign_name: camp.campaign_name }).eq("id", existing.id);
-            } else {
-              await supabase.from("campaigns").insert(camp);
-            }
+          if (existing) {
+            await supabase.from("campaigns").update({ campaign_name: c.campaign_name }).eq("id", existing.id);
+          } else {
+            await supabase.from("campaigns").insert({
+              campaign_external_id: c.campaign_id,
+              campaign_name: c.campaign_name,
+              platform: "tiktok",
+              client_id: clientId,
+            });
           }
         }
-        console.log(`Auto-upserted ${allCampaigns.length} campaigns into DB`);
       }
-
-      console.log(`get_campaign_details: ${allCampaigns.length} campaigns from ${ids.length} accounts (${errors} errors)`);
 
       return new Response(JSON.stringify({ success: true, campaigns: allCampaigns, accounts: ids.length, errors }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── Action: duplicate campaign ──
+    // ── Action: duplicate campaign (with ad groups + ads) ──
     if (action === "duplicate_campaign") {
       const { advertiser_id, campaign_id, new_name, new_budget } = body;
       if (!advertiser_id || !campaign_id) {
@@ -523,7 +669,7 @@ Deno.serve(async (req) => {
       }
 
       const createResult = await createCampaignWithFallback(headers, createBody);
-      console.log("TikTok duplicate campaign response:", JSON.stringify(createResult.data).slice(0, 500));
+      console.log("Duplicate campaign result:", JSON.stringify(createResult.data).slice(0, 500));
 
       if (!createResult.success) {
         return new Response(JSON.stringify({ error: createResult.data?.message || "Failed to duplicate campaign", code: createResult.data?.code }), {
@@ -531,8 +677,9 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Save to local DB
       const newCampId = String(createResult.data?.data?.campaign_id);
+
+      // Save to local DB
       await supabase.from("campaigns").insert({
         campaign_external_id: newCampId,
         campaign_name: createBody.campaign_name,
@@ -540,12 +687,27 @@ Deno.serve(async (req) => {
         client_id: bc.client_id,
       });
 
-      return new Response(JSON.stringify({ success: true, new_campaign_id: newCampId }), {
+      // 3. Duplicate ad groups + ads
+      const dupResult = await duplicateAdGroupsAndAds(
+        headers, advertiser_id, advertiser_id, campaign_id, newCampId, false
+      );
+
+      console.log(`Duplicate complete: ${dupResult.adGroupsCreated} ad groups, ${dupResult.adsCreated} ads created`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        new_campaign_id: newCampId,
+        ad_groups_created: dupResult.adGroupsCreated,
+        ads_created: dupResult.adsCreated,
+        ad_groups_failed: dupResult.adGroupsFailed,
+        ads_failed: dupResult.adsFailed,
+        logs: dupResult.logs,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── Action: bulk duplicate campaign to multiple accounts ──
+    // ── Action: bulk duplicate campaign to multiple accounts (with ad groups + ads) ──
     if (action === "bulk_duplicate") {
       const { source_advertiser_id, campaign_id, target_advertiser_ids, new_name, new_budget, copies = 1 } = body;
       if (!source_advertiser_id || !campaign_id || !target_advertiser_ids?.length) {
@@ -570,9 +732,22 @@ Deno.serve(async (req) => {
         });
       }
 
-      const results: Array<{ advertiser_id: string; copy: number; success: boolean; campaign_id?: string; error?: string }> = [];
+      const results: Array<{
+        advertiser_id: string;
+        copy: number;
+        success: boolean;
+        campaign_id?: string;
+        error?: string;
+        ad_groups_created?: number;
+        ads_created?: number;
+        ad_groups_failed?: number;
+        ads_failed?: number;
+        logs?: string[];
+      }> = [];
 
       for (const targetAdvId of target_advertiser_ids) {
+        const isCrossAccount = targetAdvId !== source_advertiser_id;
+
         for (let copyNum = 1; copyNum <= numCopies; copyNum++) {
           try {
             const copyName = numCopies > 1
@@ -598,16 +773,34 @@ Deno.serve(async (req) => {
                 success: false,
                 error: createResult.data?.message || "Falha ao criar campanha",
               });
-            } else {
-              const newId = String(createResult.data?.data?.campaign_id);
-              await supabase.from("campaigns").insert({
-                campaign_external_id: newId,
-                campaign_name: copyName,
-                platform: "tiktok",
-                client_id: bc.client_id,
-              });
-              results.push({ advertiser_id: targetAdvId, copy: copyNum, success: true, campaign_id: newId });
+              continue;
             }
+
+            const newId = String(createResult.data?.data?.campaign_id);
+
+            await supabase.from("campaigns").insert({
+              campaign_external_id: newId,
+              campaign_name: copyName,
+              platform: "tiktok",
+              client_id: bc.client_id,
+            });
+
+            // Duplicate ad groups + ads
+            const dupResult = await duplicateAdGroupsAndAds(
+              headers, source_advertiser_id, targetAdvId, campaign_id, newId, isCrossAccount
+            );
+
+            results.push({
+              advertiser_id: targetAdvId,
+              copy: copyNum,
+              success: true,
+              campaign_id: newId,
+              ad_groups_created: dupResult.adGroupsCreated,
+              ads_created: dupResult.adsCreated,
+              ad_groups_failed: dupResult.adGroupsFailed,
+              ads_failed: dupResult.adsFailed,
+              logs: dupResult.logs,
+            });
           } catch (e: any) {
             results.push({ advertiser_id: targetAdvId, copy: copyNum, success: false, error: e.message });
           }
@@ -616,7 +809,7 @@ Deno.serve(async (req) => {
 
       const succeeded = results.filter(r => r.success).length;
       const totalOps = target_advertiser_ids.length * numCopies;
-      console.log(`Bulk duplicate: ${succeeded}/${totalOps} succeeded (${numCopies} copies × ${target_advertiser_ids.length} accounts)`);
+      console.log(`Bulk duplicate: ${succeeded}/${totalOps} succeeded`);
 
       return new Response(JSON.stringify({ success: true, results, succeeded, total: totalOps, copies: numCopies }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
