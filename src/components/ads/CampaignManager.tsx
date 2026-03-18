@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import {
   RefreshCw, Play, Pause, Copy, Loader2, DollarSign, AlertTriangle,
-  TrendingUp, TrendingDown, BarChart3, ShoppingCart, Eye
+  TrendingUp, TrendingDown, BarChart3, ShoppingCart, Eye, Layers
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 
 const db = supabase as any;
