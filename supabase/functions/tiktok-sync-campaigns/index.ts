@@ -331,7 +331,7 @@ Deno.serve(async (req) => {
               headers,
               body: JSON.stringify(budgetPayload),
             });
-            const fallbackData = await fallbackResp.json();
+            const fallbackData = await safeJson(fallbackResp);
             console.log(`TikTok fallback budget response (${endpoint}):`, JSON.stringify(fallbackData).slice(0, 500));
 
             if (fallbackData.code === 0) {
