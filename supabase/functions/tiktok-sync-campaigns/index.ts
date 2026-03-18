@@ -391,7 +391,7 @@ Deno.serve(async (req) => {
               `${TIKTOK_API}/campaign/get/?advertiser_id=${advId}&page_size=200&fields=["campaign_id","campaign_name","operation_status","budget","budget_mode","objective_type","secondary_status","create_time","modify_time"]`,
               { headers }
             );
-            const data = await resp.json();
+            const data = await safeJson(resp);
             if (data.code !== 0) return [];
             return (data.data?.list || []).map((c: any) => ({
               campaign_id: String(c.campaign_id),
