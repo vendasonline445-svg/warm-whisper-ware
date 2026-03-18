@@ -501,7 +501,8 @@ export default function AdminClientHub({ defaultTab }: { defaultTab?: SubTab }) 
                     </div>
                   )}
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
 
