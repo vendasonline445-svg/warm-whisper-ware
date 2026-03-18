@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.tracker-ingest]
 verify_jwt = false
+
+[functions.tiktok-sync-campaigns]
+verify_jwt = false
