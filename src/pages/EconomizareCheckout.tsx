@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import RotatingTrustBar from "@/components/RotatingTrustBar";
 
 const PRICE = 57.40;
 const OLD_PRICE = 139.90;
@@ -220,9 +221,7 @@ const EconomizareCheckout = () => {
           </button>
           <div className="flex-1 text-center">
             <p className="font-bold text-sm">Resumo do pedido</p>
-            <p className="text-xs text-success flex items-center justify-center gap-1">
-              <ShieldCheck className="h-3 w-3" /> Seus dados estão seguros conosco
-            </p>
+            <RotatingTrustBar />
           </div>
           <div className="w-5" />
         </div>
