@@ -464,7 +464,7 @@ Deno.serve(async (req) => {
         `${TIKTOK_API}/campaign/get/?advertiser_id=${advertiser_id}&page_size=1&filtering={"campaign_ids":["${campaign_id}"]}`,
         { headers }
       );
-      const origData = await origResp.json();
+      const origData = await safeJson(origResp);
       const orig = origData.data?.list?.[0];
 
       if (!orig) {
