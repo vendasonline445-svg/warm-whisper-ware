@@ -223,8 +223,8 @@ export default function CampaignManager() {
   const fetchCampaigns = async () => {
     const bc = bcs.find((b: any) => b.id === selectedBc);
     if (!bc) return;
-    const advertiserIds = (bc.advertiser_id || "").split(",").filter(Boolean);
-    if (!advertiserIds.length) {
+    const allAdvertiserIds = (bc.advertiser_id || "").split(",").filter(Boolean);
+    if (!allAdvertiserIds.length) {
       toast({ title: "Nenhuma conta de anúncio selecionada", variant: "destructive" });
       return;
     }
@@ -232,14 +232,42 @@ export default function CampaignManager() {
     setLoading(true);
     setCampaigns([]);
     setMetricsMap({});
-    setProgress({ loaded: 0, total: advertiserIds.length });
+    setProgress({ loaded: 0, total: 0 });
+
+    // 1. Check account statuses and filter out suspended ones
+    let activeAdvertiserIds = allAdvertiserIds;
+    let suspendedCount = 0;
+    try {
+      const { data: advData } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "get_advertisers" },
+      });
+      const advList = advData?.data?.list || [];
+      const suspendedStatuses = ["STATUS_DISABLE", "STATUS_PENDING_CONFIRM", "STATUS_CONFIRM_FAIL", "STATUS_CONFIRM_FAIL_END", "STATUS_LIMIT"];
+      const activeSet = new Set(
+        advList
+          .filter((a: any) => !suspendedStatuses.includes(a.status))
+          .map((a: any) => String(a.advertiser_id))
+      );
+      suspendedCount = allAdvertiserIds.filter(id => !activeSet.has(id)).length;
+      activeAdvertiserIds = allAdvertiserIds.filter(id => activeSet.has(id));
+    } catch (err) {
+      console.warn("Could not check account statuses, syncing all:", err);
+    }
+
+    if (!activeAdvertiserIds.length) {
+      toast({ title: "Todas as contas estão suspensas", description: `${suspendedCount} contas ignoradas`, variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    setProgress({ loaded: 0, total: activeAdvertiserIds.length });
 
     const batchSize = 15;
     let allCampaigns: TikTokCampaign[] = [];
     let totalErrors = 0;
 
-    for (let i = 0; i < advertiserIds.length; i += batchSize) {
-      const batch = advertiserIds.slice(i, i + batchSize);
+    for (let i = 0; i < activeAdvertiserIds.length; i += batchSize) {
+      const batch = activeAdvertiserIds.slice(i, i + batchSize);
       try {
         const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
           body: { bc_id: bc.id, action: "get_campaign_details", advertiser_ids: batch },
@@ -252,18 +280,19 @@ export default function CampaignManager() {
       } catch {
         totalErrors += batch.length;
       }
-      setProgress({ loaded: Math.min(i + batchSize, advertiserIds.length), total: advertiserIds.length });
+      setProgress({ loaded: Math.min(i + batchSize, activeAdvertiserIds.length), total: activeAdvertiserIds.length });
     }
 
     saveCampaignsToCache(bc.id, allCampaigns);
+    const suspendedMsg = suspendedCount > 0 ? `${suspendedCount} contas suspensas ignoradas. ` : "";
     toast({
-      title: `${allCampaigns.length} campanhas de ${advertiserIds.length} contas`,
-      description: totalErrors > 0 ? `${totalErrors} contas com erro (ignoradas)` : undefined,
+      title: `${allCampaigns.length} campanhas de ${activeAdvertiserIds.length} contas ativas`,
+      description: suspendedMsg + (totalErrors > 0 ? `${totalErrors} contas com erro` : ""),
     });
     setLoading(false);
 
-    // Auto-sync costs in background for all advertiser accounts
-    syncCostsInBackground(bc.id, advertiserIds);
+    // Auto-sync costs in background only for active accounts
+    syncCostsInBackground(bc.id, activeAdvertiserIds);
   };
 
   const syncCostsInBackground = async (bcId: string, advertiserIds: string[]) => {
