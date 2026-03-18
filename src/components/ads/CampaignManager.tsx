@@ -590,17 +590,57 @@ export default function CampaignManager() {
     return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
   };
 
-  const filteredCampaigns = statusFilter === "all"
-    ? campaigns
-    : campaigns.filter(c => c.operation_status === statusFilter);
+  const filteredCampaigns = useMemo(() => (
+    statusFilter === "all"
+      ? campaigns
+      : campaigns.filter((c) => c.operation_status === statusFilter)
+  ), [campaigns, statusFilter]);
 
-  const activeCampaigns = campaigns.filter(c => c.operation_status === "ENABLE").length;
-  const pausedCampaigns = campaigns.filter(c => c.operation_status === "DISABLE").length;
+  const sortedCampaigns = useMemo(() => {
+    const next = [...filteredCampaigns];
+    const direction = sortDirection === "asc" ? 1 : -1;
+
+    const byNumber = (a: number, b: number) => (a - b) * direction;
+    const byText = (a: string, b: string) => a.localeCompare(b, "pt-BR") * direction;
+
+    next.sort((a, b) => {
+      const ma = metricsMap[a.campaign_id];
+      const mb = metricsMap[b.campaign_id];
+
+      switch (sortBy) {
+        case "name":
+          return byText(a.campaign_name || "", b.campaign_name || "");
+        case "spend":
+          return byNumber(ma?.spend || 0, mb?.spend || 0);
+        case "sales":
+          return byNumber(ma?.sales || 0, mb?.sales || 0);
+        case "revenue":
+          return byNumber(ma?.revenue || 0, mb?.revenue || 0);
+        case "roas":
+          return byNumber(ma?.roas || 0, mb?.roas || 0);
+        case "roi":
+          return byNumber(ma?.roi || 0, mb?.roi || 0);
+        case "clicks":
+          return byNumber(ma?.clicks || 0, mb?.clicks || 0);
+        case "updated":
+        default:
+          return byNumber(
+            new Date(a.modify_time || a.create_time || 0).getTime(),
+            new Date(b.modify_time || b.create_time || 0).getTime(),
+          );
+      }
+    });
+
+    return next;
+  }, [filteredCampaigns, metricsMap, sortBy, sortDirection]);
+
+  const activeCampaigns = campaigns.filter((c) => c.operation_status === "ENABLE").length;
+  const pausedCampaigns = campaigns.filter((c) => c.operation_status === "DISABLE").length;
 
   // ── Totals for summary cards ──
   const totals = useMemo(() => {
     let spend = 0, revenue = 0, sales = 0, clicks = 0, impressions = 0;
-    Object.values(metricsMap).forEach(m => {
+    Object.values(metricsMap).forEach((m) => {
       spend += m.spend;
       revenue += m.revenue;
       sales += m.sales;
@@ -608,11 +648,12 @@ export default function CampaignManager() {
       impressions += m.impressions;
     });
     const roas = spend > 0 ? (revenue / spend) : 0;
+    const roi = spend > 0 ? (((revenue - spend) / spend) * 100) : 0;
     const cpa = sales > 0 ? (spend / sales) : 0;
-    return { spend, revenue, sales, clicks, impressions, roas, cpa };
+    return { spend, revenue, sales, clicks, impressions, roas, roi, cpa };
   }, [metricsMap]);
 
-  const colSpanTotal = 11;
+  const colSpanTotal = 12;
 
   return (
     <div className="space-y-4">
