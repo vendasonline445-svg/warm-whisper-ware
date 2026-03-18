@@ -75,20 +75,34 @@ export default function CampaignManager() {
 
     setLoading(true);
     setCampaigns([]);
-    try {
-      // Single edge function call handles all advertiser IDs server-side
-      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
-        body: { bc_id: bc.id, action: "get_campaign_details", advertiser_ids: advertiserIds },
-      });
-      if (error) throw error;
-      setCampaigns(data.campaigns || []);
-      toast({ 
-        title: `${data.campaigns?.length || 0} campanhas de ${data.accounts || advertiserIds.length} contas`,
-        description: data.errors > 0 ? `${data.errors} contas com erro (ignoradas)` : undefined,
-      });
-    } catch (err: any) {
-      toast({ title: "Erro ao buscar campanhas", description: err.message, variant: "destructive" });
+    setProgress({ loaded: 0, total: advertiserIds.length });
+
+    // Progressive loading: batch 15 advertiser IDs per edge function call
+    const batchSize = 15;
+    let allCampaigns: TikTokCampaign[] = [];
+    let totalErrors = 0;
+
+    for (let i = 0; i < advertiserIds.length; i += batchSize) {
+      const batch = advertiserIds.slice(i, i + batchSize);
+      try {
+        const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+          body: { bc_id: bc.id, action: "get_campaign_details", advertiser_ids: batch },
+        });
+        if (error) throw error;
+        const newCamps = data.campaigns || [];
+        totalErrors += data.errors || 0;
+        allCampaigns = [...allCampaigns, ...newCamps];
+        setCampaigns([...allCampaigns]);
+      } catch {
+        totalErrors += batch.length;
+      }
+      setProgress({ loaded: Math.min(i + batchSize, advertiserIds.length), total: advertiserIds.length });
     }
+
+    toast({
+      title: `${allCampaigns.length} campanhas de ${advertiserIds.length} contas`,
+      description: totalErrors > 0 ? `${totalErrors} contas com erro (ignoradas)` : undefined,
+    });
     setLoading(false);
   };
 
