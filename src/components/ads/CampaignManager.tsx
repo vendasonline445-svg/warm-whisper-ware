@@ -250,6 +250,29 @@ export default function CampaignManager() {
       description: totalErrors > 0 ? `${totalErrors} contas com erro (ignoradas)` : undefined,
     });
     setLoading(false);
+
+    // Auto-sync costs in background for all advertiser accounts
+    syncCostsInBackground(bc.id, advertiserIds);
+  };
+
+  const syncCostsInBackground = async (bcId: string, advertiserIds: string[]) => {
+    try {
+      const batchSize = 5;
+      for (let i = 0; i < advertiserIds.length; i += batchSize) {
+        const batch = advertiserIds.slice(i, i + batchSize);
+        await Promise.allSettled(
+          batch.map(advId =>
+            supabase.functions.invoke("tiktok-sync-campaigns", {
+              body: { bc_id: bcId, action: "sync_costs", advertiser_id: advId },
+            })
+          )
+        );
+      }
+      // Re-fetch metrics after costs are synced
+      if (campaigns.length > 0) fetchMetrics(campaigns);
+    } catch (err) {
+      console.error("Background cost sync error:", err);
+    }
   };
 
   useEffect(() => {
