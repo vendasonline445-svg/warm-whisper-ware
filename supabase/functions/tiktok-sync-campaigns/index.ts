@@ -63,8 +63,16 @@ const createCampaignWithFallback = async (
   for (const attempt of attempts) {
     const requestPayload = { ...attempt.payload };
 
-    if (mode === "smart_plus" && !requestPayload.request_id) {
-      requestPayload.request_id = generateRequestId();
+    if (mode === "smart_plus") {
+      if (!requestPayload.request_id) {
+        requestPayload.request_id = generateRequestId();
+      }
+
+      for (const [key, value] of Object.entries(requestPayload)) {
+        if (value === "UNSET" || value === "") {
+          delete requestPayload[key];
+        }
+      }
     }
 
     const createResp = await fetch(`${TIKTOK_API}/${API_BY_MODE[mode].campaignCreate}/`, {
