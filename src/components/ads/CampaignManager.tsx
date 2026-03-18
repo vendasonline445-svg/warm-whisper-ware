@@ -75,28 +75,16 @@ export default function CampaignManager() {
     setLoading(true);
     setCampaigns([]);
     try {
-      const allCampaigns: TikTokCampaign[] = [];
-      // Fetch in parallel (batches of 5 to avoid overload)
-      const batchSize = 5;
-      for (let i = 0; i < advertiserIds.length; i += batchSize) {
-        const batch = advertiserIds.slice(i, i + batchSize);
-        const results = await Promise.all(
-          batch.map(async (advId) => {
-            try {
-              const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
-                body: { bc_id: bc.id, action: "get_campaign_details", advertiser_id: advId },
-              });
-              if (error) throw error;
-              return (data.campaigns || []).map((c: any) => ({ ...c, advertiser_id: advId }));
-            } catch {
-              return [];
-            }
-          })
-        );
-        allCampaigns.push(...results.flat());
-      }
-      setCampaigns(allCampaigns);
-      toast({ title: `${allCampaigns.length} campanhas de ${advertiserIds.length} contas` });
+      // Single edge function call handles all advertiser IDs server-side
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "get_campaign_details", advertiser_ids: advertiserIds },
+      });
+      if (error) throw error;
+      setCampaigns(data.campaigns || []);
+      toast({ 
+        title: `${data.campaigns?.length || 0} campanhas de ${data.accounts || advertiserIds.length} contas`,
+        description: data.errors > 0 ? `${data.errors} contas com erro (ignoradas)` : undefined,
+      });
     } catch (err: any) {
       toast({ title: "Erro ao buscar campanhas", description: err.message, variant: "destructive" });
     }
