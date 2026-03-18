@@ -124,7 +124,10 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
         ))}
       </div>
 
-      {loading && <p className="text-center text-muted-foreground py-8">Carregando...</p>}
+      {loading && subTab !== "connect" && <p className="text-center text-muted-foreground py-8">Carregando...</p>}
+
+      {/* ── CONNECT ── */}
+      {subTab === "connect" && <TikTokConnect onSynced={fetchData} />}
 
       {/* ── CAMPAIGNS ── */}
       {!loading && subTab === "campaigns" && (
