@@ -178,17 +178,26 @@ export default function CampaignManager() {
         return;
       }
 
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+      const thirtyDaysAgoDate = new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
+      const thirtyDaysAgoIso = new Date(Date.now() - 30 * 86400000).toISOString();
 
       // 2) Read spend + sales sources in parallel
       const [costsRes, attribRes, purchaseRes] = await Promise.all([
-        db.from("campaign_costs").select("campaign_id, spend, impressions, clicks").in("campaign_id", internalIds),
-        db.from("attributions").select("campaign_id, revenue, event_type").in("campaign_id", internalIds),
+        db
+          .from("campaign_costs")
+          .select("campaign_id, spend, impressions, clicks")
+          .in("campaign_id", internalIds)
+          .gte("date", thirtyDaysAgoDate),
+        db
+          .from("attributions")
+          .select("campaign_id, revenue, event_type")
+          .in("campaign_id", internalIds)
+          .gte("created_at", thirtyDaysAgoIso),
         db
           .from("events")
           .select("id, campaign, value, event_data")
           .eq("event_name", "purchase")
-          .gte("created_at", thirtyDaysAgo)
+          .gte("created_at", thirtyDaysAgoIso)
           .order("created_at", { ascending: false })
           .limit(1000),
       ]);
@@ -249,6 +258,7 @@ export default function CampaignManager() {
         const sales = attr.sales > 0 || attr.revenue > 0 ? attr.sales : fallback.sales;
 
         const roas = costs.spend > 0 ? (revenue / costs.spend) : 0;
+        const roi = costs.spend > 0 ? (((revenue - costs.spend) / costs.spend) * 100) : 0;
         const cpa = sales > 0 ? (costs.spend / sales) : 0;
         const cpc = costs.clicks > 0 ? (costs.spend / costs.clicks) : 0;
         const ctr = costs.impressions > 0 ? ((costs.clicks / costs.impressions) * 100) : 0;
@@ -262,6 +272,7 @@ export default function CampaignManager() {
           revenue,
           sales,
           roas,
+          roi,
           cpa,
         };
       }
