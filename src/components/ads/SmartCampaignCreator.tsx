@@ -90,6 +90,11 @@ export default function SmartCampaignCreator() {
   const [availableIdentities, setAvailableIdentities] = useState<Array<{ identity_id: string; identity_type: string; display_name: string }>>([]);
   const [loadingIdentities, setLoadingIdentities] = useState(false);
 
+  // Auth Code flow for Spark Ads
+  const [authCode, setAuthCode] = useState("");
+  const [authorizingPost, setAuthorizingPost] = useState(false);
+  const [authorizedPosts, setAuthorizedPosts] = useState<Array<{ auth_code: string; item_id: string; display_name: string }>>([]);
+
   // Smart Creative texts (when NOT using Spark Ads)
   const [adTexts, setAdTexts] = useState<string[]>([""]);
 
