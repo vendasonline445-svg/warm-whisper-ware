@@ -133,7 +133,13 @@ export default function SmartCampaignCreator() {
   };
 
   useEffect(() => {
-    if (!selectedBc) { setAccounts([]); setSelectedAccounts([]); return; }
+    if (!selectedBc) {
+      setAccounts([]);
+      setSelectedAccounts([]);
+      setPixels([]);
+      setPixelId("");
+      return;
+    }
     loadAccounts();
   }, [selectedBc]);
 
@@ -149,6 +155,31 @@ export default function SmartCampaignCreator() {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
     setLoadingAccounts(false);
+  };
+
+  const loadPixels = async (advId: string) => {
+    if (!selectedBc || !advId) {
+      setPixels([]);
+      setPixelId("");
+      return;
+    }
+
+    setLoadingPixels(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: selectedBc, action: "get_pixels", advertiser_id: advId },
+      });
+      if (error) throw error;
+
+      const loadedPixels: TikTokPixelOption[] = Array.isArray(data?.pixels) ? data.pixels : [];
+      setPixels(loadedPixels);
+      setPixelId((prev) => (loadedPixels.some((px) => px.pixel_id === prev) ? prev : ""));
+    } catch (err: any) {
+      setPixels([]);
+      setPixelId("");
+      toast({ title: "Erro ao carregar pixels", description: err.message, variant: "destructive" });
+    }
+    setLoadingPixels(false);
   };
 
   const toggleAccount = (advId: string) => {
