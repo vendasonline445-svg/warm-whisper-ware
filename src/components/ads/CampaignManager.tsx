@@ -514,6 +514,7 @@ export default function CampaignManager() {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
     setActionLoading(null);
+  };
 
   const updateBudget = async () => {
     if (!budgetDialog || !newBudget) return;
