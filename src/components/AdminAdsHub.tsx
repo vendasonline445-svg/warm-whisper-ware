@@ -117,6 +117,20 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
     }));
   }, [costs]);
 
+  // ── Daily spend breakdown ──
+  const dailySpend = useMemo(() => {
+    const byDate: Record<string, { date: string; totalSpend: number; campaigns: number; campaignNames: Set<string> }> = {};
+    costs.forEach((c: any) => {
+      const d = c.date;
+      if (!byDate[d]) byDate[d] = { date: d, totalSpend: 0, campaigns: 0, campaignNames: new Set() };
+      byDate[d].totalSpend += c.spend || 0;
+      byDate[d].campaignNames.add(c.campaigns?.campaign_name || c.campaign_id || "—");
+    });
+    return Object.values(byDate)
+      .map(v => ({ ...v, campaigns: v.campaignNames.size }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [costs]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
