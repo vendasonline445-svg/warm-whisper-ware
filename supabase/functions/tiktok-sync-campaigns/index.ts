@@ -1394,6 +1394,114 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Action: update ad group status (enable/disable/delete) ──
+    if (action === "update_adgroup_status") {
+      const { advertiser_id, adgroup_ids, operation_status } = body;
+      if (!advertiser_id || !adgroup_ids?.length || !operation_status) {
+        return new Response(JSON.stringify({ error: "advertiser_id, adgroup_ids, operation_status required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const resp = await fetch(`${TIKTOK_API}/adgroup/status/update/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          advertiser_id: String(advertiser_id),
+          adgroup_ids: adgroup_ids.map(String),
+          operation_status,
+        }),
+      });
+      const data = await safeJson(resp);
+
+      if (data.code !== 0) {
+        return new Response(JSON.stringify({ error: data.message, code: data.code }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: data.data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: update ad status (enable/disable/delete) per v1.3 docs ──
+    if (action === "update_ad_status") {
+      const { advertiser_id, ad_ids, operation_status } = body;
+      if (!advertiser_id || !ad_ids?.length || !operation_status) {
+        return new Response(JSON.stringify({ error: "advertiser_id, ad_ids, operation_status required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const resp = await fetch(`${TIKTOK_API}/ad/status/update/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          advertiser_id: String(advertiser_id),
+          ad_ids: ad_ids.map(String),
+          operation_status,
+        }),
+      });
+      const data = await safeJson(resp);
+
+      if (data.code !== 0) {
+        return new Response(JSON.stringify({ error: data.message, code: data.code }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: data.data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: get campaign hierarchy (ad groups + ads) ──
+    if (action === "get_campaign_hierarchy") {
+      const { advertiser_id, campaign_id } = body;
+      if (!advertiser_id || !campaign_id) {
+        return new Response(JSON.stringify({ error: "advertiser_id, campaign_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Fetch ad groups
+      const agFields = ["adgroup_id", "adgroup_name", "operation_status", "budget", "budget_mode"];
+      const agResp = await fetch(`${TIKTOK_API}/adgroup/get/?advertiser_id=${advertiser_id}&campaign_ids=["${campaign_id}"]&page_size=100&fields=${JSON.stringify(agFields)}`, {
+        method: "GET",
+        headers,
+      });
+      const agData = await safeJson(agResp);
+      const adGroups = (agData?.data?.list || []).map((ag: any) => ({
+        adgroup_id: String(ag.adgroup_id),
+        adgroup_name: ag.adgroup_name,
+        operation_status: ag.operation_status,
+        budget: ag.budget,
+        budget_mode: ag.budget_mode,
+        ads: [] as any[],
+      }));
+
+      // Fetch ads for each ad group
+      for (const ag of adGroups) {
+        const adFields = ["ad_id", "ad_name", "operation_status", "secondary_status"];
+        const adResp = await fetch(`${TIKTOK_API}/ad/get/?advertiser_id=${advertiser_id}&adgroup_ids=["${ag.adgroup_id}"]&page_size=100&fields=${JSON.stringify(adFields)}`, {
+          method: "GET",
+          headers,
+        });
+        const adData = await safeJson(adResp);
+        ag.ads = (adData?.data?.list || []).map((ad: any) => ({
+          ad_id: String(ad.ad_id),
+          ad_name: ad.ad_name,
+          operation_status: ad.operation_status,
+          secondary_status: ad.secondary_status,
+        }));
+      }
+
+      return new Response(JSON.stringify({ success: true, ad_groups: adGroups }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
