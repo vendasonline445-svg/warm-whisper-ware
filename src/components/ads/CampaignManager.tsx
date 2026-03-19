@@ -840,6 +840,18 @@ export default function CampaignManager() {
                       <SelectItem value="asc" className="text-xs">Crescente</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRange)}>
+                    <SelectTrigger className="w-28 h-8 text-xs">
+                      <SelectValue placeholder="Período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today" className="text-xs">Hoje</SelectItem>
+                      <SelectItem value="3d" className="text-xs">3 dias</SelectItem>
+                      <SelectItem value="7d" className="text-xs">7 dias</SelectItem>
+                      <SelectItem value="14d" className="text-xs">14 dias</SelectItem>
+                      <SelectItem value="30d" className="text-xs">30 dias</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </>
             )}
