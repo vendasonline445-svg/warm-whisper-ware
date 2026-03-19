@@ -388,10 +388,34 @@ export default function SmartCampaignCreator() {
               {useSparkAds ? (
                 <div className="space-y-3 border border-border rounded-lg p-3">
                   <div>
-                    <Label className="text-xs">TikTok Item ID (Post) *</Label>
-                    <Input value={tiktokItemId} onChange={e => setTiktokItemId(e.target.value)}
-                      placeholder="ID do post TikTok (tt_video/info)" className="h-8 text-xs mt-1" />
-                    <p className="text-[9px] text-muted-foreground mt-1">Enviado dentro de creatives[].tiktok_item_id conforme v1.3</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <Label className="text-xs">TikTok Item IDs (Posts) * — {sparkItems.filter(s => s.trim()).length} post(s)</Label>
+                      {sparkItems.length < 10 && (
+                        <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setSparkItems([...sparkItems, ""])}>
+                          <Plus className="h-3 w-3 mr-1" /> Adicionar Post
+                        </Button>
+                      )}
+                    </div>
+                    {sparkItems.map((item, i) => (
+                      <div key={i} className="flex gap-2 mt-1">
+                        <Input
+                          value={item}
+                          onChange={e => {
+                            const updated = [...sparkItems];
+                            updated[i] = e.target.value;
+                            setSparkItems(updated);
+                          }}
+                          placeholder={`ID do post TikTok #${i + 1}`}
+                          className="h-8 text-xs flex-1"
+                        />
+                        {sparkItems.length > 1 && (
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setSparkItems(sparkItems.filter((_, j) => j !== i))}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <p className="text-[9px] text-muted-foreground mt-1">Cada post gera um anúncio separado dentro da campanha. Máx. 10.</p>
                   </div>
                   <div className="grid grid-cols-1 gap-3">
                     <div>
