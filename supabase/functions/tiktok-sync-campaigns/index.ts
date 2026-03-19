@@ -1938,7 +1938,72 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── Action: blocked words - list ──
+    // ── Action: get identities for an advertiser ──
+    if (action === "get_identities") {
+      const { advertiser_id } = body;
+      if (!advertiser_id) {
+        return new Response(JSON.stringify({ error: "advertiser_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const results: Array<{ identity_id: string; identity_type: string; display_name: string }> = [];
+
+      // Try CUSTOMIZED_USER identities
+      try {
+        const resp = await fetch(
+          `${TIKTOK_API}/identity/get/?advertiser_id=${advertiser_id}&identity_type=CUSTOMIZED_USER`,
+          { headers }
+        );
+        const data = await safeJson(resp);
+        if (data.code === 0 && data.data?.identity_id) {
+          results.push({
+            identity_id: data.data.identity_id,
+            identity_type: "CUSTOMIZED_USER",
+            display_name: data.data.display_name || "Customized User",
+          });
+        }
+      } catch {}
+
+      // Try BC_AUTH_TT identities (list via /bc/image/get or identity endpoints)
+      if (bc.bc_external_id) {
+        try {
+          const resp = await fetch(
+            `${TIKTOK_API}/identity/get/?advertiser_id=${advertiser_id}&identity_type=BC_AUTH_TT`,
+            { headers }
+          );
+          const data = await safeJson(resp);
+          if (data.code === 0 && data.data?.identity_id) {
+            results.push({
+              identity_id: data.data.identity_id,
+              identity_type: "BC_AUTH_TT",
+              display_name: data.data.display_name || "BC Auth TT",
+            });
+          }
+        } catch {}
+      }
+
+      // Try TT_USER
+      try {
+        const resp = await fetch(
+          `${TIKTOK_API}/identity/get/?advertiser_id=${advertiser_id}&identity_type=TT_USER`,
+          { headers }
+        );
+        const data = await safeJson(resp);
+        if (data.code === 0 && data.data?.identity_id) {
+          results.push({
+            identity_id: data.data.identity_id,
+            identity_type: "TT_USER",
+            display_name: data.data.display_name || "TT User",
+          });
+        }
+      } catch {}
+
+      return new Response(JSON.stringify({ identities: results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "blockedword_list") {
       const { advertiser_id } = body;
       if (!advertiser_id) {
