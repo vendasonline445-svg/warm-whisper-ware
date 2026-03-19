@@ -6,6 +6,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * TikTok Events API 2.0 — /v1.3/event/track/
+ * Migrated from legacy /pixel/track/ to the recommended Events API 2.0 format.
+ * 
+ * Key differences from legacy:
+ * - Uses event_source + event_source_id instead of pixel_code at top level
+ * - data[] array wraps events
+ * - event_time is Unix timestamp (seconds), not ISO string
+ * - user object is flat (not nested under context)
+ * - ttclid goes in user.ttclid (not context.ad.callback)
+ * - phone field is "phone" (not "phone_number")
+ * - external_id must be SHA-256 hashed
+ * - page and ad are separate top-level objects in data item
+ */
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -37,6 +52,8 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    const resolvedEventId = event_id || `${event}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
     if (event_id) {
       const { data: existing } = await supabase
         .from("tiktok_event_dedup")
@@ -67,43 +84,65 @@ Deno.serve(async (req) => {
       req.headers.get("x-real-ip") ||
       "";
 
-    // ── Build payload using /pixel/track/ format with context object ──
-    // Per TikTok docs: https://business-api.tiktok.com/portal/docs?id=1741601162187777
-    const tiktokPayload: Record<string, any> = {
-      pixel_code,
+    // ── Convert timestamp to Unix seconds ─────────────────────────────
+    let eventTimeSeconds: number;
+    if (timestamp) {
+      const ms = new Date(timestamp).getTime();
+      eventTimeSeconds = Math.floor(ms / 1000);
+    } else {
+      eventTimeSeconds = Math.floor(Date.now() / 1000);
+    }
+
+    // ── Build Events API 2.0 payload ──────────────────────────────────
+    // Per docs: https://business-api.tiktok.com/portal/docs?id=1771100865818625
+    const eventData: Record<string, any> = {
       event,
-      event_id: event_id || `${event}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      timestamp: timestamp || new Date().toISOString(),
-      context: {
-        user: {
-          ...(user?.email ? { email: user.email } : {}),
-          ...(user?.phone_number ? { phone_number: user.phone_number } : {}),
-          ...(user?.external_id ? { external_id: user.external_id } : {}),
-          ...(user?.ttp ? { ttp: user.ttp } : {}),
-          ...(clientIp || user?.ip ? { ip: clientIp || user.ip } : {}),
-          ...(user?.user_agent ? { user_agent: user.user_agent } : {}),
-        },
-        ad: {
-          ...(user?.ttclid ? { callback: user.ttclid } : {}),
-        },
-        page: {
-          ...(user?.page_url ? { url: user.page_url } : {}),
-          ...(user?.referrer ? { referrer: user.referrer } : {}),
-        },
+      event_id: resolvedEventId,
+      event_time: eventTimeSeconds,
+      user: {
+        // ttclid at user level (not context.ad.callback)
+        ...(user?.ttclid ? { ttclid: user.ttclid } : {}),
+        // email — already SHA-256 hashed by client
+        ...(user?.email ? { email: user.email } : {}),
+        // phone — field name is "phone" in API 2.0 (not "phone_number")
+        ...(user?.phone_number ? { phone: user.phone_number } : {}),
+        ...(user?.phone ? { phone: user.phone } : {}),
+        // external_id — must be SHA-256 hashed
+        ...(user?.external_id ? { external_id: user.external_id } : {}),
+        // _ttp cookie
+        ...(user?.ttp ? { ttp: user.ttp } : {}),
+        // IP and User Agent (non-hashed)
+        ...(clientIp || user?.ip ? { ip: clientIp || user.ip } : {}),
+        ...(user?.user_agent ? { user_agent: user.user_agent } : {}),
+        // Locale for better matching
+        ...(user?.locale ? { locale: user.locale } : {}),
       },
       properties: {
         ...(properties || {}),
         currency: properties?.currency || "BRL",
       },
+      page: {
+        ...(user?.page_url ? { url: user.page_url } : {}),
+        ...(user?.referrer ? { referrer: user.referrer } : {}),
+      },
     };
 
-    // Clean empty objects
-    if (Object.keys(tiktokPayload.context.ad).length === 0) delete tiktokPayload.context.ad;
+    // Add ad object if ttclid present
+    if (user?.ttclid) {
+      eventData.ad = { callback: user.ttclid };
+    }
 
-    console.log(`Sending to TikTok /pixel/track/ (${pixel_code}):`, JSON.stringify(tiktokPayload));
+    // Top-level Events API 2.0 payload
+    const tiktokPayload = {
+      event_source: "web",
+      event_source_id: pixel_code,
+      data: [eventData],
+    };
+
+    console.log(`[TikTok CAPI 2.0] Sending to /event/track/ (${pixel_code}):`, JSON.stringify(tiktokPayload));
 
     const response = await fetch(
-      "https://business-api.tiktok.com/open_api/v1.3/pixel/track/",
+      "https://business-api.tiktok.com/open_api/v1.3/event/track/",
       {
         method: "POST",
         headers: {
@@ -115,7 +154,7 @@ Deno.serve(async (req) => {
     );
 
     const resText = await response.text();
-    console.log(`TikTok response (${pixel_code}, ${response.status}):`, resText);
+    console.log(`[TikTok CAPI 2.0] Response (${pixel_code}, ${response.status}):`, resText);
 
     let resData;
     try {
@@ -124,11 +163,11 @@ Deno.serve(async (req) => {
       resData = { raw: resText };
     }
 
-    // ── Cleanup old dedup entries (older than 24h) ────────────────────
+    // ── Cleanup old dedup entries (older than 48h) ────────────────────
     supabase
       .from("tiktok_event_dedup")
       .delete()
-      .lt("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .lt("created_at", new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString())
       .then(() => {});
 
     return new Response(
@@ -139,7 +178,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error: unknown) {
-    console.error("TikTok Events API error:", error);
+    console.error("[TikTok CAPI 2.0] Error:", error);
     return new Response(
       JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

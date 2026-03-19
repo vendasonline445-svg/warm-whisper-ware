@@ -513,17 +513,26 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
     }
   }
 
+  // external_id must be SHA-256 hashed per Events API 2.0 docs
+  let externalIdHash = storedUser.external_id_hash || "";
+  if (!externalIdHash && visitorId) {
+    externalIdHash = await sha256(visitorId);
+  }
+
   const ttpCookie = getTTPCookie();
 
+  // Events API 2.0: "phone" (not "phone_number"), ttclid at user level
   const baseUserData = {
     email: emailHash,
-    phone_number: phoneHash,
-    external_id: storedUser.external_id_hash || visitorId || "",
+    phone: phoneHash,
+    external_id: externalIdHash,
     ttclid: ttclid || "",
     ttp: ttpCookie || "",
     user_agent: navigator.userAgent,
+    ip: "", // Will be filled server-side from request headers
     page_url: window.location.href,
     referrer: document.referrer || "",
+    locale: navigator.language || "",
   };
 
   // Enrich with cached identity (fills email/phone for non-checkout events)
