@@ -470,17 +470,61 @@ export default function SmartCampaignCreator() {
                     ))}
                     <p className="text-[9px] text-muted-foreground mt-1">Cada post gera um anúncio separado dentro da campanha. Máx. 10.</p>
                   </div>
+                  {/* Auth Code Authorization — Primary method for Spark Ads */}
+                  <Separator />
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs font-medium">🔑 Autorizar Post via Auth Code</Label>
+                      <p className="text-[9px] text-muted-foreground">
+                        O dono do post gera o Auth Code no TikTok (Post → Compartilhar → Ad Settings → Gerar Código).
+                        Cole o código aqui para autorizar e preencher automaticamente o Item ID e Identity.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={authCode}
+                        onChange={e => setAuthCode(e.target.value)}
+                        placeholder="Cole o Auth Code do post aqui (ex: #XtjblzbEuO...)"
+                        className="h-8 text-xs flex-1"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={authorizeSparkPost}
+                        disabled={!authCode.trim() || authorizingPost || !selectedAccounts.length}
+                        className="h-8 text-[10px]"
+                      >
+                        {authorizingPost ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                        Autorizar
+                      </Button>
+                    </div>
+
+                    {/* Show authorized posts */}
+                    {authorizedPosts.length > 0 && (
+                      <div className="space-y-1">
+                        {authorizedPosts.map((p, i) => (
+                          <div key={i} className="flex items-center gap-2 text-[10px] p-1.5 rounded bg-primary/5 border border-primary/20">
+                            <CheckCircle className="h-3 w-3 text-primary shrink-0" />
+                            <span className="font-medium">{p.display_name}</span>
+                            <span className="font-mono text-muted-foreground">Item: {p.item_id}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Identity section — auto-filled by auth code or manual */}
+                  <Separator />
                   <div className="grid grid-cols-1 gap-3">
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <Label className="text-xs">Identity ID *</Label>
+                        <Label className="text-xs">Identity ID {identityId ? "✅" : "*"}</Label>
                         <Button
                           size="sm" variant="outline" className="h-6 text-[10px]"
                           onClick={() => selectedAccounts[0] && fetchIdentities(selectedAccounts[0])}
                           disabled={loadingIdentities || !selectedAccounts.length}
                         >
                           {loadingIdentities ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                          Buscar do TikTok
+                          Buscar Identidades
                         </Button>
                       </div>
                       {availableIdentities.length > 0 ? (
@@ -502,29 +546,28 @@ export default function SmartCampaignCreator() {
                         </Select>
                       ) : (
                         <Input value={identityId} onChange={e => setIdentityId(e.target.value)}
-                          placeholder="Clique 'Buscar do TikTok' ou cole manualmente" className="h-8 text-xs" />
+                          placeholder={identityId ? identityId : "Use Auth Code acima ou cole manualmente"}
+                          className="h-8 text-xs" />
                       )}
                       <p className="text-[9px] text-muted-foreground mt-1">
-                        {availableIdentities.length > 0
-                          ? `✅ ${availableIdentities.length} identidade(s) encontrada(s) — tipo: ${identityType}`
-                          : "Busque automaticamente ou cole Auth Code / TT User ID manualmente"
+                        {identityId
+                          ? `✅ Identity preenchido — Tipo: ${identityType}`
+                          : "Autorize um post acima com Auth Code, ou busque identidades existentes (TT_USER, BC_AUTH_TT)."
                         }
                       </p>
                     </div>
-                    {availableIdentities.length === 0 && (
-                      <div>
-                        <Label className="text-xs">Tipo de Identidade</Label>
-                        <Select value={identityType} onValueChange={setIdentityType}>
-                          <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="AUTH_CODE" className="text-xs">Auth Code</SelectItem>
-                            <SelectItem value="TT_USER" className="text-xs">TT User</SelectItem>
-                            <SelectItem value="BC_AUTH_TT" className="text-xs">BC Auth TT</SelectItem>
-                            <SelectItem value="CUSTOMIZED_USER" className="text-xs">Customized User</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
+                    <div>
+                      <Label className="text-xs">Tipo de Identidade</Label>
+                      <Select value={identityType} onValueChange={setIdentityType}>
+                        <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AUTH_CODE" className="text-xs">Auth Code (Post autorizado)</SelectItem>
+                          <SelectItem value="TT_USER" className="text-xs">TT User</SelectItem>
+                          <SelectItem value="BC_AUTH_TT" className="text-xs">BC Auth TT</SelectItem>
+                          <SelectItem value="CUSTOMIZED_USER" className="text-xs">Customized User</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               ) : (
