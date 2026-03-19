@@ -422,9 +422,37 @@ export default function SmartCampaignCreator() {
                     placeholder="Ex: [Smart+] Produto X - BID R$15" className="h-8 text-xs mt-1" />
                 </div>
                 <div>
-                  <Label className="text-xs">Pixel ID</Label>
-                  <Input value={pixelId} onChange={e => setPixelId(e.target.value)}
-                    placeholder="ID do pixel TikTok" className="h-8 text-xs mt-1" />
+                  <Label className="text-xs">Pixel (selecionar da conta)</Label>
+                  <Select
+                    value={pixelId || "__none__"}
+                    onValueChange={(value) => setPixelId(value === "__none__" ? "" : value)}
+                    disabled={!selectedAccounts.length || loadingPixels}
+                  >
+                    <SelectTrigger className="h-8 text-xs mt-1">
+                      <SelectValue
+                        placeholder={selectedAccounts.length
+                          ? (loadingPixels ? "Carregando pixels..." : "Selecione um pixel")
+                          : "Selecione uma conta primeiro"}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__" className="text-xs">Sem pixel</SelectItem>
+                      {pixels.map((px) => (
+                        <SelectItem key={px.pixel_id} value={px.pixel_id} className="text-xs">
+                          {px.name} {px.pixel_code ? `• ${px.pixel_code}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[9px] text-muted-foreground mt-1">
+                    {selectedAccounts.length === 0
+                      ? "Selecione uma conta de destino para carregar os pixels."
+                      : loadingPixels
+                        ? "Buscando pixels da conta..."
+                        : pixels.length === 0
+                          ? "Nenhum pixel encontrado para essa conta."
+                          : "Somente Pixel ID numérico será enviado na criação da campanha."}
+                  </p>
                 </div>
               </div>
 

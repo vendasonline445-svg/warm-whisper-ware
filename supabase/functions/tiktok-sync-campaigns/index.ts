@@ -2232,6 +2232,75 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Action: get pixels for an advertiser ──
+    if (action === "get_pixels") {
+      const { advertiser_id } = body;
+      if (!advertiser_id) {
+        return new Response(JSON.stringify({ error: "advertiser_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const pixels: Array<{ pixel_id: string; pixel_code: string; name: string; status: string }> = [];
+      let page = 1;
+      const pageSize = 100;
+
+      while (true) {
+        const query = new URLSearchParams({
+          advertiser_id: String(advertiser_id),
+          page: String(page),
+          page_size: String(pageSize),
+        });
+
+        const resp = await fetch(`${TIKTOK_API}/pixel/list/?${query.toString()}`, { headers });
+        const data = await safeJson(resp);
+
+        if (data?.code !== 0) {
+          return new Response(JSON.stringify({ error: data?.message || "Falha ao buscar pixels", code: data?.code }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const list = Array.isArray(data?.data?.list) ? data.data.list : [];
+
+        for (const item of list) {
+          const numericId = [item?.pixel_id, item?.id]
+            .map((candidate) => String(candidate ?? "").trim())
+            .find((candidate) => /^\d{6,30}$/.test(candidate));
+
+          if (!numericId) continue;
+
+          const pixelCode = String(item?.pixel_code ?? item?.code ?? "").trim();
+          const pixelName = String(item?.name ?? item?.pixel_name ?? pixelCode || numericId).trim();
+
+          pixels.push({
+            pixel_id: numericId,
+            pixel_code: pixelCode,
+            name: pixelName || numericId,
+            status: String(item?.status ?? ""),
+          });
+        }
+
+        const pageInfo = data?.data?.page_info || {};
+        const totalPages = Number(pageInfo.total_page || 0);
+        const totalNumber = Number(pageInfo.total_number || 0);
+        const hasNextByFlag = pageInfo.has_next_page === true;
+        const hasNextByTotal = totalPages > 0 ? page < totalPages : totalNumber > page * pageSize;
+        const hasNextByLength = list.length === pageSize;
+
+        if (!hasNextByFlag && !hasNextByTotal && !hasNextByLength) break;
+        page += 1;
+      }
+
+      const uniquePixels = Array.from(
+        new Map(pixels.map((px) => [px.pixel_id, px])).values(),
+      );
+
+      return new Response(JSON.stringify({ pixels: uniquePixels }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── Action: get identities for an advertiser ──
     if (action === "get_identities") {
       const { advertiser_id } = body;
