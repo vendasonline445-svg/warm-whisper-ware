@@ -2028,54 +2028,119 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Step 1: Authorize the post
-      const authPayload: Record<string, any> = {
-        advertiser_id: String(advertiser_id),
-        auth_code: String(auth_code).replace(/\+/g, "%2B"),
-      };
-      if (original_post_auth_code) {
-        authPayload.original_post_auth_code = String(original_post_auth_code).replace(/\+/g, "%2B");
-      }
-
-      const authResp = await fetch(`${TIKTOK_API}/tt_video/authorize/`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(authPayload),
-      });
-      const authData = await safeJson(authResp);
-      console.log("tt_video/authorize response:", JSON.stringify(authData).slice(0, 500));
-
-      if (authData.code !== 0) {
+      const advertiserId = String(advertiser_id).trim();
+      if (!/^\d{8,30}$/.test(advertiserId)) {
         return new Response(JSON.stringify({
           success: false,
-          error: authData.message || "Falha ao autorizar o post",
-          raw: authData,
+          error: "Advertiser ID inválido para Spark Ads",
         }), {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Step 2: Get post info to retrieve item_id
-      const infoQuery = new URLSearchParams({
-        advertiser_id: String(advertiser_id),
-        auth_code: String(auth_code),
-      });
-      const infoResp = await fetch(`${TIKTOK_API}/tt_video/info/?${infoQuery.toString()}`, { headers });
-      const infoData = await safeJson(infoResp);
-      console.log("tt_video/info response:", JSON.stringify(infoData).slice(0, 500));
+      const normalizeCode = (code: string) => String(code || "").trim().replace(/\s+/g, "");
+      const rawCode = normalizeCode(auth_code);
+      if (rawCode.length < 12) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "Auth Code inválido (muito curto)",
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-      const itemId = infoData.data?.item_id || infoData.data?.videos?.[0]?.item_id || "";
-      const displayName = infoData.data?.display_name || infoData.data?.nick_name || "Spark Post";
-      const profileImage = infoData.data?.profile_image || "";
+      const decodedCode = rawCode.replace(/%2B/gi, "+");
+      const encodedCode = decodedCode.replace(/\+/g, "%2B");
+      const authCodeCandidates = Array.from(new Set([rawCode, decodedCode, encodedCode].filter(Boolean)));
+
+      const rawOriginalCode = original_post_auth_code ? normalizeCode(original_post_auth_code) : "";
+      const decodedOriginalCode = rawOriginalCode.replace(/%2B/gi, "+");
+      const encodedOriginalCode = decodedOriginalCode.replace(/\+/g, "%2B");
+
+      let authData: any = null;
+      let usedAuthCode = decodedCode;
+      const authorizeErrors: string[] = [];
+
+      // Try multiple auth_code formats because TikTok behavior varies by account/region
+      for (const candidate of authCodeCandidates) {
+        const isEncodedCandidate = candidate.includes("%2B");
+        const authPayload: Record<string, any> = {
+          advertiser_id: advertiserId,
+          auth_code: candidate,
+        };
+
+        if (rawOriginalCode) {
+          authPayload.original_post_auth_code = isEncodedCandidate ? encodedOriginalCode : decodedOriginalCode;
+        }
+
+        const authResp = await fetch(`${TIKTOK_API}/tt_video/authorize/`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(authPayload),
+        });
+
+        authData = await safeJson(authResp);
+        console.log("tt_video/authorize response:", JSON.stringify(authData).slice(0, 500));
+
+        if (authData?.code === 0) {
+          usedAuthCode = candidate;
+          break;
+        }
+
+        authorizeErrors.push(String(authData?.message || "unknown error"));
+      }
+
+      // If authorization failed, still check tt_video/info because code may already be applied
+      const infoCandidates = Array.from(new Set([decodedCode, rawCode].filter(Boolean)));
+      let infoData: any = null;
+
+      for (const infoCandidate of infoCandidates) {
+        const infoQuery = new URLSearchParams({
+          advertiser_id: advertiserId,
+          auth_code: infoCandidate,
+        });
+        const infoResp = await fetch(`${TIKTOK_API}/tt_video/info/?${infoQuery.toString()}`, { headers });
+        const currentInfoData = await safeJson(infoResp);
+
+        if (currentInfoData?.code === 0) {
+          infoData = currentInfoData;
+          usedAuthCode = infoCandidate;
+          break;
+        }
+      }
+
+      const itemId = infoData?.data?.item_id || infoData?.data?.videos?.[0]?.item_id || "";
+      const displayName = infoData?.data?.display_name || infoData?.data?.nick_name || "Spark Post";
+      const profileImage = infoData?.data?.profile_image || "";
+
+      if ((authData?.code !== 0) && !itemId) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: authData?.message || "Falha ao autorizar o post",
+          advertiser_id: advertiserId,
+          tips: [
+            "Confirme se este Auth Code foi gerado para este mesmo perfil/post.",
+            "Selecione a conta de anúncio correta antes de autorizar.",
+            "Se o código tiver expirado, gere um novo no TikTok app.",
+          ],
+          raw: authData,
+          attempts: authCodeCandidates.length,
+          attempt_errors: authorizeErrors,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       return new Response(JSON.stringify({
         success: true,
         item_id: itemId,
         display_name: displayName,
         profile_image: profileImage,
-        identity_id: auth_code,
+        identity_id: decodedCode,
         identity_type: "AUTH_CODE",
-        raw_info: infoData.data || {},
+        raw_info: infoData?.data || {},
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
