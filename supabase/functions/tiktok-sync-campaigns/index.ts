@@ -1781,7 +1781,7 @@ Deno.serve(async (req) => {
       const resp = await fetch(`${TIKTOK_API}/blockedword/create/`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ advertiser_id: String(advertiser_id), words: validWords }),
+        body: JSON.stringify({ advertiser_id: String(advertiser_id), blocked_words: validWords }),
       });
       const data = await safeJson(resp);
 
