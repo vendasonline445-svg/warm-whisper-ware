@@ -98,6 +98,11 @@ export default function SmartCampaignCreator() {
   // Smart Creative texts (when NOT using Spark Ads)
   const [adTexts, setAdTexts] = useState<string[]>([""]);
 
+  // Audience targeting
+  const [ageGroups, setAgeGroups] = useState<string[]>([]);
+  const [gender, setGender] = useState("GENDER_UNLIMITED");
+  const [scheduleStart, setScheduleStart] = useState("");
+
   // Bulk config
   const [copies, setCopies] = useState(1);
 
