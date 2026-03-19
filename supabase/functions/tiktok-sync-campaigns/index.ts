@@ -1960,55 +1960,59 @@ Deno.serve(async (req) => {
 
       const results: Array<{ identity_id: string; identity_type: string; display_name: string }> = [];
 
-      // Try CUSTOMIZED_USER identities
-      try {
-        const resp = await fetch(
-          `${TIKTOK_API}/identity/get/?advertiser_id=${advertiser_id}&identity_type=CUSTOMIZED_USER`,
-          { headers }
-        );
-        const data = await safeJson(resp);
-        if (data.code === 0 && data.data?.identity_id) {
-          results.push({
-            identity_id: data.data.identity_id,
-            identity_type: "CUSTOMIZED_USER",
-            display_name: data.data.display_name || "Customized User",
-          });
+      const parseIdentities = (data: any, fallbackType: string) => {
+        if (data.code !== 0) return;
+        // Handle array response (identity_list)
+        const list = data.data?.identity_list || data.data?.list || [];
+        if (Array.isArray(list) && list.length > 0) {
+          for (const item of list) {
+            results.push({
+              identity_id: item.identity_id || item.identity_authorized_bc_id || "",
+              identity_type: item.identity_type || fallbackType,
+              display_name: item.display_name || item.nick_name || item.identity_name || fallbackType,
+            });
+          }
         }
-      } catch {}
+        // Handle single object response
+        if (data.data?.identity_id) {
+          const alreadyExists = results.some(r => r.identity_id === data.data.identity_id);
+          if (!alreadyExists) {
+            results.push({
+              identity_id: data.data.identity_id,
+              identity_type: data.data.identity_type || fallbackType,
+              display_name: data.data.display_name || data.data.nick_name || fallbackType,
+            });
+          }
+        }
+      };
 
-      // Try BC_AUTH_TT identities (list via /bc/image/get or identity endpoints)
-      if (bc.bc_external_id) {
+      // Try all identity types
+      for (const idType of ["CUSTOMIZED_USER", "TT_USER", "BC_AUTH_TT"]) {
         try {
           const resp = await fetch(
-            `${TIKTOK_API}/identity/get/?advertiser_id=${advertiser_id}&identity_type=BC_AUTH_TT`,
+            `${TIKTOK_API}/identity/get/?advertiser_id=${advertiser_id}&identity_type=${idType}`,
             { headers }
           );
           const data = await safeJson(resp);
-          if (data.code === 0 && data.data?.identity_id) {
-            results.push({
-              identity_id: data.data.identity_id,
-              identity_type: "BC_AUTH_TT",
-              display_name: data.data.display_name || "BC Auth TT",
-            });
-          }
-        } catch {}
+          console.log(`Identity ${idType} response:`, JSON.stringify(data).slice(0, 500));
+          parseIdentities(data, idType);
+        } catch (e) {
+          console.error(`Identity ${idType} error:`, e);
+        }
       }
 
-      // Try TT_USER
+      // Also try /identity/video/list/ for Spark Ads authorized videos
       try {
         const resp = await fetch(
-          `${TIKTOK_API}/identity/get/?advertiser_id=${advertiser_id}&identity_type=TT_USER`,
+          `${TIKTOK_API}/identity/video/list/?advertiser_id=${advertiser_id}`,
           { headers }
         );
         const data = await safeJson(resp);
-        if (data.code === 0 && data.data?.identity_id) {
-          results.push({
-            identity_id: data.data.identity_id,
-            identity_type: "TT_USER",
-            display_name: data.data.display_name || "TT User",
-          });
-        }
-      } catch {}
+        console.log("Identity video list response:", JSON.stringify(data).slice(0, 500));
+        parseIdentities(data, "TT_USER");
+      } catch (e) {
+        console.error("Identity video list error:", e);
+      }
 
       return new Response(JSON.stringify({ identities: results }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
