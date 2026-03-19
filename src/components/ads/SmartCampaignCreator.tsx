@@ -145,6 +145,36 @@ export default function SmartCampaignCreator() {
     setSelectedAccounts(activeIds);
   };
 
+  const fetchIdentities = async (advId: string) => {
+    if (!selectedBc || !advId) return;
+    setLoadingIdentities(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: selectedBc, action: "get_identities", advertiser_id: advId },
+      });
+      if (error) throw error;
+      const ids = data?.identities || [];
+      setAvailableIdentities(ids);
+      if (ids.length > 0) {
+        setIdentityId(ids[0].identity_id);
+        setIdentityType(ids[0].identity_type);
+        toast({ title: `${ids.length} identidade(s) encontrada(s)` });
+      } else {
+        toast({ title: "Nenhuma identidade encontrada", description: "Use Auth Code manual", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao buscar identidades", description: err.message, variant: "destructive" });
+    }
+    setLoadingIdentities(false);
+  };
+
+  // Auto-fetch identities when first account is selected
+  useEffect(() => {
+    if (selectedAccounts.length > 0 && useSparkAds && availableIdentities.length === 0) {
+      fetchIdentities(selectedAccounts[0]);
+    }
+  }, [selectedAccounts, useSparkAds]);
+
   const addAdText = () => {
     if (adTexts.length < 5) setAdTexts([...adTexts, ""]);
   };
