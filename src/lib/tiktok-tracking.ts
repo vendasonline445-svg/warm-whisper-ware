@@ -496,7 +496,7 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
       try { return localStorage.getItem("crm_user_phone") || ""; } catch { return ""; }
     })();
     if (cachedPhone.trim()) {
-      const normalized = normalizePhone(cachedPhone).replace("+", "");
+      const normalized = normalizePhone(cachedPhone); // E.164 with + for proper hashing
       phoneHash = await sha256(normalized);
       console.log(`${DEBUG} Phone hash generated from crm_user_phone fallback`);
     }
