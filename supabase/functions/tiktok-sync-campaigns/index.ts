@@ -62,34 +62,39 @@ async function resolveAdgroupPixelId(
   const value = String(rawPixelId).trim();
   if (!value) return null;
 
+  if (/^\d{6,30}$/.test(value)) return value;
+
   const normalizedValue = value.toLowerCase();
-  const isNumericId = /^\d{6,30}$/.test(value);
-  const looksLikePixelCode = /^[a-z0-9_-]{6,64}$/i.test(value);
+
+  const getNumericPixelId = (px: any): string | null => {
+    const candidates = [px?.pixel_id, px?.id]
+      .map((candidate) => String(candidate ?? "").trim())
+      .filter(Boolean);
+
+    const numeric = candidates.find((candidate) => /^\d{6,30}$/.test(candidate));
+    return numeric || null;
+  };
 
   const extractPixelId = (data: any): string | null => {
     const list = Array.isArray(data?.data?.list) ? data.data.list : [];
     if (!list.length) return null;
 
-    const getCandidates = (px: any): string[] => [
-      px?.pixel_id,
-      px?.id,
-      px?.pixel_code,
-      px?.code,
-    ]
-      .map((candidate) => String(candidate ?? "").trim())
-      .filter(Boolean);
+    const exactMatch = list.find((px: any) => {
+      const aliases = [px?.pixel_code, px?.code, px?.pixel_id, px?.id]
+        .map((candidate) => String(candidate ?? "").trim().toLowerCase())
+        .filter(Boolean);
+      return aliases.includes(normalizedValue);
+    });
 
-    const exactMatch = list.find((px: any) =>
-      getCandidates(px).some((candidate) => candidate.toLowerCase() === normalizedValue)
-    );
+    if (exactMatch) {
+      return getNumericPixelId(exactMatch);
+    }
 
-    if (!exactMatch) return null;
+    if (list.length === 1) {
+      return getNumericPixelId(list[0]);
+    }
 
-    const exactCandidate = getCandidates(exactMatch).find(
-      (candidate) => candidate.toLowerCase() === normalizedValue,
-    );
-
-    return exactCandidate || getCandidates(exactMatch)[0] || null;
+    return null;
   };
 
   try {
@@ -124,11 +129,6 @@ async function resolveAdgroupPixelId(
     if (fallbackMatch) return fallbackMatch;
   } catch (error) {
     console.warn(`[SmartCampaign] Pixel resolve failed for "${value}":`, error);
-  }
-
-  if (isNumericId || looksLikePixelCode) {
-    console.warn(`[SmartCampaign] Using raw pixel identifier without lookup match: ${value}`);
-    return value;
   }
 
   return null;
@@ -2228,6 +2228,76 @@ Deno.serve(async (req) => {
         succeeded,
         total: targetAdvIds.length * numCopies,
       }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: get pixels for an advertiser ──
+    if (action === "get_pixels") {
+      const { advertiser_id } = body;
+      if (!advertiser_id) {
+        return new Response(JSON.stringify({ error: "advertiser_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const pixels: Array<{ pixel_id: string; pixel_code: string; name: string; status: string }> = [];
+      let page = 1;
+      const pageSize = 100;
+
+      while (true) {
+        const query = new URLSearchParams({
+          advertiser_id: String(advertiser_id),
+          page: String(page),
+          page_size: String(pageSize),
+        });
+
+        const resp = await fetch(`${TIKTOK_API}/pixel/list/?${query.toString()}`, { headers });
+        const data = await safeJson(resp);
+
+        if (data?.code !== 0) {
+          return new Response(JSON.stringify({ error: data?.message || "Falha ao buscar pixels", code: data?.code }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const list = Array.isArray(data?.data?.list) ? data.data.list : [];
+
+        for (const item of list) {
+          const numericId = [item?.pixel_id, item?.id]
+            .map((candidate) => String(candidate ?? "").trim())
+            .find((candidate) => /^\d{6,30}$/.test(candidate));
+
+          if (!numericId) continue;
+
+          const pixelCode = String(item?.pixel_code ?? item?.code ?? "").trim();
+          const rawPixelName = String(item?.name ?? item?.pixel_name ?? "").trim();
+          const pixelName = rawPixelName || pixelCode || numericId;
+
+          pixels.push({
+            pixel_id: numericId,
+            pixel_code: pixelCode,
+            name: pixelName,
+            status: String(item?.status ?? ""),
+          });
+        }
+
+        const pageInfo = data?.data?.page_info || {};
+        const totalPages = Number(pageInfo.total_page || 0);
+        const totalNumber = Number(pageInfo.total_number || 0);
+        const hasNextByFlag = pageInfo.has_next_page === true;
+        const hasNextByTotal = totalPages > 0 ? page < totalPages : totalNumber > page * pageSize;
+        const hasNextByLength = list.length === pageSize;
+
+        if (!hasNextByFlag && !hasNextByTotal && !hasNextByLength) break;
+        page += 1;
+      }
+
+      const uniquePixels = Array.from(
+        new Map(pixels.map((px) => [px.pixel_id, px])).values(),
+      );
+
+      return new Response(JSON.stringify({ pixels: uniquePixels }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

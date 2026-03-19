@@ -27,6 +27,13 @@ interface CreationResult {
   error?: string;
 }
 
+interface TikTokPixelOption {
+  pixel_id: string;
+  pixel_code: string;
+  name: string;
+  status?: string;
+}
+
 const CTA_OPTIONS = [
   { value: "LEARN_MORE", label: "Saiba Mais" },
   { value: "SHOP_NOW", label: "Comprar Agora" },
@@ -109,6 +116,8 @@ export default function SmartCampaignCreator() {
   // State
   const [creating, setCreating] = useState(false);
   const [results, setResults] = useState<CreationResult[]>([]);
+  const [pixels, setPixels] = useState<TikTokPixelOption[]>([]);
+  const [loadingPixels, setLoadingPixels] = useState(false);
 
   useEffect(() => { loadBCs(); }, []);
 
@@ -124,7 +133,13 @@ export default function SmartCampaignCreator() {
   };
 
   useEffect(() => {
-    if (!selectedBc) { setAccounts([]); setSelectedAccounts([]); return; }
+    if (!selectedBc) {
+      setAccounts([]);
+      setSelectedAccounts([]);
+      setPixels([]);
+      setPixelId("");
+      return;
+    }
     loadAccounts();
   }, [selectedBc]);
 
@@ -140,6 +155,31 @@ export default function SmartCampaignCreator() {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
     setLoadingAccounts(false);
+  };
+
+  const loadPixels = async (advId: string) => {
+    if (!selectedBc || !advId) {
+      setPixels([]);
+      setPixelId("");
+      return;
+    }
+
+    setLoadingPixels(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: selectedBc, action: "get_pixels", advertiser_id: advId },
+      });
+      if (error) throw error;
+
+      const loadedPixels: TikTokPixelOption[] = Array.isArray(data?.pixels) ? data.pixels : [];
+      setPixels(loadedPixels);
+      setPixelId((prev) => (loadedPixels.some((px) => px.pixel_id === prev) ? prev : ""));
+    } catch (err: any) {
+      setPixels([]);
+      setPixelId("");
+      toast({ title: "Erro ao carregar pixels", description: err.message, variant: "destructive" });
+    }
+    setLoadingPixels(false);
   };
 
   const toggleAccount = (advId: string) => {
@@ -243,12 +283,21 @@ export default function SmartCampaignCreator() {
     setAuthorizingPost(false);
   };
 
-  // Auto-fetch identities when accounts are selected
+  // Auto-fetch account resources when accounts are selected
   useEffect(() => {
-    if (selectedAccounts.length > 0 && useSparkAds) {
-      fetchIdentities(selectedAccounts[0]);
+    const primaryAccount = selectedAccounts[0];
+    if (!primaryAccount) {
+      setPixels([]);
+      setPixelId("");
+      return;
     }
-  }, [selectedAccounts, useSparkAds]);
+
+    loadPixels(primaryAccount);
+
+    if (useSparkAds) {
+      fetchIdentities(primaryAccount);
+    }
+  }, [selectedAccounts, useSparkAds, selectedBc]);
 
   const addAdText = () => {
     if (adTexts.length < 5) setAdTexts([...adTexts, ""]);
@@ -373,9 +422,37 @@ export default function SmartCampaignCreator() {
                     placeholder="Ex: [Smart+] Produto X - BID R$15" className="h-8 text-xs mt-1" />
                 </div>
                 <div>
-                  <Label className="text-xs">Pixel ID</Label>
-                  <Input value={pixelId} onChange={e => setPixelId(e.target.value)}
-                    placeholder="ID do pixel TikTok" className="h-8 text-xs mt-1" />
+                  <Label className="text-xs">Pixel (selecionar da conta)</Label>
+                  <Select
+                    value={pixelId || "__none__"}
+                    onValueChange={(value) => setPixelId(value === "__none__" ? "" : value)}
+                    disabled={!selectedAccounts.length || loadingPixels}
+                  >
+                    <SelectTrigger className="h-8 text-xs mt-1">
+                      <SelectValue
+                        placeholder={selectedAccounts.length
+                          ? (loadingPixels ? "Carregando pixels..." : "Selecione um pixel")
+                          : "Selecione uma conta primeiro"}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__" className="text-xs">Sem pixel</SelectItem>
+                      {pixels.map((px) => (
+                        <SelectItem key={px.pixel_id} value={px.pixel_id} className="text-xs">
+                          {px.name} {px.pixel_code ? `• ${px.pixel_code}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[9px] text-muted-foreground mt-1">
+                    {selectedAccounts.length === 0
+                      ? "Selecione uma conta de destino para carregar os pixels."
+                      : loadingPixels
+                        ? "Buscando pixels da conta..."
+                        : pixels.length === 0
+                          ? "Nenhum pixel encontrado para essa conta."
+                          : "Somente Pixel ID numérico será enviado na criação da campanha."}
+                  </p>
                 </div>
               </div>
 
