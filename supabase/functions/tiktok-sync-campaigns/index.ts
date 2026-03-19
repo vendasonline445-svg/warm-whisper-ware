@@ -1884,7 +1884,7 @@ Deno.serve(async (req) => {
               pacing: "PACING_MODE_SMOOTH",
               billing_event: "OCPM",
               bid_type,
-              creative_material_mode: tiktok_item_id ? "CUSTOM" : "SMART_CREATIVE",
+              creative_material_mode: (tiktok_item_id || (authorized_posts && authorized_posts.length > 0)) ? "CUSTOM" : "SMART_CREATIVE",
             };
 
             // Audience targeting
