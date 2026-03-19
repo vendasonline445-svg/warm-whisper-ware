@@ -2029,22 +2029,31 @@ Deno.serve(async (req) => {
 
       const results: Array<{ advertiser_id: string; success: boolean; added?: number; error?: string }> = [];
 
-      for (const advId of advIds) {
-        try {
-          const resp = await fetch(`${TIKTOK_API}/blockedword/create/`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ advertiser_id: advId, blocked_words: validWords }),
-          });
-          const data = await safeJson(resp);
-
-          if (data.code === 0) {
-            results.push({ advertiser_id: advId, success: true, added: validWords.length });
+      // Process in parallel batches of 20 to avoid timeout
+      const BATCH_SIZE = 20;
+      for (let i = 0; i < advIds.length; i += BATCH_SIZE) {
+        const batch = advIds.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.allSettled(
+          batch.map(async (advId: string) => {
+            const resp = await fetch(`${TIKTOK_API}/blockedword/create/`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ advertiser_id: advId, blocked_words: validWords }),
+            });
+            const data = await safeJson(resp);
+            if (data.code === 0) {
+              return { advertiser_id: advId, success: true, added: validWords.length };
+            } else {
+              return { advertiser_id: advId, success: false, error: data.message || "API error" };
+            }
+          })
+        );
+        for (const r of batchResults) {
+          if (r.status === "fulfilled") {
+            results.push(r.value);
           } else {
-            results.push({ advertiser_id: advId, success: false, error: data.message || "API error" });
+            results.push({ advertiser_id: "unknown", success: false, error: r.reason?.message || "Request failed" });
           }
-        } catch (e: any) {
-          results.push({ advertiser_id: advId, success: false, error: e.message });
         }
       }
 
