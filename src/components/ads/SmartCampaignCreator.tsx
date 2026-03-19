@@ -294,6 +294,9 @@ export default function SmartCampaignCreator() {
           identity_id: useSparkAds ? identityId : undefined,
           identity_type: useSparkAds ? identityType : undefined,
           ad_texts: useSparkAds ? [] : adTexts.filter(t => t.trim()),
+          age_groups: ageGroups.length > 0 ? ageGroups : undefined,
+          gender: gender !== "GENDER_UNLIMITED" ? gender : undefined,
+          schedule_start_time: scheduleStart || undefined,
           copies,
         },
       });
