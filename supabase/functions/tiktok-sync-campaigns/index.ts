@@ -2271,12 +2271,13 @@ Deno.serve(async (req) => {
           if (!numericId) continue;
 
           const pixelCode = String(item?.pixel_code ?? item?.code ?? "").trim();
-          const pixelName = String(item?.name ?? item?.pixel_name ?? pixelCode || numericId).trim();
+          const rawPixelName = String(item?.name ?? item?.pixel_name ?? "").trim();
+          const pixelName = rawPixelName || pixelCode || numericId;
 
           pixels.push({
             pixel_id: numericId,
             pixel_code: pixelCode,
-            name: pixelName || numericId,
+            name: pixelName,
             status: String(item?.status ?? ""),
           });
         }
