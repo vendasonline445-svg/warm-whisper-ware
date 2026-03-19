@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import {
   RefreshCw, Play, Pause, Copy, Loader2, DollarSign, AlertTriangle,
-  TrendingUp, TrendingDown, BarChart3, ShoppingCart, Eye, Layers
+  TrendingUp, TrendingDown, BarChart3, ShoppingCart, Eye, Layers, ChevronDown, ChevronRight
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
