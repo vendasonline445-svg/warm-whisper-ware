@@ -63,6 +63,7 @@ interface CampaignMetrics {
 
 type CampaignSortBy = "updated" | "name" | "spend" | "sales" | "revenue" | "roas" | "roi" | "clicks";
 type SortDirection = "asc" | "desc";
+type DateRange = "today" | "3d" | "7d" | "14d" | "30d";
 
 interface CampaignCachePayload {
   campaigns: TikTokCampaign[];
@@ -91,6 +92,7 @@ export default function CampaignManager() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<CampaignSortBy>("spend");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [dateRange, setDateRange] = useState<DateRange>("today");
   const [metricsMap, setMetricsMap] = useState<Record<string, CampaignMetrics>>({});
 
   // Duplicate dialog
@@ -199,8 +201,17 @@ export default function CampaignManager() {
         return;
       }
 
-      const thirtyDaysAgoDate = new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
-      const thirtyDaysAgoIso = new Date(Date.now() - 30 * 86400000).toISOString();
+      const daysMap: Record<DateRange, number> = { today: 0, "3d": 3, "7d": 7, "14d": 14, "30d": 30 };
+      const days = daysMap[dateRange];
+      const startDate = new Date();
+      if (days === 0) {
+        startDate.setHours(0, 0, 0, 0);
+      } else {
+        startDate.setDate(startDate.getDate() - days);
+        startDate.setHours(0, 0, 0, 0);
+      }
+      const startDateStr = startDate.toISOString().split("T")[0];
+      const startDateIso = startDate.toISOString();
 
       // 2) Read spend + sales sources in parallel
       const [costsRes, attribRes, purchaseRes] = await Promise.all([
@@ -208,17 +219,17 @@ export default function CampaignManager() {
           .from("campaign_costs")
           .select("campaign_id, spend, impressions, clicks")
           .in("campaign_id", internalIds)
-          .gte("date", thirtyDaysAgoDate),
+          .gte("date", startDateStr),
         db
           .from("attributions")
           .select("campaign_id, revenue, event_type")
           .in("campaign_id", internalIds)
-          .gte("created_at", thirtyDaysAgoIso),
+          .gte("created_at", startDateIso),
         db
           .from("events")
           .select("id, campaign, value, event_data")
           .eq("event_name", "purchase")
-          .gte("created_at", thirtyDaysAgoIso)
+          .gte("created_at", startDateIso)
           .order("created_at", { ascending: false })
           .limit(1000),
       ]);
@@ -306,10 +317,10 @@ export default function CampaignManager() {
     }
   };
 
-  // Fetch metrics when campaigns change
+  // Fetch metrics when campaigns or dateRange change
   useEffect(() => {
     if (campaigns.length > 0) fetchMetrics(campaigns);
-  }, [campaigns]);
+  }, [campaigns, dateRange]);
 
   const fetchCampaigns = async () => {
     const bc = bcs.find((b: any) => b.id === selectedBc);
@@ -827,6 +838,18 @@ export default function CampaignManager() {
                     <SelectContent>
                       <SelectItem value="desc" className="text-xs">Decrescente</SelectItem>
                       <SelectItem value="asc" className="text-xs">Crescente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRange)}>
+                    <SelectTrigger className="w-28 h-8 text-xs">
+                      <SelectValue placeholder="Período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today" className="text-xs">Hoje</SelectItem>
+                      <SelectItem value="3d" className="text-xs">3 dias</SelectItem>
+                      <SelectItem value="7d" className="text-xs">7 dias</SelectItem>
+                      <SelectItem value="14d" className="text-xs">14 dias</SelectItem>
+                      <SelectItem value="30d" className="text-xs">30 dias</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
