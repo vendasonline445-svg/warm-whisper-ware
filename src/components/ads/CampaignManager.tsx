@@ -903,81 +903,161 @@ export default function CampaignManager() {
                   <TableBody>
                     {sortedCampaigns.map((camp) => {
                       const m = metricsMap[camp.campaign_id];
+                      const isExpanded = expandedCampaigns.has(camp.campaign_id);
+                      const hierarchy = hierarchyData[camp.campaign_id] || [];
                       return (
-                        <TableRow key={camp.campaign_id}>
-                          <TableCell className="font-medium text-xs max-w-[200px] truncate">{camp.campaign_name}</TableCell>
-                          <TableCell>{statusBadge(camp.operation_status)}</TableCell>
-                          <TableCell className="text-xs">
-                            {camp.budget > 0 ? `R$ ${camp.budget.toFixed(2)}` : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m ? fmtMoney(m.spend) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m ? (
-                              <span className={m.sales > 0 ? "text-emerald-500 font-semibold" : "text-muted-foreground"}>
-                                {m.sales}
-                              </span>
-                            ) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m ? (
-                              <span className={m.revenue > 0 ? "text-emerald-500" : "text-muted-foreground"}>
-                                {fmtMoney(m.revenue)}
-                              </span>
-                            ) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m ? (
-                              <Badge className={`text-[10px] ${m.roas >= 2 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : m.roas >= 1 ? "bg-amber-500/15 text-amber-600 border-amber-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
-                                {m.roas.toFixed(2)}x
-                              </Badge>
-                            ) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m ? (
-                              <Badge className={`text-[10px] ${m.roi >= 0 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
-                                {m.roi.toFixed(1)}%
-                              </Badge>
-                            ) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m && m.cpa > 0 ? fmtMoney(m.cpa) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono text-muted-foreground">
-                            {m ? m.clicks.toLocaleString("pt-BR") : "—"}
-                          </TableCell>
-                          <TableCell className="text-[10px] font-mono text-muted-foreground">{camp.campaign_id}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading} onClick={() => toggleStatus(camp)}
-                                title={camp.operation_status === "ENABLE" ? "Pausar" : "Ativar"}>
-                                {actionLoading === camp.campaign_id + "_status" ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : camp.operation_status === "ENABLE" ? (
-                                  <Pause className="h-3.5 w-3.5" />
-                                ) : (
-                                  <Play className="h-3.5 w-3.5 text-emerald-500" />
-                                )}
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
-                                onClick={() => { setBudgetDialog(camp); setNewBudget(camp.budget > 0 ? String(camp.budget) : ""); }}
-                                title="Editar orçamento">
-                                <DollarSign className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
-                                onClick={() => { setDupDialog(camp); setDupName(`Copy of ${camp.campaign_name}`); setDupBudget(camp.budget > 0 ? String(camp.budget) : ""); }}
-                                title="Duplicar campanha">
-                                <Copy className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
-                                onClick={() => openBulkDuplicate(camp)}
-                                title="Duplicar em massa">
-                                <Layers className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          <TableRow key={camp.campaign_id} className={isExpanded ? "border-b-0 bg-muted/30" : ""}>
+                            <TableCell className="font-medium text-xs max-w-[200px]">
+                              <div className="flex items-center gap-1">
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 shrink-0" onClick={() => toggleExpand(camp)}
+                                  disabled={loadingHierarchy === camp.campaign_id}>
+                                  {loadingHierarchy === camp.campaign_id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : isExpanded ? (
+                                    <ChevronDown className="h-3 w-3" />
+                                  ) : (
+                                    <ChevronRight className="h-3 w-3" />
+                                  )}
+                                </Button>
+                                <span className="truncate">{camp.campaign_name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{statusBadge(camp.operation_status, camp.secondary_status)}</TableCell>
+                            <TableCell className="text-xs">
+                              {camp.budget > 0 ? (
+                                <div>
+                                  <span>R$ {camp.budget.toFixed(2)}</span>
+                                  <span className="text-[9px] text-muted-foreground ml-1">({budgetModeLabel(camp.budget_mode)})</span>
+                                </div>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m ? fmtMoney(m.spend) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m ? (
+                                <span className={m.sales > 0 ? "text-emerald-500 font-semibold" : "text-muted-foreground"}>
+                                  {m.sales}
+                                </span>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m ? (
+                                <span className={m.revenue > 0 ? "text-emerald-500" : "text-muted-foreground"}>
+                                  {fmtMoney(m.revenue)}
+                                </span>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m ? (
+                                <Badge className={`text-[10px] ${m.roas >= 2 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : m.roas >= 1 ? "bg-amber-500/15 text-amber-600 border-amber-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
+                                  {m.roas.toFixed(2)}x
+                                </Badge>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m ? (
+                                <Badge className={`text-[10px] ${m.roi >= 0 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
+                                  {m.roi.toFixed(1)}%
+                                </Badge>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m && m.cpa > 0 ? fmtMoney(m.cpa) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono text-muted-foreground">
+                              {m ? m.clicks.toLocaleString("pt-BR") : "—"}
+                            </TableCell>
+                            <TableCell className="text-[10px] font-mono text-muted-foreground">{camp.campaign_id}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading} onClick={() => toggleStatus(camp)}
+                                  title={camp.operation_status === "ENABLE" ? "Pausar" : "Ativar"}>
+                                  {actionLoading === camp.campaign_id + "_status" ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : camp.operation_status === "ENABLE" ? (
+                                    <Pause className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <Play className="h-3.5 w-3.5 text-emerald-500" />
+                                  )}
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
+                                  onClick={() => { setBudgetDialog(camp); setNewBudget(camp.budget > 0 ? String(camp.budget) : ""); }}
+                                  title="Editar orçamento">
+                                  <DollarSign className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
+                                  onClick={() => { setDupDialog(camp); setDupName(`Copy of ${camp.campaign_name}`); setDupBudget(camp.budget > 0 ? String(camp.budget) : ""); }}
+                                  title="Duplicar campanha">
+                                  <Copy className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
+                                  onClick={() => openBulkDuplicate(camp)}
+                                  title="Duplicar em massa">
+                                  <Layers className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {/* ── Hierarchy Sub-rows ── */}
+                          {isExpanded && hierarchy.map((ag) => (
+                            <>
+                              <TableRow key={`ag-${ag.adgroup_id}`} className="bg-muted/20">
+                                <TableCell className="text-xs pl-10 font-medium" colSpan={2}>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-[9px] shrink-0">Conjunto</Badge>
+                                    <span className="truncate">{ag.adgroup_name}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-xs">
+                                  {ag.budget > 0 ? (
+                                    <span>R$ {ag.budget.toFixed(2)} <span className="text-[9px] text-muted-foreground">({budgetModeLabel(ag.budget_mode)})</span></span>
+                                  ) : <span className="text-muted-foreground">—</span>}
+                                </TableCell>
+                                <TableCell colSpan={8} />
+                                <TableCell className="text-right">
+                                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={!!actionLoading}
+                                    onClick={() => toggleAdGroupStatus(camp, ag.adgroup_id, ag.operation_status)}
+                                    title={ag.operation_status === "ENABLE" ? "Pausar conjunto" : "Ativar conjunto"}>
+                                    {actionLoading === ag.adgroup_id + "_status" ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : ag.operation_status === "ENABLE" ? (
+                                      <Pause className="h-3 w-3" />
+                                    ) : (
+                                      <Play className="h-3 w-3 text-emerald-500" />
+                                    )}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                              {ag.ads.map((ad) => (
+                                <TableRow key={`ad-${ad.ad_id}`} className="bg-muted/10">
+                                  <TableCell className="text-[11px] pl-14 text-muted-foreground" colSpan={2}>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="secondary" className="text-[8px] shrink-0">Anúncio</Badge>
+                                      <span className="truncate">{ad.ad_name}</span>
+                                      {statusBadge(ad.operation_status, ad.secondary_status)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell colSpan={9} />
+                                  <TableCell className="text-right">
+                                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={!!actionLoading}
+                                      onClick={() => toggleAdStatus(camp, ag.adgroup_id, ad.ad_id, ad.operation_status)}
+                                      title={ad.operation_status === "ENABLE" ? "Pausar anúncio" : "Ativar anúncio"}>
+                                      {actionLoading === ad.ad_id + "_status" ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : ad.operation_status === "ENABLE" ? (
+                                        <Pause className="h-3 w-3" />
+                                      ) : (
+                                        <Play className="h-3 w-3 text-emerald-500" />
+                                      )}
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </>
+                          ))}
+                        </>
                       );
                     })}
                     {!loading && !campaigns.length && (
