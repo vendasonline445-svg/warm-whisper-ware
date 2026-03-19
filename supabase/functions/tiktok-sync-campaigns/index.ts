@@ -2398,6 +2398,122 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Action: sync ad-level metrics for creative performance ──
+    if (action === "sync_ad_metrics") {
+      const { advertiser_id, date_from, date_to } = body;
+      if (!advertiser_id) {
+        return new Response(JSON.stringify({ error: "advertiser_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const today = new Date().toISOString().split("T")[0];
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+      const startDate = date_from || weekAgo;
+      const endDate = date_to || today;
+
+      const adMetrics = [
+        "spend", "impressions", "clicks", "cpc", "cpm", "ctr",
+        "conversion", "cost_per_conversion",
+        "real_time_conversion", "real_time_cost_per_conversion",
+        "video_views_p25", "video_views_p50", "video_views_p75", "video_views_p100",
+        "likes", "comments", "shares",
+      ];
+      const adDimensions = ["ad_id", "stat_time_day"];
+
+      const rows: any[] = [];
+      const pageSize = 200;
+      let page = 1;
+
+      while (page <= 50) {
+        const query = new URLSearchParams({
+          advertiser_id: String(advertiser_id),
+          report_type: "BASIC",
+          data_level: "AUCTION_AD",
+          dimensions: JSON.stringify(adDimensions),
+          metrics: JSON.stringify(adMetrics),
+          start_date: startDate,
+          end_date: endDate,
+          page: String(page),
+          page_size: String(pageSize),
+        });
+
+        let reportData = await safeJson(await fetch(
+          `${TIKTOK_API}/report/integrated/get/?${query.toString()}`,
+          { headers }
+        ));
+
+        if (reportData.code !== 0 && isMethodNotAllowedError(reportData)) {
+          reportData = await safeJson(await fetch(`${TIKTOK_API}/report/integrated/get/`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              advertiser_id,
+              report_type: "BASIC",
+              data_level: "AUCTION_AD",
+              dimensions: adDimensions,
+              metrics: adMetrics,
+              start_date: startDate,
+              end_date: endDate,
+              page,
+              page_size: pageSize,
+            }),
+          }));
+        }
+
+        if (reportData.code !== 0) break;
+
+        const list = reportData.data?.list || [];
+        rows.push(...list);
+        if (list.length < pageSize) break;
+        page++;
+      }
+
+      // Aggregate ad metrics
+      const adAgg: Record<string, any> = {};
+      for (const row of rows) {
+        const dims = row.dimensions || {};
+        const metrics = row.metrics || {};
+        const adId = String(dims.ad_id || "");
+        if (!adId) continue;
+
+        if (!adAgg[adId]) {
+          adAgg[adId] = {
+            ad_id: adId,
+            spend: 0, impressions: 0, clicks: 0,
+            conversions: 0,
+            video_views_p50: 0, video_views_p100: 0,
+            likes: 0, comments: 0, shares: 0,
+          };
+        }
+
+        adAgg[adId].spend += Math.round(parseFloat(metrics.spend || "0") * 100);
+        adAgg[adId].impressions += parseInt(metrics.impressions || "0");
+        adAgg[adId].clicks += parseInt(metrics.clicks || "0");
+        adAgg[adId].conversions += parseInt(metrics.conversion || "0");
+        adAgg[adId].video_views_p50 += parseInt(metrics.video_views_p50 || "0");
+        adAgg[adId].video_views_p100 += parseInt(metrics.video_views_p100 || "0");
+        adAgg[adId].likes += parseInt(metrics.likes || "0");
+        adAgg[adId].comments += parseInt(metrics.comments || "0");
+        adAgg[adId].shares += parseInt(metrics.shares || "0");
+      }
+
+      for (const ad of Object.values(adAgg) as any[]) {
+        ad.cpc = ad.clicks > 0 ? (ad.spend / ad.clicks) : 0;
+        ad.ctr = ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100) : 0;
+        ad.cost_per_conversion = ad.conversions > 0 ? (ad.spend / ad.conversions) : 0;
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        ad_metrics: Object.values(adAgg),
+        total_rows: rows.length,
+        pages: page,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
