@@ -59,16 +59,10 @@ Deno.serve(async (req) => {
               const id = String(info.advertiser_id);
               const name = info.name || id;
 
-              const badStatuses = ["STATUS_DISABLE", "STATUS_LIMIT", "STATUS_PENDING_CONFIRM", "STATUS_CONFIRM_FAIL", "STATUS_CONFIRM_FAIL_END", "STATUS_LIMIT_PART"];
+              // Only alert on accounts that went down (status issues)
+              const badStatuses = ["STATUS_DISABLE", "STATUS_LIMIT", "STATUS_CONFIRM_FAIL", "STATUS_CONFIRM_FAIL_END", "STATUS_LIMIT_PART"];
               if (badStatuses.includes(info.status)) {
                 allAlerts.push({ bc_name: bc.bc_name, advertiser_id: id, name, issue: "status", detail: info.status });
-              }
-
-              const balance = Number(info.balance || 0);
-              if (balance <= 0) {
-                allAlerts.push({ bc_name: bc.bc_name, advertiser_id: id, name, issue: "balance", detail: `Saldo: ${balance.toFixed(2)}` });
-              } else if (balance < 50) {
-                allAlerts.push({ bc_name: bc.bc_name, advertiser_id: id, name, issue: "low_balance", detail: `Saldo baixo: ${balance.toFixed(2)}` });
               }
             }
           }
