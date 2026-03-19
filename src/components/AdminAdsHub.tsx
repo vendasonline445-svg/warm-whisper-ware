@@ -142,6 +142,10 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
       {/* ── BLOCKED WORDS ── */}
       {subTab === "blocked_words" && <BlockedWordsManager />}
 
+      {/* ── HEALTH MONITOR ── */}
+      {subTab === "health" && <AccountHealthMonitor />}
+      {subTab === "blocked_words" && <BlockedWordsManager />}
+
       {/* ── CAMPAIGNS ── */}
       {!loading && subTab === "campaigns" && (
         <div className="space-y-4">
