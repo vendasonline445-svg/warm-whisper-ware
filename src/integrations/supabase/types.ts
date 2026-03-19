@@ -264,43 +264,91 @@ export type Database = {
       }
       campaign_costs: {
         Row: {
+          average_video_play: number | null
           campaign_id: string | null
           clicks: number | null
           client_id: string | null
+          comments: number | null
+          conversions: number | null
+          cost_per_conversion: number | null
           cpc: number | null
           cpm: number | null
           created_at: string
           ctr: number | null
           date: string
+          follows: number | null
+          frequency: number | null
           id: string
           impressions: number | null
+          likes: number | null
+          profile_visits: number | null
+          reach: number | null
+          real_time_conversions: number | null
+          real_time_cost_per_conversion: number | null
+          shares: number | null
           spend: number | null
+          video_views_p100: number | null
+          video_views_p25: number | null
+          video_views_p50: number | null
+          video_views_p75: number | null
         }
         Insert: {
+          average_video_play?: number | null
           campaign_id?: string | null
           clicks?: number | null
           client_id?: string | null
+          comments?: number | null
+          conversions?: number | null
+          cost_per_conversion?: number | null
           cpc?: number | null
           cpm?: number | null
           created_at?: string
           ctr?: number | null
           date: string
+          follows?: number | null
+          frequency?: number | null
           id?: string
           impressions?: number | null
+          likes?: number | null
+          profile_visits?: number | null
+          reach?: number | null
+          real_time_conversions?: number | null
+          real_time_cost_per_conversion?: number | null
+          shares?: number | null
           spend?: number | null
+          video_views_p100?: number | null
+          video_views_p25?: number | null
+          video_views_p50?: number | null
+          video_views_p75?: number | null
         }
         Update: {
+          average_video_play?: number | null
           campaign_id?: string | null
           clicks?: number | null
           client_id?: string | null
+          comments?: number | null
+          conversions?: number | null
+          cost_per_conversion?: number | null
           cpc?: number | null
           cpm?: number | null
           created_at?: string
           ctr?: number | null
           date?: string
+          follows?: number | null
+          frequency?: number | null
           id?: string
           impressions?: number | null
+          likes?: number | null
+          profile_visits?: number | null
+          reach?: number | null
+          real_time_conversions?: number | null
+          real_time_cost_per_conversion?: number | null
+          shares?: number | null
           spend?: number | null
+          video_views_p100?: number | null
+          video_views_p25?: number | null
+          video_views_p50?: number | null
+          video_views_p75?: number | null
         }
         Relationships: [
           {
