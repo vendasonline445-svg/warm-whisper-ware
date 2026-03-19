@@ -317,10 +317,10 @@ export default function CampaignManager() {
     }
   };
 
-  // Fetch metrics when campaigns change
+  // Fetch metrics when campaigns or dateRange change
   useEffect(() => {
     if (campaigns.length > 0) fetchMetrics(campaigns);
-  }, [campaigns]);
+  }, [campaigns, dateRange]);
 
   const fetchCampaigns = async () => {
     const bc = bcs.find((b: any) => b.id === selectedBc);
