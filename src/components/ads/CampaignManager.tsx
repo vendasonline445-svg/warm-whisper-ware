@@ -113,6 +113,11 @@ export default function CampaignManager() {
   const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
   const [bulkCopies, setBulkCopies] = useState(1);
 
+  // Hierarchy expansion
+  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
+  const [hierarchyData, setHierarchyData] = useState<Record<string, AdGroupInfo[]>>({});
+  const [loadingHierarchy, setLoadingHierarchy] = useState<string | null>(null);
+
   const getCacheKey = (bcId: string) => `campaign_manager_cache_${bcId}`;
 
   const loadCampaignsFromCache = (bcId: string): boolean => {
