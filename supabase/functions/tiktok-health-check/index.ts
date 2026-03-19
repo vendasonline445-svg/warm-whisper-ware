@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            title: `⚠️ TikTok Ads — ${allAlerts.length} alerta(s)`,
+            title: `🔴 ${allAlerts.length} conta(s) caiu(ram) no TikTok Ads`,
             text,
           }),
         });
