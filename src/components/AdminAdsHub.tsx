@@ -36,6 +36,7 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
   const [subTab, setSubTab] = useState<SubTab>(defaultTab ?? "connect");
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [creatives, setCreatives] = useState<any[]>([]);
+  const [creativeMetrics, setCreativeMetrics] = useState<any[]>([]);
   const [rules, setRules] = useState<any[]>([]);
   const [costs, setCosts] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -47,15 +48,17 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [campRes, creatRes, rulesRes, costsRes, clientsRes] = await Promise.all([
+    const [campRes, creatRes, rulesRes, costsRes, clientsRes, metricsRes] = await Promise.all([
       db.from("campaigns").select("*").order("created_at", { ascending: false }),
       db.from("creatives").select("*, campaigns(campaign_name)").order("created_at", { ascending: false }),
       db.from("automation_rules").select("*, campaigns(campaign_name), clients(client_name)").order("created_at", { ascending: false }),
       db.from("campaign_costs").select("*, campaigns(campaign_name)").order("date", { ascending: false }).limit(100),
       db.from("clients").select("id, client_name").eq("status", "active"),
+      db.from("creative_metrics").select("*"),
     ]);
     setCampaigns(campRes.data || []);
     setCreatives(creatRes.data || []);
+    setCreativeMetrics(metricsRes.data || []);
     setRules(rulesRes.data || []);
     setCosts(costsRes.data || []);
     setClients(clientsRes.data || []);
@@ -185,7 +188,10 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
       {/* ── CREATIVES ── */}
       {!loading && subTab === "creatives" && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Criativos ({creatives.length})</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Criativos ({creatives.length})</CardTitle>
+            <p className="text-xs text-muted-foreground">Performance dos criativos com dados de vendas, spend e ROAS</p>
+          </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
@@ -193,20 +199,62 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Campanha</TableHead>
-                    <TableHead>ID Externo</TableHead>
-                    <TableHead>Criado em</TableHead>
+                    <TableHead className="text-right">Spend</TableHead>
+                    <TableHead className="text-right">Vendas</TableHead>
+                    <TableHead className="text-right">Receita</TableHead>
+                    <TableHead className="text-right">CPA</TableHead>
+                    <TableHead className="text-right">ROAS</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {creatives.map(c => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.creative_name}</TableCell>
-                      <TableCell className="text-xs">{c.campaigns?.campaign_name || "—"}</TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">{c.creative_external_id || "—"}</TableCell>
-                      <TableCell className="text-xs">{new Date(c.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                    </TableRow>
-                  ))}
-                  {!creatives.length && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum criativo</TableCell></TableRow>}
+                  {creatives.map(c => {
+                    const m = creativeMetrics.find((cm: any) => cm.creative_id === c.id);
+                    const spend = Number(m?.spend || 0);
+                    const conversions = Number(m?.conversions || 0);
+                    const revenue = Number(m?.revenue || 0);
+                    const cpa = Number(m?.cpa || 0);
+                    const roas = Number(m?.roas || 0);
+                    
+                    let statusLabel = "Sem dados";
+                    let statusVariant: "default" | "secondary" | "destructive" | "outline" = "outline";
+                    if (spend > 0 && conversions > 0 && roas >= 2) {
+                      statusLabel = "✅ Validado";
+                      statusVariant = "default";
+                    } else if (spend > 0 && conversions > 0) {
+                      statusLabel = "⚠️ Em teste";
+                      statusVariant = "secondary";
+                    } else if (spend > 0 && conversions === 0) {
+                      statusLabel = "❌ Sem vendas";
+                      statusVariant = "destructive";
+                    }
+
+                    return (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium max-w-[200px] truncate">{c.creative_name}</TableCell>
+                        <TableCell className="text-xs">{c.campaigns?.campaign_name || "—"}</TableCell>
+                        <TableCell className="text-right text-xs font-mono">
+                          {spend > 0 ? `R$ ${spend.toFixed(2)}` : "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-mono font-semibold">
+                          {conversions || "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-mono">
+                          {revenue > 0 ? `R$ ${revenue.toFixed(2)}` : "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-mono">
+                          {cpa > 0 ? `R$ ${cpa.toFixed(2)}` : "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-mono">
+                          {roas > 0 ? `${roas.toFixed(2)}x` : "—"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={statusVariant} className="text-[10px]">{statusLabel}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {!creatives.length && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhum criativo</TableCell></TableRow>}
                 </TableBody>
               </Table>
             </div>
