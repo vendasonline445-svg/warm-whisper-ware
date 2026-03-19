@@ -219,17 +219,17 @@ export default function CampaignManager() {
           .from("campaign_costs")
           .select("campaign_id, spend, impressions, clicks")
           .in("campaign_id", internalIds)
-          .gte("date", thirtyDaysAgoDate),
+          .gte("date", startDateStr),
         db
           .from("attributions")
           .select("campaign_id, revenue, event_type")
           .in("campaign_id", internalIds)
-          .gte("created_at", thirtyDaysAgoIso),
+          .gte("created_at", startDateIso),
         db
           .from("events")
           .select("id, campaign, value, event_data")
           .eq("event_name", "purchase")
-          .gte("created_at", thirtyDaysAgoIso)
+          .gte("created_at", startDateIso)
           .order("created_at", { ascending: false })
           .limit(1000),
       ]);
