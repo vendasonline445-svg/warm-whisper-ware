@@ -513,13 +513,17 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
     }
   }
 
+  const ttpCookie = getTTPCookie();
+
   const baseUserData = {
     email: emailHash,
     phone_number: phoneHash,
     external_id: storedUser.external_id_hash || visitorId || "",
     ttclid: ttclid || "",
+    ttp: ttpCookie || "",
     user_agent: navigator.userAgent,
     page_url: window.location.href,
+    referrer: document.referrer || "",
   };
 
   // Enrich with cached identity (fills email/phone for non-checkout events)
