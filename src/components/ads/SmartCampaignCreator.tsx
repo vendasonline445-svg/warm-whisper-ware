@@ -490,7 +490,7 @@ export default function SmartCampaignCreator() {
                       <Button
                         size="sm"
                         onClick={authorizeSparkPost}
-                        disabled={!authCode.trim() || authorizingPost || !selectedAccounts.length}
+                        disabled={!authCode.trim() || authorizingPost || (!selectedAccounts.length && !selectedBc)}
                         className="h-8 text-[10px]"
                       >
                         {authorizingPost ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
