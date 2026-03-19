@@ -220,7 +220,7 @@ export default function SmartCampaignCreator() {
           optimization_goal: optimizationGoal,
           optimization_event: optimizationEvent,
           landing_page_url: landingPageUrl || undefined,
-          call_to_action: callToAction,
+          call_to_action: selectedCTAs,
           tiktok_item_ids: useSparkAds ? sparkItems.filter(s => s.trim()) : undefined,
           tiktok_item_id: useSparkAds ? sparkItems.filter(s => s.trim())[0] : undefined,
           identity_id: useSparkAds ? identityId : undefined,
