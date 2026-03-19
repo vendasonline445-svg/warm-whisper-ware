@@ -176,9 +176,8 @@ export async function cacheUserIdentity(
   }
 
   if (phone && phone.trim()) {
-    const digits = phone.replace(/\D/g, "");
-    const normalized = "+55" + (digits.startsWith("55") ? digits.slice(2) : digits);
-    identity.phone_hash = await sha256(normalized.replace("+", ""));
+    const normalized = normalizePhone(phone); // E.164 with +
+    identity.phone_hash = await sha256(normalized);
   }
 
   try {
