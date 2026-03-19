@@ -714,9 +714,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Auto-refresh token if needed
+    const tokenResult = await refreshAccessToken(supabase, bc);
+    const activeToken = tokenResult.access_token;
+    if (tokenResult.refreshed) {
+      console.log(`Using refreshed token for BC ${bc.bc_name}`);
+    }
+
     const headers = {
       "Content-Type": "application/json",
-      "Access-Token": bc.access_token,
+      "Access-Token": activeToken,
     };
 
     // ── Action: get advertiser accounts (with full info + balance) ──
