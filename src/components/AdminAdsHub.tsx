@@ -13,6 +13,7 @@ import TikTokConnect from "@/components/ads/TikTokConnect";
 import CampaignManager from "@/components/ads/CampaignManager";
 import SmartCampaignCreator from "@/components/ads/SmartCampaignCreator";
 import BlockedWordsManager from "@/components/ads/BlockedWordsManager";
+import AccountHealthMonitor from "@/components/ads/AccountHealthMonitor";
 
 const db = supabase as any;
 
