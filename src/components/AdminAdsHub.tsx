@@ -36,6 +36,7 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
   const [subTab, setSubTab] = useState<SubTab>(defaultTab ?? "connect");
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [creatives, setCreatives] = useState<any[]>([]);
+  const [creativeMetrics, setCreativeMetrics] = useState<any[]>([]);
   const [rules, setRules] = useState<any[]>([]);
   const [costs, setCosts] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
