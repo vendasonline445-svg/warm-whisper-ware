@@ -1745,6 +1745,129 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Action: blocked words - list ──
+    if (action === "blockedword_list") {
+      const { advertiser_id } = body;
+      if (!advertiser_id) {
+        return new Response(JSON.stringify({ error: "advertiser_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const query = new URLSearchParams({ advertiser_id: String(advertiser_id) });
+      const resp = await fetch(`${TIKTOK_API}/blockedword/list/?${query.toString()}`, { headers });
+      const data = await safeJson(resp);
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: blocked words - create (add words) ──
+    if (action === "blockedword_create") {
+      const { advertiser_id, words } = body;
+      if (!advertiser_id || !words?.length) {
+        return new Response(JSON.stringify({ error: "advertiser_id and words[] required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // TikTok allows max 500 words, each max 30 chars
+      const validWords = (words as string[])
+        .map((w: string) => w.trim())
+        .filter((w: string) => w.length > 0 && w.length <= 30)
+        .slice(0, 500);
+
+      const resp = await fetch(`${TIKTOK_API}/blockedword/create/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ advertiser_id: String(advertiser_id), words: validWords }),
+      });
+      const data = await safeJson(resp);
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: blocked words - delete ──
+    if (action === "blockedword_delete") {
+      const { advertiser_id, word_ids } = body;
+      if (!advertiser_id || !word_ids?.length) {
+        return new Response(JSON.stringify({ error: "advertiser_id and word_ids[] required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const resp = await fetch(`${TIKTOK_API}/blockedword/delete/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ advertiser_id: String(advertiser_id), word_ids }),
+      });
+      const data = await safeJson(resp);
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: blocked words - sync to all accounts in BC ──
+    if (action === "blockedword_sync_all") {
+      const { words } = body;
+      if (!words?.length) {
+        return new Response(JSON.stringify({ error: "words[] required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const validWords = (words as string[])
+        .map((w: string) => w.trim())
+        .filter((w: string) => w.length > 0 && w.length <= 30)
+        .slice(0, 500);
+
+      // Get all advertiser IDs from the BC
+      const advIds = (bc.advertiser_id || "").split(",").map((id: string) => id.trim()).filter(Boolean);
+
+      if (!advIds.length) {
+        return new Response(JSON.stringify({ error: "No advertiser IDs found in this BC" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const results: Array<{ advertiser_id: string; success: boolean; added?: number; error?: string }> = [];
+
+      for (const advId of advIds) {
+        try {
+          const resp = await fetch(`${TIKTOK_API}/blockedword/create/`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ advertiser_id: advId, words: validWords }),
+          });
+          const data = await safeJson(resp);
+
+          if (data.code === 0) {
+            results.push({ advertiser_id: advId, success: true, added: validWords.length });
+          } else {
+            results.push({ advertiser_id: advId, success: false, error: data.message || "API error" });
+          }
+        } catch (e: any) {
+          results.push({ advertiser_id: advId, success: false, error: e.message });
+        }
+      }
+
+      const succeeded = results.filter(r => r.success).length;
+      return new Response(JSON.stringify({
+        success: true,
+        total_accounts: advIds.length,
+        succeeded,
+        failed: advIds.length - succeeded,
+        words_sent: validWords.length,
+        results,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
