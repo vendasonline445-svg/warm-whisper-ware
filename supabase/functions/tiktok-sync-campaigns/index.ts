@@ -1818,6 +1818,11 @@ Deno.serve(async (req) => {
         : [advertiser_id];
       const numCopies = Math.min(Math.max(1, Number(copies) || 1), 50);
 
+      const selectedCtas: string[] = Array.isArray(call_to_action)
+        ? call_to_action.filter((cta: any) => typeof cta === "string" && cta.trim())
+        : (typeof call_to_action === "string" && call_to_action.trim() ? [call_to_action.trim()] : []);
+      const primaryCta = selectedCtas[0] || "LEARN_MORE";
+
       const results: Array<{
         advertiser_id: string;
         copy: number;
@@ -1835,6 +1840,8 @@ Deno.serve(async (req) => {
               ? `${campaign_name} (${targetAdvId.slice(-4)}-${copyNum})`
               : campaign_name;
 
+            console.log(`[SmartCampaign] Starting creation: advertiser=${targetAdvId}, copy=${copyNum}, spark_posts=${authorized_posts?.length || 0}`);
+
             // 1) Create Campaign via standard endpoint
             const campaignPayload: Record<string, any> = {
               advertiser_id: targetAdvId,
@@ -1850,11 +1857,13 @@ Deno.serve(async (req) => {
             }
 
             if (!campaignResult.success) {
+              const campaignError = campaignResult.data?.message || "Falha ao criar campanha";
+              console.warn(`[SmartCampaign] Campaign create failed: advertiser=${targetAdvId}, copy=${copyNum}, error=${campaignError}`);
               results.push({
                 advertiser_id: targetAdvId,
                 copy: copyNum,
                 success: false,
-                error: campaignResult.data?.message || "Falha ao criar campanha",
+                error: campaignError,
               });
               continue;
             }
@@ -1924,12 +1933,14 @@ Deno.serve(async (req) => {
             }
 
             if (agData.code !== 0) {
+              const adgroupError = agData?.message || "Falha ao criar conjunto";
+              console.warn(`[SmartCampaign] AdGroup create failed: campaign=${newCampId}, advertiser=${targetAdvId}, copy=${copyNum}, error=${adgroupError}`);
               results.push({
                 advertiser_id: targetAdvId,
                 copy: copyNum,
                 success: false,
                 campaign_id: newCampId,
-                error: `Campanha criada (${newCampId}), mas falha no conjunto: ${agData.message}`,
+                error: `Campanha criada (${newCampId}), mas falha no conjunto: ${adgroupError}`,
               });
               continue;
             }
@@ -2002,7 +2013,7 @@ Deno.serve(async (req) => {
                   identity_type: spark.identity_type,
                   creatives: [{
                     tiktok_item_id: spark.item_id,
-                    call_to_action,
+                    call_to_action: primaryCta,
                     ...(landing_page_url ? { landing_page_url } : {}),
                   }],
                 };
@@ -2039,8 +2050,8 @@ Deno.serve(async (req) => {
                 },
               };
 
-              if (call_to_action) {
-                acoPayload.call_to_action_list = [{ call_to_action }];
+              if (selectedCtas.length > 0) {
+                acoPayload.call_to_action_list = selectedCtas.map((cta) => ({ call_to_action: cta }));
               }
               if (landing_page_url) {
                 acoPayload.landing_page_urls = [{ landing_page_url }];
@@ -2058,6 +2069,8 @@ Deno.serve(async (req) => {
               } else {
                 adError = adData.message || "Falha ao criar Smart Creative Ad";
               }
+            } else {
+              adError = "Nenhum post Spark válido foi resolvido para criar anúncio";
             }
 
             results.push({
