@@ -576,11 +576,18 @@ export default function SmartCampaignCreator() {
                     {/* Show authorized posts */}
                     {authorizedPosts.length > 0 && (
                       <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground">✅ {authorizedPosts.length} post(s) autorizado(s) — cada um gera 1 anúncio</Label>
                         {authorizedPosts.map((p, i) => (
                           <div key={i} className="flex items-center gap-2 text-[10px] p-1.5 rounded bg-primary/5 border border-primary/20">
                             <CheckCircle className="h-3 w-3 text-primary shrink-0" />
-                            <span className="font-medium">{p.display_name}</span>
+                            <span className="font-medium flex-1">{p.display_name}</span>
                             <span className="font-mono text-muted-foreground">Item: {p.item_id}</span>
+                            <Button size="sm" variant="ghost" className="h-5 w-5 p-0" onClick={() => {
+                              setAuthorizedPosts(prev => prev.filter((_, j) => j !== i));
+                              setSparkItems(prev => prev.filter(id => id !== p.item_id));
+                            }}>
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
                           </div>
                         ))}
                       </div>
