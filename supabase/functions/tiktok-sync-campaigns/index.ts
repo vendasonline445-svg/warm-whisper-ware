@@ -17,6 +17,97 @@ const safeJson = async (resp: Response) => {
   }
 };
 
+const pad2 = (value: number) => String(value).padStart(2, "0");
+
+const formatTikTokDateTime = (date: Date) => (
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`
+);
+
+const normalizeTikTokDateTime = (value: unknown): string | null => {
+  if (typeof value !== "string") return null;
+  const raw = value.trim();
+  if (!raw) return null;
+
+  const normalizedMatch = raw.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (normalizedMatch) {
+    return `${normalizedMatch[1]} ${normalizedMatch[2]}:${normalizedMatch[3]}:${normalizedMatch[4] || "00"}`;
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return formatTikTokDateTime(parsed);
+};
+
+const ensureFutureTikTokDateTime = (value: unknown): string | null => {
+  const normalized = normalizeTikTokDateTime(value);
+  if (!normalized) return null;
+
+  const parsed = new Date(normalized.replace(" ", "T"));
+  if (Number.isNaN(parsed.getTime())) return normalized;
+
+  if (parsed.getTime() <= Date.now()) {
+    return formatTikTokDateTime(new Date(Date.now() + 5 * 60 * 1000));
+  }
+
+  return normalized;
+};
+
+async function resolveAdgroupPixelId(
+  headers: Record<string, string>,
+  advertiserId: string,
+  rawPixelId: unknown,
+): Promise<string | null> {
+  if (rawPixelId === null || rawPixelId === undefined) return null;
+
+  const value = String(rawPixelId).trim();
+  if (!value) return null;
+
+  if (/^\d{6,30}$/.test(value)) {
+    return value;
+  }
+
+  const extractPixelId = (data: any): string | null => {
+    const list = Array.isArray(data?.data?.list) ? data.data.list : [];
+    if (!list.length) return null;
+
+    const exactMatch = list.find((px: any) => {
+      const code = String(px?.code || px?.pixel_code || "").trim().toLowerCase();
+      return code === value.toLowerCase();
+    });
+
+    const fallback = exactMatch || list[0];
+    const pixelId = fallback?.pixel_id ?? fallback?.id;
+    return pixelId ? String(pixelId) : null;
+  };
+
+  try {
+    const byCodeQuery = new URLSearchParams({
+      advertiser_id: advertiserId,
+      code: value,
+      page_size: "20",
+    });
+
+    const byCodeResp = await fetch(`${TIKTOK_API}/pixel/list/?${byCodeQuery.toString()}`, { headers });
+    const byCodeData = await safeJson(byCodeResp);
+    const directMatch = byCodeData?.code === 0 ? extractPixelId(byCodeData) : null;
+    if (directMatch) return directMatch;
+
+    const fallbackQuery = new URLSearchParams({
+      advertiser_id: advertiserId,
+      page_size: "100",
+    });
+    const fallbackResp = await fetch(`${TIKTOK_API}/pixel/list/?${fallbackQuery.toString()}`, { headers });
+    const fallbackData = await safeJson(fallbackResp);
+    const fallbackMatch = fallbackData?.code === 0 ? extractPixelId(fallbackData) : null;
+
+    if (fallbackMatch) return fallbackMatch;
+  } catch (error) {
+    console.warn(`[SmartCampaign] Pixel resolve failed for "${value}":`, error);
+  }
+
+  return null;
+};
+
 // ── Token auto-refresh helper ──
 async function refreshAccessToken(
   supabase: any,
@@ -1822,6 +1913,7 @@ Deno.serve(async (req) => {
         ? call_to_action.filter((cta: any) => typeof cta === "string" && cta.trim())
         : (typeof call_to_action === "string" && call_to_action.trim() ? [call_to_action.trim()] : []);
       const primaryCta = selectedCtas[0] || "LEARN_MORE";
+      const normalizedScheduleStart = ensureFutureTikTokDateTime(schedule_start_time);
 
       const results: Array<{
         advertiser_id: string;
@@ -1834,6 +1926,21 @@ Deno.serve(async (req) => {
       }> = [];
 
       for (const targetAdvId of targetAdvIds) {
+        const resolvedPixelId = await resolveAdgroupPixelId(headers, targetAdvId, pixel_id);
+        if (pixel_id && !resolvedPixelId) {
+          const pixelError = `Pixel inválido para criação de campanha: "${String(pixel_id).slice(0, 64)}". Informe um pixel numérico válido da conta.`;
+          console.warn(`[SmartCampaign] ${pixelError} advertiser=${targetAdvId}`);
+          for (let copyNum = 1; copyNum <= numCopies; copyNum++) {
+            results.push({
+              advertiser_id: targetAdvId,
+              copy: copyNum,
+              success: false,
+              error: pixelError,
+            });
+          }
+          continue;
+        }
+
         for (let copyNum = 1; copyNum <= numCopies; copyNum++) {
           try {
             const copyName = numCopies > 1 || targetAdvIds.length > 1
@@ -1887,8 +1994,8 @@ Deno.serve(async (req) => {
               placements: ["PLACEMENT_TIKTOK"],
               budget_mode,
               budget: Number(budget),
-              schedule_type: schedule_start_time ? "SCHEDULE_START_END" : "SCHEDULE_FROM_NOW",
-              ...(schedule_start_time ? { schedule_start_time } : {}),
+              schedule_type: normalizedScheduleStart ? "SCHEDULE_START_END" : "SCHEDULE_FROM_NOW",
+              ...(normalizedScheduleStart ? { schedule_start_time: normalizedScheduleStart } : {}),
               optimization_goal: optimization_goal,
               pacing: "PACING_MODE_SMOOTH",
               billing_event: "OCPM",
@@ -1907,8 +2014,8 @@ Deno.serve(async (req) => {
             }
 
             // Pixel + conversion event
-            if (pixel_id) {
-              adgroupPayload.pixel_id = pixel_id;
+            if (resolvedPixelId) {
+              adgroupPayload.pixel_id = resolvedPixelId;
             }
             if (optimization_event) {
               adgroupPayload.external_action = optimization_event;
