@@ -283,12 +283,21 @@ export default function SmartCampaignCreator() {
     setAuthorizingPost(false);
   };
 
-  // Auto-fetch identities when accounts are selected
+  // Auto-fetch account resources when accounts are selected
   useEffect(() => {
-    if (selectedAccounts.length > 0 && useSparkAds) {
-      fetchIdentities(selectedAccounts[0]);
+    const primaryAccount = selectedAccounts[0];
+    if (!primaryAccount) {
+      setPixels([]);
+      setPixelId("");
+      return;
     }
-  }, [selectedAccounts, useSparkAds]);
+
+    loadPixels(primaryAccount);
+
+    if (useSparkAds) {
+      fetchIdentities(primaryAccount);
+    }
+  }, [selectedAccounts, useSparkAds, selectedBc]);
 
   const addAdText = () => {
     if (adTexts.length < 5) setAdTexts([...adTexts, ""]);
