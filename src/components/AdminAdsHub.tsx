@@ -16,7 +16,7 @@ import BlockedWordsManager from "@/components/ads/BlockedWordsManager";
 
 const db = supabase as any;
 
-type SubTab = "campaigns" | "creatives" | "automation" | "budgets" | "connect" | "smart_create";
+type SubTab = "campaigns" | "creatives" | "automation" | "budgets" | "connect" | "smart_create" | "blocked_words";
 
 const SUB_TABS: { key: SubTab; label: string; icon: React.ReactNode }[] = [
   { key: "connect", label: "Conexão", icon: <Link2 className="h-4 w-4" /> },
@@ -25,6 +25,7 @@ const SUB_TABS: { key: SubTab; label: string; icon: React.ReactNode }[] = [
   { key: "creatives", label: "Criativos", icon: <Palette className="h-4 w-4" /> },
   { key: "automation", label: "Automação", icon: <Zap className="h-4 w-4" /> },
   { key: "budgets", label: "Budgets", icon: <Wallet className="h-4 w-4" /> },
+  { key: "blocked_words", label: "Blocked Words", icon: <ShieldBan className="h-4 w-4" /> },
 ];
 
 const fmtMoney = (v: number) => `R$ ${(v / 100).toFixed(2)}`;
