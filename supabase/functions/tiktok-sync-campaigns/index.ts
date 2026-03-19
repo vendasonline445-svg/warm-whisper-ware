@@ -52,6 +52,18 @@ const ensureFutureTikTokDateTime = (value: unknown): string | null => {
   return normalized;
 };
 
+const PIXEL_NUMERIC_REGEX = /^\d{6,30}$/;
+const PIXEL_CODE_REGEX = /^[A-Za-z0-9]{10,40}$/;
+
+const extractNumericPixelId = (item: any): string => {
+  const aliases = [item?.id, item?.pixel_id, item?.pixelId, item?.pixelID]
+    .map((v) => String(v ?? "").trim())
+    .filter(Boolean);
+
+  const numeric = aliases.find((candidate) => PIXEL_NUMERIC_REGEX.test(candidate));
+  return numeric || "";
+};
+
 async function resolveAdgroupPixelId(
   headers: Record<string, string>,
   advertiserId: string,
@@ -62,53 +74,60 @@ async function resolveAdgroupPixelId(
   const value = String(rawPixelId).trim();
   if (!value) return null;
 
-  // Accept both numeric IDs and alphanumeric pixel codes (e.g. "D6GM4RBC77UAAN00B800")
-  // The TikTok API accepts pixel_id in both formats depending on account type
-  const isNumericId = /^\d{6,30}$/.test(value);
-  const isAlphanumericId = /^[A-Za-z0-9]{10,40}$/.test(value);
+  const isNumericId = PIXEL_NUMERIC_REGEX.test(value);
+  const isAlphanumericId = PIXEL_CODE_REGEX.test(value);
 
-  // If it looks like a valid pixel identifier, verify it exists on the account
-  if (isNumericId || isAlphanumericId) {
-    try {
-      const query = new URLSearchParams({
-        advertiser_id: advertiserId,
-        page_size: "20",
-      });
-      const resp = await fetch(`${TIKTOK_API}/pixel/list/?${query.toString()}`, { headers });
-      const data = await safeJson(resp);
-      const list = Array.isArray(data?.data?.list) ? data.data.list : [];
+  if (!isNumericId && !isAlphanumericId) return null;
 
-      console.log(`[resolvePixel] Checking "${value}" against ${list.length} pixels for adv ${advertiserId}`);
+  let list: any[] = [];
+  try {
+    const query = new URLSearchParams({
+      advertiser_id: advertiserId,
+      page_size: "20",
+    });
+    const resp = await fetch(`${TIKTOK_API}/pixel/list/?${query.toString()}`, { headers });
+    const data = await safeJson(resp);
 
-      // Check if any pixel matches our value
-      const normalizedValue = value.toLowerCase();
-      const match = list.find((px: any) => {
-        const aliases = [px?.pixel_id, px?.id, px?.pixel_code, px?.code]
-          .map((c) => String(c ?? "").trim().toLowerCase())
-          .filter(Boolean);
-        return aliases.includes(normalizedValue);
-      });
-
-      if (match) {
-        // Return the pixel_id as the API lists it (could be numeric or alphanumeric)
-        const resolvedId = String(match?.pixel_id ?? match?.id ?? "").trim();
-        console.log(`[resolvePixel] Matched! Resolved to: "${resolvedId}"`);
-        return resolvedId || value;
-      }
-
-      // If we got a list but no match, still allow if the format looks valid
-      // (the pixel may belong to the account but not appear in the listing due to pagination)
-      if (isNumericId || isAlphanumericId) {
-        console.log(`[resolvePixel] No match found but format is valid, using as-is: "${value}"`);
-        return value;
-      }
-    } catch (error) {
-      console.warn(`[resolvePixel] API check failed for "${value}":`, error);
-      // Fall through and return the value as-is if it looks valid
-      return value;
+    if (data?.code !== 0) {
+      const apiError = String(data?.message || "Falha ao consultar pixels");
+      console.warn(`[resolvePixel] Pixel list API error for adv ${advertiserId}: ${apiError}`);
+      return isNumericId ? value : null;
     }
+
+    list = Array.isArray(data?.data?.list) ? data.data.list : [];
+    console.log(`[resolvePixel] Checking "${value}" against ${list.length} pixels for adv ${advertiserId}`);
+  } catch (error) {
+    console.warn(`[resolvePixel] API check failed for "${value}":`, error);
+    return isNumericId ? value : null;
   }
 
+  const normalizedValue = value.toLowerCase();
+  const match = list.find((px: any) => {
+    const aliases = [px?.pixel_id, px?.id, px?.pixel_code, px?.code]
+      .map((c) => String(c ?? "").trim().toLowerCase())
+      .filter(Boolean);
+    return aliases.includes(normalizedValue);
+  });
+
+  if (match) {
+    const numericMatch = extractNumericPixelId(match);
+    if (numericMatch) {
+      console.log(`[resolvePixel] Matched! Resolved numeric pixel_id: "${numericMatch}"`);
+      return numericMatch;
+    }
+
+    if (isNumericId) return value;
+
+    console.warn(`[resolvePixel] Matched pixel for "${value}" has no numeric ID. Blocking to avoid int64 error.`);
+    return null;
+  }
+
+  if (isNumericId) {
+    console.log(`[resolvePixel] No match found for numeric pixel_id, using as-is: "${value}"`);
+    return value;
+  }
+
+  console.warn(`[resolvePixel] Pixel code "${value}" not resolvable to numeric pixel_id for advertiser ${advertiserId}`);
   return null;
 };
 
@@ -2248,12 +2267,15 @@ Deno.serve(async (req) => {
           const rawId = String(item?.pixel_id ?? item?.id ?? "").trim();
           if (!rawId) continue;
 
-          const pixelCode = String(item?.pixel_code ?? item?.code ?? "").trim();
+          const numericId = extractNumericPixelId(item);
+          if (!numericId) continue;
+
+          const pixelCode = String(item?.pixel_code ?? item?.code ?? (PIXEL_NUMERIC_REGEX.test(rawId) ? "" : rawId)).trim();
           const rawPixelName = String(item?.name ?? item?.pixel_name ?? "").trim();
-          const pixelName = rawPixelName || pixelCode || rawId;
+          const pixelName = rawPixelName || pixelCode || numericId;
 
           pixels.push({
-            pixel_id: rawId,
+            pixel_id: numericId,
             pixel_code: pixelCode,
             name: pixelName,
             status: String(item?.status ?? ""),
@@ -2289,13 +2311,15 @@ Deno.serve(async (req) => {
         })
         .map((px: any) => {
           const rawId = String(px.pixel_id).trim();
+          if (!PIXEL_NUMERIC_REGEX.test(rawId)) return null;
           return {
             pixel_id: rawId,
             pixel_code: rawId,
             name: String(px.name || rawId).trim(),
             status: String(px.status || "active"),
           };
-        });
+        })
+        .filter(Boolean) as Array<{ pixel_id: string; pixel_code: string; name: string; status: string }>;
 
       const uniquePixels = Array.from(
         new Map([...pixels, ...fallbackPixels].map((px) => [px.pixel_id, px])).values(),
