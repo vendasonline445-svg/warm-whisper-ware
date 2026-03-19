@@ -1502,6 +1502,249 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Action: create smart campaign (Campaign + AdGroup + Spark Ad with BID cap, no Pangle) ──
+    if (action === "create_smart_campaign") {
+      const {
+        advertiser_id,
+        campaign_name,
+        budget,
+        budget_mode = "BUDGET_MODE_DAY",
+        objective_type = "WEB_CONVERSIONS",
+        bid_type = "BID_TYPE_CUSTOM",
+        bid,
+        pixel_id,
+        optimization_event,
+        landing_page_url,
+        identity_id,
+        identity_type = "AUTH_CODE",
+        tiktok_item_id,
+        ad_texts = [],
+        call_to_action = "LEARN_MORE",
+        schedule_start_time,
+        target_advertiser_ids,
+        copies = 1,
+      } = body;
+
+      if (!advertiser_id || !campaign_name || !budget) {
+        return new Response(JSON.stringify({ error: "advertiser_id, campaign_name, budget required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const targetAdvIds: string[] = target_advertiser_ids?.length
+        ? target_advertiser_ids
+        : [advertiser_id];
+      const numCopies = Math.min(Math.max(1, Number(copies) || 1), 50);
+
+      const results: Array<{
+        advertiser_id: string;
+        copy: number;
+        success: boolean;
+        campaign_id?: string;
+        adgroup_id?: string;
+        error?: string;
+      }> = [];
+
+      for (const targetAdvId of targetAdvIds) {
+        for (let copyNum = 1; copyNum <= numCopies; copyNum++) {
+          try {
+            const copyName = numCopies > 1 || targetAdvIds.length > 1
+              ? `${campaign_name} (${targetAdvId.slice(-4)}-${copyNum})`
+              : campaign_name;
+
+            // 1) Create Campaign
+            const campaignPayload: Record<string, any> = {
+              advertiser_id: targetAdvId,
+              campaign_name: copyName,
+              objective_type,
+              budget_mode,
+              budget: Number(budget),
+            };
+
+            // Try standard first, then smart_plus
+            let campaignResult = await createCampaignWithFallback(headers, campaignPayload, "standard");
+            if (!campaignResult.success) {
+              campaignResult = await createCampaignWithFallback(headers, { ...campaignPayload, request_id: generateRequestId() }, "smart_plus");
+            }
+
+            if (!campaignResult.success) {
+              results.push({
+                advertiser_id: targetAdvId,
+                copy: copyNum,
+                success: false,
+                error: campaignResult.data?.message || "Falha ao criar campanha",
+              });
+              continue;
+            }
+
+            const newCampId = String(campaignResult.data?.data?.campaign_id);
+
+            // Save to DB
+            await supabase.from("campaigns").insert({
+              campaign_external_id: newCampId,
+              campaign_name: copyName,
+              platform: "tiktok",
+              client_id: bc.client_id,
+            });
+
+            // 2) Create Ad Group — TikTok only (no Pangle), BID cap
+            const futureStart = schedule_start_time ||
+              new Date(Date.now() + 10 * 60 * 1000).toISOString().replace("T", " ").split(".")[0];
+
+            const adgroupPayload: Record<string, any> = {
+              advertiser_id: targetAdvId,
+              campaign_id: newCampId,
+              adgroup_name: `${copyName} - Conjunto`,
+              placement_type: "PLACEMENT_TYPE_NORMAL",
+              placements: ["PLACEMENT_TIKTOK"],
+              budget_mode,
+              budget: Number(budget),
+              schedule_start_time: futureStart,
+              schedule_type: "SCHEDULE_START_END",
+              optimization_goal: optimization_event || "CONVERT",
+              pacing: "PACING_MODE_SMOOTH",
+              billing_event: "CPC",
+              bid_type,
+              creative_material_mode: tiktok_item_id ? "CUSTOM" : "SMART_CREATIVE",
+            };
+
+            if (bid && bid_type === "BID_TYPE_CUSTOM") {
+              adgroupPayload.bid = Number(bid);
+            }
+
+            if (pixel_id) {
+              adgroupPayload.pixel_id = pixel_id;
+            }
+
+            if (optimization_event) {
+              adgroupPayload.optimization_event = optimization_event;
+            }
+
+            // Try standard first
+            let agResp = await fetch(`${TIKTOK_API}/adgroup/create/`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify(adgroupPayload),
+            });
+            let agData = await safeJson(agResp);
+
+            if (agData.code !== 0) {
+              // Fallback to smart_plus
+              agResp = await fetch(`${TIKTOK_API}/smart_plus/adgroup/create/`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ ...adgroupPayload, request_id: generateRequestId() }),
+              });
+              agData = await safeJson(agResp);
+            }
+
+            if (agData.code !== 0) {
+              results.push({
+                advertiser_id: targetAdvId,
+                copy: copyNum,
+                success: false,
+                campaign_id: newCampId,
+                error: `Campanha criada (${newCampId}), mas falha no conjunto: ${agData.message}`,
+              });
+              continue;
+            }
+
+            const newAgId = String(agData.data?.adgroup_id);
+
+            // 3) Create Ad — Spark Ad (tiktok_item_id) or Smart Creative (ACO)
+            let adSuccess = false;
+            let adError = "";
+
+            if (tiktok_item_id) {
+              // Spark Ad via /ad/create/ with tiktok_item_id
+              const adPayload: Record<string, any> = {
+                advertiser_id: targetAdvId,
+                adgroup_id: newAgId,
+                ad_name: `${copyName} - Spark Ad`,
+                tiktok_item_id,
+                identity_id: identity_id || "",
+                identity_type,
+                call_to_action,
+              };
+
+              if (landing_page_url) {
+                adPayload.landing_page_url = landing_page_url;
+              }
+
+              const adResp = await fetch(`${TIKTOK_API}/ad/create/`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(adPayload),
+              });
+              const adData = await safeJson(adResp);
+
+              if (adData.code === 0) {
+                adSuccess = true;
+              } else {
+                adError = adData.message || "Falha ao criar Spark Ad";
+              }
+            } else if (ad_texts.length > 0) {
+              // Smart Creative via /ad/aco/create/
+              const titleList = ad_texts.map((t: string) => ({ title: t }));
+
+              const acoPayload: Record<string, any> = {
+                advertiser_id: targetAdvId,
+                adgroup_id: newAgId,
+                title_list: titleList,
+                common_material: {
+                  ad_name: `${copyName} - Ad`,
+                  call_to_action_id: "",
+                  is_smart_creative: true,
+                },
+              };
+
+              if (call_to_action) {
+                acoPayload.call_to_action_list = [{ call_to_action }];
+              }
+
+              if (landing_page_url) {
+                acoPayload.landing_page_urls = [{ landing_page_url }];
+              }
+
+              const adResp = await fetch(`${TIKTOK_API}/ad/aco/create/`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(acoPayload),
+              });
+              const adData = await safeJson(adResp);
+
+              if (adData.code === 0) {
+                adSuccess = true;
+              } else {
+                adError = adData.message || "Falha ao criar Smart Creative Ad";
+              }
+            }
+
+            results.push({
+              advertiser_id: targetAdvId,
+              copy: copyNum,
+              success: true,
+              campaign_id: newCampId,
+              adgroup_id: newAgId,
+              error: adSuccess ? undefined : `Campanha+Conjunto criados, mas ad falhou: ${adError}`,
+            });
+          } catch (e: any) {
+            results.push({ advertiser_id: targetAdvId, copy: copyNum, success: false, error: e.message });
+          }
+        }
+      }
+
+      const succeeded = results.filter(r => r.success).length;
+      return new Response(JSON.stringify({
+        success: true,
+        results,
+        succeeded,
+        total: targetAdvIds.length * numCopies,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
