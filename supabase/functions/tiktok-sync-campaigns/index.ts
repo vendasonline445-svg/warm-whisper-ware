@@ -2263,19 +2263,19 @@ Deno.serve(async (req) => {
 
         const list = Array.isArray(data?.data?.list) ? data.data.list : [];
 
-        for (const item of list) {
-          const numericId = [item?.pixel_id, item?.id]
-            .map((candidate) => String(candidate ?? "").trim())
-            .find((candidate) => /^\d{6,30}$/.test(candidate));
+        console.log(`[get_pixels] Page ${page} returned ${list.length} items. Sample:`, JSON.stringify(list[0] ?? {}).slice(0, 300));
 
-          if (!numericId) continue;
+        for (const item of list) {
+          // Accept any non-empty pixel_id (numeric or alphanumeric like "D6GM4RBC77U...")
+          const rawId = String(item?.pixel_id ?? item?.id ?? "").trim();
+          if (!rawId) continue;
 
           const pixelCode = String(item?.pixel_code ?? item?.code ?? "").trim();
           const rawPixelName = String(item?.name ?? item?.pixel_name ?? "").trim();
-          const pixelName = rawPixelName || pixelCode || numericId;
+          const pixelName = rawPixelName || pixelCode || rawId;
 
           pixels.push({
-            pixel_id: numericId,
+            pixel_id: rawId,
             pixel_code: pixelCode,
             name: pixelName,
             status: String(item?.status ?? ""),
