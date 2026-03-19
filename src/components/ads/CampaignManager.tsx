@@ -201,8 +201,17 @@ export default function CampaignManager() {
         return;
       }
 
-      const thirtyDaysAgoDate = new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
-      const thirtyDaysAgoIso = new Date(Date.now() - 30 * 86400000).toISOString();
+      const daysMap: Record<DateRange, number> = { today: 0, "3d": 3, "7d": 7, "14d": 14, "30d": 30 };
+      const days = daysMap[dateRange];
+      const startDate = new Date();
+      if (days === 0) {
+        startDate.setHours(0, 0, 0, 0);
+      } else {
+        startDate.setDate(startDate.getDate() - days);
+        startDate.setHours(0, 0, 0, 0);
+      }
+      const startDateStr = startDate.toISOString().split("T")[0];
+      const startDateIso = startDate.toISOString();
 
       // 2) Read spend + sales sources in parallel
       const [costsRes, attribRes, purchaseRes] = await Promise.all([
