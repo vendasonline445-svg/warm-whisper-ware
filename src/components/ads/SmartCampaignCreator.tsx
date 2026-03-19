@@ -80,7 +80,7 @@ export default function SmartCampaignCreator() {
   const [optimizationGoal, setOptimizationGoal] = useState("CONVERT");
   const [optimizationEvent, setOptimizationEvent] = useState("COMPLETE_PAYMENT");
   const [landingPageUrl, setLandingPageUrl] = useState("");
-  const [callToAction, setCallToAction] = useState("LEARN_MORE");
+  const [selectedCTAs, setSelectedCTAs] = useState<string[]>(CTA_OPTIONS.map(c => c.value));
 
   // Spark Ads
   const [useSparkAds, setUseSparkAds] = useState(true);
