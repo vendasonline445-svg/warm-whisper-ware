@@ -1884,7 +1884,7 @@ Deno.serve(async (req) => {
               pacing: "PACING_MODE_SMOOTH",
               billing_event: "OCPM",
               bid_type,
-              creative_material_mode: tiktok_item_id ? "CUSTOM" : "SMART_CREATIVE",
+              creative_material_mode: (tiktok_item_id || (authorized_posts && authorized_posts.length > 0)) ? "CUSTOM" : "SMART_CREATIVE",
             };
 
             // Audience targeting
@@ -1941,31 +1941,67 @@ Deno.serve(async (req) => {
             let adError = "";
             let newAdId = "";
 
-            // Resolve list of spark items (support both single and multiple)
-            const allSparkItems: string[] = (tiktok_item_ids && tiktok_item_ids.length > 0)
-              ? tiktok_item_ids.filter((s: string) => s && s.trim())
-              : (tiktok_item_id ? [tiktok_item_id] : []);
+            // Resolve list of spark posts from authorized_posts or legacy tiktok_item_ids
+            let resolvedSparkPosts: Array<{ item_id: string; identity_id: string; identity_type: string }> = [];
 
-            if (allSparkItems.length > 0) {
-              // Create one Spark Ad per item_id
-              for (let si = 0; si < allSparkItems.length; si++) {
-                const itemId = allSparkItems[si].trim();
+            if (authorized_posts && authorized_posts.length > 0) {
+              // Use authorized_posts as primary source
+              for (const post of authorized_posts) {
+                let itemId = post.item_id || "";
+                const authCodeId = post.identity_id || post.auth_code || "";
+                const idType = post.identity_type || "AUTH_CODE";
 
-                // Find per-post identity from authorized_posts if available
-                const postAuth = authorized_posts?.find((p: any) => p.item_id === itemId);
-                const postIdentityId = postAuth?.identity_id || identity_id || "";
-                const postIdentityType = postAuth?.identity_type || identity_type;
+                // If item_id is a fallback (starts with "auth:"), resolve it via tt_video/info
+                if (itemId.startsWith("auth:") || !itemId) {
+                  if (authCodeId) {
+                    console.log(`[SmartCampaign] Resolving item_id for auth_code: ${authCodeId.slice(0, 15)}...`);
+                    const infoQuery = new URLSearchParams({
+                      advertiser_id: targetAdvId,
+                      auth_code: authCodeId,
+                    });
+                    const infoResp = await fetch(`${TIKTOK_API}/tt_video/info/?${infoQuery.toString()}`, { headers });
+                    const infoData = await safeJson(infoResp);
+                    const resolvedId = infoData?.data?.item_id || infoData?.data?.videos?.[0]?.item_id || "";
+                    if (resolvedId) {
+                      itemId = resolvedId;
+                      console.log(`[SmartCampaign] ✓ Resolved item_id: ${itemId}`);
+                    } else {
+                      console.warn(`[SmartCampaign] ✗ Could not resolve item_id for auth_code`);
+                    }
+                  }
+                }
+
+                if (itemId && !itemId.startsWith("auth:")) {
+                  resolvedSparkPosts.push({ item_id: itemId, identity_id: authCodeId, identity_type: idType });
+                }
+              }
+            } else {
+              // Legacy: use tiktok_item_ids / tiktok_item_id
+              const allItems: string[] = (tiktok_item_ids && tiktok_item_ids.length > 0)
+                ? tiktok_item_ids.filter((s: string) => s && s.trim())
+                : (tiktok_item_id ? [tiktok_item_id] : []);
+              resolvedSparkPosts = allItems.map((id: string) => ({
+                item_id: id.trim(),
+                identity_id: identity_id || "",
+                identity_type: identity_type || "AUTH_CODE",
+              }));
+            }
+
+            if (resolvedSparkPosts.length > 0) {
+              // Create one Spark Ad per resolved post
+              for (let si = 0; si < resolvedSparkPosts.length; si++) {
+                const spark = resolvedSparkPosts[si];
 
                 const adPayload: Record<string, any> = {
                   advertiser_id: targetAdvId,
                   adgroup_id: newAgId,
-                  ad_name: allSparkItems.length > 1
+                  ad_name: resolvedSparkPosts.length > 1
                     ? `${copyName} - Spark ${si + 1}`
                     : `${copyName} - Spark Ad`,
-                  identity_id: postIdentityId,
-                  identity_type: postIdentityType,
+                  identity_id: spark.identity_id,
+                  identity_type: spark.identity_type,
                   creatives: [{
-                    tiktok_item_id: itemId,
+                    tiktok_item_id: spark.item_id,
                     call_to_action,
                     ...(landing_page_url ? { landing_page_url } : {}),
                   }],
@@ -1982,7 +2018,7 @@ Deno.serve(async (req) => {
                   adSuccess = true;
                   const adIds = adData.data?.ad_ids || [];
                   if (!newAdId && adIds[0]) newAdId = String(adIds[0]);
-                  console.log(`[SmartCampaign] ✓ Spark Ad #${si + 1} created — item: ${itemId}, identity: ${postIdentityId.slice(0, 12)}...`);
+                  console.log(`[SmartCampaign] ✓ Spark Ad #${si + 1} created — item: ${spark.item_id}, identity: ${spark.identity_id.slice(0, 12)}...`);
                 } else {
                   adError = adData.message || `Falha ao criar Spark Ad #${si + 1}`;
                   console.warn(`[SmartCampaign] ✗ Spark Ad #${si + 1} failed:`, adData.message);
