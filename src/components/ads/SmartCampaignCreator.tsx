@@ -158,21 +158,67 @@ export default function SmartCampaignCreator() {
         body: { bc_id: selectedBc, action: "get_identities", advertiser_id: advId },
       });
       if (error) throw error;
-      console.log("Identities response:", data);
       const ids = data?.identities || [];
       setAvailableIdentities(ids);
       if (ids.length > 0) {
         setIdentityId(ids[0].identity_id);
         setIdentityType(ids[0].identity_type);
         toast({ title: `✅ ${ids.length} identidade(s) encontrada(s) automaticamente` });
-      } else {
-        toast({ title: "Nenhuma identidade encontrada", description: "O TikTok não retornou identidades para esta conta. Cole o Auth Code manualmente.", variant: "destructive" });
       }
+      // Don't show error toast here — we'll show the auth code UI instead
     } catch (err: any) {
       console.error("Fetch identities error:", err);
-      toast({ title: "Erro ao buscar identidades", description: err.message, variant: "destructive" });
     }
     setLoadingIdentities(false);
+  };
+
+  // Authorize a Spark Ads post using auth code
+  const authorizeSparkPost = async () => {
+    if (!authCode.trim() || !selectedAccounts.length || !selectedBc) return;
+    setAuthorizingPost(true);
+    try {
+      const advId = selectedAccounts[0];
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: {
+          bc_id: selectedBc,
+          action: "authorize_spark_post",
+          advertiser_id: advId,
+          auth_code: authCode.trim(),
+        },
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        toast({ title: "Falha na autorização", description: data?.error || "Verifique o Auth Code", variant: "destructive" });
+        setAuthorizingPost(false);
+        return;
+      }
+
+      // Auto-fill identity and item_id
+      setIdentityId(authCode.trim());
+      setIdentityType("AUTH_CODE");
+
+      if (data.item_id) {
+        // Add the item_id to spark items
+        const newItems = sparkItems[0] === "" ? [data.item_id] : [...sparkItems, data.item_id];
+        setSparkItems(newItems);
+        setAuthorizedPosts(prev => [...prev, {
+          auth_code: authCode.trim(),
+          item_id: data.item_id,
+          display_name: data.display_name || "Post autorizado",
+        }]);
+      }
+
+      toast({
+        title: "✅ Post autorizado com sucesso!",
+        description: data.item_id
+          ? `Item ID: ${data.item_id} — ${data.display_name || ""}`
+          : "Auth Code aplicado. Cole o Item ID manualmente se necessário.",
+      });
+      setAuthCode("");
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+    setAuthorizingPost(false);
   };
 
   // Auto-fetch identities when accounts are selected
