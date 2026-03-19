@@ -1,0 +1,492 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import {
+  Loader2, Rocket, Zap, ShieldCheck, Target, DollarSign,
+  Plus, Trash2, Layers, Sparkles, CheckCircle, XCircle
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+
+const db = supabase as any;
+
+interface CreationResult {
+  advertiser_id: string;
+  copy: number;
+  success: boolean;
+  campaign_id?: string;
+  adgroup_id?: string;
+  error?: string;
+}
+
+const CTA_OPTIONS = [
+  { value: "LEARN_MORE", label: "Saiba Mais" },
+  { value: "SHOP_NOW", label: "Comprar Agora" },
+  { value: "SIGN_UP", label: "Inscreva-se" },
+  { value: "BUY_NOW", label: "Compre Agora" },
+  { value: "CONTACT_US", label: "Entre em Contato" },
+  { value: "GET_QUOTE", label: "Solicitar Orçamento" },
+  { value: "SUBSCRIBE", label: "Assinar" },
+  { value: "ORDER_NOW", label: "Peça Agora" },
+  { value: "APPLY_NOW", label: "Aplique Agora" },
+  { value: "BOOK_NOW", label: "Reserve Agora" },
+  { value: "DOWNLOAD", label: "Download" },
+  { value: "VIEW_MORE", label: "Ver Mais" },
+];
+
+export default function SmartCampaignCreator() {
+  const [bcs, setBcs] = useState<any[]>([]);
+  const [selectedBc, setSelectedBc] = useState("");
+  const [accounts, setAccounts] = useState<Array<{ advertiser_id: string; advertiser_name: string; status: string }>>([]);
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+
+  // Campaign config
+  const [campaignName, setCampaignName] = useState("");
+  const [budget, setBudget] = useState("");
+  const [budgetMode, setBudgetMode] = useState("BUDGET_MODE_DAY");
+  const [bidType, setBidType] = useState("BID_TYPE_CUSTOM");
+  const [bid, setBid] = useState("");
+  const [pixelId, setPixelId] = useState("");
+  const [optimizationEvent, setOptimizationEvent] = useState("COMPLETE_PAYMENT");
+  const [landingPageUrl, setLandingPageUrl] = useState("");
+  const [callToAction, setCallToAction] = useState("LEARN_MORE");
+
+  // Spark Ads
+  const [useSparkAds, setUseSparkAds] = useState(true);
+  const [tiktokItemId, setTiktokItemId] = useState("");
+  const [identityId, setIdentityId] = useState("");
+  const [identityType, setIdentityType] = useState("AUTH_CODE");
+
+  // Smart Creative texts (when NOT using Spark Ads)
+  const [adTexts, setAdTexts] = useState<string[]>([""]);
+
+  // Bulk config
+  const [copies, setCopies] = useState(1);
+
+  // State
+  const [creating, setCreating] = useState(false);
+  const [results, setResults] = useState<CreationResult[]>([]);
+
+  useEffect(() => { loadBCs(); }, []);
+
+  const loadBCs = async () => {
+    const { data } = await db
+      .from("business_centers")
+      .select("*")
+      .eq("platform", "tiktok")
+      .not("access_token", "is", null)
+      .not("advertiser_id", "is", null);
+    setBcs(data || []);
+    if (data?.length === 1) setSelectedBc(data[0].id);
+  };
+
+  useEffect(() => {
+    if (!selectedBc) { setAccounts([]); setSelectedAccounts([]); return; }
+    loadAccounts();
+  }, [selectedBc]);
+
+  const loadAccounts = async () => {
+    setLoadingAccounts(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: selectedBc, action: "get_advertisers" },
+      });
+      if (error) throw error;
+      const list = (data?.data?.list || []);
+      setAccounts(list);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+    setLoadingAccounts(false);
+  };
+
+  const toggleAccount = (advId: string) => {
+    setSelectedAccounts(prev =>
+      prev.includes(advId) ? prev.filter(id => id !== advId) : [...prev, advId]
+    );
+  };
+
+  const selectAllActive = () => {
+    const activeIds = accounts
+      .filter(a => !["STATUS_DISABLE", "STATUS_PENDING_CONFIRM", "STATUS_CONFIRM_FAIL"].includes(a.status))
+      .map(a => a.advertiser_id);
+    setSelectedAccounts(activeIds);
+  };
+
+  const addAdText = () => {
+    if (adTexts.length < 5) setAdTexts([...adTexts, ""]);
+  };
+
+  const removeAdText = (index: number) => {
+    setAdTexts(adTexts.filter((_, i) => i !== index));
+  };
+
+  const updateAdText = (index: number, value: string) => {
+    const updated = [...adTexts];
+    updated[index] = value;
+    setAdTexts(updated);
+  };
+
+  const canSubmit = () => {
+    if (!campaignName || !budget || !selectedAccounts.length) return false;
+    if (bidType === "BID_TYPE_CUSTOM" && !bid) return false;
+    if (useSparkAds && (!tiktokItemId || !identityId)) return false;
+    if (!useSparkAds && !adTexts.some(t => t.trim())) return false;
+    return true;
+  };
+
+  const handleCreate = async () => {
+    if (!canSubmit()) return;
+    setCreating(true);
+    setResults([]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: {
+          bc_id: selectedBc,
+          action: "create_smart_campaign",
+          advertiser_id: selectedAccounts[0],
+          target_advertiser_ids: selectedAccounts,
+          campaign_name: campaignName,
+          budget: parseFloat(budget),
+          budget_mode: budgetMode,
+          bid_type: bidType,
+          bid: bid ? parseFloat(bid) : undefined,
+          pixel_id: pixelId || undefined,
+          optimization_event: optimizationEvent,
+          landing_page_url: landingPageUrl || undefined,
+          call_to_action: callToAction,
+          tiktok_item_id: useSparkAds ? tiktokItemId : undefined,
+          identity_id: useSparkAds ? identityId : undefined,
+          identity_type: useSparkAds ? identityType : undefined,
+          ad_texts: useSparkAds ? [] : adTexts.filter(t => t.trim()),
+          copies,
+        },
+      });
+
+      if (error) throw error;
+      setResults(data?.results || []);
+
+      const succeeded = data?.succeeded || 0;
+      const total = data?.total || 0;
+      toast({
+        title: `${succeeded}/${total} campanhas criadas com sucesso`,
+        description: succeeded < total ? `${total - succeeded} falharam` : "Todas as campanhas foram criadas!",
+        variant: succeeded === total ? "default" : "destructive",
+      });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+    setCreating(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Rocket className="h-5 w-5 text-primary" />
+        <h2 className="text-base font-bold">Criar Campanha Smart+</h2>
+        <Badge variant="outline" className="text-[9px]">BID Cap • Sem Pangle • Spark Ads</Badge>
+      </div>
+
+      {/* BC Selector */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label className="text-xs">Business Center</Label>
+          <Select value={selectedBc} onValueChange={setSelectedBc}>
+            <SelectTrigger className="h-8 text-xs mt-1">
+              <SelectValue placeholder="Selecione o BC" />
+            </SelectTrigger>
+            <SelectContent>
+              {bcs.map((bc: any) => (
+                <SelectItem key={bc.id} value={bc.id} className="text-xs">
+                  {bc.bc_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {selectedBc && (
+        <>
+          <Separator />
+
+          {/* Campaign Details */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Target className="h-4 w-4" /> Configuração da Campanha
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Nome da Campanha *</Label>
+                  <Input value={campaignName} onChange={e => setCampaignName(e.target.value)}
+                    placeholder="Ex: [Smart+] Produto X - BID R$15" className="h-8 text-xs mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs">Pixel ID</Label>
+                  <Input value={pixelId} onChange={e => setPixelId(e.target.value)}
+                    placeholder="ID do pixel TikTok" className="h-8 text-xs mt-1" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <Label className="text-xs">Orçamento (R$) *</Label>
+                  <Input type="number" step="0.01" value={budget} onChange={e => setBudget(e.target.value)}
+                    placeholder="50.00" className="h-8 text-xs mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs">Modo</Label>
+                  <Select value={budgetMode} onValueChange={setBudgetMode}>
+                    <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BUDGET_MODE_DAY" className="text-xs">Diário</SelectItem>
+                      <SelectItem value="BUDGET_MODE_TOTAL" className="text-xs">Total</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">BID Cap (R$) *</Label>
+                  <Input type="number" step="0.01" value={bid} onChange={e => setBid(e.target.value)}
+                    placeholder="15.00" className="h-8 text-xs mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs">Evento de Otimização</Label>
+                  <Select value={optimizationEvent} onValueChange={setOptimizationEvent}>
+                    <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="COMPLETE_PAYMENT" className="text-xs">Pagamento Completo</SelectItem>
+                      <SelectItem value="INITIATE_CHECKOUT" className="text-xs">Iniciar Checkout</SelectItem>
+                      <SelectItem value="ADD_TO_CART" className="text-xs">Add to Cart</SelectItem>
+                      <SelectItem value="VIEW_CONTENT" className="text-xs">View Content</SelectItem>
+                      <SelectItem value="CLICK" className="text-xs">Clique</SelectItem>
+                      <SelectItem value="CONVERT" className="text-xs">Conversão</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs">Landing Page URL</Label>
+                <Input value={landingPageUrl} onChange={e => setLandingPageUrl(e.target.value)}
+                  placeholder="https://seusite.com/produto" className="h-8 text-xs mt-1" />
+              </div>
+
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex-1">
+                  <p className="text-[10px] font-medium">Placement: TikTok Only</p>
+                  <p className="text-[9px] text-muted-foreground">Pangle e rede de audiência desabilitados automaticamente</p>
+                </div>
+                <Badge className="text-[9px] bg-primary/10 text-primary border-primary/20">Ativo</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Spark Ads / Creative */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Sparkles className="h-4 w-4" /> Criativo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Switch checked={useSparkAds} onCheckedChange={setUseSparkAds} />
+                  <Label className="text-xs font-medium">Usar Spark Ads</Label>
+                </div>
+                {useSparkAds && (
+                  <Badge variant="outline" className="text-[9px]">Post orgânico como anúncio</Badge>
+                )}
+              </div>
+
+              {useSparkAds ? (
+                <div className="space-y-3 border border-border rounded-lg p-3">
+                  <div>
+                    <Label className="text-xs">TikTok Item ID (Post) *</Label>
+                    <Input value={tiktokItemId} onChange={e => setTiktokItemId(e.target.value)}
+                      placeholder="ID do post TikTok (tt_video/info)" className="h-8 text-xs mt-1" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Identity ID *</Label>
+                      <Input value={identityId} onChange={e => setIdentityId(e.target.value)}
+                        placeholder="Auth code ou TT User ID" className="h-8 text-xs mt-1" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Tipo de Identidade</Label>
+                      <Select value={identityType} onValueChange={setIdentityType}>
+                        <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AUTH_CODE" className="text-xs">Auth Code</SelectItem>
+                          <SelectItem value="TT_USER" className="text-xs">TT User</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3 border border-border rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Textos do Anúncio (1-5)</Label>
+                    {adTexts.length < 5 && (
+                      <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={addAdText}>
+                        <Plus className="h-3 w-3 mr-1" /> Adicionar
+                      </Button>
+                    )}
+                  </div>
+                  {adTexts.map((text, i) => (
+                    <div key={i} className="flex gap-2">
+                      <Input value={text} onChange={e => updateAdText(i, e.target.value)}
+                        placeholder={`Texto ${i + 1} (12-40 chars)`}
+                        maxLength={40} className="h-8 text-xs flex-1" />
+                      {adTexts.length > 1 && (
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => removeAdText(i)}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Call to Action</Label>
+                  <Select value={callToAction} onValueChange={setCallToAction}>
+                    <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CTA_OPTIONS.map(cta => (
+                        <SelectItem key={cta.value} value={cta.value} className="text-xs">
+                          {cta.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Cópias por Conta</Label>
+                  <Input type="number" min={1} max={50} value={copies}
+                    onChange={e => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="h-8 text-xs mt-1" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Account Selection */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Layers className="h-4 w-4" /> Contas de Destino
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingAccounts ? (
+                <div className="flex items-center justify-center py-6 gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando contas...
+                </div>
+              ) : accounts.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">Nenhuma conta encontrada.</p>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[10px] text-muted-foreground">{selectedAccounts.length} conta(s) selecionada(s)</p>
+                    <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={selectAllActive}>
+                      Selecionar todas ativas
+                    </Button>
+                  </div>
+                  <div className="border border-border rounded-lg max-h-48 overflow-y-auto divide-y divide-border">
+                    {accounts.map((acc) => {
+                      const isDisabled = ["STATUS_DISABLE", "STATUS_PENDING_CONFIRM", "STATUS_CONFIRM_FAIL"].includes(acc.status);
+                      return (
+                        <label key={acc.advertiser_id}
+                          className={`flex items-center gap-3 px-3 py-2 text-xs transition-colors ${isDisabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-muted/50"}`}>
+                          <Checkbox
+                            checked={selectedAccounts.includes(acc.advertiser_id)}
+                            disabled={isDisabled}
+                            onCheckedChange={() => !isDisabled && toggleAccount(acc.advertiser_id)}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="truncate font-medium">{acc.advertiser_name}</p>
+                            <p className="text-[10px] font-mono text-muted-foreground">{acc.advertiser_id}</p>
+                          </div>
+                          <Badge variant={isDisabled ? "destructive" : "outline"} className="text-[9px]">
+                            {isDisabled ? "Suspensa" : "Ativa"}
+                          </Badge>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Summary & Create */}
+          {selectedAccounts.length > 0 && (
+            <Card className="border-primary/30">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium">Resumo da Criação</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {copies} cópia(s) × {selectedAccounts.length} conta(s) = <strong>{copies * selectedAccounts.length} campanha(s)</strong>
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant="outline" className="text-[9px]">BID Cap: R$ {bid || "—"}</Badge>
+                    <Badge variant="outline" className="text-[9px]">TikTok Only</Badge>
+                    <Badge variant="outline" className="text-[9px]">{useSparkAds ? "Spark Ad" : "Smart Creative"}</Badge>
+                  </div>
+                </div>
+                <Button onClick={handleCreate} className="w-full" disabled={!canSubmit() || creating}>
+                  {creating ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Criando campanhas...</>
+                  ) : (
+                    <><Rocket className="h-4 w-4 mr-2" /> Criar {copies * selectedAccounts.length} Campanha(s) Smart+</>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Results */}
+          {results.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Resultados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                  {results.map((r, i) => (
+                    <div key={i} className={`flex items-start gap-2 text-xs p-2 rounded ${r.success ? "bg-emerald-500/5" : "bg-destructive/5"}`}>
+                      {r.success ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" /> : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />}
+                      <div className="min-w-0">
+                        <p className="font-mono text-[10px] text-muted-foreground">{r.advertiser_id} (cópia {r.copy})</p>
+                        {r.campaign_id && <p className="text-[10px]">Campaign: {r.campaign_id}</p>}
+                        {r.error && <p className="text-[10px] text-destructive">{r.error}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
