@@ -62,35 +62,57 @@ async function resolveAdgroupPixelId(
   const value = String(rawPixelId).trim();
   if (!value) return null;
 
-  if (/^\d{6,30}$/.test(value)) {
-    return value;
-  }
+  const normalizedValue = value.toLowerCase();
+  const isNumericId = /^\d{6,30}$/.test(value);
+  const looksLikePixelCode = /^[a-z0-9_-]{6,64}$/i.test(value);
 
   const extractPixelId = (data: any): string | null => {
     const list = Array.isArray(data?.data?.list) ? data.data.list : [];
     if (!list.length) return null;
 
-    const exactMatch = list.find((px: any) => {
-      const code = String(px?.code || px?.pixel_code || "").trim().toLowerCase();
-      return code === value.toLowerCase();
-    });
+    const getCandidates = (px: any): string[] => [
+      px?.pixel_id,
+      px?.id,
+      px?.pixel_code,
+      px?.code,
+    ]
+      .map((candidate) => String(candidate ?? "").trim())
+      .filter(Boolean);
 
-    const fallback = exactMatch || list[0];
-    const pixelId = fallback?.pixel_id ?? fallback?.id;
-    return pixelId ? String(pixelId) : null;
+    const exactMatch = list.find((px: any) =>
+      getCandidates(px).some((candidate) => candidate.toLowerCase() === normalizedValue)
+    );
+
+    if (!exactMatch) return null;
+
+    const exactCandidate = getCandidates(exactMatch).find(
+      (candidate) => candidate.toLowerCase() === normalizedValue,
+    );
+
+    return exactCandidate || getCandidates(exactMatch)[0] || null;
   };
 
   try {
     const byCodeQuery = new URLSearchParams({
       advertiser_id: advertiserId,
       code: value,
-      page_size: "20",
+      page_size: "50",
     });
 
     const byCodeResp = await fetch(`${TIKTOK_API}/pixel/list/?${byCodeQuery.toString()}`, { headers });
     const byCodeData = await safeJson(byCodeResp);
     const directMatch = byCodeData?.code === 0 ? extractPixelId(byCodeData) : null;
     if (directMatch) return directMatch;
+
+    const byPixelCodeQuery = new URLSearchParams({
+      advertiser_id: advertiserId,
+      pixel_code: value,
+      page_size: "50",
+    });
+    const byPixelCodeResp = await fetch(`${TIKTOK_API}/pixel/list/?${byPixelCodeQuery.toString()}`, { headers });
+    const byPixelCodeData = await safeJson(byPixelCodeResp);
+    const pixelCodeMatch = byPixelCodeData?.code === 0 ? extractPixelId(byPixelCodeData) : null;
+    if (pixelCodeMatch) return pixelCodeMatch;
 
     const fallbackQuery = new URLSearchParams({
       advertiser_id: advertiserId,
@@ -99,10 +121,14 @@ async function resolveAdgroupPixelId(
     const fallbackResp = await fetch(`${TIKTOK_API}/pixel/list/?${fallbackQuery.toString()}`, { headers });
     const fallbackData = await safeJson(fallbackResp);
     const fallbackMatch = fallbackData?.code === 0 ? extractPixelId(fallbackData) : null;
-
     if (fallbackMatch) return fallbackMatch;
   } catch (error) {
     console.warn(`[SmartCampaign] Pixel resolve failed for "${value}":`, error);
+  }
+
+  if (isNumericId || looksLikePixelCode) {
+    console.warn(`[SmartCampaign] Using raw pixel identifier without lookup match: ${value}`);
+    return value;
   }
 
   return null;
@@ -1928,7 +1954,7 @@ Deno.serve(async (req) => {
       for (const targetAdvId of targetAdvIds) {
         const resolvedPixelId = await resolveAdgroupPixelId(headers, targetAdvId, pixel_id);
         if (pixel_id && !resolvedPixelId) {
-          const pixelError = `Pixel inválido para criação de campanha: "${String(pixel_id).slice(0, 64)}". Informe um pixel numérico válido da conta.`;
+          const pixelError = `Pixel inválido para criação de campanha: "${String(pixel_id).slice(0, 64)}". Informe um Pixel ID/Code válido da conta.`;
           console.warn(`[SmartCampaign] ${pixelError} advertiser=${targetAdvId}`);
           for (let copyNum = 1; copyNum <= numCopies; copyNum++) {
             results.push({
