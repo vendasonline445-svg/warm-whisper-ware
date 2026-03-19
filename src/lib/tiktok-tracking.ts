@@ -121,6 +121,16 @@ export function normalizePhone(phone: string): string {
   return "+55" + digits;
 }
 
+// ── _ttp cookie reader ────────────────────────────────────────────────
+export function getTTPCookie(): string | undefined {
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)_ttp=([^;]*)/);
+    return match?.[1] || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // ── ttclid cache (7-day attribution window) ───────────────────────────
 
 export function captureTTClid() {
@@ -166,9 +176,8 @@ export async function cacheUserIdentity(
   }
 
   if (phone && phone.trim()) {
-    const digits = phone.replace(/\D/g, "");
-    const normalized = "+55" + (digits.startsWith("55") ? digits.slice(2) : digits);
-    identity.phone_hash = await sha256(normalized.replace("+", ""));
+    const normalized = normalizePhone(phone); // E.164 with +
+    identity.phone_hash = await sha256(normalized);
   }
 
   try {
@@ -324,7 +333,7 @@ export async function identifyTikTokUser(data: {
   }
 
   if (data.phone && data.phone.trim()) {
-    const normalized = normalizePhone(data.phone).replace("+", "");
+    const normalized = normalizePhone(data.phone); // E.164 with +
     identifyData.phone_number = await sha256(normalized);
   }
 
@@ -368,9 +377,9 @@ export async function setUserData(data: {
   phone?: string;
   externalId?: string;
 }) {
-  if (data.email && data.email.trim()) _userData.email_hash = await sha256(data.email);
+  if (data.email && data.email.trim()) _userData.email_hash = await sha256(data.email.trim().toLowerCase());
   if (data.phone && data.phone.trim()) {
-    const normalized = normalizePhone(data.phone).replace("+", "");
+    const normalized = normalizePhone(data.phone); // E.164 with + for proper hashing
     _userData.phone_hash = await sha256(normalized);
   }
   if (data.externalId && data.externalId.trim()) {
@@ -487,7 +496,7 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
       try { return localStorage.getItem("crm_user_phone") || ""; } catch { return ""; }
     })();
     if (cachedPhone.trim()) {
-      const normalized = normalizePhone(cachedPhone).replace("+", "");
+      const normalized = normalizePhone(cachedPhone); // E.164 with + for proper hashing
       phoneHash = await sha256(normalized);
       console.log(`${DEBUG} Phone hash generated from crm_user_phone fallback`);
     }
@@ -504,13 +513,17 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
     }
   }
 
+  const ttpCookie = getTTPCookie();
+
   const baseUserData = {
     email: emailHash,
     phone_number: phoneHash,
     external_id: storedUser.external_id_hash || visitorId || "",
     ttclid: ttclid || "",
+    ttp: ttpCookie || "",
     user_agent: navigator.userAgent,
     page_url: window.location.href,
+    referrer: document.referrer || "",
   };
 
   // Enrich with cached identity (fills email/phone for non-checkout events)
