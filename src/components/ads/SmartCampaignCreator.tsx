@@ -392,23 +392,61 @@ export default function SmartCampaignCreator() {
                       placeholder="ID do post TikTok (tt_video/info)" className="h-8 text-xs mt-1" />
                     <p className="text-[9px] text-muted-foreground mt-1">Enviado dentro de creatives[].tiktok_item_id conforme v1.3</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3">
                     <div>
-                      <Label className="text-xs">Identity ID * (obrigatório v1.3)</Label>
-                      <Input value={identityId} onChange={e => setIdentityId(e.target.value)}
-                        placeholder="Auth code ou TT User ID" className="h-8 text-xs mt-1" />
+                      <div className="flex items-center justify-between mb-1">
+                        <Label className="text-xs">Identity ID *</Label>
+                        <Button
+                          size="sm" variant="outline" className="h-6 text-[10px]"
+                          onClick={() => selectedAccounts[0] && fetchIdentities(selectedAccounts[0])}
+                          disabled={loadingIdentities || !selectedAccounts.length}
+                        >
+                          {loadingIdentities ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                          Buscar do TikTok
+                        </Button>
+                      </div>
+                      {availableIdentities.length > 0 ? (
+                        <Select value={identityId} onValueChange={(val) => {
+                          setIdentityId(val);
+                          const found = availableIdentities.find(i => i.identity_id === val);
+                          if (found) setIdentityType(found.identity_type);
+                        }}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Selecione uma identidade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableIdentities.map(id => (
+                              <SelectItem key={id.identity_id} value={id.identity_id} className="text-xs">
+                                {id.display_name} ({id.identity_type}) — {id.identity_id.slice(0, 12)}...
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input value={identityId} onChange={e => setIdentityId(e.target.value)}
+                          placeholder="Clique 'Buscar do TikTok' ou cole manualmente" className="h-8 text-xs" />
+                      )}
+                      <p className="text-[9px] text-muted-foreground mt-1">
+                        {availableIdentities.length > 0
+                          ? `✅ ${availableIdentities.length} identidade(s) encontrada(s) — tipo: ${identityType}`
+                          : "Busque automaticamente ou cole Auth Code / TT User ID manualmente"
+                        }
+                      </p>
                     </div>
-                    <div>
-                      <Label className="text-xs">Tipo de Identidade</Label>
-                      <Select value={identityType} onValueChange={setIdentityType}>
-                        <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AUTH_CODE" className="text-xs">Auth Code</SelectItem>
-                          <SelectItem value="TT_USER" className="text-xs">TT User</SelectItem>
-                          <SelectItem value="BC_AUTH_TT" className="text-xs">BC Auth TT</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {availableIdentities.length === 0 && (
+                      <div>
+                        <Label className="text-xs">Tipo de Identidade</Label>
+                        <Select value={identityType} onValueChange={setIdentityType}>
+                          <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="AUTH_CODE" className="text-xs">Auth Code</SelectItem>
+                            <SelectItem value="TT_USER" className="text-xs">TT User</SelectItem>
+                            <SelectItem value="BC_AUTH_TT" className="text-xs">BC Auth TT</SelectItem>
+                            <SelectItem value="CUSTOMIZED_USER" className="text-xs">Customized User</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
