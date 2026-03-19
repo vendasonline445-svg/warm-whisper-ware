@@ -1928,7 +1928,17 @@ Deno.serve(async (req) => {
       for (const targetAdvId of targetAdvIds) {
         const resolvedPixelId = await resolveAdgroupPixelId(headers, targetAdvId, pixel_id);
         if (pixel_id && !resolvedPixelId) {
-          console.warn(`[SmartCampaign] Pixel não resolvido para advertiser=${targetAdvId}. Valor recebido: ${String(pixel_id).slice(0, 64)}`);
+          const pixelError = `Pixel inválido para criação de campanha: "${String(pixel_id).slice(0, 64)}". Informe um pixel numérico válido da conta.`;
+          console.warn(`[SmartCampaign] ${pixelError} advertiser=${targetAdvId}`);
+          for (let copyNum = 1; copyNum <= numCopies; copyNum++) {
+            results.push({
+              advertiser_id: targetAdvId,
+              copy: copyNum,
+              success: false,
+              error: pixelError,
+            });
+          }
+          continue;
         }
 
         for (let copyNum = 1; copyNum <= numCopies; copyNum++) {
