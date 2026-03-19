@@ -153,24 +153,26 @@ export default function SmartCampaignCreator() {
         body: { bc_id: selectedBc, action: "get_identities", advertiser_id: advId },
       });
       if (error) throw error;
+      console.log("Identities response:", data);
       const ids = data?.identities || [];
       setAvailableIdentities(ids);
       if (ids.length > 0) {
         setIdentityId(ids[0].identity_id);
         setIdentityType(ids[0].identity_type);
-        toast({ title: `${ids.length} identidade(s) encontrada(s)` });
+        toast({ title: `✅ ${ids.length} identidade(s) encontrada(s) automaticamente` });
       } else {
-        toast({ title: "Nenhuma identidade encontrada", description: "Use Auth Code manual", variant: "destructive" });
+        toast({ title: "Nenhuma identidade encontrada", description: "O TikTok não retornou identidades para esta conta. Cole o Auth Code manualmente.", variant: "destructive" });
       }
     } catch (err: any) {
+      console.error("Fetch identities error:", err);
       toast({ title: "Erro ao buscar identidades", description: err.message, variant: "destructive" });
     }
     setLoadingIdentities(false);
   };
 
-  // Auto-fetch identities when first account is selected
+  // Auto-fetch identities when accounts are selected
   useEffect(() => {
-    if (selectedAccounts.length > 0 && useSparkAds && availableIdentities.length === 0) {
+    if (selectedAccounts.length > 0 && useSparkAds) {
       fetchIdentities(selectedAccounts[0]);
     }
   }, [selectedAccounts, useSparkAds]);
