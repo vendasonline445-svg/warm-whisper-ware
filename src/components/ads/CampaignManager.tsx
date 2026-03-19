@@ -92,6 +92,7 @@ export default function CampaignManager() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<CampaignSortBy>("spend");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [dateRange, setDateRange] = useState<DateRange>("today");
   const [metricsMap, setMetricsMap] = useState<Record<string, CampaignMetrics>>({});
 
   // Duplicate dialog
