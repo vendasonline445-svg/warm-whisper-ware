@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import {
   Loader2, Rocket, ShieldCheck, Target,
-  Plus, Trash2, Layers, Sparkles, CheckCircle, XCircle
+  Plus, Trash2, Layers, Sparkles, CheckCircle, XCircle, RefreshCw
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
