@@ -72,7 +72,7 @@ async function resolveAdgroupPixelId(
     try {
       const query = new URLSearchParams({
         advertiser_id: advertiserId,
-        page_size: "100",
+        page_size: "20",
       });
       const resp = await fetch(`${TIKTOK_API}/pixel/list/?${query.toString()}`, { headers });
       const data = await safeJson(resp);
@@ -2221,7 +2221,7 @@ Deno.serve(async (req) => {
 
       const pixels: Array<{ pixel_id: string; pixel_code: string; name: string; status: string }> = [];
       let page = 1;
-      const pageSize = 100;
+      const pageSize = 20;
 
       while (true) {
         const query = new URLSearchParams({
