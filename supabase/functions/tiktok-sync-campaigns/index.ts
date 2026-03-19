@@ -1045,7 +1045,15 @@ Deno.serve(async (req) => {
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
       const startDate = date_from || weekAgo;
       const endDate = date_to || today;
-      const reportMetrics = ["spend", "impressions", "clicks", "cpc", "cpm", "ctr", "conversion", "cost_per_conversion"];
+      const reportMetrics = [
+        "spend", "impressions", "clicks", "cpc", "cpm", "ctr",
+        "conversion", "cost_per_conversion",
+        "real_time_conversion", "real_time_cost_per_conversion",
+        "video_views_p25", "video_views_p50", "video_views_p75", "video_views_p100",
+        "average_video_play",
+        "likes", "comments", "shares", "follows", "profile_visits",
+        "reach", "frequency",
+      ];
       const reportDimensions = ["campaign_id", "stat_time_day"];
 
       const rows: any[] = [];
