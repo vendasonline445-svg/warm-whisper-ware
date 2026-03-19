@@ -71,13 +71,37 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Skip BC balance endpoint — only monitoring status
+      // Check BC-level balance (not individual accounts)
+      if (bc.bc_external_id) {
+        try {
+          const balResp = await fetch(
+            `${TIKTOK_API}/bc/balance/get/?bc_id=${bc.bc_external_id}`,
+            { headers }
+          );
+          const balData = await safeJson(balResp);
+          if (balData.code === 0 && balData.data) {
+            const bcBalance = Number(balData.data.balance || balData.data.cash_balance || 0);
+            if (bcBalance <= 0) {
+              allAlerts.push({ bc_name: bc.bc_name, advertiser_id: "-", name: `BC: ${bc.bc_name}`, issue: "bc_balance", detail: `Saldo BC: R$ ${bcBalance.toFixed(2)}` });
+            } else if (bcBalance < 100) {
+              allAlerts.push({ bc_name: bc.bc_name, advertiser_id: "-", name: `BC: ${bc.bc_name}`, issue: "bc_low_balance", detail: `Saldo BC baixo: R$ ${bcBalance.toFixed(2)}` });
+            }
+          }
+        } catch (e) {
+          console.error(`Error fetching BC balance for ${bc.bc_name}:`, e);
+        }
+      }
     }
 
-    // Send Pushcut only if accounts went down
+    // Send Pushcut if accounts went down OR BC balance issue
     let pushcutSent = false;
     if (allAlerts.length > 0) {
-      let text = `🔴 ${allAlerts.length} conta(s) caiu(ram):\n\n`;
+      const statusAlerts = allAlerts.filter(a => a.issue === "status");
+      const balanceAlerts = allAlerts.filter(a => a.issue === "bc_balance" || a.issue === "bc_low_balance");
+
+      let text = "";
+      if (statusAlerts.length > 0) {
+        text += `🔴 ${statusAlerts.length} conta(s) caiu(ram):\n`;
       allAlerts.slice(0, 10).forEach(a => {
         const statusLabel: Record<string, string> = {
           STATUS_DISABLE: "Desativada",
