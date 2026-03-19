@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Megaphone, Palette, Zap, Wallet, Plus, Trash2, Pencil, Play, Pause, AlertTriangle, Link2, RefreshCw, ExternalLink, Rocket, ShieldBan, Activity } from "lucide-react";
+import { Megaphone, Palette, Zap, Wallet, Plus, Trash2, Pencil, Play, Pause, AlertTriangle, Link2, RefreshCw, ExternalLink, Rocket, ShieldBan, Activity, CalendarDays } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import TikTokConnect from "@/components/ads/TikTokConnect";
 import CampaignManager from "@/components/ads/CampaignManager";
@@ -115,6 +115,20 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
       ...v,
       avgDaily: v.days > 0 ? Math.round(v.totalSpend / v.days) : 0,
     }));
+  }, [costs]);
+
+  // ── Daily spend breakdown ──
+  const dailySpend = useMemo(() => {
+    const byDate: Record<string, { date: string; totalSpend: number; campaigns: number; campaignNames: Set<string> }> = {};
+    costs.forEach((c: any) => {
+      const d = c.date;
+      if (!byDate[d]) byDate[d] = { date: d, totalSpend: 0, campaigns: 0, campaignNames: new Set() };
+      byDate[d].totalSpend += c.spend || 0;
+      byDate[d].campaignNames.add(c.campaigns?.campaign_name || c.campaign_id || "—");
+    });
+    return Object.values(byDate)
+      .map(v => ({ ...v, campaigns: v.campaignNames.size }))
+      .sort((a, b) => b.date.localeCompare(a.date));
   }, [costs]);
 
   return (
@@ -427,6 +441,37 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
                     </TableRow>
                   ))}
                   {!budgetSummary.length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum dado de custo registrado</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+          {/* Daily spend breakdown */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base">Gasto por Dia</CardTitle>
+              </div>
+              <p className="text-xs text-muted-foreground">Controle diário de quanto foi gasto em cada dia</p>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead className="text-right">Spend do Dia</TableHead>
+                    <TableHead className="text-right">Campanhas Ativas</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dailySpend.map(d => (
+                    <TableRow key={d.date}>
+                      <TableCell className="font-medium">{new Date(d.date + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold">{fmtMoney(d.totalSpend)}</TableCell>
+                      <TableCell className="text-right text-xs">{d.campaigns}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!dailySpend.length && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Nenhum dado</TableCell></TableRow>}
                 </TableBody>
               </Table>
             </CardContent>
