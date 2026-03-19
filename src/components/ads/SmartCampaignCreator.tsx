@@ -84,7 +84,7 @@ export default function SmartCampaignCreator() {
 
   // Spark Ads
   const [useSparkAds, setUseSparkAds] = useState(true);
-  const [tiktokItemId, setTiktokItemId] = useState("");
+  const [sparkItems, setSparkItems] = useState<string[]>([""]);
   const [identityId, setIdentityId] = useState("");
   const [identityType, setIdentityType] = useState("AUTH_CODE");
   const [availableIdentities, setAvailableIdentities] = useState<Array<{ identity_id: string; identity_type: string; display_name: string }>>([]);
