@@ -62,34 +62,39 @@ async function resolveAdgroupPixelId(
   const value = String(rawPixelId).trim();
   if (!value) return null;
 
+  if (/^\d{6,30}$/.test(value)) return value;
+
   const normalizedValue = value.toLowerCase();
-  const isNumericId = /^\d{6,30}$/.test(value);
-  const looksLikePixelCode = /^[a-z0-9_-]{6,64}$/i.test(value);
+
+  const getNumericPixelId = (px: any): string | null => {
+    const candidates = [px?.pixel_id, px?.id]
+      .map((candidate) => String(candidate ?? "").trim())
+      .filter(Boolean);
+
+    const numeric = candidates.find((candidate) => /^\d{6,30}$/.test(candidate));
+    return numeric || null;
+  };
 
   const extractPixelId = (data: any): string | null => {
     const list = Array.isArray(data?.data?.list) ? data.data.list : [];
     if (!list.length) return null;
 
-    const getCandidates = (px: any): string[] => [
-      px?.pixel_id,
-      px?.id,
-      px?.pixel_code,
-      px?.code,
-    ]
-      .map((candidate) => String(candidate ?? "").trim())
-      .filter(Boolean);
+    const exactMatch = list.find((px: any) => {
+      const aliases = [px?.pixel_code, px?.code, px?.pixel_id, px?.id]
+        .map((candidate) => String(candidate ?? "").trim().toLowerCase())
+        .filter(Boolean);
+      return aliases.includes(normalizedValue);
+    });
 
-    const exactMatch = list.find((px: any) =>
-      getCandidates(px).some((candidate) => candidate.toLowerCase() === normalizedValue)
-    );
+    if (exactMatch) {
+      return getNumericPixelId(exactMatch);
+    }
 
-    if (!exactMatch) return null;
+    if (list.length === 1) {
+      return getNumericPixelId(list[0]);
+    }
 
-    const exactCandidate = getCandidates(exactMatch).find(
-      (candidate) => candidate.toLowerCase() === normalizedValue,
-    );
-
-    return exactCandidate || getCandidates(exactMatch)[0] || null;
+    return null;
   };
 
   try {
@@ -124,11 +129,6 @@ async function resolveAdgroupPixelId(
     if (fallbackMatch) return fallbackMatch;
   } catch (error) {
     console.warn(`[SmartCampaign] Pixel resolve failed for "${value}":`, error);
-  }
-
-  if (isNumericId || looksLikePixelCode) {
-    console.warn(`[SmartCampaign] Using raw pixel identifier without lookup match: ${value}`);
-    return value;
   }
 
   return null;

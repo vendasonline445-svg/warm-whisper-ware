@@ -27,6 +27,13 @@ interface CreationResult {
   error?: string;
 }
 
+interface TikTokPixelOption {
+  pixel_id: string;
+  pixel_code: string;
+  name: string;
+  status?: string;
+}
+
 const CTA_OPTIONS = [
   { value: "LEARN_MORE", label: "Saiba Mais" },
   { value: "SHOP_NOW", label: "Comprar Agora" },
