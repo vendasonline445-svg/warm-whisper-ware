@@ -313,9 +313,12 @@ export default function SmartCampaignCreator() {
 
       const succeeded = data?.succeeded || 0;
       const total = data?.total || 0;
+      const firstError = (data?.results || []).find((r: any) => !r.success)?.error;
       toast({
         title: `${succeeded}/${total} campanhas criadas com sucesso`,
-        description: succeeded < total ? `${total - succeeded} falharam` : "Todas as campanhas foram criadas!",
+        description: succeeded < total
+          ? `${total - succeeded} falharam${firstError ? ` • ${String(firstError).slice(0, 180)}` : ""}`
+          : "Todas as campanhas foram criadas!",
         variant: succeeded === total ? "default" : "destructive",
       });
     } catch (err: any) {
