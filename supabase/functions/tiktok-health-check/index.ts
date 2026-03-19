@@ -102,16 +102,21 @@ Deno.serve(async (req) => {
       let text = "";
       if (statusAlerts.length > 0) {
         text += `🔴 ${statusAlerts.length} conta(s) caiu(ram):\n`;
-      allAlerts.slice(0, 10).forEach(a => {
-        const statusLabel: Record<string, string> = {
-          STATUS_DISABLE: "Desativada",
-          STATUS_LIMIT: "Limitada",
-          STATUS_LIMIT_PART: "Parcialmente Limitada",
-          STATUS_CONFIRM_FAIL: "Confirmação Falhou",
-          STATUS_CONFIRM_FAIL_END: "Falha Definitiva",
-        };
-        text += `• ${a.name} (${a.bc_name}) — ${statusLabel[a.detail] || a.detail}\n`;
-      });
+        statusAlerts.slice(0, 10).forEach(a => {
+          const statusLabel: Record<string, string> = {
+            STATUS_DISABLE: "Desativada",
+            STATUS_LIMIT: "Limitada",
+            STATUS_LIMIT_PART: "Parcialmente Limitada",
+            STATUS_CONFIRM_FAIL: "Confirmação Falhou",
+            STATUS_CONFIRM_FAIL_END: "Falha Definitiva",
+          };
+          text += `• ${a.name} (${a.bc_name}) — ${statusLabel[a.detail] || a.detail}\n`;
+        });
+      }
+      if (balanceAlerts.length > 0) {
+        text += `\n💰 Saldo da BC:\n`;
+        balanceAlerts.forEach(a => { text += `• ${a.detail}\n`; });
+      }
 
       try {
         const pushResp = await fetch(PUSHCUT_URL, {
