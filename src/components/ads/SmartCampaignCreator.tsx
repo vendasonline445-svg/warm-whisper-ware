@@ -116,6 +116,8 @@ export default function SmartCampaignCreator() {
   // State
   const [creating, setCreating] = useState(false);
   const [results, setResults] = useState<CreationResult[]>([]);
+  const [pixels, setPixels] = useState<TikTokPixelOption[]>([]);
+  const [loadingPixels, setLoadingPixels] = useState(false);
 
   useEffect(() => { loadBCs(); }, []);
 
