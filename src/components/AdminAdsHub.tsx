@@ -7,16 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Megaphone, Palette, Zap, Wallet, Plus, Trash2, Pencil, Play, Pause, AlertTriangle, Link2, RefreshCw, ExternalLink, Rocket, ShieldBan } from "lucide-react";
+import { Megaphone, Palette, Zap, Wallet, Plus, Trash2, Pencil, Play, Pause, AlertTriangle, Link2, RefreshCw, ExternalLink, Rocket, ShieldBan, Activity } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import TikTokConnect from "@/components/ads/TikTokConnect";
 import CampaignManager from "@/components/ads/CampaignManager";
 import SmartCampaignCreator from "@/components/ads/SmartCampaignCreator";
 import BlockedWordsManager from "@/components/ads/BlockedWordsManager";
+import AccountHealthMonitor from "@/components/ads/AccountHealthMonitor";
 
 const db = supabase as any;
 
-type SubTab = "campaigns" | "creatives" | "automation" | "budgets" | "connect" | "smart_create" | "blocked_words";
+type SubTab = "campaigns" | "creatives" | "automation" | "budgets" | "connect" | "smart_create" | "blocked_words" | "health";
 
 const SUB_TABS: { key: SubTab; label: string; icon: React.ReactNode }[] = [
   { key: "connect", label: "Conexão", icon: <Link2 className="h-4 w-4" /> },
@@ -26,6 +27,7 @@ const SUB_TABS: { key: SubTab; label: string; icon: React.ReactNode }[] = [
   { key: "automation", label: "Automação", icon: <Zap className="h-4 w-4" /> },
   { key: "budgets", label: "Budgets", icon: <Wallet className="h-4 w-4" /> },
   { key: "blocked_words", label: "Blocked Words", icon: <ShieldBan className="h-4 w-4" /> },
+  { key: "health", label: "Saúde", icon: <Activity className="h-4 w-4" /> },
 ];
 
 const fmtMoney = (v: number) => `R$ ${(v / 100).toFixed(2)}`;
@@ -129,7 +131,7 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
         ))}
       </div>
 
-      {loading && subTab !== "connect" && subTab !== "smart_create" && subTab !== "blocked_words" && <p className="text-center text-muted-foreground py-8">Carregando...</p>}
+      {loading && subTab !== "connect" && subTab !== "smart_create" && subTab !== "blocked_words" && subTab !== "health" && <p className="text-center text-muted-foreground py-8">Carregando...</p>}
 
       {/* ── CONNECT ── */}
       {subTab === "connect" && <TikTokConnect onSynced={fetchData} />}
@@ -138,6 +140,10 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
       {subTab === "smart_create" && <SmartCampaignCreator />}
 
       {/* ── BLOCKED WORDS ── */}
+      {subTab === "blocked_words" && <BlockedWordsManager />}
+
+      {/* ── HEALTH MONITOR ── */}
+      {subTab === "health" && <AccountHealthMonitor />}
       {subTab === "blocked_words" && <BlockedWordsManager />}
 
       {/* ── CAMPAIGNS ── */}

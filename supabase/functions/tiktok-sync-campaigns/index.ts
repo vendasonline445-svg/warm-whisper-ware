@@ -664,7 +664,7 @@ Deno.serve(async (req) => {
       "Access-Token": bc.access_token,
     };
 
-    // ── Action: get advertiser accounts (with status) ──
+    // ── Action: get advertiser accounts (with full info + balance) ──
     if (action === "get_advertisers") {
       const resp = await fetch(
         `${TIKTOK_API}/oauth2/advertiser/get/?app_id=${Deno.env.get("TIKTOK_APP_ID")}&secret=${Deno.env.get("TIKTOK_APP_SECRET")}&access_token=${bc.access_token}`,
@@ -675,21 +675,19 @@ Deno.serve(async (req) => {
       const advList = data?.data?.list || [];
       const advIds = advList.map((a: any) => String(a.advertiser_id));
 
-      const statusMap: Record<string, { status: string; name: string }> = {};
+      // Fetch full advertiser info in batches of 100
+      const infoMap: Record<string, any> = {};
       for (let i = 0; i < advIds.length; i += 100) {
         const batch = advIds.slice(i, i + 100);
         try {
           const infoResp = await fetch(
-            `${TIKTOK_API}/advertiser/info/?advertiser_ids=${JSON.stringify(batch)}&fields=["advertiser_id","name","status","description"]`,
+            `${TIKTOK_API}/advertiser/info/?advertiser_ids=${JSON.stringify(batch)}&fields=${JSON.stringify(["advertiser_id","name","status","timezone","currency","balance","create_time","description","rejection_reason","role","owner_bc_id","contacter","email","telephone","address","license_url","company","promotion_area","industry"])}`,
             { headers }
           );
           const infoData = await safeJson(infoResp);
           if (infoData.code === 0 && infoData.data?.list) {
             for (const info of infoData.data.list) {
-              statusMap[String(info.advertiser_id)] = {
-                status: info.status || "STATUS_UNKNOWN",
-                name: info.name || String(info.advertiser_id),
-              };
+              infoMap[String(info.advertiser_id)] = info;
             }
           }
         } catch (e) {
@@ -697,17 +695,212 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Fetch balance data via BC endpoint
+      const balanceMap: Record<string, any> = {};
+      if (bc.bc_external_id) {
+        try {
+          let page = 1;
+          let hasMore = true;
+          while (hasMore && page <= 10) {
+            const balResp = await fetch(
+              `${TIKTOK_API}/advertiser/balance/get/?bc_id=${bc.bc_external_id}&page=${page}&page_size=100`,
+              { headers }
+            );
+            const balData = await safeJson(balResp);
+            if (balData.code === 0 && balData.data?.list) {
+              for (const b of balData.data.list) {
+                balanceMap[String(b.advertiser_id)] = {
+                  balance: b.balance || 0,
+                  cash: b.cash || 0,
+                  grant: b.grant || 0,
+                  transfer_in: b.transfer_in || 0,
+                  transfer_out: b.transfer_out || 0,
+                };
+              }
+              const total = balData.data?.page_info?.total_number || 0;
+              hasMore = page * 100 < total;
+              page++;
+            } else {
+              hasMore = false;
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching balance data:", e);
+        }
+      }
+
       const advertisers = advList.map((adv: any) => {
         const id = String(adv.advertiser_id);
-        const info = statusMap[id];
+        const info = infoMap[id] || {};
+        const bal = balanceMap[id] || {};
         return {
           advertiser_id: id,
-          advertiser_name: info?.name || adv.advertiser_name || id,
-          status: info?.status || "STATUS_UNKNOWN",
+          advertiser_name: info.name || adv.advertiser_name || id,
+          status: info.status || "STATUS_UNKNOWN",
+          timezone: info.timezone || "",
+          currency: info.currency || "",
+          balance: bal.balance ?? info.balance ?? 0,
+          cash: bal.cash ?? 0,
+          grant: bal.grant ?? 0,
+          create_time: info.create_time || "",
+          rejection_reason: info.rejection_reason || "",
+          role: info.role || "",
+          company: info.company || "",
+          email: info.email || "",
+          industry: info.industry || "",
+          promotion_area: info.promotion_area || "",
         };
       });
 
       return new Response(JSON.stringify({ code: 0, data: { list: advertisers } }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: check account health & send Pushcut alerts ──
+    if (action === "check_account_health") {
+      const { pushcut_url } = body;
+      const advIds = (bc.advertiser_id || "").split(",").map((id: string) => id.trim()).filter(Boolean);
+
+      if (!advIds.length) {
+        return new Response(JSON.stringify({ error: "No advertiser IDs in BC" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Fetch info for all accounts
+      const alerts: Array<{ advertiser_id: string; name: string; issue: string; detail: string }> = [];
+      
+      for (let i = 0; i < advIds.length; i += 100) {
+        const batch = advIds.slice(i, i + 100);
+        try {
+          const infoResp = await fetch(
+            `${TIKTOK_API}/advertiser/info/?advertiser_ids=${JSON.stringify(batch)}&fields=${JSON.stringify(["advertiser_id","name","status","balance"])}`,
+            { headers }
+          );
+          const infoData = await safeJson(infoResp);
+          if (infoData.code === 0 && infoData.data?.list) {
+            for (const info of infoData.data.list) {
+              const id = String(info.advertiser_id);
+              const name = info.name || id;
+              
+              // Check for problematic statuses
+              const badStatuses = ["STATUS_DISABLE", "STATUS_LIMIT", "STATUS_PENDING_CONFIRM", "STATUS_PENDING_VERIFIED", "STATUS_CONFIRM_FAIL", "STATUS_CONFIRM_FAIL_END", "STATUS_LIMIT_PART"];
+              if (badStatuses.includes(info.status)) {
+                alerts.push({
+                  advertiser_id: id,
+                  name,
+                  issue: "status",
+                  detail: info.status,
+                });
+              }
+
+              // Check for low/zero balance
+              const balance = Number(info.balance || 0);
+              if (balance <= 0) {
+                alerts.push({
+                  advertiser_id: id,
+                  name,
+                  issue: "balance",
+                  detail: `Saldo: ${balance.toFixed(2)}`,
+                });
+              } else if (balance < 50) {
+                alerts.push({
+                  advertiser_id: id,
+                  name,
+                  issue: "low_balance",
+                  detail: `Saldo baixo: ${balance.toFixed(2)}`,
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error checking account health:", e);
+        }
+      }
+
+      // Also check balance via BC endpoint for more accurate data
+      if (bc.bc_external_id) {
+        try {
+          let page = 1;
+          let hasMore = true;
+          while (hasMore && page <= 10) {
+            const balResp = await fetch(
+              `${TIKTOK_API}/advertiser/balance/get/?bc_id=${bc.bc_external_id}&page=${page}&page_size=100`,
+              { headers }
+            );
+            const balData = await safeJson(balResp);
+            if (balData.code === 0 && balData.data?.list) {
+              for (const b of balData.data.list) {
+                const id = String(b.advertiser_id);
+                const totalBalance = Number(b.balance || 0);
+                // Check if this account hasn't already been flagged
+                const alreadyFlagged = alerts.some(a => a.advertiser_id === id && (a.issue === "balance" || a.issue === "low_balance"));
+                if (!alreadyFlagged && totalBalance <= 0) {
+                  alerts.push({
+                    advertiser_id: id,
+                    name: id,
+                    issue: "balance",
+                    detail: `Saldo: ${totalBalance.toFixed(2)}`,
+                  });
+                }
+              }
+              const total = balData.data?.page_info?.total_number || 0;
+              hasMore = page * 100 < total;
+              page++;
+            } else {
+              hasMore = false;
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching BC balance:", e);
+        }
+      }
+
+      // Send Pushcut notification if there are alerts
+      let pushcutSent = false;
+      const targetUrl = pushcut_url || "https://api.pushcut.io/SpzDS98J4ESuSNvFb2HbR/notifications/Tik%20tok%20ads%20Status";
+      
+      if (alerts.length > 0) {
+        const statusAlerts = alerts.filter(a => a.issue === "status");
+        const balanceAlerts = alerts.filter(a => a.issue === "balance" || a.issue === "low_balance");
+
+        let notifText = `⚠️ ${alerts.length} alerta(s) em ${bc.bc_name}:\n`;
+        if (statusAlerts.length > 0) {
+          notifText += `\n🔴 ${statusAlerts.length} conta(s) com problema de status:\n`;
+          statusAlerts.slice(0, 5).forEach(a => {
+            notifText += `• ${a.name} — ${a.detail}\n`;
+          });
+        }
+        if (balanceAlerts.length > 0) {
+          notifText += `\n💰 ${balanceAlerts.length} conta(s) sem saldo/saldo baixo:\n`;
+          balanceAlerts.slice(0, 5).forEach(a => {
+            notifText += `• ${a.name} — ${a.detail}\n`;
+          });
+        }
+
+        try {
+          const pushResp = await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: `⚠️ Alerta TikTok Ads — ${alerts.length} problema(s)`,
+              text: notifText,
+            }),
+          });
+          pushcutSent = pushResp.ok;
+        } catch (e) {
+          console.error("Pushcut send error:", e);
+        }
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        total_accounts: advIds.length,
+        alerts_count: alerts.length,
+        alerts,
+        pushcut_sent: pushcutSent,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
