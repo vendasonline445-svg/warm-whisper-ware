@@ -177,8 +177,19 @@ export default function SmartCampaignCreator() {
     if (!authCode.trim() || !selectedBc) return;
     setAuthorizingPost(true);
     try {
-      // Use selected account or fallback to BC's advertiser_id
-      const advId = selectedAccounts[0] || bcs.find((b: any) => b.id === selectedBc)?.advertiser_id;
+      // Use selected account or fallback to first advertiser_id in BC
+      const bcAdvertiserRaw = bcs.find((b: any) => b.id === selectedBc)?.advertiser_id;
+      const fallbackAdvId = typeof bcAdvertiserRaw === "string"
+        ? bcAdvertiserRaw.split(",").map((id: string) => id.trim()).find(Boolean)
+        : "";
+      const advId = selectedAccounts[0] || fallbackAdvId;
+
+      if (!advId) {
+        toast({ title: "Selecione uma conta", description: "Não foi possível identificar o advertiser_id para autorizar o Spark post.", variant: "destructive" });
+        setAuthorizingPost(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
         body: {
           bc_id: selectedBc,
