@@ -1712,6 +1712,7 @@ Deno.serve(async (req) => {
         identity_id,
         identity_type = "AUTH_CODE",
         tiktok_item_id,
+        tiktok_item_ids = [],
         ad_texts = [],
         call_to_action = "LEARN_MORE",
         schedule_start_time,
