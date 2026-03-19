@@ -48,15 +48,17 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [campRes, creatRes, rulesRes, costsRes, clientsRes] = await Promise.all([
+    const [campRes, creatRes, rulesRes, costsRes, clientsRes, metricsRes] = await Promise.all([
       db.from("campaigns").select("*").order("created_at", { ascending: false }),
       db.from("creatives").select("*, campaigns(campaign_name)").order("created_at", { ascending: false }),
       db.from("automation_rules").select("*, campaigns(campaign_name), clients(client_name)").order("created_at", { ascending: false }),
       db.from("campaign_costs").select("*, campaigns(campaign_name)").order("date", { ascending: false }).limit(100),
       db.from("clients").select("id, client_name").eq("status", "active"),
+      db.from("creative_metrics").select("*"),
     ]);
     setCampaigns(campRes.data || []);
     setCreatives(creatRes.data || []);
+    setCreativeMetrics(metricsRes.data || []);
     setRules(rulesRes.data || []);
     setCosts(costsRes.data || []);
     setClients(clientsRes.data || []);
