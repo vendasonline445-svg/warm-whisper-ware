@@ -174,10 +174,11 @@ export default function SmartCampaignCreator() {
 
   // Authorize a Spark Ads post using auth code
   const authorizeSparkPost = async () => {
-    if (!authCode.trim() || !selectedAccounts.length || !selectedBc) return;
+    if (!authCode.trim() || !selectedBc) return;
     setAuthorizingPost(true);
     try {
-      const advId = selectedAccounts[0];
+      // Use selected account or fallback to BC's advertiser_id
+      const advId = selectedAccounts[0] || bcs.find((b: any) => b.id === selectedBc)?.advertiser_id;
       const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
         body: {
           bc_id: selectedBc,
@@ -490,7 +491,7 @@ export default function SmartCampaignCreator() {
                       <Button
                         size="sm"
                         onClick={authorizeSparkPost}
-                        disabled={!authCode.trim() || authorizingPost || !selectedAccounts.length}
+                        disabled={!authCode.trim() || authorizingPost || (!selectedAccounts.length && !selectedBc)}
                         className="h-8 text-[10px]"
                       >
                         {authorizingPost ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
