@@ -445,6 +445,37 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
               </Table>
             </CardContent>
           </Card>
+          {/* Daily spend breakdown */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base">Gasto por Dia</CardTitle>
+              </div>
+              <p className="text-xs text-muted-foreground">Controle diário de quanto foi gasto em cada dia</p>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead className="text-right">Spend do Dia</TableHead>
+                    <TableHead className="text-right">Campanhas Ativas</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dailySpend.map(d => (
+                    <TableRow key={d.date}>
+                      <TableCell className="font-medium">{new Date(d.date + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold">{fmtMoney(d.totalSpend)}</TableCell>
+                      <TableCell className="text-right text-xs">{d.campaigns}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!dailySpend.length && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Nenhum dado</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
