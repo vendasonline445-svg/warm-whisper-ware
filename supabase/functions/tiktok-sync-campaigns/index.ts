@@ -1513,7 +1513,8 @@ Deno.serve(async (req) => {
         bid_type = "BID_TYPE_CUSTOM",
         bid,
         pixel_id,
-        optimization_event,
+        optimization_event = "COMPLETE_PAYMENT",
+        optimization_goal = "CONVERT",
         landing_page_url,
         identity_id,
         identity_type = "AUTH_CODE",
@@ -1542,6 +1543,7 @@ Deno.serve(async (req) => {
         success: boolean;
         campaign_id?: string;
         adgroup_id?: string;
+        ad_id?: string;
         error?: string;
       }> = [];
 
@@ -1552,7 +1554,7 @@ Deno.serve(async (req) => {
               ? `${campaign_name} (${targetAdvId.slice(-4)}-${copyNum})`
               : campaign_name;
 
-            // 1) Create Campaign
+            // 1) Create Campaign via standard endpoint
             const campaignPayload: Record<string, any> = {
               advertiser_id: targetAdvId,
               campaign_name: copyName,
@@ -1561,7 +1563,6 @@ Deno.serve(async (req) => {
               budget: Number(budget),
             };
 
-            // Try standard first, then smart_plus
             let campaignResult = await createCampaignWithFallback(headers, campaignPayload, "standard");
             if (!campaignResult.success) {
               campaignResult = await createCampaignWithFallback(headers, { ...campaignPayload, request_id: generateRequestId() }, "smart_plus");
@@ -1587,10 +1588,7 @@ Deno.serve(async (req) => {
               client_id: bc.client_id,
             });
 
-            // 2) Create Ad Group — TikTok only (no Pangle), BID cap
-            const futureStart = schedule_start_time ||
-              new Date(Date.now() + 10 * 60 * 1000).toISOString().replace("T", " ").split(".")[0];
-
+            // 2) Create Ad Group — TikTok only (no Pangle), BID cap, OCPM billing
             const adgroupPayload: Record<string, any> = {
               advertiser_id: targetAdvId,
               campaign_id: newCampId,
@@ -1599,25 +1597,25 @@ Deno.serve(async (req) => {
               placements: ["PLACEMENT_TIKTOK"],
               budget_mode,
               budget: Number(budget),
-              schedule_start_time: futureStart,
-              schedule_type: "SCHEDULE_START_END",
-              optimization_goal: optimization_event || "CONVERT",
+              schedule_type: "SCHEDULE_FROM_NOW",
+              optimization_goal: optimization_goal,
               pacing: "PACING_MODE_SMOOTH",
-              billing_event: "CPC",
+              billing_event: "OCPM",
               bid_type,
               creative_material_mode: tiktok_item_id ? "CUSTOM" : "SMART_CREATIVE",
             };
 
+            // BID cap value
             if (bid && bid_type === "BID_TYPE_CUSTOM") {
               adgroupPayload.bid = Number(bid);
             }
 
+            // Pixel + conversion event
             if (pixel_id) {
               adgroupPayload.pixel_id = pixel_id;
             }
-
             if (optimization_event) {
-              adgroupPayload.optimization_event = optimization_event;
+              adgroupPayload.external_action = optimization_event;
             }
 
             // Try standard first
@@ -1651,25 +1649,25 @@ Deno.serve(async (req) => {
 
             const newAgId = String(agData.data?.adgroup_id);
 
-            // 3) Create Ad — Spark Ad (tiktok_item_id) or Smart Creative (ACO)
+            // 3) Create Ad — Spark Ad or Smart Creative
             let adSuccess = false;
             let adError = "";
+            let newAdId = "";
 
             if (tiktok_item_id) {
-              // Spark Ad via /ad/create/ with tiktok_item_id
+              // Spark Ad via /ad/create/ with creatives array (v1.3 required format)
               const adPayload: Record<string, any> = {
                 advertiser_id: targetAdvId,
                 adgroup_id: newAgId,
                 ad_name: `${copyName} - Spark Ad`,
-                tiktok_item_id,
                 identity_id: identity_id || "",
                 identity_type,
-                call_to_action,
+                creatives: [{
+                  tiktok_item_id,
+                  call_to_action,
+                  ...(landing_page_url ? { landing_page_url } : {}),
+                }],
               };
-
-              if (landing_page_url) {
-                adPayload.landing_page_url = landing_page_url;
-              }
 
               const adResp = await fetch(`${TIKTOK_API}/ad/create/`, {
                 method: "POST",
@@ -1680,11 +1678,13 @@ Deno.serve(async (req) => {
 
               if (adData.code === 0) {
                 adSuccess = true;
+                const adIds = adData.data?.ad_ids || [];
+                newAdId = adIds[0] ? String(adIds[0]) : "";
               } else {
                 adError = adData.message || "Falha ao criar Spark Ad";
               }
             } else if (ad_texts.length > 0) {
-              // Smart Creative via /ad/aco/create/
+              // Smart Creative via /ad/smart_creative/create/ or /ad/aco/create/
               const titleList = ad_texts.map((t: string) => ({ title: t }));
 
               const acoPayload: Record<string, any> = {
@@ -1701,7 +1701,6 @@ Deno.serve(async (req) => {
               if (call_to_action) {
                 acoPayload.call_to_action_list = [{ call_to_action }];
               }
-
               if (landing_page_url) {
                 acoPayload.landing_page_urls = [{ landing_page_url }];
               }
@@ -1726,6 +1725,7 @@ Deno.serve(async (req) => {
               success: true,
               campaign_id: newCampId,
               adgroup_id: newAgId,
+              ad_id: newAdId || undefined,
               error: adSuccess ? undefined : `Campanha+Conjunto criados, mas ad falhou: ${adError}`,
             });
           } catch (e: any) {

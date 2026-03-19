@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import {
-  Loader2, Rocket, Zap, ShieldCheck, Target, DollarSign,
+  Loader2, Rocket, ShieldCheck, Target,
   Plus, Trash2, Layers, Sparkles, CheckCircle, XCircle
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ interface CreationResult {
   success: boolean;
   campaign_id?: string;
   adgroup_id?: string;
+  ad_id?: string;
   error?: string;
 }
 
@@ -41,6 +42,27 @@ const CTA_OPTIONS = [
   { value: "VIEW_MORE", label: "Ver Mais" },
 ];
 
+const OPTIMIZATION_GOALS = [
+  { value: "CONVERT", label: "Conversão (Recomendado)" },
+  { value: "CLICK", label: "Clique no Link" },
+  { value: "REACH", label: "Alcance" },
+  { value: "IMPRESSION", label: "Impressões" },
+  { value: "INSTALL", label: "Instalação de App" },
+];
+
+const OPTIMIZATION_EVENTS = [
+  { value: "COMPLETE_PAYMENT", label: "Pagamento Completo" },
+  { value: "INITIATE_CHECKOUT", label: "Iniciar Checkout" },
+  { value: "ADD_TO_CART", label: "Add to Cart" },
+  { value: "VIEW_CONTENT", label: "View Content" },
+  { value: "CLICK", label: "Clique" },
+  { value: "FORM", label: "Formulário Enviado" },
+  { value: "REGISTRATION", label: "Registro" },
+  { value: "SUBSCRIBE", label: "Assinatura" },
+  { value: "CONTACT", label: "Contato" },
+  { value: "DOWNLOAD", label: "Download" },
+];
+
 export default function SmartCampaignCreator() {
   const [bcs, setBcs] = useState<any[]>([]);
   const [selectedBc, setSelectedBc] = useState("");
@@ -55,6 +77,7 @@ export default function SmartCampaignCreator() {
   const [bidType, setBidType] = useState("BID_TYPE_CUSTOM");
   const [bid, setBid] = useState("");
   const [pixelId, setPixelId] = useState("");
+  const [optimizationGoal, setOptimizationGoal] = useState("CONVERT");
   const [optimizationEvent, setOptimizationEvent] = useState("COMPLETE_PAYMENT");
   const [landingPageUrl, setLandingPageUrl] = useState("");
   const [callToAction, setCallToAction] = useState("LEARN_MORE");
@@ -100,8 +123,7 @@ export default function SmartCampaignCreator() {
         body: { bc_id: selectedBc, action: "get_advertisers" },
       });
       if (error) throw error;
-      const list = (data?.data?.list || []);
-      setAccounts(list);
+      setAccounts(data?.data?.list || []);
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -161,6 +183,7 @@ export default function SmartCampaignCreator() {
           bid_type: bidType,
           bid: bid ? parseFloat(bid) : undefined,
           pixel_id: pixelId || undefined,
+          optimization_goal: optimizationGoal,
           optimization_event: optimizationEvent,
           landing_page_url: landingPageUrl || undefined,
           call_to_action: callToAction,
@@ -193,7 +216,7 @@ export default function SmartCampaignCreator() {
       <div className="flex items-center gap-2">
         <Rocket className="h-5 w-5 text-primary" />
         <h2 className="text-base font-bold">Criar Campanha Smart+</h2>
-        <Badge variant="outline" className="text-[9px]">BID Cap • Sem Pangle • Spark Ads</Badge>
+        <Badge variant="outline" className="text-[9px]">BID Cap • OCPM • Sem Pangle • Spark Ads</Badge>
       </div>
 
       {/* BC Selector */}
@@ -262,20 +285,37 @@ export default function SmartCampaignCreator() {
                     placeholder="15.00" className="h-8 text-xs mt-1" />
                 </div>
                 <div>
-                  <Label className="text-xs">Evento de Otimização</Label>
-                  <Select value={optimizationEvent} onValueChange={setOptimizationEvent}>
+                  <Label className="text-xs">Objetivo de Otimização</Label>
+                  <Select value={optimizationGoal} onValueChange={setOptimizationGoal}>
                     <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="COMPLETE_PAYMENT" className="text-xs">Pagamento Completo</SelectItem>
-                      <SelectItem value="INITIATE_CHECKOUT" className="text-xs">Iniciar Checkout</SelectItem>
-                      <SelectItem value="ADD_TO_CART" className="text-xs">Add to Cart</SelectItem>
-                      <SelectItem value="VIEW_CONTENT" className="text-xs">View Content</SelectItem>
-                      <SelectItem value="CLICK" className="text-xs">Clique</SelectItem>
-                      <SelectItem value="CONVERT" className="text-xs">Conversão</SelectItem>
+                      {OPTIMIZATION_GOALS.map(og => (
+                        <SelectItem key={og.value} value={og.value} className="text-xs">
+                          {og.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
+              {optimizationGoal === "CONVERT" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Evento de Conversão (external_action)</Label>
+                    <Select value={optimizationEvent} onValueChange={setOptimizationEvent}>
+                      <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {OPTIMIZATION_EVENTS.map(ev => (
+                          <SelectItem key={ev.value} value={ev.value} className="text-xs">
+                            {ev.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Label className="text-xs">Landing Page URL</Label>
@@ -286,8 +326,8 @@ export default function SmartCampaignCreator() {
               <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
                 <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
                 <div className="flex-1">
-                  <p className="text-[10px] font-medium">Placement: TikTok Only</p>
-                  <p className="text-[9px] text-muted-foreground">Pangle e rede de audiência desabilitados automaticamente</p>
+                  <p className="text-[10px] font-medium">Placement: TikTok Only • Billing: OCPM</p>
+                  <p className="text-[9px] text-muted-foreground">Pangle desabilitado • Schedule: Iniciar agora • Pacing suave</p>
                 </div>
                 <Badge className="text-[9px] bg-primary/10 text-primary border-primary/20">Ativo</Badge>
               </div>
@@ -308,7 +348,7 @@ export default function SmartCampaignCreator() {
                   <Label className="text-xs font-medium">Usar Spark Ads</Label>
                 </div>
                 {useSparkAds && (
-                  <Badge variant="outline" className="text-[9px]">Post orgânico como anúncio</Badge>
+                  <Badge variant="outline" className="text-[9px]">Post orgânico como anúncio (v1.3 creatives[])</Badge>
                 )}
               </div>
 
@@ -318,10 +358,11 @@ export default function SmartCampaignCreator() {
                     <Label className="text-xs">TikTok Item ID (Post) *</Label>
                     <Input value={tiktokItemId} onChange={e => setTiktokItemId(e.target.value)}
                       placeholder="ID do post TikTok (tt_video/info)" className="h-8 text-xs mt-1" />
+                    <p className="text-[9px] text-muted-foreground mt-1">Enviado dentro de creatives[].tiktok_item_id conforme v1.3</p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs">Identity ID *</Label>
+                      <Label className="text-xs">Identity ID * (obrigatório v1.3)</Label>
                       <Input value={identityId} onChange={e => setIdentityId(e.target.value)}
                         placeholder="Auth code ou TT User ID" className="h-8 text-xs mt-1" />
                     </div>
@@ -332,6 +373,7 @@ export default function SmartCampaignCreator() {
                         <SelectContent>
                           <SelectItem value="AUTH_CODE" className="text-xs">Auth Code</SelectItem>
                           <SelectItem value="TT_USER" className="text-xs">TT User</SelectItem>
+                          <SelectItem value="BC_AUTH_TT" className="text-xs">BC Auth TT</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -449,6 +491,7 @@ export default function SmartCampaignCreator() {
                   <div className="flex flex-wrap gap-1">
                     <Badge variant="outline" className="text-[9px]">BID Cap: R$ {bid || "—"}</Badge>
                     <Badge variant="outline" className="text-[9px]">TikTok Only</Badge>
+                    <Badge variant="outline" className="text-[9px]">OCPM</Badge>
                     <Badge variant="outline" className="text-[9px]">{useSparkAds ? "Spark Ad" : "Smart Creative"}</Badge>
                   </div>
                 </div>
@@ -477,6 +520,8 @@ export default function SmartCampaignCreator() {
                       <div className="min-w-0">
                         <p className="font-mono text-[10px] text-muted-foreground">{r.advertiser_id} (cópia {r.copy})</p>
                         {r.campaign_id && <p className="text-[10px]">Campaign: {r.campaign_id}</p>}
+                        {r.adgroup_id && <p className="text-[10px]">AdGroup: {r.adgroup_id}</p>}
+                        {r.ad_id && <p className="text-[10px]">Ad: {r.ad_id}</p>}
                         {r.error && <p className="text-[10px] text-destructive">{r.error}</p>}
                       </div>
                     </div>
