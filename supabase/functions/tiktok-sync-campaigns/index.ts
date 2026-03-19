@@ -62,73 +62,51 @@ async function resolveAdgroupPixelId(
   const value = String(rawPixelId).trim();
   if (!value) return null;
 
-  if (/^\d{6,30}$/.test(value)) return value;
+  // Accept both numeric IDs and alphanumeric pixel codes (e.g. "D6GM4RBC77UAAN00B800")
+  // The TikTok API accepts pixel_id in both formats depending on account type
+  const isNumericId = /^\d{6,30}$/.test(value);
+  const isAlphanumericId = /^[A-Za-z0-9]{10,40}$/.test(value);
 
-  const normalizedValue = value.toLowerCase();
+  // If it looks like a valid pixel identifier, verify it exists on the account
+  if (isNumericId || isAlphanumericId) {
+    try {
+      const query = new URLSearchParams({
+        advertiser_id: advertiserId,
+        page_size: "100",
+      });
+      const resp = await fetch(`${TIKTOK_API}/pixel/list/?${query.toString()}`, { headers });
+      const data = await safeJson(resp);
+      const list = Array.isArray(data?.data?.list) ? data.data.list : [];
 
-  const getNumericPixelId = (px: any): string | null => {
-    const candidates = [px?.pixel_id, px?.id]
-      .map((candidate) => String(candidate ?? "").trim())
-      .filter(Boolean);
+      console.log(`[resolvePixel] Checking "${value}" against ${list.length} pixels for adv ${advertiserId}`);
 
-    const numeric = candidates.find((candidate) => /^\d{6,30}$/.test(candidate));
-    return numeric || null;
-  };
+      // Check if any pixel matches our value
+      const normalizedValue = value.toLowerCase();
+      const match = list.find((px: any) => {
+        const aliases = [px?.pixel_id, px?.id, px?.pixel_code, px?.code]
+          .map((c) => String(c ?? "").trim().toLowerCase())
+          .filter(Boolean);
+        return aliases.includes(normalizedValue);
+      });
 
-  const extractPixelId = (data: any): string | null => {
-    const list = Array.isArray(data?.data?.list) ? data.data.list : [];
-    if (!list.length) return null;
+      if (match) {
+        // Return the pixel_id as the API lists it (could be numeric or alphanumeric)
+        const resolvedId = String(match?.pixel_id ?? match?.id ?? "").trim();
+        console.log(`[resolvePixel] Matched! Resolved to: "${resolvedId}"`);
+        return resolvedId || value;
+      }
 
-    const exactMatch = list.find((px: any) => {
-      const aliases = [px?.pixel_code, px?.code, px?.pixel_id, px?.id]
-        .map((candidate) => String(candidate ?? "").trim().toLowerCase())
-        .filter(Boolean);
-      return aliases.includes(normalizedValue);
-    });
-
-    if (exactMatch) {
-      return getNumericPixelId(exactMatch);
+      // If we got a list but no match, still allow if the format looks valid
+      // (the pixel may belong to the account but not appear in the listing due to pagination)
+      if (isNumericId || isAlphanumericId) {
+        console.log(`[resolvePixel] No match found but format is valid, using as-is: "${value}"`);
+        return value;
+      }
+    } catch (error) {
+      console.warn(`[resolvePixel] API check failed for "${value}":`, error);
+      // Fall through and return the value as-is if it looks valid
+      return value;
     }
-
-    if (list.length === 1) {
-      return getNumericPixelId(list[0]);
-    }
-
-    return null;
-  };
-
-  try {
-    const byCodeQuery = new URLSearchParams({
-      advertiser_id: advertiserId,
-      code: value,
-      page_size: "50",
-    });
-
-    const byCodeResp = await fetch(`${TIKTOK_API}/pixel/list/?${byCodeQuery.toString()}`, { headers });
-    const byCodeData = await safeJson(byCodeResp);
-    const directMatch = byCodeData?.code === 0 ? extractPixelId(byCodeData) : null;
-    if (directMatch) return directMatch;
-
-    const byPixelCodeQuery = new URLSearchParams({
-      advertiser_id: advertiserId,
-      pixel_code: value,
-      page_size: "50",
-    });
-    const byPixelCodeResp = await fetch(`${TIKTOK_API}/pixel/list/?${byPixelCodeQuery.toString()}`, { headers });
-    const byPixelCodeData = await safeJson(byPixelCodeResp);
-    const pixelCodeMatch = byPixelCodeData?.code === 0 ? extractPixelId(byPixelCodeData) : null;
-    if (pixelCodeMatch) return pixelCodeMatch;
-
-    const fallbackQuery = new URLSearchParams({
-      advertiser_id: advertiserId,
-      page_size: "100",
-    });
-    const fallbackResp = await fetch(`${TIKTOK_API}/pixel/list/?${fallbackQuery.toString()}`, { headers });
-    const fallbackData = await safeJson(fallbackResp);
-    const fallbackMatch = fallbackData?.code === 0 ? extractPixelId(fallbackData) : null;
-    if (fallbackMatch) return fallbackMatch;
-  } catch (error) {
-    console.warn(`[SmartCampaign] Pixel resolve failed for "${value}":`, error);
   }
 
   return null;
