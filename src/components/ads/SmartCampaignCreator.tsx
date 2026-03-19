@@ -192,7 +192,7 @@ export default function SmartCampaignCreator() {
   const canSubmit = () => {
     if (!campaignName || !budget || !selectedAccounts.length) return false;
     if (bidType === "BID_TYPE_CUSTOM" && !bid) return false;
-    if (useSparkAds && (!tiktokItemId || !identityId)) return false;
+    if (useSparkAds && (!sparkItems.some(s => s.trim()) || !identityId)) return false;
     if (!useSparkAds && !adTexts.some(t => t.trim())) return false;
     return true;
   };
