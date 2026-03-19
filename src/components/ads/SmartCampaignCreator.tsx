@@ -82,7 +82,7 @@ export default function SmartCampaignCreator() {
   const [landingPageUrl, setLandingPageUrl] = useState("");
   const [selectedCTAs, setSelectedCTAs] = useState<string[]>(CTA_OPTIONS.map(c => c.value));
 
-  // Spark Ads
+  // Spark Ads — multiple posts with individual auth codes
   const [useSparkAds, setUseSparkAds] = useState(true);
   const [sparkItems, setSparkItems] = useState<string[]>([""]);
   const [identityId, setIdentityId] = useState("");
@@ -90,10 +90,10 @@ export default function SmartCampaignCreator() {
   const [availableIdentities, setAvailableIdentities] = useState<Array<{ identity_id: string; identity_type: string; display_name: string }>>([]);
   const [loadingIdentities, setLoadingIdentities] = useState(false);
 
-  // Auth Code flow for Spark Ads
+  // Auth Code flow — supports multiple posts
   const [authCode, setAuthCode] = useState("");
   const [authorizingPost, setAuthorizingPost] = useState(false);
-  const [authorizedPosts, setAuthorizedPosts] = useState<Array<{ auth_code: string; item_id: string; display_name: string }>>([]);
+  const [authorizedPosts, setAuthorizedPosts] = useState<Array<{ auth_code: string; item_id: string; display_name: string; identity_id: string; identity_type: string }>>([]);
 
   // Smart Creative texts (when NOT using Spark Ads)
   const [adTexts, setAdTexts] = useState<string[]>([""]);
