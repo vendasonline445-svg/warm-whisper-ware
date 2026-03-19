@@ -441,6 +441,80 @@ export default function CampaignManager() {
     setActionLoading(null);
   };
 
+  // ── Toggle campaign hierarchy expansion ──
+  const toggleExpand = async (camp: TikTokCampaign) => {
+    const campId = camp.campaign_id;
+    if (expandedCampaigns.has(campId)) {
+      setExpandedCampaigns(prev => { const next = new Set(prev); next.delete(campId); return next; });
+      return;
+    }
+
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) return;
+    setLoadingHierarchy(campId);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "get_campaign_hierarchy", advertiser_id: camp.advertiser_id, campaign_id: campId },
+      });
+      if (error) throw error;
+      setHierarchyData(prev => ({ ...prev, [campId]: data.ad_groups || [] }));
+      setExpandedCampaigns(prev => new Set(prev).add(campId));
+    } catch (err: any) {
+      toast({ title: "Erro ao carregar hierarquia", description: err.message, variant: "destructive" });
+    }
+    setLoadingHierarchy(null);
+  };
+
+  // ── Toggle ad group status ──
+  const toggleAdGroupStatus = async (camp: TikTokCampaign, agId: string, currentStatus: string) => {
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) return;
+    const newStatus = currentStatus === "ENABLE" ? "DISABLE" : "ENABLE";
+    setActionLoading(agId + "_status");
+    try {
+      const { error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "update_adgroup_status", advertiser_id: camp.advertiser_id, adgroup_ids: [agId], operation_status: newStatus },
+      });
+      if (error) throw error;
+      toast({ title: `✅ Conjunto ${newStatus === "ENABLE" ? "ativado" : "pausado"}` });
+      setHierarchyData(prev => ({
+        ...prev,
+        [camp.campaign_id]: (prev[camp.campaign_id] || []).map(ag =>
+          ag.adgroup_id === agId ? { ...ag, operation_status: newStatus } : ag
+        ),
+      }));
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+    setActionLoading(null);
+  };
+
+  // ── Toggle ad status (per v1.3 /ad/status/update/) ──
+  const toggleAdStatus = async (camp: TikTokCampaign, agId: string, adId: string, currentStatus: string) => {
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) return;
+    const newStatus = currentStatus === "ENABLE" ? "DISABLE" : "ENABLE";
+    setActionLoading(adId + "_status");
+    try {
+      const { error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "update_ad_status", advertiser_id: camp.advertiser_id, ad_ids: [adId], operation_status: newStatus },
+      });
+      if (error) throw error;
+      toast({ title: `✅ Anúncio ${newStatus === "ENABLE" ? "ativado" : "pausado"}` });
+      setHierarchyData(prev => ({
+        ...prev,
+        [camp.campaign_id]: (prev[camp.campaign_id] || []).map(ag =>
+          ag.adgroup_id === agId
+            ? { ...ag, ads: ag.ads.map(ad => ad.ad_id === adId ? { ...ad, operation_status: newStatus } : ad) }
+            : ag
+        ),
+      }));
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+    setActionLoading(null);
+
   const updateBudget = async () => {
     if (!budgetDialog || !newBudget) return;
     const bc = bcs.find((b: any) => b.id === selectedBc);
