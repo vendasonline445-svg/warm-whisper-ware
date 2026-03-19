@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import {
   Loader2, Rocket, ShieldCheck, Target,
-  Plus, Trash2, Layers, Sparkles, CheckCircle, XCircle
+  Plus, Trash2, Layers, Sparkles, CheckCircle, XCircle, RefreshCw
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -87,6 +87,8 @@ export default function SmartCampaignCreator() {
   const [tiktokItemId, setTiktokItemId] = useState("");
   const [identityId, setIdentityId] = useState("");
   const [identityType, setIdentityType] = useState("AUTH_CODE");
+  const [availableIdentities, setAvailableIdentities] = useState<Array<{ identity_id: string; identity_type: string; display_name: string }>>([]);
+  const [loadingIdentities, setLoadingIdentities] = useState(false);
 
   // Smart Creative texts (when NOT using Spark Ads)
   const [adTexts, setAdTexts] = useState<string[]>([""]);
@@ -142,6 +144,36 @@ export default function SmartCampaignCreator() {
       .map(a => a.advertiser_id);
     setSelectedAccounts(activeIds);
   };
+
+  const fetchIdentities = async (advId: string) => {
+    if (!selectedBc || !advId) return;
+    setLoadingIdentities(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: selectedBc, action: "get_identities", advertiser_id: advId },
+      });
+      if (error) throw error;
+      const ids = data?.identities || [];
+      setAvailableIdentities(ids);
+      if (ids.length > 0) {
+        setIdentityId(ids[0].identity_id);
+        setIdentityType(ids[0].identity_type);
+        toast({ title: `${ids.length} identidade(s) encontrada(s)` });
+      } else {
+        toast({ title: "Nenhuma identidade encontrada", description: "Use Auth Code manual", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao buscar identidades", description: err.message, variant: "destructive" });
+    }
+    setLoadingIdentities(false);
+  };
+
+  // Auto-fetch identities when first account is selected
+  useEffect(() => {
+    if (selectedAccounts.length > 0 && useSparkAds && availableIdentities.length === 0) {
+      fetchIdentities(selectedAccounts[0]);
+    }
+  }, [selectedAccounts, useSparkAds]);
 
   const addAdText = () => {
     if (adTexts.length < 5) setAdTexts([...adTexts, ""]);
@@ -360,23 +392,61 @@ export default function SmartCampaignCreator() {
                       placeholder="ID do post TikTok (tt_video/info)" className="h-8 text-xs mt-1" />
                     <p className="text-[9px] text-muted-foreground mt-1">Enviado dentro de creatives[].tiktok_item_id conforme v1.3</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3">
                     <div>
-                      <Label className="text-xs">Identity ID * (obrigatório v1.3)</Label>
-                      <Input value={identityId} onChange={e => setIdentityId(e.target.value)}
-                        placeholder="Auth code ou TT User ID" className="h-8 text-xs mt-1" />
+                      <div className="flex items-center justify-between mb-1">
+                        <Label className="text-xs">Identity ID *</Label>
+                        <Button
+                          size="sm" variant="outline" className="h-6 text-[10px]"
+                          onClick={() => selectedAccounts[0] && fetchIdentities(selectedAccounts[0])}
+                          disabled={loadingIdentities || !selectedAccounts.length}
+                        >
+                          {loadingIdentities ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                          Buscar do TikTok
+                        </Button>
+                      </div>
+                      {availableIdentities.length > 0 ? (
+                        <Select value={identityId} onValueChange={(val) => {
+                          setIdentityId(val);
+                          const found = availableIdentities.find(i => i.identity_id === val);
+                          if (found) setIdentityType(found.identity_type);
+                        }}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Selecione uma identidade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableIdentities.map(id => (
+                              <SelectItem key={id.identity_id} value={id.identity_id} className="text-xs">
+                                {id.display_name} ({id.identity_type}) — {id.identity_id.slice(0, 12)}...
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input value={identityId} onChange={e => setIdentityId(e.target.value)}
+                          placeholder="Clique 'Buscar do TikTok' ou cole manualmente" className="h-8 text-xs" />
+                      )}
+                      <p className="text-[9px] text-muted-foreground mt-1">
+                        {availableIdentities.length > 0
+                          ? `✅ ${availableIdentities.length} identidade(s) encontrada(s) — tipo: ${identityType}`
+                          : "Busque automaticamente ou cole Auth Code / TT User ID manualmente"
+                        }
+                      </p>
                     </div>
-                    <div>
-                      <Label className="text-xs">Tipo de Identidade</Label>
-                      <Select value={identityType} onValueChange={setIdentityType}>
-                        <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AUTH_CODE" className="text-xs">Auth Code</SelectItem>
-                          <SelectItem value="TT_USER" className="text-xs">TT User</SelectItem>
-                          <SelectItem value="BC_AUTH_TT" className="text-xs">BC Auth TT</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {availableIdentities.length === 0 && (
+                      <div>
+                        <Label className="text-xs">Tipo de Identidade</Label>
+                        <Select value={identityType} onValueChange={setIdentityType}>
+                          <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="AUTH_CODE" className="text-xs">Auth Code</SelectItem>
+                            <SelectItem value="TT_USER" className="text-xs">TT User</SelectItem>
+                            <SelectItem value="BC_AUTH_TT" className="text-xs">BC Auth TT</SelectItem>
+                            <SelectItem value="CUSTOMIZED_USER" className="text-xs">Customized User</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
