@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import {
   RefreshCw, Play, Pause, Copy, Loader2, DollarSign, AlertTriangle,
-  TrendingUp, TrendingDown, BarChart3, ShoppingCart, Eye, Layers
+  TrendingUp, TrendingDown, BarChart3, ShoppingCart, Eye, Layers, ChevronDown, ChevronRight
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
@@ -30,6 +30,22 @@ interface TikTokCampaign {
   create_time: string;
   modify_time: string;
   advertiser_id?: string;
+}
+
+interface AdGroupInfo {
+  adgroup_id: string;
+  adgroup_name: string;
+  operation_status: string;
+  budget: number;
+  budget_mode: string;
+  ads: AdInfo[];
+}
+
+interface AdInfo {
+  ad_id: string;
+  ad_name: string;
+  operation_status: string;
+  secondary_status: string;
 }
 
 interface CampaignMetrics {
@@ -96,6 +112,11 @@ export default function CampaignManager() {
   const [bulkDuplicating, setBulkDuplicating] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
   const [bulkCopies, setBulkCopies] = useState(1);
+
+  // Hierarchy expansion
+  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
+  const [hierarchyData, setHierarchyData] = useState<Record<string, AdGroupInfo[]>>({});
+  const [loadingHierarchy, setLoadingHierarchy] = useState<string | null>(null);
 
   const getCacheKey = (bcId: string) => `campaign_manager_cache_${bcId}`;
 
@@ -420,6 +441,81 @@ export default function CampaignManager() {
     setActionLoading(null);
   };
 
+  // ── Toggle campaign hierarchy expansion ──
+  const toggleExpand = async (camp: TikTokCampaign) => {
+    const campId = camp.campaign_id;
+    if (expandedCampaigns.has(campId)) {
+      setExpandedCampaigns(prev => { const next = new Set(prev); next.delete(campId); return next; });
+      return;
+    }
+
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) return;
+    setLoadingHierarchy(campId);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "get_campaign_hierarchy", advertiser_id: camp.advertiser_id, campaign_id: campId },
+      });
+      if (error) throw error;
+      setHierarchyData(prev => ({ ...prev, [campId]: data.ad_groups || [] }));
+      setExpandedCampaigns(prev => new Set(prev).add(campId));
+    } catch (err: any) {
+      toast({ title: "Erro ao carregar hierarquia", description: err.message, variant: "destructive" });
+    }
+    setLoadingHierarchy(null);
+  };
+
+  // ── Toggle ad group status ──
+  const toggleAdGroupStatus = async (camp: TikTokCampaign, agId: string, currentStatus: string) => {
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) return;
+    const newStatus = currentStatus === "ENABLE" ? "DISABLE" : "ENABLE";
+    setActionLoading(agId + "_status");
+    try {
+      const { error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "update_adgroup_status", advertiser_id: camp.advertiser_id, adgroup_ids: [agId], operation_status: newStatus },
+      });
+      if (error) throw error;
+      toast({ title: `✅ Conjunto ${newStatus === "ENABLE" ? "ativado" : "pausado"}` });
+      setHierarchyData(prev => ({
+        ...prev,
+        [camp.campaign_id]: (prev[camp.campaign_id] || []).map(ag =>
+          ag.adgroup_id === agId ? { ...ag, operation_status: newStatus } : ag
+        ),
+      }));
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+    setActionLoading(null);
+  };
+
+  // ── Toggle ad status (per v1.3 /ad/status/update/) ──
+  const toggleAdStatus = async (camp: TikTokCampaign, agId: string, adId: string, currentStatus: string) => {
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) return;
+    const newStatus = currentStatus === "ENABLE" ? "DISABLE" : "ENABLE";
+    setActionLoading(adId + "_status");
+    try {
+      const { error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: { bc_id: bc.id, action: "update_ad_status", advertiser_id: camp.advertiser_id, ad_ids: [adId], operation_status: newStatus },
+      });
+      if (error) throw error;
+      toast({ title: `✅ Anúncio ${newStatus === "ENABLE" ? "ativado" : "pausado"}` });
+      setHierarchyData(prev => ({
+        ...prev,
+        [camp.campaign_id]: (prev[camp.campaign_id] || []).map(ag =>
+          ag.adgroup_id === agId
+            ? { ...ag, ads: ag.ads.map(ad => ad.ad_id === adId ? { ...ad, operation_status: newStatus } : ad) }
+            : ag
+        ),
+      }));
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+    setActionLoading(null);
+  };
+
   const updateBudget = async () => {
     if (!budgetDialog || !newBudget) return;
     const bc = bcs.find((b: any) => b.id === selectedBc);
@@ -584,10 +680,21 @@ export default function CampaignManager() {
     return map[status] || { label: status.replace("STATUS_", ""), disabled: false };
   };
 
-  const statusBadge = (status: string) => {
-    if (status === "ENABLE") return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px]"><Play className="h-2.5 w-2.5 mr-0.5" />Ativo</Badge>;
-    if (status === "DISABLE") return <Badge className="bg-muted text-muted-foreground text-[10px]"><Pause className="h-2.5 w-2.5 mr-0.5" />Pausado</Badge>;
-    return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
+  const statusBadge = (status: string, secondaryStatus?: string) => {
+    const secondaryLabel = secondaryStatus && !["NONE", ""].includes(secondaryStatus)
+      ? ` (${secondaryStatus.replace(/_/g, " ").toLowerCase()})`
+      : "";
+    if (status === "ENABLE") return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px]"><Play className="h-2.5 w-2.5 mr-0.5" />Ativo{secondaryLabel}</Badge>;
+    if (status === "DISABLE") return <Badge className="bg-muted text-muted-foreground text-[10px]"><Pause className="h-2.5 w-2.5 mr-0.5" />Pausado{secondaryLabel}</Badge>;
+    if (status === "DELETE") return <Badge variant="destructive" className="text-[10px]">Deletado</Badge>;
+    return <Badge variant="outline" className="text-[10px]">{status}{secondaryLabel}</Badge>;
+  };
+
+  const budgetModeLabel = (mode: string) => {
+    if (mode === "BUDGET_MODE_DAY") return "Diário";
+    if (mode === "BUDGET_MODE_TOTAL") return "Total";
+    if (mode === "BUDGET_MODE_DYNAMIC_DAILY_BUDGET") return "Dinâmico";
+    return mode?.replace("BUDGET_MODE_", "") || "—";
   };
 
   const filteredCampaigns = useMemo(() => (
@@ -796,81 +903,161 @@ export default function CampaignManager() {
                   <TableBody>
                     {sortedCampaigns.map((camp) => {
                       const m = metricsMap[camp.campaign_id];
+                      const isExpanded = expandedCampaigns.has(camp.campaign_id);
+                      const hierarchy = hierarchyData[camp.campaign_id] || [];
                       return (
-                        <TableRow key={camp.campaign_id}>
-                          <TableCell className="font-medium text-xs max-w-[200px] truncate">{camp.campaign_name}</TableCell>
-                          <TableCell>{statusBadge(camp.operation_status)}</TableCell>
-                          <TableCell className="text-xs">
-                            {camp.budget > 0 ? `R$ ${camp.budget.toFixed(2)}` : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m ? fmtMoney(m.spend) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m ? (
-                              <span className={m.sales > 0 ? "text-emerald-500 font-semibold" : "text-muted-foreground"}>
-                                {m.sales}
-                              </span>
-                            ) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m ? (
-                              <span className={m.revenue > 0 ? "text-emerald-500" : "text-muted-foreground"}>
-                                {fmtMoney(m.revenue)}
-                              </span>
-                            ) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m ? (
-                              <Badge className={`text-[10px] ${m.roas >= 2 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : m.roas >= 1 ? "bg-amber-500/15 text-amber-600 border-amber-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
-                                {m.roas.toFixed(2)}x
-                              </Badge>
-                            ) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m ? (
-                              <Badge className={`text-[10px] ${m.roi >= 0 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
-                                {m.roi.toFixed(1)}%
-                              </Badge>
-                            ) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono">
-                            {m && m.cpa > 0 ? fmtMoney(m.cpa) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-mono text-muted-foreground">
-                            {m ? m.clicks.toLocaleString("pt-BR") : "—"}
-                          </TableCell>
-                          <TableCell className="text-[10px] font-mono text-muted-foreground">{camp.campaign_id}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading} onClick={() => toggleStatus(camp)}
-                                title={camp.operation_status === "ENABLE" ? "Pausar" : "Ativar"}>
-                                {actionLoading === camp.campaign_id + "_status" ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : camp.operation_status === "ENABLE" ? (
-                                  <Pause className="h-3.5 w-3.5" />
-                                ) : (
-                                  <Play className="h-3.5 w-3.5 text-emerald-500" />
-                                )}
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
-                                onClick={() => { setBudgetDialog(camp); setNewBudget(camp.budget > 0 ? String(camp.budget) : ""); }}
-                                title="Editar orçamento">
-                                <DollarSign className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
-                                onClick={() => { setDupDialog(camp); setDupName(`Copy of ${camp.campaign_name}`); setDupBudget(camp.budget > 0 ? String(camp.budget) : ""); }}
-                                title="Duplicar campanha">
-                                <Copy className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
-                                onClick={() => openBulkDuplicate(camp)}
-                                title="Duplicar em massa">
-                                <Layers className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          <TableRow key={camp.campaign_id} className={isExpanded ? "border-b-0 bg-muted/30" : ""}>
+                            <TableCell className="font-medium text-xs max-w-[200px]">
+                              <div className="flex items-center gap-1">
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 shrink-0" onClick={() => toggleExpand(camp)}
+                                  disabled={loadingHierarchy === camp.campaign_id}>
+                                  {loadingHierarchy === camp.campaign_id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : isExpanded ? (
+                                    <ChevronDown className="h-3 w-3" />
+                                  ) : (
+                                    <ChevronRight className="h-3 w-3" />
+                                  )}
+                                </Button>
+                                <span className="truncate">{camp.campaign_name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{statusBadge(camp.operation_status, camp.secondary_status)}</TableCell>
+                            <TableCell className="text-xs">
+                              {camp.budget > 0 ? (
+                                <div>
+                                  <span>R$ {camp.budget.toFixed(2)}</span>
+                                  <span className="text-[9px] text-muted-foreground ml-1">({budgetModeLabel(camp.budget_mode)})</span>
+                                </div>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m ? fmtMoney(m.spend) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m ? (
+                                <span className={m.sales > 0 ? "text-emerald-500 font-semibold" : "text-muted-foreground"}>
+                                  {m.sales}
+                                </span>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m ? (
+                                <span className={m.revenue > 0 ? "text-emerald-500" : "text-muted-foreground"}>
+                                  {fmtMoney(m.revenue)}
+                                </span>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m ? (
+                                <Badge className={`text-[10px] ${m.roas >= 2 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : m.roas >= 1 ? "bg-amber-500/15 text-amber-600 border-amber-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
+                                  {m.roas.toFixed(2)}x
+                                </Badge>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m ? (
+                                <Badge className={`text-[10px] ${m.roi >= 0 ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-destructive/15 text-destructive border-destructive/30"}`}>
+                                  {m.roi.toFixed(1)}%
+                                </Badge>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">
+                              {m && m.cpa > 0 ? fmtMoney(m.cpa) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono text-muted-foreground">
+                              {m ? m.clicks.toLocaleString("pt-BR") : "—"}
+                            </TableCell>
+                            <TableCell className="text-[10px] font-mono text-muted-foreground">{camp.campaign_id}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading} onClick={() => toggleStatus(camp)}
+                                  title={camp.operation_status === "ENABLE" ? "Pausar" : "Ativar"}>
+                                  {actionLoading === camp.campaign_id + "_status" ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : camp.operation_status === "ENABLE" ? (
+                                    <Pause className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <Play className="h-3.5 w-3.5 text-emerald-500" />
+                                  )}
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
+                                  onClick={() => { setBudgetDialog(camp); setNewBudget(camp.budget > 0 ? String(camp.budget) : ""); }}
+                                  title="Editar orçamento">
+                                  <DollarSign className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
+                                  onClick={() => { setDupDialog(camp); setDupName(`Copy of ${camp.campaign_name}`); setDupBudget(camp.budget > 0 ? String(camp.budget) : ""); }}
+                                  title="Duplicar campanha">
+                                  <Copy className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={!!actionLoading}
+                                  onClick={() => openBulkDuplicate(camp)}
+                                  title="Duplicar em massa">
+                                  <Layers className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {/* ── Hierarchy Sub-rows ── */}
+                          {isExpanded && hierarchy.map((ag) => (
+                            <>
+                              <TableRow key={`ag-${ag.adgroup_id}`} className="bg-muted/20">
+                                <TableCell className="text-xs pl-10 font-medium" colSpan={2}>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-[9px] shrink-0">Conjunto</Badge>
+                                    <span className="truncate">{ag.adgroup_name}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-xs">
+                                  {ag.budget > 0 ? (
+                                    <span>R$ {ag.budget.toFixed(2)} <span className="text-[9px] text-muted-foreground">({budgetModeLabel(ag.budget_mode)})</span></span>
+                                  ) : <span className="text-muted-foreground">—</span>}
+                                </TableCell>
+                                <TableCell colSpan={8} />
+                                <TableCell className="text-right">
+                                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={!!actionLoading}
+                                    onClick={() => toggleAdGroupStatus(camp, ag.adgroup_id, ag.operation_status)}
+                                    title={ag.operation_status === "ENABLE" ? "Pausar conjunto" : "Ativar conjunto"}>
+                                    {actionLoading === ag.adgroup_id + "_status" ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : ag.operation_status === "ENABLE" ? (
+                                      <Pause className="h-3 w-3" />
+                                    ) : (
+                                      <Play className="h-3 w-3 text-emerald-500" />
+                                    )}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                              {ag.ads.map((ad) => (
+                                <TableRow key={`ad-${ad.ad_id}`} className="bg-muted/10">
+                                  <TableCell className="text-[11px] pl-14 text-muted-foreground" colSpan={2}>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="secondary" className="text-[8px] shrink-0">Anúncio</Badge>
+                                      <span className="truncate">{ad.ad_name}</span>
+                                      {statusBadge(ad.operation_status, ad.secondary_status)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell colSpan={9} />
+                                  <TableCell className="text-right">
+                                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={!!actionLoading}
+                                      onClick={() => toggleAdStatus(camp, ag.adgroup_id, ad.ad_id, ad.operation_status)}
+                                      title={ad.operation_status === "ENABLE" ? "Pausar anúncio" : "Ativar anúncio"}>
+                                      {actionLoading === ad.ad_id + "_status" ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : ad.operation_status === "ENABLE" ? (
+                                        <Pause className="h-3 w-3" />
+                                      ) : (
+                                        <Play className="h-3 w-3 text-emerald-500" />
+                                      )}
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </>
+                          ))}
+                        </>
                       );
                     })}
                     {!loading && !campaigns.length && (
