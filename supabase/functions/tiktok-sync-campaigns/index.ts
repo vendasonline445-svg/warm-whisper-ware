@@ -17,6 +17,61 @@ const safeJson = async (resp: Response) => {
   }
 };
 
+// ── Token auto-refresh helper ──
+async function refreshAccessToken(
+  supabase: any,
+  bc: any,
+): Promise<{ access_token: string; refreshed: boolean }> {
+  if (!bc.refresh_token) return { access_token: bc.access_token, refreshed: false };
+
+  // Check if token is expired or will expire in next 30 minutes
+  const expiresAt = bc.token_expires_at ? new Date(bc.token_expires_at).getTime() : 0;
+  const isExpiringSoon = expiresAt > 0 && expiresAt - Date.now() < 30 * 60 * 1000;
+
+  if (!isExpiringSoon && expiresAt > 0) {
+    return { access_token: bc.access_token, refreshed: false };
+  }
+
+  const appId = Deno.env.get("TIKTOK_APP_ID");
+  const appSecret = Deno.env.get("TIKTOK_APP_SECRET");
+  if (!appId || !appSecret) return { access_token: bc.access_token, refreshed: false };
+
+  try {
+    const resp = await fetch("https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        app_id: appId,
+        secret: appSecret,
+        grant_type: "refresh_token",
+        refresh_token: bc.refresh_token,
+      }),
+    });
+    const data = await safeJson(resp);
+    if (data?.code === 0 && data?.data?.access_token) {
+      const newToken = data.data.access_token;
+      const newRefresh = data.data.refresh_token || bc.refresh_token;
+      const newExpiry = data.data.access_token_expires_in
+        ? new Date(Date.now() + data.data.access_token_expires_in * 1000).toISOString()
+        : null;
+
+      await supabase.from("business_centers").update({
+        access_token: newToken,
+        refresh_token: newRefresh,
+        ...(newExpiry ? { token_expires_at: newExpiry } : {}),
+        updated_at: new Date().toISOString(),
+      }).eq("id", bc.id);
+
+      console.log(`Token refreshed for BC ${bc.bc_name}`);
+      return { access_token: newToken, refreshed: true };
+    }
+    console.error("Token refresh failed:", data?.message);
+  } catch (e) {
+    console.error("Token refresh error:", e);
+  }
+  return { access_token: bc.access_token, refreshed: false };
+}
+
 type CampaignApiMode = "standard" | "smart_plus";
 
 const API_BY_MODE = {
