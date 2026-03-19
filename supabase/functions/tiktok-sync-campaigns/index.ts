@@ -1848,34 +1848,44 @@ Deno.serve(async (req) => {
             let adError = "";
             let newAdId = "";
 
-            if (tiktok_item_id) {
-              // Spark Ad via /ad/create/ with creatives array (v1.3 required format)
-              const adPayload: Record<string, any> = {
-                advertiser_id: targetAdvId,
-                adgroup_id: newAgId,
-                ad_name: `${copyName} - Spark Ad`,
-                identity_id: identity_id || "",
-                identity_type,
-                creatives: [{
-                  tiktok_item_id,
-                  call_to_action,
-                  ...(landing_page_url ? { landing_page_url } : {}),
-                }],
-              };
+            // Resolve list of spark items (support both single and multiple)
+            const allSparkItems: string[] = (tiktok_item_ids && tiktok_item_ids.length > 0)
+              ? tiktok_item_ids.filter((s: string) => s && s.trim())
+              : (tiktok_item_id ? [tiktok_item_id] : []);
 
-              const adResp = await fetch(`${TIKTOK_API}/ad/create/`, {
-                method: "POST",
-                headers,
-                body: JSON.stringify(adPayload),
-              });
-              const adData = await safeJson(adResp);
+            if (allSparkItems.length > 0) {
+              // Create one Spark Ad per item_id
+              for (let si = 0; si < allSparkItems.length; si++) {
+                const itemId = allSparkItems[si].trim();
+                const adPayload: Record<string, any> = {
+                  advertiser_id: targetAdvId,
+                  adgroup_id: newAgId,
+                  ad_name: allSparkItems.length > 1
+                    ? `${copyName} - Spark ${si + 1}`
+                    : `${copyName} - Spark Ad`,
+                  identity_id: identity_id || "",
+                  identity_type,
+                  creatives: [{
+                    tiktok_item_id: itemId,
+                    call_to_action,
+                    ...(landing_page_url ? { landing_page_url } : {}),
+                  }],
+                };
 
-              if (adData.code === 0) {
-                adSuccess = true;
-                const adIds = adData.data?.ad_ids || [];
-                newAdId = adIds[0] ? String(adIds[0]) : "";
-              } else {
-                adError = adData.message || "Falha ao criar Spark Ad";
+                const adResp = await fetch(`${TIKTOK_API}/ad/create/`, {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify(adPayload),
+                });
+                const adData = await safeJson(adResp);
+
+                if (adData.code === 0) {
+                  adSuccess = true;
+                  const adIds = adData.data?.ad_ids || [];
+                  if (!newAdId && adIds[0]) newAdId = String(adIds[0]);
+                } else {
+                  adError = adData.message || `Falha ao criar Spark Ad #${si + 1}`;
+                }
               }
             } else if (ad_texts.length > 0) {
               // Smart Creative via /ad/smart_creative/create/ or /ad/aco/create/
