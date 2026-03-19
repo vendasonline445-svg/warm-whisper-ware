@@ -211,17 +211,21 @@ export default function SmartCampaignCreator() {
       }
 
       // Auto-fill identity and item_id
-      setIdentityId(authCode.trim());
-      setIdentityType("AUTH_CODE");
+      const postIdentityId = authCode.trim();
+      const postIdentityType = "AUTH_CODE";
+      setIdentityId(postIdentityId);
+      setIdentityType(postIdentityType);
 
       if (data.item_id) {
-        // Add the item_id to spark items
+        // Add the item_id to spark items (replace empty first slot or append)
         const newItems = sparkItems[0] === "" ? [data.item_id] : [...sparkItems, data.item_id];
         setSparkItems(newItems);
         setAuthorizedPosts(prev => [...prev, {
-          auth_code: authCode.trim(),
+          auth_code: postIdentityId,
           item_id: data.item_id,
           display_name: data.display_name || "Post autorizado",
+          identity_id: postIdentityId,
+          identity_type: postIdentityType,
         }]);
       }
 
