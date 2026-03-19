@@ -1877,13 +1877,19 @@ Deno.serve(async (req) => {
               placements: ["PLACEMENT_TIKTOK"],
               budget_mode,
               budget: Number(budget),
-              schedule_type: "SCHEDULE_FROM_NOW",
+              schedule_type: schedule_start_time ? "SCHEDULE_START_END" : "SCHEDULE_FROM_NOW",
+              ...(schedule_start_time ? { schedule_start_time } : {}),
               optimization_goal: optimization_goal,
               pacing: "PACING_MODE_SMOOTH",
               billing_event: "OCPM",
               bid_type,
               creative_material_mode: tiktok_item_id ? "CUSTOM" : "SMART_CREATIVE",
             };
+
+            // Audience targeting
+            if (body.age_groups?.length) adgroupPayload.age_groups = body.age_groups;
+            if (body.gender) adgroupPayload.gender = body.gender;
+            if (body.location_ids?.length) adgroupPayload.location_ids = body.location_ids;
 
             // BID cap value
             if (bid && bid_type === "BID_TYPE_CUSTOM") {
