@@ -2267,12 +2267,15 @@ Deno.serve(async (req) => {
           const rawId = String(item?.pixel_id ?? item?.id ?? "").trim();
           if (!rawId) continue;
 
-          const pixelCode = String(item?.pixel_code ?? item?.code ?? "").trim();
+          const numericId = extractNumericPixelId(item);
+          if (!numericId) continue;
+
+          const pixelCode = String(item?.pixel_code ?? item?.code ?? (PIXEL_NUMERIC_REGEX.test(rawId) ? "" : rawId)).trim();
           const rawPixelName = String(item?.name ?? item?.pixel_name ?? "").trim();
-          const pixelName = rawPixelName || pixelCode || rawId;
+          const pixelName = rawPixelName || pixelCode || numericId;
 
           pixels.push({
-            pixel_id: rawId,
+            pixel_id: numericId,
             pixel_code: pixelCode,
             name: pixelName,
             status: String(item?.status ?? ""),
@@ -2308,13 +2311,15 @@ Deno.serve(async (req) => {
         })
         .map((px: any) => {
           const rawId = String(px.pixel_id).trim();
+          if (!PIXEL_NUMERIC_REGEX.test(rawId)) return null;
           return {
             pixel_id: rawId,
             pixel_code: rawId,
             name: String(px.name || rawId).trim(),
             status: String(px.status || "active"),
           };
-        });
+        })
+        .filter(Boolean) as Array<{ pixel_id: string; pixel_code: string; name: string; status: string }>;
 
       const uniquePixels = Array.from(
         new Map([...pixels, ...fallbackPixels].map((px) => [px.pixel_id, px])).values(),
