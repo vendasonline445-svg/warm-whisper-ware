@@ -82,7 +82,7 @@ export default function SmartCampaignCreator() {
   const [landingPageUrl, setLandingPageUrl] = useState("");
   const [selectedCTAs, setSelectedCTAs] = useState<string[]>(CTA_OPTIONS.map(c => c.value));
 
-  // Spark Ads
+  // Spark Ads — multiple posts with individual auth codes
   const [useSparkAds, setUseSparkAds] = useState(true);
   const [sparkItems, setSparkItems] = useState<string[]>([""]);
   const [identityId, setIdentityId] = useState("");
@@ -90,10 +90,10 @@ export default function SmartCampaignCreator() {
   const [availableIdentities, setAvailableIdentities] = useState<Array<{ identity_id: string; identity_type: string; display_name: string }>>([]);
   const [loadingIdentities, setLoadingIdentities] = useState(false);
 
-  // Auth Code flow for Spark Ads
+  // Auth Code flow — supports multiple posts
   const [authCode, setAuthCode] = useState("");
   const [authorizingPost, setAuthorizingPost] = useState(false);
-  const [authorizedPosts, setAuthorizedPosts] = useState<Array<{ auth_code: string; item_id: string; display_name: string }>>([]);
+  const [authorizedPosts, setAuthorizedPosts] = useState<Array<{ auth_code: string; item_id: string; display_name: string; identity_id: string; identity_type: string }>>([]);
 
   // Smart Creative texts (when NOT using Spark Ads)
   const [adTexts, setAdTexts] = useState<string[]>([""]);
@@ -211,17 +211,21 @@ export default function SmartCampaignCreator() {
       }
 
       // Auto-fill identity and item_id
-      setIdentityId(authCode.trim());
-      setIdentityType("AUTH_CODE");
+      const postIdentityId = authCode.trim();
+      const postIdentityType = "AUTH_CODE";
+      setIdentityId(postIdentityId);
+      setIdentityType(postIdentityType);
 
       if (data.item_id) {
-        // Add the item_id to spark items
+        // Add the item_id to spark items (replace empty first slot or append)
         const newItems = sparkItems[0] === "" ? [data.item_id] : [...sparkItems, data.item_id];
         setSparkItems(newItems);
         setAuthorizedPosts(prev => [...prev, {
-          auth_code: authCode.trim(),
+          auth_code: postIdentityId,
           item_id: data.item_id,
           display_name: data.display_name || "Post autorizado",
+          identity_id: postIdentityId,
+          identity_type: postIdentityType,
         }]);
       }
 
@@ -293,6 +297,8 @@ export default function SmartCampaignCreator() {
           tiktok_item_id: useSparkAds ? sparkItems.filter(s => s.trim())[0] : undefined,
           identity_id: useSparkAds ? identityId : undefined,
           identity_type: useSparkAds ? identityType : undefined,
+          // Send per-post identity data for multi-post Spark Ads
+          authorized_posts: useSparkAds && authorizedPosts.length > 0 ? authorizedPosts : undefined,
           ad_texts: useSparkAds ? [] : adTexts.filter(t => t.trim()),
           age_groups: ageGroups.length > 0 ? ageGroups : undefined,
           gender: gender !== "GENDER_UNLIMITED" ? gender : undefined,
@@ -537,7 +543,7 @@ export default function SmartCampaignCreator() {
                         )}
                       </div>
                     ))}
-                    <p className="text-[9px] text-muted-foreground mt-1">Cada post gera um anúncio separado dentro da campanha. Máx. 10.</p>
+                    <p className="text-[9px] text-muted-foreground mt-1">Cada post gera um anúncio separado dentro do conjunto. Máx. 10. Use Auth Code abaixo para autorizar automaticamente.</p>
                   </div>
                   {/* Auth Code Authorization — Primary method for Spark Ads */}
                   <Separator />
@@ -570,11 +576,18 @@ export default function SmartCampaignCreator() {
                     {/* Show authorized posts */}
                     {authorizedPosts.length > 0 && (
                       <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground">✅ {authorizedPosts.length} post(s) autorizado(s) — cada um gera 1 anúncio</Label>
                         {authorizedPosts.map((p, i) => (
                           <div key={i} className="flex items-center gap-2 text-[10px] p-1.5 rounded bg-primary/5 border border-primary/20">
                             <CheckCircle className="h-3 w-3 text-primary shrink-0" />
-                            <span className="font-medium">{p.display_name}</span>
+                            <span className="font-medium flex-1">{p.display_name}</span>
                             <span className="font-mono text-muted-foreground">Item: {p.item_id}</span>
+                            <Button size="sm" variant="ghost" className="h-5 w-5 p-0" onClick={() => {
+                              setAuthorizedPosts(prev => prev.filter((_, j) => j !== i));
+                              setSparkItems(prev => prev.filter(id => id !== p.item_id));
+                            }}>
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
                           </div>
                         ))}
                       </div>

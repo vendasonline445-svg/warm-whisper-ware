@@ -1799,6 +1799,7 @@ Deno.serve(async (req) => {
         identity_type = "AUTH_CODE",
         tiktok_item_id,
         tiktok_item_ids = [],
+        authorized_posts = [],
         ad_texts = [],
         call_to_action = "LEARN_MORE",
         schedule_start_time,
@@ -1949,14 +1950,20 @@ Deno.serve(async (req) => {
               // Create one Spark Ad per item_id
               for (let si = 0; si < allSparkItems.length; si++) {
                 const itemId = allSparkItems[si].trim();
+
+                // Find per-post identity from authorized_posts if available
+                const postAuth = authorized_posts?.find((p: any) => p.item_id === itemId);
+                const postIdentityId = postAuth?.identity_id || identity_id || "";
+                const postIdentityType = postAuth?.identity_type || identity_type;
+
                 const adPayload: Record<string, any> = {
                   advertiser_id: targetAdvId,
                   adgroup_id: newAgId,
                   ad_name: allSparkItems.length > 1
                     ? `${copyName} - Spark ${si + 1}`
                     : `${copyName} - Spark Ad`,
-                  identity_id: identity_id || "",
-                  identity_type,
+                  identity_id: postIdentityId,
+                  identity_type: postIdentityType,
                   creatives: [{
                     tiktok_item_id: itemId,
                     call_to_action,
@@ -1975,8 +1982,10 @@ Deno.serve(async (req) => {
                   adSuccess = true;
                   const adIds = adData.data?.ad_ids || [];
                   if (!newAdId && adIds[0]) newAdId = String(adIds[0]);
+                  console.log(`[SmartCampaign] ✓ Spark Ad #${si + 1} created — item: ${itemId}, identity: ${postIdentityId.slice(0, 12)}...`);
                 } else {
                   adError = adData.message || `Falha ao criar Spark Ad #${si + 1}`;
+                  console.warn(`[SmartCampaign] ✗ Spark Ad #${si + 1} failed:`, adData.message);
                 }
               }
             } else if (ad_texts.length > 0) {
