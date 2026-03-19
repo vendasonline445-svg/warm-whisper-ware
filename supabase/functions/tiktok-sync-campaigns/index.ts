@@ -1913,6 +1913,7 @@ Deno.serve(async (req) => {
         ? call_to_action.filter((cta: any) => typeof cta === "string" && cta.trim())
         : (typeof call_to_action === "string" && call_to_action.trim() ? [call_to_action.trim()] : []);
       const primaryCta = selectedCtas[0] || "LEARN_MORE";
+      const normalizedScheduleStart = ensureFutureTikTokDateTime(schedule_start_time);
 
       const results: Array<{
         advertiser_id: string;
@@ -1925,6 +1926,11 @@ Deno.serve(async (req) => {
       }> = [];
 
       for (const targetAdvId of targetAdvIds) {
+        const resolvedPixelId = await resolveAdgroupPixelId(headers, targetAdvId, pixel_id);
+        if (pixel_id && !resolvedPixelId) {
+          console.warn(`[SmartCampaign] Pixel não resolvido para advertiser=${targetAdvId}. Valor recebido: ${String(pixel_id).slice(0, 64)}`);
+        }
+
         for (let copyNum = 1; copyNum <= numCopies; copyNum++) {
           try {
             const copyName = numCopies > 1 || targetAdvIds.length > 1
@@ -1978,8 +1984,8 @@ Deno.serve(async (req) => {
               placements: ["PLACEMENT_TIKTOK"],
               budget_mode,
               budget: Number(budget),
-              schedule_type: schedule_start_time ? "SCHEDULE_START_END" : "SCHEDULE_FROM_NOW",
-              ...(schedule_start_time ? { schedule_start_time } : {}),
+              schedule_type: normalizedScheduleStart ? "SCHEDULE_START_END" : "SCHEDULE_FROM_NOW",
+              ...(normalizedScheduleStart ? { schedule_start_time: normalizedScheduleStart } : {}),
               optimization_goal: optimization_goal,
               pacing: "PACING_MODE_SMOOTH",
               billing_event: "OCPM",
@@ -1998,8 +2004,8 @@ Deno.serve(async (req) => {
             }
 
             // Pixel + conversion event
-            if (pixel_id) {
-              adgroupPayload.pixel_id = pixel_id;
+            if (resolvedPixelId) {
+              adgroupPayload.pixel_id = resolvedPixelId;
             }
             if (optimization_event) {
               adgroupPayload.external_action = optimization_event;
