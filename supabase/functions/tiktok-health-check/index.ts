@@ -71,46 +71,23 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Also check via BC balance endpoint for more precise data
-      if (bc.bc_external_id) {
-        try {
-          const balResp = await fetch(
-            `${TIKTOK_API}/advertiser/balance/get/?bc_id=${bc.bc_external_id}&page=1&page_size=100`,
-            { headers }
-          );
-          const balData = await safeJson(balResp);
-          if (balData.code === 0 && balData.data?.list) {
-            for (const b of balData.data.list) {
-              const id = String(b.advertiser_id);
-              const totalBalance = Number(b.balance || 0);
-              const alreadyFlagged = allAlerts.some(a => a.advertiser_id === id && (a.issue === "balance" || a.issue === "low_balance"));
-              if (!alreadyFlagged && totalBalance <= 0) {
-                allAlerts.push({ bc_name: bc.bc_name, advertiser_id: id, name: id, issue: "balance", detail: `Saldo: ${totalBalance.toFixed(2)}` });
-              }
-            }
-          }
-        } catch (e) {
-          console.error(`Error fetching BC balance for ${bc.bc_name}:`, e);
-        }
-      }
+      // Skip BC balance endpoint — only monitoring status
     }
 
-    // Send Pushcut if alerts found
+    // Send Pushcut only if accounts went down
     let pushcutSent = false;
     if (allAlerts.length > 0) {
-      const statusAlerts = allAlerts.filter(a => a.issue === "status");
-      const balanceAlerts = allAlerts.filter(a => a.issue === "balance" || a.issue === "low_balance");
-
-      let text = `⚠️ ${allAlerts.length} alerta(s) detectado(s)\n`;
-
-      if (statusAlerts.length > 0) {
-        text += `\n🔴 ${statusAlerts.length} conta(s) com problema:\n`;
-        statusAlerts.slice(0, 8).forEach(a => { text += `• ${a.name} (${a.bc_name}) — ${a.detail}\n`; });
-      }
-      if (balanceAlerts.length > 0) {
-        text += `\n💰 ${balanceAlerts.length} conta(s) sem saldo:\n`;
-        balanceAlerts.slice(0, 8).forEach(a => { text += `• ${a.name} (${a.bc_name}) — ${a.detail}\n`; });
-      }
+      let text = `🔴 ${allAlerts.length} conta(s) caiu(ram):\n\n`;
+      allAlerts.slice(0, 10).forEach(a => {
+        const statusLabel: Record<string, string> = {
+          STATUS_DISABLE: "Desativada",
+          STATUS_LIMIT: "Limitada",
+          STATUS_LIMIT_PART: "Parcialmente Limitada",
+          STATUS_CONFIRM_FAIL: "Confirmação Falhou",
+          STATUS_CONFIRM_FAIL_END: "Falha Definitiva",
+        };
+        text += `• ${a.name} (${a.bc_name}) — ${statusLabel[a.detail] || a.detail}\n`;
+      });
 
       try {
         const pushResp = await fetch(PUSHCUT_URL, {
