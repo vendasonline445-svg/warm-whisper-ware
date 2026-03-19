@@ -297,6 +297,8 @@ export default function SmartCampaignCreator() {
           tiktok_item_id: useSparkAds ? sparkItems.filter(s => s.trim())[0] : undefined,
           identity_id: useSparkAds ? identityId : undefined,
           identity_type: useSparkAds ? identityType : undefined,
+          // Send per-post identity data for multi-post Spark Ads
+          authorized_posts: useSparkAds && authorizedPosts.length > 0 ? authorizedPosts : undefined,
           ad_texts: useSparkAds ? [] : adTexts.filter(t => t.trim()),
           age_groups: ageGroups.length > 0 ? ageGroups : undefined,
           gender: gender !== "GENDER_UNLIMITED" ? gender : undefined,
