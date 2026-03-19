@@ -137,6 +137,9 @@ export default function AdminAdsHub({ defaultTab }: { defaultTab?: SubTab }) {
       {/* ── SMART CREATE ── */}
       {subTab === "smart_create" && <SmartCampaignCreator />}
 
+      {/* ── BLOCKED WORDS ── */}
+      {subTab === "blocked_words" && <BlockedWordsManager />}
+
       {/* ── CAMPAIGNS ── */}
       {!loading && subTab === "campaigns" && (
         <div className="space-y-4">
