@@ -502,18 +502,38 @@ export default function SmartCampaignCreator() {
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Call to Action</Label>
-                  <Select value={callToAction} onValueChange={setCallToAction}>
-                    <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {CTA_OPTIONS.map(cta => (
-                        <SelectItem key={cta.value} value={cta.value} className="text-xs">
+                <div className="col-span-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="text-xs">Call to Action — {selectedCTAs.length} selecionada(s)</Label>
+                    <Button size="sm" variant="ghost" className="h-5 text-[9px] px-2"
+                      onClick={() => setSelectedCTAs(
+                        selectedCTAs.length === CTA_OPTIONS.length ? [] : CTA_OPTIONS.map(c => c.value)
+                      )}>
+                      {selectedCTAs.length === CTA_OPTIONS.length ? "Desmarcar todas" : "Selecionar todas"}
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 border border-border rounded-lg p-2">
+                    {CTA_OPTIONS.map(cta => {
+                      const isSelected = selectedCTAs.includes(cta.value);
+                      return (
+                        <button
+                          key={cta.value}
+                          type="button"
+                          onClick={() => setSelectedCTAs(prev =>
+                            isSelected ? prev.filter(v => v !== cta.value) : [...prev, cta.value]
+                          )}
+                          className={`px-2 py-1 rounded-md text-[10px] font-medium border transition-colors ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted/30 text-muted-foreground border-border opacity-50 line-through"
+                          }`}
+                        >
                           {cta.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-1">Desmarque as CTAs que não deseja. Smart+ usa todas as selecionadas.</p>
                 </div>
                 <div>
                   <Label className="text-xs">Cópias por Conta</Label>
