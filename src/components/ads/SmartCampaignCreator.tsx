@@ -266,7 +266,7 @@ export default function SmartCampaignCreator() {
   const canSubmit = () => {
     if (!campaignName || !budget || !selectedAccounts.length) return false;
     if (bidType === "BID_TYPE_CUSTOM" && !bid) return false;
-    if (useSparkAds && (!sparkItems.some(s => s.trim()) || !identityId)) return false;
+    if (useSparkAds && authorizedPosts.length === 0) return false;
     if (!useSparkAds && !adTexts.some(t => t.trim())) return false;
     return true;
   };
@@ -515,44 +515,13 @@ export default function SmartCampaignCreator() {
 
               {useSparkAds ? (
                 <div className="space-y-3 border border-border rounded-lg p-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <Label className="text-xs">TikTok Item IDs (Posts) * — {sparkItems.filter(s => s.trim()).length} post(s)</Label>
-                      {sparkItems.length < 10 && (
-                        <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setSparkItems([...sparkItems, ""])}>
-                          <Plus className="h-3 w-3 mr-1" /> Adicionar Post
-                        </Button>
-                      )}
-                    </div>
-                    {sparkItems.map((item, i) => (
-                      <div key={i} className="flex gap-2 mt-1">
-                        <Input
-                          value={item}
-                          onChange={e => {
-                            const updated = [...sparkItems];
-                            updated[i] = e.target.value;
-                            setSparkItems(updated);
-                          }}
-                          placeholder={`ID do post TikTok #${i + 1}`}
-                          className="h-8 text-xs flex-1"
-                        />
-                        {sparkItems.length > 1 && (
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setSparkItems(sparkItems.filter((_, j) => j !== i))}>
-                            <Trash2 className="h-3 w-3 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    <p className="text-[9px] text-muted-foreground mt-1">Cada post gera um anúncio separado dentro do conjunto. Máx. 10. Use Auth Code abaixo para autorizar automaticamente.</p>
-                  </div>
                   {/* Auth Code Authorization — Primary method for Spark Ads */}
-                  <Separator />
                   <div className="space-y-3">
                     <div>
                       <Label className="text-xs font-medium">🔑 Autorizar Post via Auth Code</Label>
                       <p className="text-[9px] text-muted-foreground">
                         O dono do post gera o Auth Code no TikTok (Post → Compartilhar → Ad Settings → Gerar Código).
-                        Cole o código aqui para autorizar e preencher automaticamente o Item ID e Identity.
+                        Cole o código aqui para autorizar. Cada post gera um anúncio separado.
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -574,7 +543,7 @@ export default function SmartCampaignCreator() {
                     </div>
 
                     {/* Show authorized posts */}
-                    {authorizedPosts.length > 0 && (
+                    {authorizedPosts.length > 0 ? (
                       <div className="space-y-1">
                         <Label className="text-[10px] text-muted-foreground">✅ {authorizedPosts.length} post(s) autorizado(s) — cada um gera 1 anúncio</Label>
                         {authorizedPosts.map((p, i) => (
@@ -591,65 +560,11 @@ export default function SmartCampaignCreator() {
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
-
-                  {/* Identity section — auto-filled by auth code or manual */}
-                  <Separator />
-                  <div className="grid grid-cols-1 gap-3">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <Label className="text-xs">Identity ID {identityId ? "✅" : "*"}</Label>
-                        <Button
-                          size="sm" variant="outline" className="h-6 text-[10px]"
-                          onClick={() => selectedAccounts[0] && fetchIdentities(selectedAccounts[0])}
-                          disabled={loadingIdentities || !selectedAccounts.length}
-                        >
-                          {loadingIdentities ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                          Buscar Identidades
-                        </Button>
-                      </div>
-                      {availableIdentities.length > 0 ? (
-                        <Select value={identityId} onValueChange={(val) => {
-                          setIdentityId(val);
-                          const found = availableIdentities.find(i => i.identity_id === val);
-                          if (found) setIdentityType(found.identity_type);
-                        }}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Selecione uma identidade" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableIdentities.map(id => (
-                              <SelectItem key={id.identity_id} value={id.identity_id} className="text-xs">
-                                {id.display_name} ({id.identity_type}) — {id.identity_id.slice(0, 12)}...
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Input value={identityId} onChange={e => setIdentityId(e.target.value)}
-                          placeholder={identityId ? identityId : "Use Auth Code acima ou cole manualmente"}
-                          className="h-8 text-xs" />
-                      )}
-                      <p className="text-[9px] text-muted-foreground mt-1">
-                        {identityId
-                          ? `✅ Identity preenchido — Tipo: ${identityType}`
-                          : "Autorize um post acima com Auth Code, ou busque identidades existentes (TT_USER, BC_AUTH_TT)."
-                        }
+                    ) : (
+                      <p className="text-[9px] text-muted-foreground text-center py-2 border border-dashed border-border rounded">
+                        Nenhum post autorizado ainda. Cole um Auth Code acima para começar.
                       </p>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Tipo de Identidade</Label>
-                      <Select value={identityType} onValueChange={setIdentityType}>
-                        <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AUTH_CODE" className="text-xs">Auth Code (Post autorizado)</SelectItem>
-                          <SelectItem value="TT_USER" className="text-xs">TT User</SelectItem>
-                          <SelectItem value="BC_AUTH_TT" className="text-xs">BC Auth TT</SelectItem>
-                          <SelectItem value="CUSTOMIZED_USER" className="text-xs">Customized User</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    )}
                   </div>
                 </div>
               ) : (
