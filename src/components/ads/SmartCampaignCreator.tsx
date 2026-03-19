@@ -543,7 +543,7 @@ export default function SmartCampaignCreator() {
                         )}
                       </div>
                     ))}
-                    <p className="text-[9px] text-muted-foreground mt-1">Cada post gera um anúncio separado dentro da campanha. Máx. 10.</p>
+                    <p className="text-[9px] text-muted-foreground mt-1">Cada post gera um anúncio separado dentro do conjunto. Máx. 10. Use Auth Code abaixo para autorizar automaticamente.</p>
                   </div>
                   {/* Auth Code Authorization — Primary method for Spark Ads */}
                   <Separator />
