@@ -32,6 +32,22 @@ interface TikTokCampaign {
   advertiser_id?: string;
 }
 
+interface AdGroupInfo {
+  adgroup_id: string;
+  adgroup_name: string;
+  operation_status: string;
+  budget: number;
+  budget_mode: string;
+  ads: AdInfo[];
+}
+
+interface AdInfo {
+  ad_id: string;
+  ad_name: string;
+  operation_status: string;
+  secondary_status: string;
+}
+
 interface CampaignMetrics {
   spend: number; // centavos
   impressions: number;
