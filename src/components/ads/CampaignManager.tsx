@@ -63,6 +63,7 @@ interface CampaignMetrics {
 
 type CampaignSortBy = "updated" | "name" | "spend" | "sales" | "revenue" | "roas" | "roi" | "clicks";
 type SortDirection = "asc" | "desc";
+type DateRange = "today" | "3d" | "7d" | "14d" | "30d";
 
 interface CampaignCachePayload {
   campaigns: TikTokCampaign[];
