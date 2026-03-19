@@ -72,7 +72,7 @@ async function resolveAdgroupPixelId(
     try {
       const query = new URLSearchParams({
         advertiser_id: advertiserId,
-        page_size: "100",
+        page_size: "20",
       });
       const resp = await fetch(`${TIKTOK_API}/pixel/list/?${query.toString()}`, { headers });
       const data = await safeJson(resp);
@@ -2221,7 +2221,8 @@ Deno.serve(async (req) => {
 
       const pixels: Array<{ pixel_id: string; pixel_code: string; name: string; status: string }> = [];
       let page = 1;
-      const pageSize = 100;
+      const pageSize = 20;
+      let apiWarning: string | null = null;
 
       while (true) {
         const query = new URLSearchParams({
@@ -2234,9 +2235,9 @@ Deno.serve(async (req) => {
         const data = await safeJson(resp);
 
         if (data?.code !== 0) {
-          return new Response(JSON.stringify({ error: data?.message || "Falha ao buscar pixels", code: data?.code }), {
-            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          apiWarning = String(data?.message || "Falha ao buscar pixels na conta");
+          console.warn(`[get_pixels] TikTok API warning for advertiser ${advertiser_id}: ${apiWarning} (code: ${String(data?.code ?? "unknown")})`);
+          break;
         }
 
         const list = Array.isArray(data?.data?.list) ? data.data.list : [];
@@ -2244,7 +2245,6 @@ Deno.serve(async (req) => {
         console.log(`[get_pixels] Page ${page} returned ${list.length} items. Sample:`, JSON.stringify(list[0] ?? {}).slice(0, 300));
 
         for (const item of list) {
-          // Accept any non-empty pixel_id (numeric or alphanumeric like "D6GM4RBC77U...")
           const rawId = String(item?.pixel_id ?? item?.id ?? "").trim();
           if (!rawId) continue;
 
@@ -2271,11 +2271,40 @@ Deno.serve(async (req) => {
         page += 1;
       }
 
+      // Fallback: if TikTok API returns empty/not available, load active pixels already configured in dashboard
+      const { data: localPixels, error: localPixelsError } = await supabase
+        .from("tiktok_pixels")
+        .select("pixel_id,name,status,client_id")
+        .eq("status", "active");
+
+      if (localPixelsError) {
+        console.warn("[get_pixels] local fallback query failed:", localPixelsError.message);
+      }
+
+      const fallbackPixels = (localPixels || [])
+        .filter((px: any) => {
+          if (!px?.pixel_id) return false;
+          if (!bc?.client_id || !px?.client_id) return true;
+          return String(px.client_id) === String(bc.client_id);
+        })
+        .map((px: any) => {
+          const rawId = String(px.pixel_id).trim();
+          return {
+            pixel_id: rawId,
+            pixel_code: rawId,
+            name: String(px.name || rawId).trim(),
+            status: String(px.status || "active"),
+          };
+        });
+
       const uniquePixels = Array.from(
-        new Map(pixels.map((px) => [px.pixel_id, px])).values(),
+        new Map([...pixels, ...fallbackPixels].map((px) => [px.pixel_id, px])).values(),
       );
 
-      return new Response(JSON.stringify({ pixels: uniquePixels }), {
+      return new Response(JSON.stringify({
+        pixels: uniquePixels,
+        ...(apiWarning ? { warning: apiWarning } : {}),
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
