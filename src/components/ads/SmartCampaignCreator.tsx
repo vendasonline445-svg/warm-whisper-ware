@@ -216,24 +216,25 @@ export default function SmartCampaignCreator() {
       setIdentityId(postIdentityId);
       setIdentityType(postIdentityType);
 
-      if (data.item_id) {
-        // Add the item_id to spark items (replace empty first slot or append)
-        const newItems = sparkItems[0] === "" ? [data.item_id] : [...sparkItems, data.item_id];
+      const itemId = data.item_id || "";
+      // Always add the authorized post to the list
+      if (itemId) {
+        const newItems = sparkItems[0] === "" ? [itemId] : [...sparkItems, itemId];
         setSparkItems(newItems);
-        setAuthorizedPosts(prev => [...prev, {
-          auth_code: postIdentityId,
-          item_id: data.item_id,
-          display_name: data.display_name || "Post autorizado",
-          identity_id: postIdentityId,
-          identity_type: postIdentityType,
-        }]);
       }
+      setAuthorizedPosts(prev => [...prev, {
+        auth_code: postIdentityId,
+        item_id: itemId || `auth:${postIdentityId.slice(0, 12)}`,
+        display_name: data.display_name || "Post autorizado",
+        identity_id: postIdentityId,
+        identity_type: postIdentityType,
+      }]);
 
       toast({
         title: "✅ Post autorizado com sucesso!",
-        description: data.item_id
-          ? `Item ID: ${data.item_id} — ${data.display_name || ""}`
-          : "Auth Code aplicado. Cole o Item ID manualmente se necessário.",
+        description: itemId
+          ? `Item ID: ${itemId} — ${data.display_name || ""}`
+          : "Auth Code aplicado. O Item ID será resolvido na criação.",
       });
       setAuthCode("");
     } catch (err: any) {
