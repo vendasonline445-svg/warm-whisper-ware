@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Megaphone, Palette, Zap, Wallet, Plus, Trash2, Pencil, Play, Pause, AlertTriangle, Link2, RefreshCw, ExternalLink, Rocket, ShieldBan } from "lucide-react";
+import { Megaphone, Palette, Zap, Wallet, Plus, Trash2, Pencil, Play, Pause, AlertTriangle, Link2, RefreshCw, ExternalLink, Rocket, ShieldBan, Activity } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import TikTokConnect from "@/components/ads/TikTokConnect";
 import CampaignManager from "@/components/ads/CampaignManager";
