@@ -2019,6 +2019,103 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Action: authorize a Spark Ad post via auth code ──
+    if (action === "authorize_spark_post") {
+      const { advertiser_id, auth_code, original_post_auth_code } = body;
+      if (!advertiser_id || !auth_code) {
+        return new Response(JSON.stringify({ error: "advertiser_id and auth_code required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Step 1: Authorize the post
+      const authPayload: Record<string, any> = {
+        advertiser_id: String(advertiser_id),
+        auth_code: String(auth_code).replace(/\+/g, "%2B"),
+      };
+      if (original_post_auth_code) {
+        authPayload.original_post_auth_code = String(original_post_auth_code).replace(/\+/g, "%2B");
+      }
+
+      const authResp = await fetch(`${TIKTOK_API}/tt_video/authorize/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(authPayload),
+      });
+      const authData = await safeJson(authResp);
+      console.log("tt_video/authorize response:", JSON.stringify(authData).slice(0, 500));
+
+      if (authData.code !== 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: authData.message || "Falha ao autorizar o post",
+          raw: authData,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Step 2: Get post info to retrieve item_id
+      const infoQuery = new URLSearchParams({
+        advertiser_id: String(advertiser_id),
+        auth_code: String(auth_code),
+      });
+      const infoResp = await fetch(`${TIKTOK_API}/tt_video/info/?${infoQuery.toString()}`, { headers });
+      const infoData = await safeJson(infoResp);
+      console.log("tt_video/info response:", JSON.stringify(infoData).slice(0, 500));
+
+      const itemId = infoData.data?.item_id || infoData.data?.videos?.[0]?.item_id || "";
+      const displayName = infoData.data?.display_name || infoData.data?.nick_name || "Spark Post";
+      const profileImage = infoData.data?.profile_image || "";
+
+      return new Response(JSON.stringify({
+        success: true,
+        item_id: itemId,
+        display_name: displayName,
+        profile_image: profileImage,
+        identity_id: auth_code,
+        identity_type: "AUTH_CODE",
+        raw_info: infoData.data || {},
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: get info about a Spark Ad post ──
+    if (action === "get_spark_post_info") {
+      const { advertiser_id, auth_code, item_ids } = body;
+      if (!advertiser_id) {
+        return new Response(JSON.stringify({ error: "advertiser_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (auth_code) {
+        const query = new URLSearchParams({
+          advertiser_id: String(advertiser_id),
+          auth_code: String(auth_code),
+        });
+        const resp = await fetch(`${TIKTOK_API}/tt_video/info/?${query.toString()}`, { headers });
+        const data = await safeJson(resp);
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get authorized videos list
+      const query = new URLSearchParams({
+        advertiser_id: String(advertiser_id),
+      });
+      if (item_ids?.length) {
+        query.set("item_ids", JSON.stringify(item_ids));
+      }
+      const resp = await fetch(`${TIKTOK_API}/tt_video/list/?${query.toString()}`, { headers });
+      const data = await safeJson(resp);
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "blockedword_list") {
       const { advertiser_id } = body;
       if (!advertiser_id) {
