@@ -98,6 +98,11 @@ export default function SmartCampaignCreator() {
   // Smart Creative texts (when NOT using Spark Ads)
   const [adTexts, setAdTexts] = useState<string[]>([""]);
 
+  // Audience targeting
+  const [ageGroups, setAgeGroups] = useState<string[]>([]);
+  const [gender, setGender] = useState("GENDER_UNLIMITED");
+  const [scheduleStart, setScheduleStart] = useState("");
+
   // Bulk config
   const [copies, setCopies] = useState(1);
 
@@ -289,6 +294,9 @@ export default function SmartCampaignCreator() {
           identity_id: useSparkAds ? identityId : undefined,
           identity_type: useSparkAds ? identityType : undefined,
           ad_texts: useSparkAds ? [] : adTexts.filter(t => t.trim()),
+          age_groups: ageGroups.length > 0 ? ageGroups : undefined,
+          gender: gender !== "GENDER_UNLIMITED" ? gender : undefined,
+          schedule_start_time: scheduleStart || undefined,
           copies,
         },
       });
@@ -425,9 +433,58 @@ export default function SmartCampaignCreator() {
                 <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
                 <div className="flex-1">
                   <p className="text-[10px] font-medium">Placement: TikTok Only • Billing: OCPM</p>
-                  <p className="text-[9px] text-muted-foreground">Pangle desabilitado • Schedule: Iniciar agora • Pacing suave</p>
+                  <p className="text-[9px] text-muted-foreground">Pangle desabilitado • Pacing suave</p>
                 </div>
                 <Badge className="text-[9px] bg-primary/10 text-primary border-primary/20">Ativo</Badge>
+              </div>
+
+              {/* Audience Targeting */}
+              <Separator />
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">🎯 Segmentação de Público</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-[10px]">Gênero</Label>
+                    <Select value={gender} onValueChange={setGender}>
+                      <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="GENDER_UNLIMITED" className="text-xs">Todos</SelectItem>
+                        <SelectItem value="GENDER_MALE" className="text-xs">Masculino</SelectItem>
+                        <SelectItem value="GENDER_FEMALE" className="text-xs">Feminino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">Agendar Início</Label>
+                    <Input type="datetime-local" value={scheduleStart}
+                      onChange={e => setScheduleStart(e.target.value)}
+                      className="h-8 text-xs mt-1" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-[10px]">Faixas Etárias</Label>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {["AGE_13_17", "AGE_18_24", "AGE_25_34", "AGE_35_44", "AGE_45_54", "AGE_55_100"].map(age => {
+                      const labels: Record<string, string> = {
+                        AGE_13_17: "13-17", AGE_18_24: "18-24", AGE_25_34: "25-34",
+                        AGE_35_44: "35-44", AGE_45_54: "45-54", AGE_55_100: "55+",
+                      };
+                      const isSelected = ageGroups.includes(age);
+                      return (
+                        <button key={age} type="button"
+                          onClick={() => setAgeGroups(prev => isSelected ? prev.filter(a => a !== age) : [...prev, age])}
+                          className={`px-2 py-1 rounded-md text-[10px] font-medium border transition-colors ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted/30 text-muted-foreground border-border"
+                          }`}>
+                          {labels[age]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-1">Deixe vazio para todas as idades (recomendado para Smart+).</p>
+                </div>
               </div>
             </CardContent>
           </Card>

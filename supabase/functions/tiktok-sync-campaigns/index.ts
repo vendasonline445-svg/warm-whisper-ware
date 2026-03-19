@@ -17,6 +17,61 @@ const safeJson = async (resp: Response) => {
   }
 };
 
+// ── Token auto-refresh helper ──
+async function refreshAccessToken(
+  supabase: any,
+  bc: any,
+): Promise<{ access_token: string; refreshed: boolean }> {
+  if (!bc.refresh_token) return { access_token: bc.access_token, refreshed: false };
+
+  // Check if token is expired or will expire in next 30 minutes
+  const expiresAt = bc.token_expires_at ? new Date(bc.token_expires_at).getTime() : 0;
+  const isExpiringSoon = expiresAt > 0 && expiresAt - Date.now() < 30 * 60 * 1000;
+
+  if (!isExpiringSoon && expiresAt > 0) {
+    return { access_token: bc.access_token, refreshed: false };
+  }
+
+  const appId = Deno.env.get("TIKTOK_APP_ID");
+  const appSecret = Deno.env.get("TIKTOK_APP_SECRET");
+  if (!appId || !appSecret) return { access_token: bc.access_token, refreshed: false };
+
+  try {
+    const resp = await fetch("https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        app_id: appId,
+        secret: appSecret,
+        grant_type: "refresh_token",
+        refresh_token: bc.refresh_token,
+      }),
+    });
+    const data = await safeJson(resp);
+    if (data?.code === 0 && data?.data?.access_token) {
+      const newToken = data.data.access_token;
+      const newRefresh = data.data.refresh_token || bc.refresh_token;
+      const newExpiry = data.data.access_token_expires_in
+        ? new Date(Date.now() + data.data.access_token_expires_in * 1000).toISOString()
+        : null;
+
+      await supabase.from("business_centers").update({
+        access_token: newToken,
+        refresh_token: newRefresh,
+        ...(newExpiry ? { token_expires_at: newExpiry } : {}),
+        updated_at: new Date().toISOString(),
+      }).eq("id", bc.id);
+
+      console.log(`Token refreshed for BC ${bc.bc_name}`);
+      return { access_token: newToken, refreshed: true };
+    }
+    console.error("Token refresh failed:", data?.message);
+  } catch (e) {
+    console.error("Token refresh error:", e);
+  }
+  return { access_token: bc.access_token, refreshed: false };
+}
+
 type CampaignApiMode = "standard" | "smart_plus";
 
 const API_BY_MODE = {
@@ -659,9 +714,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Auto-refresh token if needed
+    const tokenResult = await refreshAccessToken(supabase, bc);
+    const activeToken = tokenResult.access_token;
+    if (tokenResult.refreshed) {
+      console.log(`Using refreshed token for BC ${bc.bc_name}`);
+    }
+
     const headers = {
       "Content-Type": "application/json",
-      "Access-Token": bc.access_token,
+      "Access-Token": activeToken,
     };
 
     // ── Action: get advertiser accounts (with full info + balance) ──
@@ -983,7 +1045,15 @@ Deno.serve(async (req) => {
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
       const startDate = date_from || weekAgo;
       const endDate = date_to || today;
-      const reportMetrics = ["spend", "impressions", "clicks", "cpc", "cpm", "ctr", "conversion", "cost_per_conversion"];
+      const reportMetrics = [
+        "spend", "impressions", "clicks", "cpc", "cpm", "ctr",
+        "conversion", "cost_per_conversion",
+        "real_time_conversion", "real_time_cost_per_conversion",
+        "video_views_p25", "video_views_p50", "video_views_p75", "video_views_p100",
+        "average_video_play",
+        "likes", "comments", "shares", "follows", "profile_visits",
+        "reach", "frequency",
+      ];
       const reportDimensions = ["campaign_id", "stat_time_day"];
 
       const rows: any[] = [];
@@ -1126,6 +1196,22 @@ Deno.serve(async (req) => {
             cpc: parseFloat(metrics.cpc || "0"),
             cpm: parseFloat(metrics.cpm || "0"),
             ctr: parseFloat(metrics.ctr || "0"),
+            conversions: parseInt(metrics.conversion || "0"),
+            cost_per_conversion: parseFloat(metrics.cost_per_conversion || "0"),
+            real_time_conversions: parseInt(metrics.real_time_conversion || "0"),
+            real_time_cost_per_conversion: parseFloat(metrics.real_time_cost_per_conversion || "0"),
+            video_views_p25: parseInt(metrics.video_views_p25 || "0"),
+            video_views_p50: parseInt(metrics.video_views_p50 || "0"),
+            video_views_p75: parseInt(metrics.video_views_p75 || "0"),
+            video_views_p100: parseInt(metrics.video_views_p100 || "0"),
+            average_video_play: parseFloat(metrics.average_video_play || "0"),
+            likes: parseInt(metrics.likes || "0"),
+            comments: parseInt(metrics.comments || "0"),
+            shares: parseInt(metrics.shares || "0"),
+            follows: parseInt(metrics.follows || "0"),
+            profile_visits: parseInt(metrics.profile_visits || "0"),
+            reach: parseInt(metrics.reach || "0"),
+            frequency: parseFloat(metrics.frequency || "0"),
           },
           { onConflict: "campaign_id,date", ignoreDuplicates: false }
         );
@@ -1791,13 +1877,19 @@ Deno.serve(async (req) => {
               placements: ["PLACEMENT_TIKTOK"],
               budget_mode,
               budget: Number(budget),
-              schedule_type: "SCHEDULE_FROM_NOW",
+              schedule_type: schedule_start_time ? "SCHEDULE_START_END" : "SCHEDULE_FROM_NOW",
+              ...(schedule_start_time ? { schedule_start_time } : {}),
               optimization_goal: optimization_goal,
               pacing: "PACING_MODE_SMOOTH",
               billing_event: "OCPM",
               bid_type,
               creative_material_mode: tiktok_item_id ? "CUSTOM" : "SMART_CREATIVE",
             };
+
+            // Audience targeting
+            if (body.age_groups?.length) adgroupPayload.age_groups = body.age_groups;
+            if (body.gender) adgroupPayload.gender = body.gender;
+            if (body.location_ids?.length) adgroupPayload.location_ids = body.location_ids;
 
             // BID cap value
             if (bid && bid_type === "BID_TYPE_CUSTOM") {
@@ -2307,6 +2399,122 @@ Deno.serve(async (req) => {
         failed: advIds.length - succeeded,
         words_sent: validWords.length,
         results,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: sync ad-level metrics for creative performance ──
+    if (action === "sync_ad_metrics") {
+      const { advertiser_id, date_from, date_to } = body;
+      if (!advertiser_id) {
+        return new Response(JSON.stringify({ error: "advertiser_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const today = new Date().toISOString().split("T")[0];
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+      const startDate = date_from || weekAgo;
+      const endDate = date_to || today;
+
+      const adMetrics = [
+        "spend", "impressions", "clicks", "cpc", "cpm", "ctr",
+        "conversion", "cost_per_conversion",
+        "real_time_conversion", "real_time_cost_per_conversion",
+        "video_views_p25", "video_views_p50", "video_views_p75", "video_views_p100",
+        "likes", "comments", "shares",
+      ];
+      const adDimensions = ["ad_id", "stat_time_day"];
+
+      const rows: any[] = [];
+      const pageSize = 200;
+      let page = 1;
+
+      while (page <= 50) {
+        const query = new URLSearchParams({
+          advertiser_id: String(advertiser_id),
+          report_type: "BASIC",
+          data_level: "AUCTION_AD",
+          dimensions: JSON.stringify(adDimensions),
+          metrics: JSON.stringify(adMetrics),
+          start_date: startDate,
+          end_date: endDate,
+          page: String(page),
+          page_size: String(pageSize),
+        });
+
+        let reportData = await safeJson(await fetch(
+          `${TIKTOK_API}/report/integrated/get/?${query.toString()}`,
+          { headers }
+        ));
+
+        if (reportData.code !== 0 && isMethodNotAllowedError(reportData)) {
+          reportData = await safeJson(await fetch(`${TIKTOK_API}/report/integrated/get/`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              advertiser_id,
+              report_type: "BASIC",
+              data_level: "AUCTION_AD",
+              dimensions: adDimensions,
+              metrics: adMetrics,
+              start_date: startDate,
+              end_date: endDate,
+              page,
+              page_size: pageSize,
+            }),
+          }));
+        }
+
+        if (reportData.code !== 0) break;
+
+        const list = reportData.data?.list || [];
+        rows.push(...list);
+        if (list.length < pageSize) break;
+        page++;
+      }
+
+      // Aggregate ad metrics
+      const adAgg: Record<string, any> = {};
+      for (const row of rows) {
+        const dims = row.dimensions || {};
+        const metrics = row.metrics || {};
+        const adId = String(dims.ad_id || "");
+        if (!adId) continue;
+
+        if (!adAgg[adId]) {
+          adAgg[adId] = {
+            ad_id: adId,
+            spend: 0, impressions: 0, clicks: 0,
+            conversions: 0,
+            video_views_p50: 0, video_views_p100: 0,
+            likes: 0, comments: 0, shares: 0,
+          };
+        }
+
+        adAgg[adId].spend += Math.round(parseFloat(metrics.spend || "0") * 100);
+        adAgg[adId].impressions += parseInt(metrics.impressions || "0");
+        adAgg[adId].clicks += parseInt(metrics.clicks || "0");
+        adAgg[adId].conversions += parseInt(metrics.conversion || "0");
+        adAgg[adId].video_views_p50 += parseInt(metrics.video_views_p50 || "0");
+        adAgg[adId].video_views_p100 += parseInt(metrics.video_views_p100 || "0");
+        adAgg[adId].likes += parseInt(metrics.likes || "0");
+        adAgg[adId].comments += parseInt(metrics.comments || "0");
+        adAgg[adId].shares += parseInt(metrics.shares || "0");
+      }
+
+      for (const ad of Object.values(adAgg) as any[]) {
+        ad.cpc = ad.clicks > 0 ? (ad.spend / ad.clicks) : 0;
+        ad.ctr = ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100) : 0;
+        ad.cost_per_conversion = ad.conversions > 0 ? (ad.spend / ad.conversions) : 0;
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        ad_metrics: Object.values(adAgg),
+        total_rows: rows.length,
+        pages: page,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
