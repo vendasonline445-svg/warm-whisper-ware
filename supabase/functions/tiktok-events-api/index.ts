@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Record as sent (fire-and-forget, don't block the main flow)
+      // Record as sent (fire-and-forget)
       supabase
         .from("tiktok_event_dedup")
         .insert({ event_id, pixel_id: pixel_code })
@@ -67,20 +67,29 @@ Deno.serve(async (req) => {
       req.headers.get("x-real-ip") ||
       "";
 
-    const eventData = {
+    // ── Build payload using /pixel/track/ format with context object ──
+    // Per TikTok docs: https://business-api.tiktok.com/portal/docs?id=1741601162187777
+    const tiktokPayload: Record<string, any> = {
+      pixel_code,
       event,
       event_id: event_id || `${event}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      event_time: Math.floor(new Date(timestamp || new Date().toISOString()).getTime() / 1000),
-      user: {
-        email: user?.email || undefined,
-        phone_number: user?.phone_number || undefined,
-        external_id: user?.external_id || undefined,
-        ip: clientIp || user?.ip || undefined,
-        user_agent: user?.user_agent || undefined,
-        ttclid: user?.ttclid || undefined,
-      },
-      page: {
-        url: user?.page_url || undefined,
+      timestamp: timestamp || new Date().toISOString(),
+      context: {
+        user: {
+          ...(user?.email ? { email: user.email } : {}),
+          ...(user?.phone_number ? { phone_number: user.phone_number } : {}),
+          ...(user?.external_id ? { external_id: user.external_id } : {}),
+          ...(user?.ttp ? { ttp: user.ttp } : {}),
+          ...(clientIp || user?.ip ? { ip: clientIp || user.ip } : {}),
+          ...(user?.user_agent ? { user_agent: user.user_agent } : {}),
+        },
+        ad: {
+          ...(user?.ttclid ? { callback: user.ttclid } : {}),
+        },
+        page: {
+          ...(user?.page_url ? { url: user.page_url } : {}),
+          ...(user?.referrer ? { referrer: user.referrer } : {}),
+        },
       },
       properties: {
         ...(properties || {}),
@@ -88,21 +97,13 @@ Deno.serve(async (req) => {
       },
     };
 
-    // Clean undefined values from user object
-    eventData.user = Object.fromEntries(
-      Object.entries(eventData.user).filter(([_, v]) => v)
-    ) as any;
+    // Clean empty objects
+    if (Object.keys(tiktokPayload.context.ad).length === 0) delete tiktokPayload.context.ad;
 
-    const tiktokPayload = {
-      event_source: "web",
-      event_source_id: pixel_code,
-      data: [eventData],
-    };
-
-    console.log(`Sending to TikTok (${pixel_code}):`, JSON.stringify(tiktokPayload));
+    console.log(`Sending to TikTok /pixel/track/ (${pixel_code}):`, JSON.stringify(tiktokPayload));
 
     const response = await fetch(
-      "https://business-api.tiktok.com/open_api/v1.3/event/track/",
+      "https://business-api.tiktok.com/open_api/v1.3/pixel/track/",
       {
         method: "POST",
         headers: {
@@ -124,7 +125,6 @@ Deno.serve(async (req) => {
     }
 
     // ── Cleanup old dedup entries (older than 24h) ────────────────────
-    // Fire-and-forget cleanup of stale entries
     supabase
       .from("tiktok_event_dedup")
       .delete()

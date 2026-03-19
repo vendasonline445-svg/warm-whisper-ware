@@ -121,6 +121,16 @@ export function normalizePhone(phone: string): string {
   return "+55" + digits;
 }
 
+// ── _ttp cookie reader ────────────────────────────────────────────────
+export function getTTPCookie(): string | undefined {
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)_ttp=([^;]*)/);
+    return match?.[1] || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // ── ttclid cache (7-day attribution window) ───────────────────────────
 
 export function captureTTClid() {
