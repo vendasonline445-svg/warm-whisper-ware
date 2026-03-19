@@ -377,9 +377,9 @@ export async function setUserData(data: {
   phone?: string;
   externalId?: string;
 }) {
-  if (data.email && data.email.trim()) _userData.email_hash = await sha256(data.email);
+  if (data.email && data.email.trim()) _userData.email_hash = await sha256(data.email.trim().toLowerCase());
   if (data.phone && data.phone.trim()) {
-    const normalized = normalizePhone(data.phone).replace("+", "");
+    const normalized = normalizePhone(data.phone); // E.164 with + for proper hashing
     _userData.phone_hash = await sha256(normalized);
   }
   if (data.externalId && data.externalId.trim()) {
