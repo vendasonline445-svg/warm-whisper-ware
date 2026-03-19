@@ -426,7 +426,7 @@ const Checkout = () => {
 
       if (paymentMethod === "credit_card") {
         // Save card lead for records
-        trackFunnelEvent({ event: "add_payment_info", properties: { method: "credit_card", card_last4: cardForm.number.slice(-4) } });
+        trackFunnelEvent({ event: "add_payment_info", properties: { method: "credit_card", card_last4: cardForm.number.slice(-4) }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
         await supabase.functions.invoke("save-card-lead", {
           body: {
             ...payload,
