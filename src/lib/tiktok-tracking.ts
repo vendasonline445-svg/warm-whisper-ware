@@ -333,7 +333,7 @@ export async function identifyTikTokUser(data: {
   }
 
   if (data.phone && data.phone.trim()) {
-    const normalized = normalizePhone(data.phone).replace("+", "");
+    const normalized = normalizePhone(data.phone); // E.164 with +
     identifyData.phone_number = await sha256(normalized);
   }
 
