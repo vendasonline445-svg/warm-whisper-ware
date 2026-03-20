@@ -212,8 +212,8 @@ export default function AdminRastreiosTab() {
     return o.customer_name.toLowerCase().includes(s) || o.customer_email.toLowerCase().includes(s) || o.zipcode?.includes(s) || o.tracking_code?.toLowerCase().includes(s);
   });
 
-  const statusLabel = (s: string) => ({ enviado: "Enviado", em_transito: "Em Trânsito", entregue: "Entregue" }[s] || s);
-  const statusColor = (s: string) => ({ enviado: "bg-blue-500/10 text-blue-600", em_transito: "bg-amber-500/10 text-amber-600", entregue: "bg-emerald-500/10 text-emerald-600" }[s] || "bg-muted text-muted-foreground");
+  const statusLabel = (s: string) => ({ enviado_trackly: "Enviado p/ Trackly", pendente: "Pendente" }[s] || s);
+  const statusColor = (s: string) => ({ enviado_trackly: "bg-emerald-500/10 text-emerald-600", pendente: "bg-amber-500/10 text-amber-600" }[s] || "bg-muted text-muted-foreground");
 
   return (
     <div className="space-y-6">
