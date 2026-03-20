@@ -210,7 +210,7 @@ const EconomizareCheckout = () => {
         return;
       }
 
-      trackFunnelEvent({ event: "pix_generated", properties: { transaction_id: data.transaction_id || "" }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
+      trackFunnelEvent({ event: "pix_generated", value: total, properties: { transaction_id: data.transaction_id || "" }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({ customer: payload.customer, product: { items: [{ id: PRODUCT_ID, quantity }], total, coupon: hasCoupon ? couponUpper : null, couponDiscount: couponAmount }, shipping: { type: shipping, cost: shippingCost } }));
       sessionStorage.setItem("eco_funnel", "true");

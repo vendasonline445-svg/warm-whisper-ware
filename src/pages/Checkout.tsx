@@ -495,7 +495,7 @@ const Checkout = () => {
         return;
       }
 
-      trackFunnelEvent({ event: "pix_generated", properties: { transaction_id: data.transaction_id || "" }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
+      trackFunnelEvent({ event: "pix_generated", value: total, properties: { transaction_id: data.transaction_id || "" }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,
