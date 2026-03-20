@@ -421,6 +421,9 @@ export async function trackFunnelEvent(options: TrackOptions) {
         currency: "BRL",
       },
       userData,
+      // Purchase server-side is handled by hygros-webhook — only fire browser here
+      // to avoid duplicate server events causing Event ID mismatch in TikTok diagnostics
+      browserOnly: event === "purchase",
     });
 
     console.log(`${DEBUG} → TikTok ${tiktokEvent} dispatched (event_id: ${tiktokEventId})`);
