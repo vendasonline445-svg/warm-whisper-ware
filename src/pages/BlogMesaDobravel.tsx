@@ -210,10 +210,38 @@ export default function BlogMesaDobravel() {
         </section>
 
 
-        {/* Footer note */}
-        <p className="text-xs text-center text-muted-foreground pb-8">
-          © 2025 — Conteúdo informativo. Todos os direitos reservados.
-        </p>
+        {/* Disclaimer TikTok Ads compliance */}
+        <section className="space-y-3 border-t border-border pt-8">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <strong className="text-foreground">Aviso Legal:</strong> Este conteúdo é meramente informativo e não constitui oferta comercial direta. 
+            As imagens são ilustrativas e podem apresentar variações em relação ao produto real. 
+            Os depoimentos refletem experiências individuais e os resultados podem variar. 
+            Consulte as condições de entrega e disponibilidade no momento da compra.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Este site utiliza cookies e tecnologias de rastreamento para melhorar sua experiência de navegação e para fins analíticos. 
+            Ao continuar navegando, você concorda com o uso dessas tecnologias conforme descrito em nossa Política de Privacidade.
+          </p>
+        </section>
+
+        {/* Footer with legal links */}
+        <footer className="border-t border-border pt-6 pb-10 space-y-3">
+          <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
+            <Link to="/politica-de-privacidade" className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
+              Política de Privacidade
+            </Link>
+            <span className="text-muted-foreground">|</span>
+            <Link to="/termos-de-uso" className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
+              Termos de Uso
+            </Link>
+          </div>
+          <p className="text-xs text-center text-muted-foreground">
+            © 2025 Mesa Lar — Conteúdo informativo. Todos os direitos reservados.
+          </p>
+          <p className="text-[10px] text-center text-muted-foreground/60">
+            Este site não é afiliado ao TikTok ou ByteDance Ltd. Todas as marcas registradas pertencem a seus respectivos proprietários.
+          </p>
+        </footer>
       </main>
     </div>
   );
