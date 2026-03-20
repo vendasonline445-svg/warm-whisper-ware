@@ -49,24 +49,44 @@ const specs = [
   { label: "Cores disponíveis", value: "Preto, Branco e Madeira Natural" },
 ];
 
+const blogImages = [
+  "/images/mesa-branca-principal.webp",
+  "/images/mesa-preta-principal.webp",
+  "/images/desc-tamanho.webp",
+  "/images/desc-superficie3d.webp",
+  "/images/desc-portatil.webp",
+  "/images/desc-espaco.webp",
+  "/images/desc-transporte.webp",
+];
+
 export default function BlogMesaDobravel() {
-  const navigate = useNavigate();
+  const [current, setCurrent] = useState(0);
+  const prev = () => setCurrent((c) => (c === 0 ? blogImages.length - 1 : c - 1));
+  const next = () => setCurrent((c) => (c === blogImages.length - 1 ? 0 : c + 1));
 
   return (
     <div className="min-h-screen bg-background text-foreground">
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-12">
-        {/* Hero */}
+        {/* Hero Carousel */}
         <section className="space-y-4">
-          <div className="rounded-2xl overflow-hidden aspect-video bg-muted">
+          <div className="relative rounded-2xl overflow-hidden aspect-video bg-muted">
             <img
-              src="https://cdn.shopify.com/s/files/1/0783/5378/8945/files/mesa-dobravel-hero.jpg?v=1735000000"
-              alt="Mesa dobrável portátil em ambiente moderno"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/placeholder.svg";
-              }}
+              src={blogImages[current]}
+              alt={`Mesa dobrável - imagem ${current + 1}`}
+              className="w-full h-full object-cover transition-opacity duration-300"
             />
+            <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/70 backdrop-blur rounded-full p-1.5 hover:bg-background/90 transition-colors">
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/70 backdrop-blur rounded-full p-1.5 hover:bg-background/90 transition-colors">
+              <ChevronRight className="h-5 w-5" />
+            </button>
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {blogImages.map((_, i) => (
+                <button key={i} onClick={() => setCurrent(i)} className={`w-2 h-2 rounded-full transition-colors ${i === current ? "bg-primary" : "bg-background/50"}`} />
+              ))}
+            </div>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold leading-tight">
             Mesa Dobrável Portátil: O Móvel Que Está Transformando Pequenos Espaços em 2025
