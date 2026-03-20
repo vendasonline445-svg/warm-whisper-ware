@@ -370,7 +370,7 @@ export default function AdminRastreiosTab() {
               <input type="text" placeholder="Buscar por nome, email, CEP ou código..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background text-sm" />
             </div>
             <div className="flex gap-2">
-              {(["all", "enviado", "em_transito", "entregue"] as TrackingStatus[]).map((s) => (
+              {(["all", "enviado_trackly", "pendente"] as TrackingStatus[]).map((s) => (
                 <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === s ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>
                   {s === "all" ? "Todos" : statusLabel(s)}
                 </button>
