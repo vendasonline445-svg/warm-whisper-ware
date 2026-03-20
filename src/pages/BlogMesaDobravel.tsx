@@ -54,15 +54,6 @@ export default function BlogMesaDobravel() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-3xl mx-auto flex items-center gap-3 px-4 py-3">
-          <button onClick={() => navigate("/")} className="p-1.5 rounded-full hover:bg-muted transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <span className="font-semibold text-sm">Blog</span>
-        </div>
-      </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-12">
         {/* Hero */}
@@ -197,17 +188,6 @@ export default function BlogMesaDobravel() {
           </p>
         </section>
 
-        {/* CTA */}
-        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center space-y-3">
-          <h3 className="font-bold text-lg">Gostou? Conheça a Mesa Dobrável</h3>
-          <p className="text-sm text-muted-foreground">Veja todas as cores, detalhes e avaliações na página do produto.</p>
-          <button
-            onClick={() => navigate("/")}
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
-          >
-            Ver Produto Completo
-          </button>
-        </div>
 
         {/* Footer note */}
         <p className="text-xs text-center text-muted-foreground pb-8">
