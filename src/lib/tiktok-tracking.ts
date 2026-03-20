@@ -473,32 +473,57 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
   // Build enriched properties with contents + currency
   const enrichedProps = buildTikTokProperties(tiktokEvent, properties);
 
-  // Browser-side: fire on each pixel instance
-  pixels.forEach((px) => {
-    const instance = getTTQInstance(px.pixel_id);
-    if (instance) {
-      try {
-        instance.track(tiktokEvent, enrichedProps, { event_id: eventId });
-        console.log(`${DEBUG} ${tiktokEvent} fired (browser) — pixel ${px.pixel_id}, event_id: ${eventId}`);
-      } catch (e) {
-        console.warn(`${DEBUG} Pixel error for ${px.pixel_id}:`, e);
-      }
-    }
-  });
+  // ── BROWSER-SIDE: fire with global ttq.track() first (most reliable) ──
+  // Then per-instance as fallback for any pixel that global missed.
+  const ttq = (window as any).ttq;
+  let browserFired = false;
 
-  // Server-side: send to each pixel via edge function with enriched user data
+  if (ttq) {
+    try {
+      // Global track fires on ALL loaded pixels simultaneously with same event_id
+      ttq.track(tiktokEvent, enrichedProps, { event_id: eventId });
+      browserFired = true;
+      console.log(`${DEBUG} ${tiktokEvent} fired (browser/global) — event_id: ${eventId}`);
+    } catch (e) {
+      console.warn(`${DEBUG} Global ttq.track() failed:`, e);
+    }
+
+    // Per-instance fallback: if global failed, try each instance individually
+    if (!browserFired) {
+      pixels.forEach((px) => {
+        const instance = getTTQInstance(px.pixel_id);
+        if (instance) {
+          try {
+            instance.track(tiktokEvent, enrichedProps, { event_id: eventId });
+            browserFired = true;
+            console.log(`${DEBUG} ${tiktokEvent} fired (browser/instance) — pixel ${px.pixel_id}, event_id: ${eventId}`);
+          } catch (e) {
+            console.warn(`${DEBUG} Pixel error for ${px.pixel_id}:`, e);
+          }
+        }
+      });
+    }
+  }
+
+  if (!browserFired) {
+    console.warn(`${DEBUG} Browser pixel NOT fired for ${tiktokEvent} — skipping server to avoid orphan event`);
+    // Don't fire server-only events — they create unmatched IDs in TikTok diagnostics
+    return;
+  }
+
+  // ── SERVER-SIDE: send to each pixel via edge function ──
+  // Only fires if browser succeeded (same event_id guarantees dedup match)
   const storedUser = getUserData();
 
-  // Direct phone hash fallback: if _userData didn't capture phone, hash crm_user_phone directly
+  // Direct phone hash fallback
   let phoneHash = storedUser.phone_hash || "";
   if (!phoneHash) {
     const cachedPhone = (() => {
       try { return localStorage.getItem("crm_user_phone") || ""; } catch { return ""; }
     })();
     if (cachedPhone.trim()) {
-      const normalized = normalizePhone(cachedPhone); // E.164 with + for proper hashing
+      const normalized = normalizePhone(cachedPhone);
       phoneHash = await sha256(normalized);
-      console.log(`${DEBUG} Phone hash generated from crm_user_phone fallback`);
     }
   }
 
@@ -521,7 +546,6 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
 
   const ttpCookie = getTTPCookie();
 
-  // Events API 2.0: "phone" (not "phone_number"), ttclid at user level
   const baseUserData = {
     email: emailHash,
     phone: phoneHash,
@@ -529,13 +553,12 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
     ttclid: ttclid || "",
     ttp: ttpCookie || "",
     user_agent: navigator.userAgent,
-    ip: "", // Will be filled server-side from request headers
+    ip: "",
     page_url: window.location.href,
     referrer: document.referrer || "",
     locale: navigator.language || "",
   };
 
-  // Enrich with cached identity (fills email/phone for non-checkout events)
   const enrichedUser = enrichUserData(baseUserData);
 
   pixels.forEach((px) => {
@@ -562,7 +585,7 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
       body: JSON.stringify(serverPayload),
     })
       .then((res) => res.json())
-      .then((data) => console.log(`${DEBUG} ${tiktokEvent} server response (${px.pixel_id}):`, data))
+      .then((data) => console.log(`${DEBUG} ${tiktokEvent} server OK (${px.pixel_id}), event_id: ${eventId}`, data))
       .catch((err) => console.warn(`${DEBUG} ${tiktokEvent} server error (${px.pixel_id}):`, err));
   });
 }
