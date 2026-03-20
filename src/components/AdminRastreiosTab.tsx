@@ -408,15 +408,9 @@ export default function AdminRastreiosTab() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {order.tracking_code ? (
-                          order.tracking_url ? (
-                            <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs">{order.tracking_code}</a>
-                          ) : (
-                            <span className="text-xs font-mono">{order.tracking_code}</span>
-                          )
-                        ) : (
-                          <span className="text-muted-foreground text-xs">Pendente</span>
-                        )}
+                        <span className={`text-xs font-medium ${(order as any).tracking_sent ? "text-emerald-600" : "text-muted-foreground"}`}>
+                          {(order as any).tracking_sent ? "✅ Enviado" : "⏳ Aguardando"}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString("pt-BR")}</td>
                     </tr>
