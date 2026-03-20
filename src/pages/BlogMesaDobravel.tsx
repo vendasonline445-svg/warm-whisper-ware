@@ -54,15 +54,6 @@ export default function BlogMesaDobravel() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-3xl mx-auto flex items-center gap-3 px-4 py-3">
-          <button onClick={() => navigate("/")} className="p-1.5 rounded-full hover:bg-muted transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <span className="font-semibold text-sm">Blog</span>
-        </div>
-      </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-12">
         {/* Hero */}
