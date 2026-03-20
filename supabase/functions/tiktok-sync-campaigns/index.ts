@@ -1246,6 +1246,27 @@ Deno.serve(async (req) => {
 
       const extToInternal: Record<string, string> = {};
 
+      // Fetch campaign names from TikTok API for proper naming
+      const campaignNameMap: Record<string, string> = {};
+      if (uniqueExternalIds.length > 0) {
+        try {
+          const campQuery = new URLSearchParams({
+            advertiser_id: String(advertiser_id),
+            filtering: JSON.stringify({ campaign_ids: uniqueExternalIds }),
+            page_size: "200",
+          });
+          const campResp = await fetch(`${TIKTOK_API}/campaign/get/?${campQuery.toString()}`, { headers });
+          const campData = await safeJson(campResp);
+          if (campData.code === 0) {
+            (campData.data?.list || []).forEach((c: any) => {
+              campaignNameMap[String(c.campaign_id)] = c.campaign_name || `TikTok Campaign ${c.campaign_id}`;
+            });
+          }
+        } catch (e) {
+          console.warn("Could not fetch campaign names:", e);
+        }
+      }
+
       if (uniqueExternalIds.length > 0) {
         const { data: existingCampaigns } = await supabase
           .from("campaigns")
@@ -1258,13 +1279,22 @@ Deno.serve(async (req) => {
           }
         });
 
+        // Update existing campaign names if we have better names
+        for (const [extId, intId] of Object.entries(extToInternal)) {
+          const apiName = campaignNameMap[extId];
+          if (apiName && !apiName.startsWith("TikTok Campaign ")) {
+            await supabase.from("campaigns").update({ campaign_name: apiName }).eq("id", intId);
+          }
+        }
+
         for (const extId of uniqueExternalIds) {
           if (extToInternal[extId]) continue;
+          const campName = campaignNameMap[extId] || `TikTok Campaign ${extId}`;
           const { data: created } = await supabase
             .from("campaigns")
             .insert({
               campaign_external_id: extId,
-              campaign_name: `TikTok Campaign ${extId}`,
+              campaign_name: campName,
               platform: "tiktok",
               client_id: bc.client_id,
             })
@@ -1803,6 +1833,37 @@ Deno.serve(async (req) => {
           advertiser_id: String(advertiser_id),
           adgroup_ids: adgroup_ids.map(String),
           operation_status,
+        }),
+      });
+      const data = await safeJson(resp);
+
+      if (data.code !== 0) {
+        return new Response(JSON.stringify({ error: data.message, code: data.code }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: data.data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Action: update ad group budget ──
+    if (action === "update_adgroup_budget") {
+      const { advertiser_id, adgroup_id, budget } = body;
+      if (!advertiser_id || !adgroup_id || budget === undefined) {
+        return new Response(JSON.stringify({ error: "advertiser_id, adgroup_id, budget required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const resp = await fetch(`${TIKTOK_API}/adgroup/update/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          advertiser_id: String(advertiser_id),
+          adgroup_id: String(adgroup_id),
+          budget: Number(budget),
         }),
       });
       const data = await safeJson(resp);

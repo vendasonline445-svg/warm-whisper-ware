@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS campaign_costs_campaign_id_date_unique ON campaign_costs (campaign_id, date);

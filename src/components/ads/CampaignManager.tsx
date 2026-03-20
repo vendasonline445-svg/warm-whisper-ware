@@ -120,6 +120,10 @@ export default function CampaignManager() {
   const [hierarchyData, setHierarchyData] = useState<Record<string, AdGroupInfo[]>>({});
   const [loadingHierarchy, setLoadingHierarchy] = useState<string | null>(null);
 
+  // Ad group budget edit
+  const [agBudgetDialog, setAgBudgetDialog] = useState<{ camp: TikTokCampaign; ag: AdGroupInfo } | null>(null);
+  const [agNewBudget, setAgNewBudget] = useState("");
+
   const getCacheKey = (bcId: string) => `campaign_manager_cache_${bcId}`;
 
   const loadCampaignsFromCache = (bcId: string): boolean => {
@@ -178,7 +182,12 @@ export default function CampaignManager() {
 
     try {
       const externalIds = campaignList.map(c => String(c.campaign_id));
-      const campaignNames = new Set(campaignList.map(c => String(c.campaign_name || "").trim()).filter(Boolean));
+      // Build API name mapping (source of truth for campaign names)
+      const apiNameByExtId: Record<string, string> = {};
+      campaignList.forEach(c => {
+        apiNameByExtId[String(c.campaign_id)] = String(c.campaign_name || "").trim();
+      });
+      const campaignNames = new Set(Object.values(apiNameByExtId).filter(Boolean));
 
       // 1) Map external campaign_id -> internal campaign row
       const { data: dbCampaigns } = await db
@@ -187,19 +196,13 @@ export default function CampaignManager() {
         .in("campaign_external_id", externalIds);
 
       const extToInternal: Record<string, string> = {};
-      const extToName: Record<string, string> = {};
       (dbCampaigns || []).forEach((c: any) => {
         const extId = String(c.campaign_external_id || "");
         if (!extId) return;
         extToInternal[extId] = c.id;
-        extToName[extId] = String(c.campaign_name || "").trim();
       });
 
       const internalIds = Object.values(extToInternal);
-      if (!internalIds.length) {
-        setMetricsMap({});
-        return;
-      }
 
       const daysMap: Record<DateRange, number> = { today: 0, "3d": 3, "7d": 7, "14d": 14, "30d": 30 };
       const days = daysMap[dateRange];
@@ -215,16 +218,20 @@ export default function CampaignManager() {
 
       // 2) Read spend + sales sources in parallel
       const [costsRes, attribRes, purchaseRes] = await Promise.all([
-        db
-          .from("campaign_costs")
-          .select("campaign_id, spend, impressions, clicks")
-          .in("campaign_id", internalIds)
-          .gte("date", startDateStr),
-        db
-          .from("attributions")
-          .select("campaign_id, revenue, event_type")
-          .in("campaign_id", internalIds)
-          .gte("created_at", startDateIso),
+        internalIds.length
+          ? db
+              .from("campaign_costs")
+              .select("campaign_id, spend, impressions, clicks")
+              .in("campaign_id", internalIds)
+              .gte("date", startDateStr)
+          : { data: [] },
+        internalIds.length
+          ? db
+              .from("attributions")
+              .select("campaign_id, revenue, event_type")
+              .in("campaign_id", internalIds)
+              .gte("created_at", startDateIso)
+          : { data: [] },
         db
           .from("events")
           .select("id, campaign, value, event_data")
@@ -281,10 +288,13 @@ export default function CampaignManager() {
 
       // 6) Build metrics map keyed by external campaign_id
       const newMetrics: Record<string, CampaignMetrics> = {};
-      for (const [extId, intId] of Object.entries(extToInternal)) {
-        const costs = costsAgg[intId] || { spend: 0, impressions: 0, clicks: 0 };
-        const attr = attribAgg[intId] || { revenue: 0, sales: 0 };
-        const fallback = fallbackByCampaignName[extToName[extId] || ""] || { revenue: 0, sales: 0 };
+      for (const extId of externalIds) {
+        const intId = extToInternal[extId];
+        const costs = intId ? (costsAgg[intId] || { spend: 0, impressions: 0, clicks: 0 }) : { spend: 0, impressions: 0, clicks: 0 };
+        const attr = intId ? (attribAgg[intId] || { revenue: 0, sales: 0 }) : { revenue: 0, sales: 0 };
+        // Use API campaign name (not DB name) for fallback lookup
+        const apiName = apiNameByExtId[extId] || "";
+        const fallback = fallbackByCampaignName[apiName] || { revenue: 0, sales: 0 };
 
         const revenue = attr.sales > 0 || attr.revenue > 0 ? attr.revenue : fallback.revenue;
         const sales = attr.sales > 0 || attr.revenue > 0 ? attr.sales : fallback.sales;
@@ -495,6 +505,39 @@ export default function CampaignManager() {
           ag.adgroup_id === agId ? { ...ag, operation_status: newStatus } : ag
         ),
       }));
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+    setActionLoading(null);
+  };
+
+  // ── Update ad group budget ──
+  const updateAdGroupBudget = async () => {
+    if (!agBudgetDialog || !agNewBudget) return;
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) return;
+    const { camp, ag } = agBudgetDialog;
+    setActionLoading(ag.adgroup_id + "_budget");
+    try {
+      const { error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: {
+          bc_id: bc.id,
+          action: "update_adgroup_budget",
+          advertiser_id: camp.advertiser_id,
+          adgroup_id: ag.adgroup_id,
+          budget: parseFloat(agNewBudget),
+        },
+      });
+      if (error) throw error;
+      toast({ title: "✅ Orçamento do conjunto atualizado" });
+      setHierarchyData(prev => ({
+        ...prev,
+        [camp.campaign_id]: (prev[camp.campaign_id] || []).map(a =>
+          a.adgroup_id === ag.adgroup_id ? { ...a, budget: parseFloat(agNewBudget) } : a
+        ),
+      }));
+      setAgBudgetDialog(null);
+      setAgNewBudget("");
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -1027,11 +1070,14 @@ export default function CampaignManager() {
                           {isExpanded && hierarchy.map((ag) => (
                             <>
                               <TableRow key={`ag-${ag.adgroup_id}`} className="bg-muted/20">
-                                <TableCell className="text-xs pl-10 font-medium" colSpan={2}>
+                                <TableCell className="text-xs pl-10 font-medium">
                                   <div className="flex items-center gap-2">
                                     <Badge variant="outline" className="text-[9px] shrink-0">Conjunto</Badge>
                                     <span className="truncate">{ag.adgroup_name}</span>
                                   </div>
+                                </TableCell>
+                                <TableCell>
+                                  {statusBadge(ag.operation_status)}
                                 </TableCell>
                                 <TableCell className="text-xs">
                                   {ag.budget > 0 ? (
@@ -1040,17 +1086,24 @@ export default function CampaignManager() {
                                 </TableCell>
                                 <TableCell colSpan={8} />
                                 <TableCell className="text-right">
-                                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={!!actionLoading}
-                                    onClick={() => toggleAdGroupStatus(camp, ag.adgroup_id, ag.operation_status)}
-                                    title={ag.operation_status === "ENABLE" ? "Pausar conjunto" : "Ativar conjunto"}>
-                                    {actionLoading === ag.adgroup_id + "_status" ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : ag.operation_status === "ENABLE" ? (
-                                      <Pause className="h-3 w-3" />
-                                    ) : (
-                                      <Play className="h-3 w-3 text-emerald-500" />
-                                    )}
-                                  </Button>
+                                  <div className="flex gap-1 justify-end">
+                                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={!!actionLoading}
+                                      onClick={() => toggleAdGroupStatus(camp, ag.adgroup_id, ag.operation_status)}
+                                      title={ag.operation_status === "ENABLE" ? "Pausar conjunto" : "Ativar conjunto"}>
+                                      {actionLoading === ag.adgroup_id + "_status" ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : ag.operation_status === "ENABLE" ? (
+                                        <Pause className="h-3 w-3" />
+                                      ) : (
+                                        <Play className="h-3 w-3 text-emerald-500" />
+                                      )}
+                                    </Button>
+                                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={!!actionLoading}
+                                      onClick={() => { setAgBudgetDialog({ camp, ag }); setAgNewBudget(ag.budget > 0 ? String(ag.budget) : ""); }}
+                                      title="Editar orçamento do conjunto">
+                                      <DollarSign className="h-3 w-3" />
+                                    </Button>
+                                  </div>
                                 </TableCell>
                               </TableRow>
                               {ag.ads.map((ad) => (
@@ -1265,6 +1318,31 @@ export default function CampaignManager() {
                   Duplicar {bulkCopies}× em {bulkSelectedAccounts.length} conta(s) ({bulkCopies * bulkSelectedAccounts.length} total)
                 </>
               )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ad Group Budget Edit Dialog */}
+      <Dialog open={!!agBudgetDialog} onOpenChange={(open) => !open && setAgBudgetDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="text-sm">Editar Orçamento do Conjunto</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="bg-muted/50 rounded-lg p-3">
+              <p className="text-xs text-muted-foreground">Conjunto</p>
+              <p className="text-sm font-medium truncate">{agBudgetDialog?.ag.adgroup_name}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Orçamento atual: {agBudgetDialog?.ag.budget ? `R$ ${agBudgetDialog.ag.budget.toFixed(2)}` : "—"}
+                {agBudgetDialog?.ag.budget_mode ? ` (${budgetModeLabel(agBudgetDialog.ag.budget_mode)})` : ""}
+              </p>
+            </div>
+            <div>
+              <Label className="text-xs">Novo Orçamento (R$)</Label>
+              <Input type="number" step="0.01" value={agNewBudget} onChange={(e) => setAgNewBudget(e.target.value)} placeholder="Ex: 50.00" />
+            </div>
+            <Button onClick={updateAdGroupBudget} className="w-full" disabled={!agNewBudget || !!actionLoading}>
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Salvar Orçamento
             </Button>
           </div>
         </DialogContent>
