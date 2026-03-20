@@ -120,6 +120,10 @@ export default function CampaignManager() {
   const [hierarchyData, setHierarchyData] = useState<Record<string, AdGroupInfo[]>>({});
   const [loadingHierarchy, setLoadingHierarchy] = useState<string | null>(null);
 
+  // Ad group budget edit
+  const [agBudgetDialog, setAgBudgetDialog] = useState<{ camp: TikTokCampaign; ag: AdGroupInfo } | null>(null);
+  const [agNewBudget, setAgNewBudget] = useState("");
+
   const getCacheKey = (bcId: string) => `campaign_manager_cache_${bcId}`;
 
   const loadCampaignsFromCache = (bcId: string): boolean => {
