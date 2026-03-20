@@ -148,7 +148,19 @@ const EconomizareCheckout = () => {
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
-    trackFunnelEvent({ event: "checkout_start", value: subtotalRaw, properties: { content_id: PRODUCT_ID, content_name: "Bloqueador de Ar Economizare", source: 'economizare' } });
+    const savedEmail = localStorage.getItem("crm_user_email") || "";
+    const savedPhone = localStorage.getItem("crm_user_phone") || "";
+    const savedCpf = form.cpf || "";
+    trackFunnelEvent({
+      event: "checkout_start",
+      value: subtotalRaw,
+      properties: { content_id: PRODUCT_ID, content_name: "Bloqueador de Ar Economizare", source: 'economizare' },
+      userData: (savedEmail || savedPhone || savedCpf) ? {
+        email: savedEmail || undefined,
+        phone: savedPhone || undefined,
+        externalId: savedCpf || undefined,
+      } : undefined,
+    });
     trackPageViewOnce("/economizare/checkout");
   }, []);
 

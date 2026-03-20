@@ -114,9 +114,13 @@ const Checkout = () => {
     }
   };
 
-  // Checkout page: fire checkout_start once on mount
+  // Checkout page: fire checkout_start once on mount (with saved userData for EMQ)
   useEffect(() => {
     window.scrollTo({ top: 0 });
+    // Read saved form for userData enrichment (returning visitors)
+    const savedEmail = localStorage.getItem("crm_user_email") || "";
+    const savedPhone = localStorage.getItem("crm_user_phone") || "";
+    const savedCpf = form.cpf || "";
     trackFunnelEvent({
       event: "checkout_start",
       value: subtotalRaw,
@@ -130,6 +134,11 @@ const Checkout = () => {
         items: isStoreCheckout ? storeItems.length : cartItems.length,
         source: isStoreCheckout ? 'loja' : 'mesa',
       },
+      userData: (savedEmail || savedPhone || savedCpf) ? {
+        email: savedEmail || undefined,
+        phone: savedPhone || undefined,
+        externalId: savedCpf || undefined,
+      } : undefined,
     });
     trackPageViewOnce("/checkout");
     // eslint-disable-next-line react-hooks/exhaustive-deps
