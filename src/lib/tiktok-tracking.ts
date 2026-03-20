@@ -460,10 +460,28 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
     externalId: (userData?.externalId || visitorId || "").trim(),
   };
 
-  // Always set user data and identify for better EMQ
+  // Always identify for better EMQ — use raw data first, then fall back to cached hashes
   if (effectiveUserData.externalId || effectiveUserData.email || effectiveUserData.phone) {
     await setUserData(effectiveUserData);
     await identifyTikTokUser(effectiveUserData);
+  } else {
+    // Even without raw data, use cached identity hashes for returning visitors
+    const cached = getCachedIdentity();
+    if (cached.email_hash || cached.phone_hash || cached.external_id) {
+      const pixels = await loadPixels();
+      const ttqGlobal = (window as any).ttq;
+      if (ttqGlobal) {
+        const identifyPayload: Record<string, string> = {};
+        if (cached.email_hash) identifyPayload.email = cached.email_hash;
+        if (cached.phone_hash) identifyPayload.phone_number = cached.phone_hash;
+        if (cached.external_id) identifyPayload.external_id = cached.external_id;
+        pixels.forEach((px) => {
+          const inst = getTTQInstance(px.pixel_id);
+          if (inst) try { inst.identify(identifyPayload); } catch {}
+        });
+        console.log(`${DEBUG} identify() from cache (email: ${!!cached.email_hash}, phone: ${!!cached.phone_hash})`);
+      }
+    }
   }
 
   const pixels = await loadPixels();
