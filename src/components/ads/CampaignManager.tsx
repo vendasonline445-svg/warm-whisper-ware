@@ -178,7 +178,12 @@ export default function CampaignManager() {
 
     try {
       const externalIds = campaignList.map(c => String(c.campaign_id));
-      const campaignNames = new Set(campaignList.map(c => String(c.campaign_name || "").trim()).filter(Boolean));
+      // Build API name mapping (source of truth for campaign names)
+      const apiNameByExtId: Record<string, string> = {};
+      campaignList.forEach(c => {
+        apiNameByExtId[String(c.campaign_id)] = String(c.campaign_name || "").trim();
+      });
+      const campaignNames = new Set(Object.values(apiNameByExtId).filter(Boolean));
 
       // 1) Map external campaign_id -> internal campaign row
       const { data: dbCampaigns } = await db
@@ -187,19 +192,13 @@ export default function CampaignManager() {
         .in("campaign_external_id", externalIds);
 
       const extToInternal: Record<string, string> = {};
-      const extToName: Record<string, string> = {};
       (dbCampaigns || []).forEach((c: any) => {
         const extId = String(c.campaign_external_id || "");
         if (!extId) return;
         extToInternal[extId] = c.id;
-        extToName[extId] = String(c.campaign_name || "").trim();
       });
 
       const internalIds = Object.values(extToInternal);
-      if (!internalIds.length) {
-        setMetricsMap({});
-        return;
-      }
 
       const daysMap: Record<DateRange, number> = { today: 0, "3d": 3, "7d": 7, "14d": 14, "30d": 30 };
       const days = daysMap[dateRange];
@@ -215,16 +214,20 @@ export default function CampaignManager() {
 
       // 2) Read spend + sales sources in parallel
       const [costsRes, attribRes, purchaseRes] = await Promise.all([
-        db
-          .from("campaign_costs")
-          .select("campaign_id, spend, impressions, clicks")
-          .in("campaign_id", internalIds)
-          .gte("date", startDateStr),
-        db
-          .from("attributions")
-          .select("campaign_id, revenue, event_type")
-          .in("campaign_id", internalIds)
-          .gte("created_at", startDateIso),
+        internalIds.length
+          ? db
+              .from("campaign_costs")
+              .select("campaign_id, spend, impressions, clicks")
+              .in("campaign_id", internalIds)
+              .gte("date", startDateStr)
+          : { data: [] },
+        internalIds.length
+          ? db
+              .from("attributions")
+              .select("campaign_id, revenue, event_type")
+              .in("campaign_id", internalIds)
+              .gte("created_at", startDateIso)
+          : { data: [] },
         db
           .from("events")
           .select("id, campaign, value, event_data")
@@ -281,10 +284,13 @@ export default function CampaignManager() {
 
       // 6) Build metrics map keyed by external campaign_id
       const newMetrics: Record<string, CampaignMetrics> = {};
-      for (const [extId, intId] of Object.entries(extToInternal)) {
-        const costs = costsAgg[intId] || { spend: 0, impressions: 0, clicks: 0 };
-        const attr = attribAgg[intId] || { revenue: 0, sales: 0 };
-        const fallback = fallbackByCampaignName[extToName[extId] || ""] || { revenue: 0, sales: 0 };
+      for (const extId of externalIds) {
+        const intId = extToInternal[extId];
+        const costs = intId ? (costsAgg[intId] || { spend: 0, impressions: 0, clicks: 0 }) : { spend: 0, impressions: 0, clicks: 0 };
+        const attr = intId ? (attribAgg[intId] || { revenue: 0, sales: 0 }) : { revenue: 0, sales: 0 };
+        // Use API campaign name (not DB name) for fallback lookup
+        const apiName = apiNameByExtId[extId] || "";
+        const fallback = fallbackByCampaignName[apiName] || { revenue: 0, sales: 0 };
 
         const revenue = attr.sales > 0 || attr.revenue > 0 ? attr.revenue : fallback.revenue;
         const sales = attr.sales > 0 || attr.revenue > 0 ? attr.sales : fallback.sales;
