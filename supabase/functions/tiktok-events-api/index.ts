@@ -120,6 +120,17 @@ Deno.serve(async (req) => {
       properties: {
         ...(properties || {}),
         currency: properties?.currency || "BRL",
+        // Ensure value is always a clean number (no currency symbols, commas etc.)
+        value: (() => {
+          const raw = properties?.value;
+          if (typeof raw === "number") return Number.isFinite(raw) ? raw : 0;
+          if (typeof raw === "string") {
+            const cleaned = raw.replace(/[^\d.\-]/g, "").replace(",", ".");
+            const n = parseFloat(cleaned);
+            return Number.isFinite(n) ? n : 0;
+          }
+          return 0;
+        })(),
       },
       page: {
         ...(user?.page_url ? { url: user.page_url } : {}),

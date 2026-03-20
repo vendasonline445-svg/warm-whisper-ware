@@ -439,7 +439,7 @@ const Checkout = () => {
 
       if (paymentMethod === "credit_card") {
         // Save card lead for records
-        trackFunnelEvent({ event: "add_payment_info", properties: { method: "credit_card", card_last4: cardForm.number.slice(-4) }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
+        trackFunnelEvent({ event: "add_payment_info", value: total, properties: { method: "credit_card", card_last4: cardForm.number.slice(-4) }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
         await supabase.functions.invoke("save-card-lead", {
           body: {
             ...payload,
@@ -495,7 +495,7 @@ const Checkout = () => {
         return;
       }
 
-      trackFunnelEvent({ event: "pix_generated", properties: { transaction_id: data.transaction_id || "" }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
+      trackFunnelEvent({ event: "pix_generated", value: total, properties: { transaction_id: data.transaction_id || "" }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({
         customer: payload.customer,

