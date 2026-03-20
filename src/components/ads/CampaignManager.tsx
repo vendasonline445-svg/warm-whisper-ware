@@ -1322,6 +1322,31 @@ export default function CampaignManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Ad Group Budget Edit Dialog */}
+      <Dialog open={!!agBudgetDialog} onOpenChange={(open) => !open && setAgBudgetDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="text-sm">Editar Orçamento do Conjunto</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="bg-muted/50 rounded-lg p-3">
+              <p className="text-xs text-muted-foreground">Conjunto</p>
+              <p className="text-sm font-medium truncate">{agBudgetDialog?.ag.adgroup_name}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Orçamento atual: {agBudgetDialog?.ag.budget ? `R$ ${agBudgetDialog.ag.budget.toFixed(2)}` : "—"}
+                {agBudgetDialog?.ag.budget_mode ? ` (${budgetModeLabel(agBudgetDialog.ag.budget_mode)})` : ""}
+              </p>
+            </div>
+            <div>
+              <Label className="text-xs">Novo Orçamento (R$)</Label>
+              <Input type="number" step="0.01" value={agNewBudget} onChange={(e) => setAgNewBudget(e.target.value)} placeholder="Ex: 50.00" />
+            </div>
+            <Button onClick={updateAdGroupBudget} className="w-full" disabled={!agNewBudget || !!actionLoading}>
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Salvar Orçamento
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
