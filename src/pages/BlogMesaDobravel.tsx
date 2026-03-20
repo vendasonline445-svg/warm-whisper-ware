@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Star, Truck, ShieldCheck, Clock, Users, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, Star, Truck, ShieldCheck, Clock, Users, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 
 const benefits = [
   {
