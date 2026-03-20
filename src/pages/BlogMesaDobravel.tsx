@@ -188,17 +188,6 @@ export default function BlogMesaDobravel() {
           </p>
         </section>
 
-        {/* CTA */}
-        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center space-y-3">
-          <h3 className="font-bold text-lg">Gostou? Conheça a Mesa Dobrável</h3>
-          <p className="text-sm text-muted-foreground">Veja todas as cores, detalhes e avaliações na página do produto.</p>
-          <button
-            onClick={() => navigate("/")}
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
-          >
-            Ver Produto Completo
-          </button>
-        </div>
 
         {/* Footer note */}
         <p className="text-xs text-center text-muted-foreground pb-8">
