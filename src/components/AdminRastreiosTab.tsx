@@ -157,10 +157,29 @@ export default function AdminRastreiosTab() {
 
   const fetchOrders = async () => {
     setLoading(true);
-    let query = supabase.from("order_tracking").select("*").order("created_at", { ascending: false });
-    if (filter !== "all") query = query.eq("status", filter);
-    const { data } = await query;
-    if (data) setOrders(data as OrderTracking[]);
+    // Busca direto de checkout_leads (pedidos pagos) já que a Trackly cuida da logística
+    const { data } = await supabase
+      .from("checkout_leads")
+      .select("*")
+      .eq("status", "paid")
+      .order("created_at", { ascending: false });
+    if (data) {
+      const mapped = (data as any[]).map((l) => ({
+        id: l.id,
+        order_id: l.id,
+        customer_name: l.name || "",
+        customer_email: l.email || "",
+        product_name: "Mesa Portátil Dobrável",
+        zipcode: l.cep || "",
+        tracking_code: null,
+        tracking_url: null,
+        status: l.tracking_sent ? "enviado_trackly" : "pendente",
+        created_at: l.created_at,
+        tracking_sent: l.tracking_sent,
+      }));
+      if (filter === "all") setOrders(mapped as any);
+      else setOrders(mapped.filter((o) => o.status === filter) as any);
+    }
     setLoading(false);
   };
 
