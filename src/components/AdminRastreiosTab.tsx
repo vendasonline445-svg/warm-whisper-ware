@@ -387,7 +387,7 @@ export default function AdminRastreiosTab() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    {["Pedido", "Cliente", "Produto", "CEP", "Status", "Rastreio", "Data"].map(h => (
+                    {["Pedido", "Cliente", "Produto", "CEP", "Status", "Trackly", "Data"].map(h => (
                       <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
                     ))}
                   </tr>
