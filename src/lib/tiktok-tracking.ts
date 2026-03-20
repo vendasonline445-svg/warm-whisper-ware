@@ -509,7 +509,13 @@ export async function trackTikTokEvent(options: TrackEventOptions) {
 
   if (!browserFired) {
     console.warn(`${DEBUG} Browser pixel NOT fired for ${tiktokEvent} — skipping server to avoid orphan event`);
-    // Don't fire server-only events — they create unmatched IDs in TikTok diagnostics
+    return;
+  }
+
+  // For events where server-side is handled by a webhook (e.g. purchase/CompletePayment),
+  // skip frontend server dispatch to avoid duplicate server events with mismatched browser count.
+  if (options.browserOnly) {
+    console.log(`${DEBUG} ${tiktokEvent} browserOnly — server handled by webhook (event_id: ${eventId})`);
     return;
   }
 
