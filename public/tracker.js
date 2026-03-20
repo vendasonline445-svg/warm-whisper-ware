@@ -201,10 +201,25 @@
 
   // ── 2. VIEW CONTENT (product/landing pages) ──
   var LANDING_PATTERNS = /^\/$|\/index|\/produto|\/oferta|\/product|\/landing|\/lp|\/vsl/;
+  function extractPageValue() {
+    // Try to read product price from page for TikTok EMQ
+    try {
+      var priceEl = document.querySelector('[data-price], .product-price, .price-current, .text-cta');
+      if (priceEl) {
+        var txt = priceEl.textContent || '';
+        var cleaned = txt.replace(/[^\d,.\-]/g, '').replace(',', '.');
+        var val = parseFloat(cleaned);
+        if (isFinite(val) && val > 0) return val;
+      }
+    } catch (e) {}
+    return 0;
+  }
+
   function fireViewContent() {
     var p = window.location.pathname.toLowerCase();
     if (LANDING_PATTERNS.test(p) && dedupOk("view_content", p)) {
-      sendEvent("view_content", { page: p });
+      var value = extractPageValue();
+      sendEvent("view_content", { page: p, value: value });
     }
   }
 
