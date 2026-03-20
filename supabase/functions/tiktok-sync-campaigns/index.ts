@@ -1818,6 +1818,37 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Action: update ad group budget ──
+    if (action === "update_adgroup_budget") {
+      const { advertiser_id, adgroup_id, budget } = body;
+      if (!advertiser_id || !adgroup_id || budget === undefined) {
+        return new Response(JSON.stringify({ error: "advertiser_id, adgroup_id, budget required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const resp = await fetch(`${TIKTOK_API}/adgroup/update/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          advertiser_id: String(advertiser_id),
+          adgroup_id: String(adgroup_id),
+          budget: Number(budget),
+        }),
+      });
+      const data = await safeJson(resp);
+
+      if (data.code !== 0) {
+        return new Response(JSON.stringify({ error: data.message, code: data.code }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: data.data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── Action: update ad status (enable/disable/delete) per v1.3 docs ──
     if (action === "update_ad_status") {
       const { advertiser_id, ad_ids, operation_status } = body;
