@@ -29,6 +29,7 @@ import EconomizarePix from "./pages/EconomizarePix";
 import EconomizareObrigado from "./pages/EconomizareObrigado";
 import EconomizareAdmin from "./pages/EconomizareAdmin";
 import JesusPage from "./pages/JesusPage";
+import BlogMesaDobravel from "./pages/BlogMesaDobravel";
 
 const queryClient = new QueryClient();
 
