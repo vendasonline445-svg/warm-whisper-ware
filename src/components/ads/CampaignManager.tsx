@@ -1070,11 +1070,14 @@ export default function CampaignManager() {
                           {isExpanded && hierarchy.map((ag) => (
                             <>
                               <TableRow key={`ag-${ag.adgroup_id}`} className="bg-muted/20">
-                                <TableCell className="text-xs pl-10 font-medium" colSpan={2}>
+                                <TableCell className="text-xs pl-10 font-medium">
                                   <div className="flex items-center gap-2">
                                     <Badge variant="outline" className="text-[9px] shrink-0">Conjunto</Badge>
                                     <span className="truncate">{ag.adgroup_name}</span>
                                   </div>
+                                </TableCell>
+                                <TableCell>
+                                  {statusBadge(ag.operation_status)}
                                 </TableCell>
                                 <TableCell className="text-xs">
                                   {ag.budget > 0 ? (
@@ -1083,17 +1086,24 @@ export default function CampaignManager() {
                                 </TableCell>
                                 <TableCell colSpan={8} />
                                 <TableCell className="text-right">
-                                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={!!actionLoading}
-                                    onClick={() => toggleAdGroupStatus(camp, ag.adgroup_id, ag.operation_status)}
-                                    title={ag.operation_status === "ENABLE" ? "Pausar conjunto" : "Ativar conjunto"}>
-                                    {actionLoading === ag.adgroup_id + "_status" ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : ag.operation_status === "ENABLE" ? (
-                                      <Pause className="h-3 w-3" />
-                                    ) : (
-                                      <Play className="h-3 w-3 text-emerald-500" />
-                                    )}
-                                  </Button>
+                                  <div className="flex gap-1 justify-end">
+                                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={!!actionLoading}
+                                      onClick={() => toggleAdGroupStatus(camp, ag.adgroup_id, ag.operation_status)}
+                                      title={ag.operation_status === "ENABLE" ? "Pausar conjunto" : "Ativar conjunto"}>
+                                      {actionLoading === ag.adgroup_id + "_status" ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : ag.operation_status === "ENABLE" ? (
+                                        <Pause className="h-3 w-3" />
+                                      ) : (
+                                        <Play className="h-3 w-3 text-emerald-500" />
+                                      )}
+                                    </Button>
+                                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={!!actionLoading}
+                                      onClick={() => { setAgBudgetDialog({ camp, ag }); setAgNewBudget(ag.budget > 0 ? String(ag.budget) : ""); }}
+                                      title="Editar orçamento do conjunto">
+                                      <DollarSign className="h-3 w-3" />
+                                    </Button>
+                                  </div>
                                 </TableCell>
                               </TableRow>
                               {ag.ads.map((ad) => (
