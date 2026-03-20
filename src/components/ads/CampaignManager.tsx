@@ -511,6 +511,39 @@ export default function CampaignManager() {
     setActionLoading(null);
   };
 
+  // ── Update ad group budget ──
+  const updateAdGroupBudget = async () => {
+    if (!agBudgetDialog || !agNewBudget) return;
+    const bc = bcs.find((b: any) => b.id === selectedBc);
+    if (!bc) return;
+    const { camp, ag } = agBudgetDialog;
+    setActionLoading(ag.adgroup_id + "_budget");
+    try {
+      const { error } = await supabase.functions.invoke("tiktok-sync-campaigns", {
+        body: {
+          bc_id: bc.id,
+          action: "update_adgroup_budget",
+          advertiser_id: camp.advertiser_id,
+          adgroup_id: ag.adgroup_id,
+          budget: parseFloat(agNewBudget),
+        },
+      });
+      if (error) throw error;
+      toast({ title: "✅ Orçamento do conjunto atualizado" });
+      setHierarchyData(prev => ({
+        ...prev,
+        [camp.campaign_id]: (prev[camp.campaign_id] || []).map(a =>
+          a.adgroup_id === ag.adgroup_id ? { ...a, budget: parseFloat(agNewBudget) } : a
+        ),
+      }));
+      setAgBudgetDialog(null);
+      setAgNewBudget("");
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+    setActionLoading(null);
+  };
+
   // ── Toggle ad status (per v1.3 /ad/status/update/) ──
   const toggleAdStatus = async (camp: TikTokCampaign, agId: string, adId: string, currentStatus: string) => {
     const bc = bcs.find((b: any) => b.id === selectedBc);
