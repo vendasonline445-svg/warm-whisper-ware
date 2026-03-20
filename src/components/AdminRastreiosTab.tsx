@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Search, Settings, Send, ToggleLeft, ToggleRight, Download } from "lucide-react";
 
-type TrackingStatus = "all" | "enviado" | "em_transito" | "entregue";
+type TrackingStatus = "all" | "enviado_trackly" | "pendente";
 
 interface OrderTracking {
   id: string;
@@ -157,10 +157,29 @@ export default function AdminRastreiosTab() {
 
   const fetchOrders = async () => {
     setLoading(true);
-    let query = supabase.from("order_tracking").select("*").order("created_at", { ascending: false });
-    if (filter !== "all") query = query.eq("status", filter);
-    const { data } = await query;
-    if (data) setOrders(data as OrderTracking[]);
+    // Busca direto de checkout_leads (pedidos pagos) já que a Trackly cuida da logística
+    const { data } = await supabase
+      .from("checkout_leads")
+      .select("*")
+      .eq("status", "paid")
+      .order("created_at", { ascending: false });
+    if (data) {
+      const mapped = (data as any[]).map((l) => ({
+        id: l.id,
+        order_id: l.id,
+        customer_name: l.name || "",
+        customer_email: l.email || "",
+        product_name: "Mesa Portátil Dobrável",
+        zipcode: l.cep || "",
+        tracking_code: null,
+        tracking_url: null,
+        status: l.tracking_sent ? "enviado_trackly" : "pendente",
+        created_at: l.created_at,
+        tracking_sent: l.tracking_sent,
+      }));
+      if (filter === "all") setOrders(mapped as any);
+      else setOrders(mapped.filter((o) => o.status === filter) as any);
+    }
     setLoading(false);
   };
 
@@ -193,8 +212,8 @@ export default function AdminRastreiosTab() {
     return o.customer_name.toLowerCase().includes(s) || o.customer_email.toLowerCase().includes(s) || o.zipcode?.includes(s) || o.tracking_code?.toLowerCase().includes(s);
   });
 
-  const statusLabel = (s: string) => ({ enviado: "Enviado", em_transito: "Em Trânsito", entregue: "Entregue" }[s] || s);
-  const statusColor = (s: string) => ({ enviado: "bg-blue-500/10 text-blue-600", em_transito: "bg-amber-500/10 text-amber-600", entregue: "bg-emerald-500/10 text-emerald-600" }[s] || "bg-muted text-muted-foreground");
+  const statusLabel = (s: string) => ({ enviado_trackly: "Enviado p/ Trackly", pendente: "Pendente" }[s] || s);
+  const statusColor = (s: string) => ({ enviado_trackly: "bg-emerald-500/10 text-emerald-600", pendente: "bg-amber-500/10 text-amber-600" }[s] || "bg-muted text-muted-foreground");
 
   return (
     <div className="space-y-6">
@@ -351,7 +370,7 @@ export default function AdminRastreiosTab() {
               <input type="text" placeholder="Buscar por nome, email, CEP ou código..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background text-sm" />
             </div>
             <div className="flex gap-2">
-              {(["all", "enviado", "em_transito", "entregue"] as TrackingStatus[]).map((s) => (
+              {(["all", "enviado_trackly", "pendente"] as TrackingStatus[]).map((s) => (
                 <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === s ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>
                   {s === "all" ? "Todos" : statusLabel(s)}
                 </button>
@@ -368,7 +387,7 @@ export default function AdminRastreiosTab() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    {["Pedido", "Cliente", "Produto", "CEP", "Status", "Rastreio", "Data"].map(h => (
+                    {["Pedido", "Cliente", "Produto", "CEP", "Status", "Trackly", "Data"].map(h => (
                       <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
                     ))}
                   </tr>
@@ -389,15 +408,9 @@ export default function AdminRastreiosTab() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {order.tracking_code ? (
-                          order.tracking_url ? (
-                            <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs">{order.tracking_code}</a>
-                          ) : (
-                            <span className="text-xs font-mono">{order.tracking_code}</span>
-                          )
-                        ) : (
-                          <span className="text-muted-foreground text-xs">Pendente</span>
-                        )}
+                        <span className={`text-xs font-medium ${(order as any).tracking_sent ? "text-emerald-600" : "text-muted-foreground"}`}>
+                          {(order as any).tracking_sent ? "✅ Enviado" : "⏳ Aguardando"}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString("pt-BR")}</td>
                     </tr>
