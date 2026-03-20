@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
 
     const targetUrl = webhook_url || "https://tracklybrasil.tech/public/webhook.php?token=wh_73e5eecea7881d9dc7765fbb3d3fffd4593dd823f14b3353a92a87b0b58f49d5&source=vegacheckout";
 
+    // Formato exato esperado pela Trackly
     const payload = {
       status: "paid",
       orderId: order_id || "",
