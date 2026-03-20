@@ -105,10 +105,16 @@ const EconomizareCheckout = () => {
     setForm((prev: typeof form) => {
       const updated = { ...prev, [field]: value };
       localStorage.setItem('eco_checkout_form', JSON.stringify(updated));
-      if (field === "email" && value.trim()) localStorage.setItem("crm_user_email", value.trim().toLowerCase());
+      if (field === "email" && value.trim()) {
+        localStorage.setItem("crm_user_email", value.trim().toLowerCase());
+        cacheUserIdentity(value.trim(), undefined, localStorage.getItem("fiq_visitor_id") || undefined);
+      }
       if (field === "phone" && value.trim()) {
         const digits = value.replace(/\D/g, "");
-        if (digits.length >= 10) localStorage.setItem("crm_user_phone", digits.startsWith("55") ? `+${digits}` : `+55${digits}`);
+        if (digits.length >= 10) {
+          localStorage.setItem("crm_user_phone", digits.startsWith("55") ? `+${digits}` : `+55${digits}`);
+          cacheUserIdentity(undefined, value.trim(), localStorage.getItem("fiq_visitor_id") || undefined);
+        }
       }
       return updated;
     });
