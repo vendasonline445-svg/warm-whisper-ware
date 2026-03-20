@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Search, Settings, Send, ToggleLeft, ToggleRight, Download } from "lucide-react";
 
-type TrackingStatus = "all" | "enviado" | "em_transito" | "entregue";
+type TrackingStatus = "all" | "enviado_trackly" | "pendente";
 
 interface OrderTracking {
   id: string;
