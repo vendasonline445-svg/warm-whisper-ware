@@ -427,6 +427,8 @@ interface TrackEventOptions {
     phone?: string;
     externalId?: string;
   };
+  /** When true, only fire browser-side (ttq.track). Server-side is handled elsewhere (e.g. webhook). */
+  browserOnly?: boolean;
 }
 
 export async function trackTikTokEvent(options: TrackEventOptions) {
