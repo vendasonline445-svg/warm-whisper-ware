@@ -152,14 +152,8 @@ const PixPayment = () => {
     <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #f0f2f8 0%, #fdf0f2 50%, #f8f8fa 100%)" }}>
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-border/40 px-4 py-3.5">
-        <div className="mx-auto max-w-[480px] flex items-center gap-3">
-          <button onClick={() => navigate(getUrlWithUtm("/"))} className="text-foreground hover:opacity-70 transition-opacity">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div className="flex-1 text-center">
-            <p className="font-bold text-[15px] tracking-tight">Código do pagamento</p>
-          </div>
-          <div className="w-5" />
+        <div className="mx-auto max-w-[480px] flex items-center justify-center">
+          <p className="font-bold text-[15px] tracking-tight">Código do pagamento</p>
         </div>
       </header>
 

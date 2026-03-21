@@ -90,10 +90,8 @@ const EconomizarePix = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-sm border-b px-4 py-3.5">
-        <div className="mx-auto max-w-[480px] flex items-center gap-3">
-          <button onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></button>
-          <div className="flex-1 text-center"><img src="/images/eco/logo-economizare.png" alt="Economizare" className="h-8 mx-auto" /></div>
-          <div className="w-5" />
+        <div className="mx-auto max-w-[480px] flex items-center justify-center">
+          <img src="/images/eco/logo-economizare.png" alt="Economizare" className="h-8" />
         </div>
       </header>
 
