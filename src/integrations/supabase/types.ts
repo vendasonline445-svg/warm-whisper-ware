@@ -367,6 +367,56 @@ export type Database = {
           },
         ]
       }
+      campaign_presets: {
+        Row: {
+          budget_cents: number | null
+          budget_type: string | null
+          client_id: string | null
+          config: Json | null
+          created_at: string
+          id: string
+          objective: string | null
+          preset_name: string
+          schedule: Json | null
+          targeting: Json | null
+          updated_at: string
+        }
+        Insert: {
+          budget_cents?: number | null
+          budget_type?: string | null
+          client_id?: string | null
+          config?: Json | null
+          created_at?: string
+          id?: string
+          objective?: string | null
+          preset_name: string
+          schedule?: Json | null
+          targeting?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          budget_cents?: number | null
+          budget_type?: string | null
+          client_id?: string | null
+          config?: Json | null
+          created_at?: string
+          id?: string
+          objective?: string | null
+          preset_name?: string
+          schedule?: Json | null
+          targeting?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_presets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           campaign_external_id: string | null
@@ -884,6 +934,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "integration_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      launch_history: {
+        Row: {
+          ad_count: number | null
+          adgroup_count: number | null
+          budget_cents: number | null
+          campaign_external_id: string | null
+          campaign_name: string
+          client_id: string | null
+          config: Json | null
+          created_at: string
+          id: string
+          objective: string | null
+          status: string | null
+        }
+        Insert: {
+          ad_count?: number | null
+          adgroup_count?: number | null
+          budget_cents?: number | null
+          campaign_external_id?: string | null
+          campaign_name: string
+          client_id?: string | null
+          config?: Json | null
+          created_at?: string
+          id?: string
+          objective?: string | null
+          status?: string | null
+        }
+        Update: {
+          ad_count?: number | null
+          adgroup_count?: number | null
+          budget_cents?: number | null
+          campaign_external_id?: string | null
+          campaign_name?: string
+          client_id?: string | null
+          config?: Json | null
+          created_at?: string
+          id?: string
+          objective?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launch_history_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
@@ -1564,6 +1664,100 @@ export type Database = {
           },
         ]
       }
+      spark_profiles: {
+        Row: {
+          auth_code: string | null
+          authorized_at: string | null
+          avatar_url: string | null
+          client_id: string | null
+          created_at: string
+          display_name: string | null
+          expires_at: string | null
+          id: string
+          status: string | null
+          tt_user_id: string | null
+        }
+        Insert: {
+          auth_code?: string | null
+          authorized_at?: string | null
+          avatar_url?: string | null
+          client_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string | null
+          id?: string
+          status?: string | null
+          tt_user_id?: string | null
+        }
+        Update: {
+          auth_code?: string | null
+          authorized_at?: string | null
+          avatar_url?: string | null
+          client_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string | null
+          id?: string
+          status?: string | null
+          tt_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tiktok_ad_accounts: {
+        Row: {
+          advertiser_id: string
+          advertiser_name: string | null
+          bc_id: string | null
+          client_id: string | null
+          created_at: string
+          currency: string | null
+          id: string
+          status: string | null
+          timezone: string | null
+          updated_at: string
+        }
+        Insert: {
+          advertiser_id: string
+          advertiser_name?: string | null
+          bc_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          status?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advertiser_id?: string
+          advertiser_name?: string | null
+          bc_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          status?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_ad_accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tiktok_event_dedup: {
         Row: {
           created_at: string | null
@@ -1613,6 +1807,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tiktok_pixels_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tiktok_tokens: {
+        Row: {
+          access_token: string
+          advertiser_id: string | null
+          client_id: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          refresh_token: string | null
+          scope: string | null
+          token_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          advertiser_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          advertiser_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_tokens_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
