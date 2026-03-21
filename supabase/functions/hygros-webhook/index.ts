@@ -615,6 +615,34 @@ async function handlePaidWebhook(
     console.error("[Pushcut] Error:", e);
   }
 
+  // --- xTracky Conversion API ---
+  try {
+    const xtrackyLeadId = metadata.xtracky_lead_id || null;
+    if (xtrackyLeadId) {
+      const xtrackyPayload = {
+        leadId: xtrackyLeadId,
+        orderId: lead.transaction_id || matchedTxId || "",
+        value: (normalized.amount || lead.total_amount || 0) / 100,
+        currency: "BRL",
+      };
+
+      console.log("[xTracky] Sending conversion:", JSON.stringify(xtrackyPayload));
+
+      const xtrackyRes = await fetch("https://api.xtracky.com/api/integrations/api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(xtrackyPayload),
+      });
+
+      const xtrackyText = await xtrackyRes.text();
+      console.log(`[xTracky] Response (${xtrackyRes.status}):`, xtrackyText);
+    } else {
+      console.log("[xTracky] No xtracky_lead_id in metadata, skipping");
+    }
+  } catch (e) {
+    console.error("[xTracky] Error sending conversion:", e);
+  }
+
   if (lead.tracking_sent) {
     console.log("[Trackly] Already sent for this order, skipping");
     return;
