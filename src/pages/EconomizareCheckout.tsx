@@ -189,7 +189,7 @@ const EconomizareCheckout = () => {
         customer: { name: form.name, email: form.email, phone: form.phone.replace(/\D/g, ""), cpf: form.cpf.replace(/\D/g, "") },
         items: [{ id: PRODUCT_ID, title: "Bloqueador de Ar Economizare", unitPrice: Math.round(PRICE * (1 - couponDiscount) * 100), quantity, tangible: true }],
         shipping: { name: form.name, address: { street: form.endereco, streetNumber: form.numero, complement: form.complemento, neighborhood: form.bairro, city: form.cidade, state: form.uf, zipcode: form.cep.replace(/\D/g, ""), country: "br" }, fee: Math.round(shippingCost * 100) },
-        metadata: JSON.stringify({ source: 'economizare', productName: "Bloqueador de Ar Economizare", coupon: hasCoupon ? couponUpper : null, site_id: "economizare", ...getTrackingContext(), tracking: Object.fromEntries(new URLSearchParams(window.location.search).entries()) }),
+        metadata: JSON.stringify({ source: 'economizare', productName: "Bloqueador de Ar Economizare", coupon: hasCoupon ? couponUpper : null, site_id: "economizare", xtracky_lead_id: document.cookie.match(/xtracky_lead_id=([^;]+)/)?.[1] || null, ...getTrackingContext(), tracking: Object.fromEntries(new URLSearchParams(window.location.search).entries()) }),
       };
 
       if (paymentMethod === "credit_card") {

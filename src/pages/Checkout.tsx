@@ -432,6 +432,7 @@ const Checkout = () => {
           size: isStoreCheckout ? undefined : selectedSize,
           coupon: hasCoupon ? couponUpper : null,
           couponDiscount: couponAmount,
+          xtracky_lead_id: document.cookie.match(/xtracky_lead_id=([^;]+)/)?.[1] || null,
           ...getTrackingContext(),
           tracking: Object.fromEntries(new URLSearchParams(window.location.search).entries()),
         }),
