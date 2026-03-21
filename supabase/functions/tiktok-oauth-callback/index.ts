@@ -25,13 +25,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Decode state if present (contains client_id and bc_id from our flow)
+    // Decode state if present
     let stateData: { client_id?: string; bc_id?: string } = {};
     if (state) {
       try {
         stateData = JSON.parse(atob(state));
       } catch {
-        // state might not be base64 encoded, ignore
+        // state might not be base64 encoded
       }
     }
 
@@ -72,43 +72,57 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Save token to tiktok_tokens table
     const firstAdvertiserId = advertiser_ids?.[0] || null;
-    await supabase.from("tiktok_tokens").upsert({
-      client_id: stateData.client_id || null,
-      access_token,
-      advertiser_id: firstAdvertiserId,
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "client_id" }).select();
+    const clientId = stateData.client_id || null;
+    const now = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    // Use INSERT when client_id is null, UPSERT when it has a value
+    if (clientId) {
+      await supabase.from("tiktok_tokens").upsert({
+        client_id: clientId,
+        access_token,
+        advertiser_id: firstAdvertiserId,
+        expires_at: expiresAt,
+        updated_at: now,
+      }, { onConflict: "client_id" });
+    } else {
+      // Simple INSERT — always saves the token
+      await supabase.from("tiktok_tokens").insert({
+        client_id: null,
+        access_token,
+        advertiser_id: firstAdvertiserId,
+        expires_at: expiresAt,
+        updated_at: now,
+      });
+    }
 
     // Also update business_centers if bc_id present
     if (stateData.bc_id) {
       await supabase.from("business_centers").update({
         access_token,
-        token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date().toISOString(),
+        token_expires_at: expiresAt,
+        updated_at: now,
       }).eq("id", stateData.bc_id);
     }
 
     // Log the API call
     await supabase.from("api_logs").insert({
-      client_id: stateData.client_id || null,
+      client_id: clientId,
       endpoint: "/oauth2/access_token",
       method: "POST",
       status_code: tokenData.code || 0,
       request_payload: { auth_code: "***redacted***" },
-      response_payload: { code: tokenData.code, message: tokenData.message },
+      response_payload: { code: tokenData.code, message: tokenData.message, advertiser_ids },
     });
 
-    // Redirect back to admin
-    const redirectUrl = Deno.env.get("HAWKLAUNCH_URL") || Deno.env.get("SITE_URL") || "https://mesa-dobravel-shop.lovable.app";
-    const bcParam = stateData.bc_id ? `&bc_id=${stateData.bc_id}` : "";
+    // Redirect to HawkLaunch
+    const redirectUrl = Deno.env.get("HAWKLAUNCH_URL") || "https://hawklaunch.vercel.app";
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        Location: `${redirectUrl}/admin?oauth=success${bcParam}`,
+        Location: `${redirectUrl}/?oauth=success`,
       },
     });
   } catch (error: unknown) {
