@@ -58,6 +58,7 @@ const App = () => {
                 <Route path="/obrigado" element={<Obrigado />} />
                 <Route path="/obrigado-upsell" element={<ObrigadoUpsell />} />
                 <Route path="/upsell1" element={<Upsell1 />} />
+                <Route path="/upsell2" element={<Upsell2 />} />
                 <Route path="/taxa-alfandega" element={<Upsell1 />} />
                 <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
                 <Route path="/termos-de-uso" element={<TermosDeUso />} />

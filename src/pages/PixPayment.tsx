@@ -77,11 +77,17 @@ const PixPayment = () => {
           } : undefined,
         });
         const returnTo = sessionStorage.getItem("pixReturnTo");
-        if (returnTo === "/taxa-alfandega") {
-          sessionStorage.removeItem("pixReturnTo");
-          setTimeout(() => navigate(getUrlWithUtm("/obrigado-upsell")), 2000);
-        } else {
+        sessionStorage.removeItem("pixReturnTo");
+        sessionStorage.removeItem("pixData");
+        if (returnTo === "/upsell1") {
+          // UP1 paid → go to UP2
+          setTimeout(() => navigate(getUrlWithUtm("/upsell2")), 2000);
+        } else if (returnTo === "/upsell2") {
+          // UP2 paid → go to obrigado
           setTimeout(() => navigate(getUrlWithUtm("/obrigado")), 2000);
+        } else {
+          // Main checkout paid → go to UP1
+          setTimeout(() => navigate(getUrlWithUtm("/upsell1")), 2000);
         }
       }
     } catch (err) {
