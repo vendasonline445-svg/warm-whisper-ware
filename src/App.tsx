@@ -17,6 +17,7 @@ import PixPayment from "./pages/PixPayment";
 import Obrigado from "./pages/Obrigado";
 import ObrigadoUpsell from "./pages/ObrigadoUpsell";
 import Upsell1 from "./pages/Upsell1";
+import Upsell2 from "./pages/Upsell2";
 import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import TermosDeUso from "./pages/TermosDeUso";
 import StoreFront from "./pages/StoreFront";
@@ -57,6 +58,7 @@ const App = () => {
                 <Route path="/obrigado" element={<Obrigado />} />
                 <Route path="/obrigado-upsell" element={<ObrigadoUpsell />} />
                 <Route path="/upsell1" element={<Upsell1 />} />
+                <Route path="/upsell2" element={<Upsell2 />} />
                 <Route path="/taxa-alfandega" element={<Upsell1 />} />
                 <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
                 <Route path="/termos-de-uso" element={<TermosDeUso />} />
